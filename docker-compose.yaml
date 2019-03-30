@@ -1,0 +1,21 @@
+roundcube:
+  image: roundcube/roundcubemail
+  links:
+    - mysql
+  ports:
+    - "25080:80"
+  environment:
+    ROUNDCUBEMAIL_DSNW: mysql://mail:mail@mysql/roundcubemail
+    #ROUNDCUBE_DEFAULT_HOST: ssl://imap.ariel-networks.com
+    #ROUNDCUBE_DEFAULT_PORT: 993
+    #ROUNDCUBE_SMTP_SERVER: tls://smtp.ariel-networks.com
+    #ROUNDCUBE_SMTP_PORT: 25
+    ROUNDCUBEMAIL_DEFAULT_HOST: ssl://imap.gmail.com:993/imap/ssl
+    ROUNDCUBEMAIL_DEFAULT_PORT: 993
+mysql:
+  image: mysql:5.6
+  environment:
+    MYSQL_ROOT_PASSWORD: root
+    MYSQL_DATABASE: roundcubemail
+    MYSQL_USER: mail
+    MYSQL_PASSWORD: mail

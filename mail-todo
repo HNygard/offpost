@@ -1,0 +1,21 @@
+Roundcube som klient
+
+https://github.com/roundcube/roundcubemail-docker/blob/master/php-apache/docker-entrypoint.sh
+
+[x] Få til å kjøre i container
+[x] Legge opp docker-compose
+[x] Config for imap mot google
+[ ] En epost sendt fra Roundcube vil være i "sendt"-mappe? Kan den flyttes?
+[ ] Kan epost sendt fra SMTP dukke opp i "sendt"-mappe?
+
+[ ] Dele sourcen med lokalt repo?
+
+
+
+Plan:
+- Mappe per henvendelse
+    <Entity name> - <Tag> - <Sender>
+- PHP-skript som sorterer henvendelse til mappe
+- PHP-skript som oppretter identitet i Roundcube
+- PHP-skript som sender epost via Roundcube
+- PHP-skript som lagrer eposter til disk
