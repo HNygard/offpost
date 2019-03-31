@@ -12,6 +12,7 @@ roundcube:
     #ROUNDCUBE_SMTP_PORT: 25
     ROUNDCUBEMAIL_DEFAULT_HOST: ssl://imap.gmail.com:993/imap/ssl
     ROUNDCUBEMAIL_DEFAULT_PORT: 993
+
 mysql:
   image: mysql:5.6
   environment:
@@ -19,3 +20,20 @@ mysql:
     MYSQL_DATABASE: roundcubemail
     MYSQL_USER: mail
     MYSQL_PASSWORD: mail
+
+phpmyadmin:
+  image: phpmyadmin/phpmyadmin
+  ports:
+    - "25082:80"
+  links:
+    - mysql:db
+
+
+organizer:
+  build: ./organizer
+  ports:
+    - "25081:80"
+  links:
+    - mysql:mysql
+  volumes:
+    - ./organizer/src:/php-frontend
