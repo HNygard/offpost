@@ -37,3 +37,4 @@ organizer:
     - mysql:mysql
   volumes:
     - ./organizer/src:/php-frontend
+    - ./data/:/organizer-data

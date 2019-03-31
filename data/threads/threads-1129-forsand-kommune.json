@@ -1,0 +1,17 @@
+{
+    "title_prefix": "Forsand",
+    "entity_id": "1129-forsand-kommune",
+    "threads": [
+        {
+            "title": "Postliste 2019-01",
+            "my_name": "Ola Nordmann",
+            "my_email": "ola.nordmann@barfottrimmer.no",
+            "labels": [
+                "postliste",
+                "postliste-year-month:2019-01"
+            ],
+            "sent": false,
+            "archived": false
+        }
+    ]
+}
