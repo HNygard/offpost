@@ -10,6 +10,8 @@ $threads = json_decode(file_get_contents('/organizer-data/threads/threads-1129-f
 
 <h1>Threads</h1>
 
+<li><a href="update-identities.php">Update identities into Roundcube</a></li>
+
 <style>
     table tr td,
     table tr th {
