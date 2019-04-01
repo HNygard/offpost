@@ -10,6 +10,19 @@
                 "postliste",
                 "postliste-year-month:2019-01"
             ],
+            "identity_created": false,
+            "sent": false,
+            "archived": false
+        },
+        {
+            "title": "Postliste 2019-02",
+            "my_name": "Svein Nordmann",
+            "my_email": "svein.nordmann@barfottrimmer.no",
+            "labels": [
+                "postliste",
+                "postliste-year-month:2019-02"
+            ],
+            "identity_created": false,
             "sent": false,
             "archived": false
         }

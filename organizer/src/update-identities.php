@@ -1,13 +1,7 @@
 <?php
 
-function getThreads($path) {
-    /* @var Threads $threads */
-    $threads = json_decode(file_get_contents($path));
-
-    return $threads;
-}
-
 require_once __DIR__ . '/class/Identity.php';
+require_once __DIR__ . '/class/Threads.php';
 
 
 $connection = new PDO('mysql:dbname=roundcubemail;host=mysql;port=3306;charset=UTF8', 'root', 'root', array(
@@ -18,7 +12,7 @@ $identities = $repo->getIdentities();
 
 
 $threads = getThreads('/organizer-data/threads/threads-1129-forsand-kommune.json');
-foreach ($threads->threads as $thread) {
+foreach ($threads[0]->threads as $thread) {
     $id_found = false;
     foreach ($identities as $identity) {
         if ($identity->name == $thread->my_name && $identity->email == $thread->my_email) {

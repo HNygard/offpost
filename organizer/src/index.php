@@ -10,6 +10,7 @@ $threads = json_decode(file_get_contents('/organizer-data/threads/threads-1129-f
 
 <h1>Threads</h1>
 
+<li><a href="update-imap.php">Update email threads (folders) to IMAP</a></li>
 <li><a href="update-identities.php">Update identities into Roundcube</a></li>
 
 <style>
