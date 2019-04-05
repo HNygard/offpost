@@ -10,7 +10,7 @@ roundcube:
     #ROUNDCUBE_DEFAULT_PORT: 993
     #ROUNDCUBE_SMTP_SERVER: tls://smtp.ariel-networks.com
     #ROUNDCUBE_SMTP_PORT: 25
-    ROUNDCUBEMAIL_DEFAULT_HOST: ssl://imap.gmail.com:993/imap/ssl
+    ROUNDCUBEMAIL_DEFAULT_HOST: ssl://imap.one.com:993/imap/ssl
     ROUNDCUBEMAIL_DEFAULT_PORT: 993
 
 mysql:

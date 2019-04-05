@@ -24,7 +24,7 @@
             ],
             "identity_created": false,
             "sent": false,
-            "archived": false
+            "archived": true
         }
     ]
 }

@@ -5,6 +5,24 @@ https://github.com/roundcube/roundcubemail-docker/blob/master/php-apache/docker-
 [x] Få til å kjøre i container
 [x] Legge opp docker-compose
 [x] Config for imap mot google
+[x] PHP-skript som oppretter identitet i Roundcube
+[x] Kjøpe domene - one.com
+    offentligpost.no
+    offpost.no <----
+    pubmail.no
+    i-mail.no
+    i-post.no
+
+    o-post.no
+    imail.no
+    opost.no
+    omail.no
+    ipost.no
+[x] Config mot nytt domene
+[x] Imap updater - opprett mapper
+[x] Imap updater - archive
+
+
 [ ] En epost sendt fra Roundcube vil være i "sendt"-mappe? Kan den flyttes?
 [ ] Kan epost sendt fra SMTP dukke opp i "sendt"-mappe?
 
@@ -12,10 +30,10 @@ https://github.com/roundcube/roundcubemail-docker/blob/master/php-apache/docker-
 
 
 
+
 Plan:
 - Mappe per henvendelse
     <Entity name> - <Tag> - <Sender>
 - PHP-skript som sorterer henvendelse til mappe
-- PHP-skript som oppretter identitet i Roundcube
 - PHP-skript som sender epost via Roundcube
 - PHP-skript som lagrer eposter til disk

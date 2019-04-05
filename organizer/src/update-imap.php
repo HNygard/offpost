@@ -21,9 +21,9 @@ function logDebug($text) {
 }
 
 
-$server = '{imap.gmail.com:993/imap/ssl}';
+$server = '{imap.one.com:993/imap/ssl}';
 function openConnection() {
-    require_once __DIR__ .'/username-password-imap.php';
+    require_once __DIR__ . '/username-password-imap.php';
 
     global $server;
     try {
@@ -41,25 +41,60 @@ function openConnection() {
 $mailbox = openConnection();
 
 
+echo '---- EXISTING FOLDERS ----' . chr(10);
 $list = imap_list($mailbox, $server, "*");
 $folders = array();
 foreach ($list as $folder) {
+    echo '-- ' . $folder . chr(10);
     $folders[$folder] = $folder;
 }
 
-
+echo chr(10) . '---- CREATING FOLDERS ----' . chr(10);
 $threads = getThreads('/organizer-data/threads/threads-1129-forsand-kommune.json');
+$folder_that_should_exist = array('Archive');
 foreach ($threads as $entity_threads) {
     foreach ($entity_threads->threads as $thread) {
         $title = $entity_threads->title_prefix . ' - ' . $thread->title;
-        echo '-- ' . $title . chr(10);
-        if (!isset($folders[$server . $title])) {
-            imap_createmailbox($mailbox, imap_utf7_encode($server . $title));
-            checkForImapError();
-            echo '[CREATED]' . chr(10);
-        }
-        else {
-            echo '[OK]' . chr(10);
+        $folder_that_should_exist[] = $title;
+    }
+}
+foreach ($folder_that_should_exist as $title) {
+    echo '-- ' . $title . '        ';
+    if (isset($folders[$server . 'INBOX.' . $title])) {
+        echo '[OK]' . chr(10);
+    }
+    elseif (isset($folders[$server . 'INBOX.Archive.' . $title])) {
+        echo '[OK]' . chr(10);
+    }
+    else {
+        imap_createmailbox($mailbox, imap_utf7_encode($server . 'INBOX.' . $title));
+        checkForImapError();
+        echo '[CREATED]' . chr(10);
+    }
+}
+
+echo chr(10) . '---- ARCHIVING FOLDERS ----' . chr(10);
+foreach ($threads as $entity_threads) {
+    foreach ($entity_threads->threads as $thread) {
+        if ($thread->archived) {
+            $title = $entity_threads->title_prefix . ' - ' . $thread->title;
+            echo '-- ' . $title . '        ';
+            if (isset($folders[$server . 'INBOX.' . $title])) {
+                // -> Exists and should be moved
+                imap_renamemailbox(
+                    $mailbox,
+                    imap_utf7_encode($server . 'INBOX.' . $title),
+                    imap_utf7_encode($server . 'INBOX.Archive.' . $title)
+                );
+                echo '[ARCHIVED]' . chr(10);
+            }
+            elseif (isset($folders[$server . 'INBOX.Archive.' . $title])) {
+                echo '[OK]' . chr(10);
+            }
+            else {
+                // -> Don't exist
+                echo '[N/A]' . chr(10);
+            }
         }
     }
 }
