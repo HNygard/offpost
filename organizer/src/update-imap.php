@@ -1,5 +1,7 @@
 <?php /** @noinspection ALL */
 
+$server = '{imap.one.com:993/imap/ssl}';
+
 require_once __DIR__ . '/class/Threads.php';
 
 // sudo apt-get install php5-imap
@@ -21,7 +23,19 @@ function logDebug($text) {
 }
 
 
-$server = '{imap.one.com:993/imap/ssl}';
+function str_starts_with($haystack, $needle) {
+    return substr($haystack, 0, strlen($needle)) == $needle;
+}
+
+function str_ends_with($haystack, $needle) {
+    $length = strlen($needle);
+    return $length === 0 || substr($haystack, -$length) === $needle;
+}
+
+function str_contains($stack, $needle) {
+    return (strpos($stack, $needle) !== FALSE);
+}
+
 function openConnection() {
     require_once __DIR__ . '/username-password-imap.php';
 
@@ -43,31 +57,45 @@ $mailbox = openConnection();
 
 echo '---- EXISTING FOLDERS ----' . chr(10);
 $list = imap_list($mailbox, $server, "*");
+$list_subscribed = imap_lsub($mailbox, $server, '*');
+
+asort($list);
 $folders = array();
 foreach ($list as $folder) {
     echo '-- ' . $folder . chr(10);
     $folders[$folder] = $folder;
 }
 
+$folders_subscribed = array();
+foreach ($list_subscribed as $folder) {
+    $folders_subscribed[$folder] = $folder;
+}
+
 echo chr(10) . '---- CREATING FOLDERS ----' . chr(10);
 $threads = getThreads('/organizer-data/threads/threads-1129-forsand-kommune.json');
-$folder_that_should_exist = array('Archive');
+$folder_that_should_exist = array('INBOX.Archive');
 foreach ($threads as $entity_threads) {
     foreach ($entity_threads->threads as $thread) {
         $title = $entity_threads->title_prefix . ' - ' . $thread->title;
-        $folder_that_should_exist[] = $title;
+        if ($thread->archived) {
+            $folder_that_should_exist[] = 'INBOX.Archive.' . $title;
+
+        }
+        else {
+            $folder_that_should_exist[] = 'INBOX.' . $title;
+        }
     }
 }
 foreach ($folder_that_should_exist as $title) {
     echo '-- ' . $title . '        ';
-    if (isset($folders[$server . 'INBOX.' . $title])) {
-        echo '[OK]' . chr(10);
+    if (str_contains($title, 'INBOX.Archive.')) {
+        echo '[ARCHIVED]' . chr(10);
     }
-    elseif (isset($folders[$server . 'INBOX.Archive.' . $title])) {
+    else if (isset($folders[$server . $title])) {
         echo '[OK]' . chr(10);
     }
     else {
-        imap_createmailbox($mailbox, imap_utf7_encode($server . 'INBOX.' . $title));
+        imap_createmailbox($mailbox, imap_utf7_encode($server . $title));
         checkForImapError();
         echo '[CREATED]' . chr(10);
     }
@@ -79,13 +107,14 @@ foreach ($threads as $entity_threads) {
         if ($thread->archived) {
             $title = $entity_threads->title_prefix . ' - ' . $thread->title;
             echo '-- ' . $title . '        ';
-            if (isset($folders[$server . 'INBOX.' . $title])) {
+            if (isset($folders[$server . 'INBOX.' . str_replace('INBOX.Archive.', '', $title)])) {
                 // -> Exists and should be moved
                 imap_renamemailbox(
                     $mailbox,
                     imap_utf7_encode($server . 'INBOX.' . $title),
                     imap_utf7_encode($server . 'INBOX.Archive.' . $title)
                 );
+                checkForImapError();
                 echo '[ARCHIVED]' . chr(10);
             }
             elseif (isset($folders[$server . 'INBOX.Archive.' . $title])) {
@@ -99,6 +128,18 @@ foreach ($threads as $entity_threads) {
     }
 }
 
+echo chr(10) . '---- SUBSCRIBE TO FOLDERS ----' . chr(10);
+echo '(only listing new subscriptions)' . chr(10);
+foreach ($folder_that_should_exist as $title) {
+    if (!isset($folders_subscribed[$server . $title])) {
+        echo '-- ' . $title . '        ';
+        imap_subscribe($mailbox, imap_utf7_encode($server . $title));
+        checkForImapError();
+        echo '[SUBSCRIBED]' . chr(10);
+    }
+}
+
+echo chr(10) . '---- SEARCH EMAILS ----' . chr(10);
 
 $mails = imap_search($mailbox, "ALL", SE_UID);
 checkForImapError();
