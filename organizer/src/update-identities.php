@@ -23,7 +23,7 @@ foreach ($threads[0]->threads as $thread) {
     echo ($thread->my_name . ' ---- ' . $thread->my_email . ' --- [' . ($id_found ? 'found' : 'not found') . '].') . '<br>';
 
     if (!$id_found) {
-        echo '-- [DB IDENTITY CREATED]' . chr(10);
+        echo '-- [DB IDENTITY CREATED]<br>'.chr(10);
         $repo->createIdentity($thread->my_name, $thread->my_email);
     }
 }
