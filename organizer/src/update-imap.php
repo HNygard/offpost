@@ -91,21 +91,27 @@ foreach ($folder_that_should_exist as $title) {
     if (str_contains($title, 'INBOX.Archive.')) {
         echo '[ARCHIVED]' . chr(10);
     }
-    else if (isset($folders[$server . $title])) {
-        echo '[OK]' . chr(10);
-    }
     else {
-        imap_createmailbox($mailbox, imap_utf7_encode($server . $title));
-        checkForImapError();
-        echo '[CREATED]' . chr(10);
+        if (isset($folders[$server . $title])) {
+            echo '[OK]' . chr(10);
+        }
+        else {
+            imap_createmailbox($mailbox, imap_utf7_encode($server . $title));
+            checkForImapError();
+            echo '[CREATED]' . chr(10);
+        }
     }
 }
 
 echo chr(10) . '---- ARCHIVING FOLDERS ----' . chr(10);
+$email_to_folder = array();
 foreach ($threads as $entity_threads) {
     foreach ($entity_threads->threads as $thread) {
+        $title = $entity_threads->title_prefix . ' - ' . $thread->title;
+        $email_to_folder[$thread->my_email] = $thread->archived
+            ? 'INBOX.Archive.' . $title
+            : 'INBOX.' . $title;
         if ($thread->archived) {
-            $title = $entity_threads->title_prefix . ' - ' . $thread->title;
             echo '-- ' . $title . '        ';
             if (isset($folders[$server . 'INBOX.' . str_replace('INBOX.Archive.', '', $title)])) {
                 // -> Exists and should be moved
@@ -154,11 +160,40 @@ foreach ($mails as $mail) {
     $mail_headers = imap_headerinfo($mailbox, imap_msgno($mailbox, $mail));
     checkForImapError();
     $subject = $mail_headers->subject;
+
+    $to_from = array();
+    foreach ($mail_headers->to as $email) {
+        $to_from[] = $email->mailbox . '@' . $email->host;
+    }
+    foreach ($mail_headers->from as $email) {
+        $to_from[] = $email->mailbox . '@' . $email->host;
+    }
+    foreach ($mail_headers->reply_to as $email) {
+        $to_from[] = $email->mailbox . '@' . $email->host;
+    }
+    foreach ($mail_headers->sender as $email) {
+        $to_from[] = $email->mailbox . '@' . $email->host;
+    }
+
+
+    $should_be_moved_to = 'INBOX';
+    foreach ($to_from as $email) {
+        if (isset($email_to_folder[$email])) {
+            $should_be_moved_to = $email_to_folder[$email];
+        }
+    }
+
     $from = $mail_headers->from[0]->mailbox . '@' . $mail_headers->from[0]->host;
+
+    echo 'FROM ........... : ' . $from . chr(10);
+    echo 'SUBJECT ........ : ' . $subject . chr(10);
+    echo 'MOVE TO ........ : ' . $should_be_moved_to . chr(10);
+    echo chr(10);
+
+    imap_mail_move($mailbox, $mail, $should_be_moved_to, CP_UID);
+    checkForImapError();
+
     if (!isset($customers[$from])) {
-        echo 'UNKNOWN FROM ... : ' . $from . chr(10);
-        echo 'SUBJECT: ' . $subject . chr(10);
-        echo chr(10);
     }
     else {
         $account_id = $customers[$from];
@@ -225,11 +260,13 @@ foreach ($mails as $mail) {
             file_put_contents($path, $contents);
         }
         */
+
+        /*
         imap_setflag_full($mailbox, $mail, "\\Seen \\Flagged");
         checkForImapError();
         imap_mail_move($mailbox, $mail, "[Gmail]/All Mail", CP_UID);
         checkForImapError();
-
+*/
         $new_emails_saved = true;
     }
 }
