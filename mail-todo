@@ -21,6 +21,8 @@ https://github.com/roundcube/roundcubemail-docker/blob/master/php-apache/docker-
 [x] Config mot nytt domene
 [x] Imap updater - opprett mapper
 [x] Imap updater - archive
+[x] Ved reply i Roundcube, vil identity brukes?
+        -> Ja
 
 
 [ ] En epost sendt fra Roundcube vil være i "sendt"-mappe? Kan den flyttes?
@@ -32,8 +34,8 @@ https://github.com/roundcube/roundcubemail-docker/blob/master/php-apache/docker-
 
 
 Plan:
-- Mappe per henvendelse
+[-] Mappe per henvendelse
     <Entity name> - <Tag> - <Sender>
-- PHP-skript som sorterer henvendelse til mappe
-- PHP-skript som sender epost via Roundcube
-- PHP-skript som lagrer eposter til disk
+[x] PHP-skript som sorterer henvendelse til mappe
+[ ] PHP-skript som sender epost via Roundcube
+[ ] PHP-skript som lagrer eposter til disk

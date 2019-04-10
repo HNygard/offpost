@@ -270,7 +270,7 @@ foreach ($mails as $mail) {
         $new_emails_saved = true;
     }
 }
-imap_close($mailbox);
+imap_close($mailbox, CL_EXPUNGE);
 
 function checkForImapError() {
     $error = imap_last_error();
