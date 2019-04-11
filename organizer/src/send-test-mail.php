@@ -7,6 +7,7 @@ require_once __DIR__ . '/imap-connection.php';
 $mailbox = openConnection();
 
 $mail = new \PHPMailer\PHPMailer\PHPMailer(true);
+$mail->XMailer = 'Offpost thread starter';
 $mail->isSMTP();
 
 /*
@@ -24,26 +25,27 @@ $mail->SMTPSecure = 'tls';                            // Enable encryption, 'ssl
 $mail->Port = 587;
 */
 
+// Direct
 $mail->Host = 'smtp.sendgrid.net';
 $mail->SMTPAuth = true;
-$mail->Username = 'apikey';
+$mail->Username = $sendgridUsername;
 $mail->Password = $sendgridPassword;
 $mail->SMTPSecure = 'tls';
 $mail->Port = 587;
-
 
 echo '<pre>';
 echo $mail->Port . '<br>';
 $mail->From = 'ola.nordmann@offpost.no';
 $mail->FromName = 'Ola Nordmann';
 $mail->addAddress('joe.user@hnygard.no', 'Joe User');     // Add a recipient
+$mail->addBCC($mail->From);
 
 $mail->WordWrap = 50;                                 // Set word wrap to 50 characters
 //$mail->addAttachment('/var/tmp/file.tar.gz');         // Add attachments
 //$mail->addAttachment('/tmp/image.jpg', 'new.jpg');    // Optional name
 $mail->isHTML(true);                                  // Set email format to HTML
 
-$mail->Subject = 'Epost til Joe';
+$mail->Subject = 'Epost til Joe 2';
 $mail->Body = 'This is the HTML message body <b>in bold!</b>';
 $mail->AltBody = 'This is the body in plain text for non-HTML mail clients';
 
@@ -57,7 +59,7 @@ if (!$mail->send()) {
 else {
     echo 'Message has been sent';
 
-    $mail_string = $mail->getSentMIMEMessage();
-    imap_append($mailbox, $server . 'INBOX', $mail_string, "\\Seen");
+//    $mail_string = $mail->getSentMIMEMessage();
+//    imap_append($mailbox, $server . 'INBOX', $mail_string, "\\Seen");
 }
 
