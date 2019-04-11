@@ -1,57 +1,13 @@
 <?php /** @noinspection ALL */
 
-$server = '{imap.one.com:993/imap/ssl}';
-
 require_once __DIR__ . '/class/Threads.php';
 
 // sudo apt-get install php5-imap
 // + enable imap in PHP
 
 echo '<pre>';
-function exception_error_handler_mail_checker($errno, $errstr, $errfile, $errline) {
-    throw new ErrorException($errstr, 0, $errno, $errfile, $errline);
-}
 
-set_error_handler("exception_error_handler_mail_checker");
-
-$debug = true;
-function logDebug($text) {
-    global $debug;
-    if ($debug) {
-        echo $text . '<br>' . chr(10);
-    }
-}
-
-
-function str_starts_with($haystack, $needle) {
-    return substr($haystack, 0, strlen($needle)) == $needle;
-}
-
-function str_ends_with($haystack, $needle) {
-    $length = strlen($needle);
-    return $length === 0 || substr($haystack, -$length) === $needle;
-}
-
-function str_contains($stack, $needle) {
-    return (strpos($stack, $needle) !== FALSE);
-}
-
-function openConnection() {
-    require_once __DIR__ . '/username-password-imap.php';
-
-    global $server;
-    try {
-        $m = imap_open($server . 'INBOX', $yourEmail, $yourEmailPassword, NULL, 1,
-            array('DISABLE_AUTHENTICATOR' => 'PLAIN'));
-        checkForImapError();
-        return $m;
-    }
-    catch (Exception $e) {
-        checkForImapError();
-        throw $e;
-    }
-}
-
+require_once __DIR__ . '/imap-connection.php';
 $mailbox = openConnection();
 
 
@@ -272,9 +228,3 @@ foreach ($mails as $mail) {
 }
 imap_close($mailbox, CL_EXPUNGE);
 
-function checkForImapError() {
-    $error = imap_last_error();
-    if (!empty($error)) {
-        throw new Exception('IMAP error: ' . $error);
-    }
-}
