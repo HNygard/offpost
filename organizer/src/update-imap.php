@@ -103,9 +103,11 @@ foreach ($folder_that_should_exist as $title) {
 
 echo chr(10) . '---- SEARCH EMAILS ----' . chr(10);
 
+echo '-- INBOX' . chr(10);
 moveEmails($mailbox);
 imap_close($mailbox, CL_EXPUNGE);
 
+echo '-- INBOX.Sent' . chr(10);
 $mailboxSent = openConnection('INBOX.Sent');
 moveEmails($mailboxSent);
 imap_close($mailboxSent, CL_EXPUNGE);
@@ -113,10 +115,9 @@ function moveEmails($mailbox) {
     global $email_to_folder;
     $mails = imap_search($mailbox, "ALL", SE_UID);
     checkForImapError();
-    logDebug('E-mails: ' . print_r($mails, true));
     if (!$mails) {
         logDebug('No email.');
-        exit;
+        return;
     }
     $new_emails_saved = false;
     foreach ($mails as $mail) {
@@ -143,7 +144,7 @@ function moveEmails($mailbox) {
         $should_be_moved_to = 'INBOX';
         foreach ($to_from as $email) {
             if (isset($email_to_folder[$email])) {
-                echo 'FOUND : ' . $email_to_folder[$email] .chr(10);
+                echo 'FOUND : ' . $email_to_folder[$email] . chr(10);
                 $should_be_moved_to = $email_to_folder[$email];
             }
         }
