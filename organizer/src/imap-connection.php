@@ -29,12 +29,12 @@ function str_contains($stack, $needle) {
 }
 
 $server = '{imap.one.com:993/imap/ssl}';
-function openConnection() {
+function openConnection($folder = 'INBOX') {
     require __DIR__ . '/username-password-imap.php';
 
     global $server;
     try {
-        $m = imap_open($server . 'INBOX', $yourEmail, $yourEmailPassword, NULL, 1,
+        $m = imap_open($server . $folder, $yourEmail, $yourEmailPassword, NULL, 1,
             array('DISABLE_AUTHENTICATOR' => 'PLAIN'));
         checkForImapError();
         return $m;

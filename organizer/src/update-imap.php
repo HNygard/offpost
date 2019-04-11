@@ -103,128 +103,142 @@ foreach ($folder_that_should_exist as $title) {
 
 echo chr(10) . '---- SEARCH EMAILS ----' . chr(10);
 
-$mails = imap_search($mailbox, "ALL", SE_UID);
-checkForImapError();
-logDebug('E-mails: ' . print_r($mails, true));
-if (!$mails) {
-    logDebug('No email.');
-    exit;
-}
-$new_emails_saved = false;
-foreach ($mails as $mail) {
-    logDebug('[' . $mail . '] Begin');
-    $mail_headers = imap_headerinfo($mailbox, imap_msgno($mailbox, $mail));
-    checkForImapError();
-    $subject = $mail_headers->subject;
-
-    $to_from = array();
-    foreach ($mail_headers->to as $email) {
-        $to_from[] = $email->mailbox . '@' . $email->host;
-    }
-    foreach ($mail_headers->from as $email) {
-        $to_from[] = $email->mailbox . '@' . $email->host;
-    }
-    foreach ($mail_headers->reply_to as $email) {
-        $to_from[] = $email->mailbox . '@' . $email->host;
-    }
-    foreach ($mail_headers->sender as $email) {
-        $to_from[] = $email->mailbox . '@' . $email->host;
-    }
-
-
-    $should_be_moved_to = 'INBOX';
-    foreach ($to_from as $email) {
-        if (isset($email_to_folder[$email])) {
-            $should_be_moved_to = $email_to_folder[$email];
-        }
-    }
-
-    $from = $mail_headers->from[0]->mailbox . '@' . $mail_headers->from[0]->host;
-
-    echo 'FROM ........... : ' . $from . chr(10);
-    echo 'SUBJECT ........ : ' . $subject . chr(10);
-    echo 'MOVE TO ........ : ' . $should_be_moved_to . chr(10);
-    echo chr(10);
-
-    imap_mail_move($mailbox, $mail, $should_be_moved_to, CP_UID);
-    checkForImapError();
-
-    if (!isset($customers[$from])) {
-    }
-    else {
-        $account_id = $customers[$from];
-        $structure = imap_fetchstructure($mailbox, $mail, FT_UID);
-        checkForImapError();
-
-        /*
-        $attachments = array();
-        if(isset($structure->parts) && count($structure->parts)) {
-
-            for($i = 0; $i < count($structure->parts); $i++) {
-
-                $attachments[$i] = array(
-                    'is_attachment' => false,
-                    'filename' => '',
-                    'name' => '',
-                    'attachment' => ''
-                );
-
-                if($structure->parts[$i]->ifdparameters) {
-                    foreach($structure->parts[$i]->dparameters as $object) {
-                        if(strtolower($object->attribute) == 'filename') {
-                            $attachments[$i]['is_attachment'] = true;
-                            $attachments[$i]['filename'] = $object->value;
-                        }
-                    }
-                }
-
-                if($structure->parts[$i]->ifparameters) {
-                    foreach($structure->parts[$i]->parameters as $object) {
-                        if(strtolower($object->attribute) == 'name') {
-                            $attachments[$i]['is_attachment'] = true;
-                            $attachments[$i]['name'] = $object->value;
-                        }
-                    }
-                }
-
-                if($attachments[$i]['is_attachment']) {
-                    $attachments[$i]['attachment'] = imap_fetchbody($mailbox, $mail, $i+1, FT_UID);
-                    checkForImapError();
-                    if($structure->parts[$i]->encoding == 3) { // 3 = BASE64
-                        $attachments[$i]['attachment'] = base64_decode($attachments[$i]['attachment']);
-                    }
-                    elseif($structure->parts[$i]->encoding == 4) { // 4 = QUOTED-PRINTABLE
-                        $attachments[$i]['attachment'] = quoted_printable_decode($attachments[$i]['attachment']);
-                    }
-                }
-            }
-        }
-
-        foreach ($attachments as $key => $attachment) {
-            if (!$attachment['is_attachment']) {
-                logDebug('Not attachment. '.print_r($attachment, true));
-                continue;
-            }
-            $name = $attachment['name'];
-            $contents = $attachment['attachment'];
-            $recondo_mail_folder = __DIR__ . '/../../recondo-data/accounts/'.$account_id.'/email-attachments/';
-            if (!file_exists($recondo_mail_folder)) {
-                mkdir($recondo_mail_folder, 0777, true);
-            }
-            $path = $recondo_mail_folder.time().'-'.$name;
-            logDebug('Saving attachment to ['.$path.']. '.print_r($attachment, true));
-            file_put_contents($path, $contents);
-        }
-        */
-
-        /*
-        imap_setflag_full($mailbox, $mail, "\\Seen \\Flagged");
-        checkForImapError();
-        imap_mail_move($mailbox, $mail, "[Gmail]/All Mail", CP_UID);
-        checkForImapError();
-*/
-        $new_emails_saved = true;
-    }
-}
+moveEmails($mailbox);
 imap_close($mailbox, CL_EXPUNGE);
+
+$mailboxSent = openConnection('INBOX.Sent');
+moveEmails($mailboxSent);
+imap_close($mailboxSent, CL_EXPUNGE);
+function moveEmails($mailbox) {
+    global $email_to_folder;
+    $mails = imap_search($mailbox, "ALL", SE_UID);
+    checkForImapError();
+    logDebug('E-mails: ' . print_r($mails, true));
+    if (!$mails) {
+        logDebug('No email.');
+        exit;
+    }
+    $new_emails_saved = false;
+    foreach ($mails as $mail) {
+        logDebug('[' . $mail . '] Begin');
+        $mail_headers = imap_headerinfo($mailbox, imap_msgno($mailbox, $mail));
+        checkForImapError();
+        $subject = $mail_headers->subject;
+
+        $to_from = array();
+        foreach ($mail_headers->to as $email) {
+            $to_from[] = $email->mailbox . '@' . $email->host;
+        }
+        foreach ($mail_headers->from as $email) {
+            $to_from[] = $email->mailbox . '@' . $email->host;
+        }
+        foreach ($mail_headers->reply_to as $email) {
+            $to_from[] = $email->mailbox . '@' . $email->host;
+        }
+        foreach ($mail_headers->sender as $email) {
+            $to_from[] = $email->mailbox . '@' . $email->host;
+        }
+
+
+        $should_be_moved_to = 'INBOX';
+        foreach ($to_from as $email) {
+            if (isset($email_to_folder[$email])) {
+                echo 'FOUND : ' . $email_to_folder[$email] .chr(10);
+                $should_be_moved_to = $email_to_folder[$email];
+            }
+        }
+
+        $from = $mail_headers->from[0]->mailbox . '@' . $mail_headers->from[0]->host;
+
+        echo 'FROM ........... : ' . $from . chr(10);
+        echo 'SUBJECT ........ : ' . $subject . chr(10);
+        echo 'MOVE TO ........ : ' . $should_be_moved_to . chr(10);
+        if ($should_be_moved_to == 'INBOX') {
+            foreach ($to_from as $email) {
+                echo '- ' . $email . chr(10);
+            }
+        }
+        echo chr(10);
+
+        imap_mail_move($mailbox, $mail, $should_be_moved_to, CP_UID);
+        checkForImapError();
+
+        if (!isset($customers[$from])) {
+        }
+        else {
+            $account_id = $customers[$from];
+            $structure = imap_fetchstructure($mailbox, $mail, FT_UID);
+            checkForImapError();
+
+            /*
+            $attachments = array();
+            if(isset($structure->parts) && count($structure->parts)) {
+
+                for($i = 0; $i < count($structure->parts); $i++) {
+
+                    $attachments[$i] = array(
+                        'is_attachment' => false,
+                        'filename' => '',
+                        'name' => '',
+                        'attachment' => ''
+                    );
+
+                    if($structure->parts[$i]->ifdparameters) {
+                        foreach($structure->parts[$i]->dparameters as $object) {
+                            if(strtolower($object->attribute) == 'filename') {
+                                $attachments[$i]['is_attachment'] = true;
+                                $attachments[$i]['filename'] = $object->value;
+                            }
+                        }
+                    }
+
+                    if($structure->parts[$i]->ifparameters) {
+                        foreach($structure->parts[$i]->parameters as $object) {
+                            if(strtolower($object->attribute) == 'name') {
+                                $attachments[$i]['is_attachment'] = true;
+                                $attachments[$i]['name'] = $object->value;
+                            }
+                        }
+                    }
+
+                    if($attachments[$i]['is_attachment']) {
+                        $attachments[$i]['attachment'] = imap_fetchbody($mailbox, $mail, $i+1, FT_UID);
+                        checkForImapError();
+                        if($structure->parts[$i]->encoding == 3) { // 3 = BASE64
+                            $attachments[$i]['attachment'] = base64_decode($attachments[$i]['attachment']);
+                        }
+                        elseif($structure->parts[$i]->encoding == 4) { // 4 = QUOTED-PRINTABLE
+                            $attachments[$i]['attachment'] = quoted_printable_decode($attachments[$i]['attachment']);
+                        }
+                    }
+                }
+            }
+
+            foreach ($attachments as $key => $attachment) {
+                if (!$attachment['is_attachment']) {
+                    logDebug('Not attachment. '.print_r($attachment, true));
+                    continue;
+                }
+                $name = $attachment['name'];
+                $contents = $attachment['attachment'];
+                $recondo_mail_folder = __DIR__ . '/../../recondo-data/accounts/'.$account_id.'/email-attachments/';
+                if (!file_exists($recondo_mail_folder)) {
+                    mkdir($recondo_mail_folder, 0777, true);
+                }
+                $path = $recondo_mail_folder.time().'-'.$name;
+                logDebug('Saving attachment to ['.$path.']. '.print_r($attachment, true));
+                file_put_contents($path, $contents);
+            }
+            */
+
+            /*
+            imap_setflag_full($mailbox, $mail, "\\Seen \\Flagged");
+            checkForImapError();
+            imap_mail_move($mailbox, $mail, "[Gmail]/All Mail", CP_UID);
+            checkForImapError();
+    */
+            $new_emails_saved = true;
+        }
+    }
+}
 
