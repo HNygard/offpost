@@ -23,10 +23,10 @@ https://github.com/roundcube/roundcubemail-docker/blob/master/php-apache/docker-
 [x] Imap updater - archive
 [x] Ved reply i Roundcube, vil identity brukes?
         -> Ja
-
-
-[ ] En epost sendt fra Roundcube vil være i "sendt"-mappe? Kan den flyttes?
-[ ] Kan epost sendt fra SMTP dukke opp i "sendt"-mappe?
+[x] Kan epost sendt fra SMTP dukke opp i "sendt"-mappe?
+[x] Roundcube - sett opp Sendgrid SMTP
+[x] En epost sendt fra Roundcube vil være i "sendt"-mappe? Kan den flyttes?
+[ ] Flytte sendte epost til rett mappe
 
 [ ] Dele sourcen med lokalt repo?
 
@@ -37,5 +37,6 @@ Plan:
 [-] Mappe per henvendelse
     <Entity name> - <Tag> - <Sender>
 [x] PHP-skript som sorterer henvendelse til mappe
-[ ] PHP-skript som sender epost via Roundcube
+[-] PHP-skript som sender epost via Roundcube
+[ ] PHP-skript som sender startepost fra PHPMailer
 [ ] PHP-skript som lagrer eposter til disk
