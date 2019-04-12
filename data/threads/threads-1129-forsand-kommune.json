@@ -25,6 +25,30 @@
             "identity_created": false,
             "sent": false,
             "archived": true
+        },
+        {
+            "title": "Postliste 2019-03",
+            "my_name": "Arne Nordmann",
+            "my_email": "arne.nordmann@offpost.no",
+            "labels": [
+                "postliste",
+                "postliste-year-month:2019-03"
+            ],
+            "identity_created": false,
+            "sent": false,
+            "archived": true
+        },
+        {
+            "title": "Postliste 2019-04",
+            "my_name": "Arne Nordmann",
+            "my_email": "arne.nordmann@offpost.no",
+            "labels": [
+                "postliste",
+                "postliste-year-month:2019-04"
+            ],
+            "identity_created": false,
+            "sent": false,
+            "archived": true
         }
     ]
 }
