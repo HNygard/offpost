@@ -12,7 +12,54 @@
             ],
             "identity_created": false,
             "sent": false,
-            "archived": false
+            "archived": false,
+            "emails": [
+                {
+                    "timestamp_received": 123123123,
+                    "datetime_received": "2019-04-02 22:00",
+                    "ignore": false,
+                    "email_type": "OUT",
+                    "status_type": "info",
+                    "status_text": "Initiell forespørsel",
+                    "description": "<tekst fra dokument>"
+                },
+                {
+                    "timestamp_received": 123123123,
+                    "datetime_received": "2019-04-02 22:04",
+                    "ignore": true,
+                    "email_type": "INN",
+                    "status_type": "disabled",
+                    "status_text": "Autoreply",
+                    "description": ""
+                },
+                {
+                    "timestamp_received": 123123123,
+                    "datetime_received": "2019-04-04 13:04",
+                    "ignore": false,
+                    "email_type": "INN",
+                    "status_type": "danger",
+                    "status_text": "Avslag etter §9",
+                    "description": "<tekst fra dokument>"
+                },
+                {
+                    "timestamp_received": 123123123,
+                    "datetime_received": "2019-04-04 13:04",
+                    "ignore": false,
+                    "email_type": "OUT",
+                    "status_type": "danger",
+                    "status_text": "Klage på avslag §9",
+                    "description": "<tekst fra dokument>"
+                },
+                {
+                    "timestamp_received": 123123123,
+                    "datetime_received": "2019-04-10 13:04",
+                    "ignore": false,
+                    "email_type": "INN",
+                    "status_type": "success",
+                    "status_text": "Innvilget innsyn",
+                    "description": "<tekst fra dokument>"
+                }
+            ]
         },
         {
             "title": "Postliste 2019-02",

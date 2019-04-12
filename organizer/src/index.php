@@ -39,6 +39,11 @@ $threads = json_decode(file_get_contents('/organizer-data/threads/threads-1129-f
         background-color: #f8ab69;
         border-color: #724f30;
     }
+
+    span.label.label_disabled {
+        background-color: #c9cdc9;
+        border-color: #a8aca8;
+    }
 </style>
 
 <table>
@@ -68,6 +73,41 @@ foreach ($threads->threads as $thread) {
                 ?><span class="label"><?=$label?></span><?php
             }
             ?></td>
+        <td>
+            <?php
+            if (!isset($thread->emails)) {
+                $thread->emails = array();
+            }
+            foreach ($thread->emails as $email) {
+                if ($email->status_type == 'info') {
+                    $label_type = 'label';
+                }
+                elseif ($email->status_type == 'disabled') {
+                    $label_type = 'label label_disabled';
+                }
+                elseif ($email->status_type == 'danger') {
+                    $label_type = 'label label_warn';
+                }
+                elseif ($email->status_type == 'success') {
+                    $label_type = 'label label_ok';
+                }
+                else {
+                    throw new Exception('Unknown status_type: ' . $email->status_type);
+                }
+
+                ?>
+                <div <?= $email->ignore ? ' style="color: gray;"' : '' ?>>
+                    <?= $email->datetime_received ?>:
+                    <?= $email->email_type ?> -
+                    <span class="<?=$label_type?>"><?= $email->status_text ?></span>
+                    <br>
+                    <i><?= htmlentities($email->description, ENT_QUOTES) ?></i>
+                </div>
+                <br>
+                <?php
+            }
+            ?>
+        </td>
     </tr>
     <?php
 }

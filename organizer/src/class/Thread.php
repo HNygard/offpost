@@ -7,4 +7,7 @@ class Thread {
     var $labels;
     var $sent;
     var $archived;
+
+    /* @var ThreadEmail[] $emails */
+    var $emails;
 }

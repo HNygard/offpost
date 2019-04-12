@@ -57,6 +57,6 @@ Plan:
                 Auto reply              disabled
                 Innvilget               success
         - Berike med beskrivelse (tekst). Sakse tekst fra svaret.
-    [ ] Vise tråddata i rapport
+    [x] Vise tråddata i rapport
         - Copy paste liste som kan brukes i reply
 [ ] Autodetect av autoreply
