@@ -32,14 +32,7 @@ $threads = getThreads('/organizer-data/threads/threads-1129-forsand-kommune.json
 $folder_that_should_exist = array('INBOX.Archive');
 foreach ($threads as $entity_threads) {
     foreach ($entity_threads->threads as $thread) {
-        $title = $entity_threads->title_prefix . ' - ' . $thread->title;
-        if ($thread->archived) {
-            $folder_that_should_exist[] = 'INBOX.Archive.' . $title;
-
-        }
-        else {
-            $folder_that_should_exist[] = 'INBOX.' . $title;
-        }
+        $folder_that_should_exist[] = getThreadEmailFolder($entity_threads, $thread);
     }
 }
 foreach ($folder_that_should_exist as $title) {
@@ -61,12 +54,17 @@ foreach ($folder_that_should_exist as $title) {
 
 echo chr(10) . '---- ARCHIVING FOLDERS ----' . chr(10);
 $email_to_folder = array();
+function getThreadEmailFolder($entity_threads, $thread) {
+    $title = $entity_threads->title_prefix . ' - ' . $thread->title;
+    return $thread->archived
+        ? 'INBOX.Archive.' . $title
+        : 'INBOX.' . $title;
+}
+
 foreach ($threads as $entity_threads) {
     foreach ($entity_threads->threads as $thread) {
         $title = $entity_threads->title_prefix . ' - ' . $thread->title;
-        $email_to_folder[$thread->my_email] = $thread->archived
-            ? 'INBOX.Archive.' . $title
-            : 'INBOX.' . $title;
+        $email_to_folder[$thread->my_email] = getThreadEmailFolder($entity_threads, $thread);
         if ($thread->archived) {
             echo '-- ' . $title . '        ';
             if (isset($folders[$server . 'INBOX.' . str_replace('INBOX.Archive.', '', $title)])) {
@@ -243,3 +241,176 @@ function moveEmails($mailbox) {
     }
 }
 
+
+echo chr(10) . '---- SAVE EMAILS ----' . chr(10);
+
+foreach ($threads as $entity_threads) {
+    foreach ($entity_threads->threads as $thread) {
+        $folder = getThreadEmailFolder($entity_threads, $thread);
+        echo '-- ' . $folder . chr(10);
+        $folderJson = '/organizer-data/threads/' . $entity_threads->entity_id . '/' . str_replace(' ', '_', strtolower($thread->title));
+        if (!file_exists($folderJson)) {
+            mkdir($folderJson, 0777, true);
+        }
+        echo '   Folder ... : ' . $folderJson . chr(10);
+
+        $mailboxThread = openConnection($folder);
+        saveEmails($mailboxThread, $folderJson, $thread);
+        echo chr(10);
+    }
+}
+
+/**
+ * @param $mailbox
+ * @param $folderJson
+ * @param Thread $thread
+ * @throws Exception
+ */
+function saveEmails($mailbox, $folderJson, $thread) {
+    global $email_to_folder;
+    $mails = imap_search($mailbox, "ALL", SE_UID);
+    checkForImapError();
+    if (!$mails) {
+        logDebug('   No email.');
+        return;
+    }
+
+
+    $email_datetime = array();
+    foreach ($mails as $mail) {
+        logDebug('   [' . $mail . '] Begin');
+        $mail_headers = imap_headerinfo($mailbox, imap_msgno($mailbox, $mail));
+        checkForImapError();
+
+        // :: Duplicates
+        unset($mail_headers->Date);
+        unset($mail_headers->Subject);
+
+        $in_or_out = $mail_headers->from[0]->mailbox . '@' . $mail_headers->from[0]->host == $thread->my_email
+            ? 'OUT'
+            : 'IN';
+        $datetime = date('Y-m-d_His', strtotime($mail_headers->date));
+
+        $file_name = $datetime . ' - ' . $in_or_out;
+
+        if (isset($email_datetime[$datetime])) {
+            throw new Exception('Double.');
+        }
+        $email_datetime[$datetime] = $datetime;
+
+        $obj = new stdClass();
+
+        $obj->subject = $mail_headers->subject;
+        unset($mail_headers->subject);
+
+        $obj->timestamp = strtotime($mail_headers->date);
+        $obj->date = $mail_headers->date;
+        unset($mail_headers->date);
+
+        $mail_headers->toaddress = imap_utf8($mail_headers->toaddress);
+        $mail_headers->fromaddress = imap_utf8($mail_headers->fromaddress);
+        $mail_headers->senderaddress = imap_utf8($mail_headers->senderaddress);
+        $mail_headers->reply_toaddress = imap_utf8($mail_headers->reply_toaddress);
+        if (isset($mail_headers->to[0]->personal)) {
+            $mail_headers->to[0]->personal = imap_utf8($mail_headers->to[0]->personal);
+        }
+        if (isset($mail_headers->from[0]->personal)) {
+            $mail_headers->from[0]->personal = imap_utf8($mail_headers->from[0]->personal);
+        }
+        if (isset($mail_headers->sender[0]->personal)) {
+            $mail_headers->sender[0]->personal = imap_utf8($mail_headers->sender[0]->personal);
+        }
+        if (isset($mail_headers->reply_to[0]->personal)) {
+            $mail_headers->reply_to[0]->personal = imap_utf8($mail_headers->reply_to[0]->personal);
+        }
+
+        $obj->attachements = array();
+
+        $obj->body = imap_body($mailbox, $mail, FT_UID);
+        checkForImapError();
+
+        $obj->mailHeaders = $mail_headers;
+
+        $structure = imap_fetchstructure($mailbox, $mail, FT_UID);
+        checkForImapError();
+
+        $attachments = array();
+        if (isset($structure->parts) && count($structure->parts)) {
+            for ($i = 0; $i < count($structure->parts); $i++) {
+                $attachments[$i] = array(
+                    'is_attachment' => false,
+                    'filename' => '',
+                    'name' => '',
+                    'attachment' => ''
+                );
+
+                if ($structure->parts[$i]->ifdparameters) {
+                    foreach ($structure->parts[$i]->dparameters as $object) {
+                        if (strtolower($object->attribute) == 'filename') {
+                            $attachments[$i]['is_attachment'] = true;
+                            $attachments[$i]['filename'] = $object->value;
+                        }
+                    }
+                }
+
+                if ($structure->parts[$i]->ifparameters) {
+                    foreach ($structure->parts[$i]->parameters as $object) {
+                        if (strtolower($object->attribute) == 'name') {
+                            $attachments[$i]['is_attachment'] = true;
+                            $attachments[$i]['name'] = $object->value;
+                        }
+                    }
+                }
+
+                if ($attachments[$i]['is_attachment']) {
+                    $att = new stdClass();
+                    $att->name = $attachments[$i]['name'];
+                    $att->filename = $attachments[$i]['filename'];
+
+                    if (str_ends_with($att->name, '.pdf')) {
+                        $att->filetype = 'pdf';
+                    }
+                    else {
+                        throw new Exception('Unknown file type: ' . $att->name);
+                    }
+
+                    // Don't include the name, since we have no control over it.
+                    $att->location = $file_name . ' - att ' . $i . '-' . md5($att->name) . '.' . $att->filetype;
+                    $obj->attachements[] = $att;
+
+                    $path = $folderJson . '/' . $att->location;
+                    if (file_exists($path)) {
+                        continue;
+                    }
+
+                    $attachment_file = imap_fetchbody($mailbox, $mail, $i + 1, FT_UID);
+                    checkForImapError();
+                    if ($structure->parts[$i]->encoding == 3) { // 3 = BASE64
+                        $attachment_file = base64_decode($attachment_file);
+                    }
+                    elseif ($structure->parts[$i]->encoding == 4) { // 4 = QUOTED-PRINTABLE
+                        $attachment_file = quoted_printable_decode($attachment_file);
+                    }
+
+                    logDebug($att->name . ' - Saving attachment to [' . $path . ']');
+                    file_put_contents($path, $attachment_file);
+                    chmod($path, 0777);
+                }
+                else {
+                    //logDebug('Not attachment. ' . print_r($attachments[$i], true));
+                }
+            }
+        }
+
+        foreach ($attachments as $key => $attachment) {
+            if (!$attachment['is_attachment']) {
+                continue;
+            }
+        }
+
+
+        $email_json_file = $folderJson . '/' . $file_name . '.json';
+        file_put_contents($email_json_file, json_encode($obj, JSON_PRETTY_PRINT ^ JSON_UNESCAPED_SLASHES ^ JSON_UNESCAPED_UNICODE));
+        chmod($email_json_file, 0777);
+    }
+}

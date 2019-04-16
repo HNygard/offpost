@@ -10,7 +10,7 @@ $debug = true;
 function logDebug($text) {
     global $debug;
     if ($debug) {
-        echo $text . '<br>' . chr(10);
+        echo $text . chr(10);
     }
 }
 
