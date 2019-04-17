@@ -440,6 +440,16 @@ function saveEmails($mailbox, $folderJson, &$thread) {
                 /* @var $b ThreadEmail */
                 return strcmp($a->datetime_received, $b->datetime_received);
             });
+
+            $found_label = false;
+            foreach ($thread->labels as $label) {
+                if ($label == 'uklassifisert-epost') {
+                    $found_label = true;
+                }
+            }
+            if (!$found_label) {
+                $thread->labels[] = 'uklassifisert-epost';
+            }
         }
     }
 }

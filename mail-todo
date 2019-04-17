@@ -59,6 +59,13 @@ Plan:
     [x] Vise tråddata i rapport
         - Copy paste liste som kan brukes i reply
 [ ] Klassifisering av eposter
+    Kjente varianter
+     - Avslag etter §X
+     - Klage på avslag §X
+     - Autoreply
+     - Innvilget innsyn
+     - Dokumenter oversendt
+     - Postliste oversendt
 [ ] Vedlegg inn i ThreadEmail
 [ ] PHP-skript som sender startepost fra PHPMailer
 [ ] Autodetect av autoreply
