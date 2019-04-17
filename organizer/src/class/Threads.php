@@ -2,7 +2,7 @@
 
 function getThreads($path) {
     /* @var Threads[] $threads */
-    $threads = array(json_decode(file_get_contents($path)));
+    $threads = array($path => json_decode(file_get_contents($path)));
 
     return $threads;
 }

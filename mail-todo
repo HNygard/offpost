@@ -37,12 +37,11 @@ Plan:
     <Entity name> - <Tag> - <Sender>
 [x] PHP-skript som sorterer henvendelse til mappe
 [-] PHP-skript som sender epost via Roundcube
-[ ] PHP-skript som sender startepost fra PHPMailer
-[ ] PHP-skript som lagrer eposter til disk
+[x] PHP-skript som lagrer eposter til disk
     [x] Lagre eposter
         Postliste 2019-02 => postliste_2019-02
         /data/threads/threads-1129-forsand-kommune/postliste_2019-02/2019-04-04 13:04 - INN - hash.eml
-    [ ] JSON med metadata - inn i threads-fila
+    [x] JSON med metadata - inn i threads-fila
         {
             "timestamp_received": 123123123,
             "datetime_received": "2019-04-04 13:04",
@@ -59,4 +58,7 @@ Plan:
         - Berike med beskrivelse (tekst). Sakse tekst fra svaret.
     [x] Vise tråddata i rapport
         - Copy paste liste som kan brukes i reply
+[ ] Klassifisering av eposter
+[ ] Vedlegg inn i ThreadEmail
+[ ] PHP-skript som sender startepost fra PHPMailer
 [ ] Autodetect av autoreply

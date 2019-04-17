@@ -244,7 +244,7 @@ function moveEmails($mailbox) {
 
 echo chr(10) . '---- SAVE EMAILS ----' . chr(10);
 
-foreach ($threads as $entity_threads) {
+foreach ($threads as $thread_file => $entity_threads) {
     foreach ($entity_threads->threads as $thread) {
         $folder = getThreadEmailFolder($entity_threads, $thread);
         echo '-- ' . $folder . chr(10);
@@ -258,6 +258,7 @@ foreach ($threads as $entity_threads) {
         saveEmails($mailboxThread, $folderJson, $thread);
         echo chr(10);
     }
+    file_put_contents($thread_file, json_encode($entity_threads, JSON_PRETTY_PRINT ^ JSON_UNESCAPED_UNICODE ^ JSON_UNESCAPED_SLASHES));
 }
 
 /**
@@ -266,7 +267,7 @@ foreach ($threads as $entity_threads) {
  * @param Thread $thread
  * @throws Exception
  */
-function saveEmails($mailbox, $folderJson, $thread) {
+function saveEmails($mailbox, $folderJson, &$thread) {
     global $email_to_folder;
     $mails = imap_search($mailbox, "ALL", SE_UID);
     checkForImapError();
@@ -412,5 +413,33 @@ function saveEmails($mailbox, $folderJson, $thread) {
         $email_json_file = $folderJson . '/' . $file_name . '.json';
         file_put_contents($email_json_file, json_encode($obj, JSON_PRETTY_PRINT ^ JSON_UNESCAPED_SLASHES ^ JSON_UNESCAPED_UNICODE));
         chmod($email_json_file, 0777);
+
+        $found = false;
+        foreach ($thread->emails as $thead_email) {
+            if ($thead_email->id == $file_name) {
+                $found = true;
+            }
+        }
+        if (!$found) {
+            /* @var $new_email ThreadEmail */
+            $new_email = new stdClass();
+            $new_email->timestamp_received = $obj->timestamp;
+            $new_email->datetime_received = date('Y-m-d H:i:s');
+            $new_email->id = $file_name;
+            $new_email->email_type = $in_or_out;
+            $new_email->status_type = 'unknown';
+            $new_email->status_text = 'Uklassifisert';
+
+            // TODO: Handle auto reply
+            $new_email->ignore = false;
+
+            $thread->emails[] = $new_email;
+
+            usort($thread->emails, function($a, $b) {
+                /* @var $a ThreadEmail */
+                /* @var $b ThreadEmail */
+                return strcmp($a->datetime_received, $b->datetime_received);
+            });
+        }
     }
 }

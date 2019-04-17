@@ -91,6 +91,9 @@ foreach ($threads->threads as $thread) {
                 elseif ($email->status_type == 'success') {
                     $label_type = 'label label_ok';
                 }
+                elseif ($email->status_type == 'unknown') {
+                    $label_type = 'label';
+                }
                 else {
                     throw new Exception('Unknown status_type: ' . $email->status_type);
                 }
