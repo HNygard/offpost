@@ -414,6 +414,10 @@ function saveEmails($mailbox, $folderJson, &$thread) {
         file_put_contents($email_json_file, json_encode($obj, JSON_PRETTY_PRINT ^ JSON_UNESCAPED_SLASHES ^ JSON_UNESCAPED_UNICODE));
         chmod($email_json_file, 0777);
 
+        if (!isset($thread->emails)) {
+            $thread->emails = array();
+        }
+
         $found = false;
         foreach ($thread->emails as $thead_email) {
             if ($thead_email->id == $file_name) {
