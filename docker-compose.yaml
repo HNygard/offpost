@@ -1,5 +1,5 @@
 roundcube:
-  image: roundcube/roundcubemail
+  image: roundcube/roundcubemail:1.4.x-apache
   links:
     - mysql
   ports:
@@ -11,8 +11,9 @@ roundcube:
 #    ROUNDCUBEMAIL_DEFAULT_HOST: ssl://imap.one.com:993/imap/ssl
 #    ROUNDCUBEMAIL_DEFAULT_PORT: 993
   volumes:
+    # See config in https://github.com/roundcube/roundcubemail-docker/blob/master/apache/docker-entrypoint.sh
     - ./organizer/src/username-password-smtp.php:/username-password-smtp.php
-    - ./roundcubemail.config.php:/var/www/html/config/config.inc.php
+    - ./roundcubemail.config.php:/var/roundcube/config/config.email-engine.inc.php
 
 mysql:
   image: mysql:5.6
