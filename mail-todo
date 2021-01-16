@@ -28,8 +28,8 @@ https://github.com/roundcube/roundcubemail-docker/blob/master/php-apache/docker-
 [x] En epost sendt fra Roundcube vil være i "sendt"-mappe? Kan den flyttes?
 [x] Flytte sendte epost til rett mappe
 [-] Dele sourcen med lokalt repo?
-
-
+[x] Script om generer profiler
+[x] GUI for å starte tråd + instruks
 
 
 Plan:

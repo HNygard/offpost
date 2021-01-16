@@ -9,7 +9,7 @@ if (!isset($_POST['entity_id'])) {
     <form method="POST">
         <h1>Start email thread</h1>
         <input type="text" name="title" value=""> - Title<br>
-        <input type="text" name="my_name" value=""> - My name<br>
+        <input type="text" name="my_name" value="<?= htmlescape(isset($_GET['my_name']) ? $_GET['my_name'] : '') ?>"> - My name<br>
         <input type="text" name="my_email" value="<?= htmlescape($_GET['my_email']) ?>"> - My email<br>
         <input type="text" name="labels" value=""> - Labels, space separated<br>
         <input type="text" name="entity_id" value=""> - Entity id<br>
