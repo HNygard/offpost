@@ -55,9 +55,23 @@ https://github.com/roundcube/roundcubemail-docker/blob/master/php-apache/docker-
         - Copy paste liste som kan brukes i reply
 [x] Script om generer profiler
 [x] GUI for å starte tråd + instruks
+[x] Ta i bruk på noen henvendelser
+    [x] Mattilsynet
+    [x] Datatilsynet
 
 
 Plan:
+[ ] Gjennomgå respons
+[ ] Delayed sending
+    - Hvordan?
+        Sendgrid kan gjøre schduled sending
+        Roundcube har plugin for det
+[ ] Randomness i signatur
+    - Navn
+    - Navn etternavn
+    - Navn <optional mellomnavn> etternavn
+    - Etternavn
+    - Mvh. Navn etternavn
 [ ] Klassifisering av eposter
     Kjente varianter
      - Avslag etter §X
