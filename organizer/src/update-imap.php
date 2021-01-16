@@ -292,11 +292,15 @@ function saveEmails($mailbox, $folderJson, &$thread) {
             : 'IN';
         $datetime = date('Y-m-d_His', strtotime($mail_headers->date));
 
-        $file_name = $datetime . ' - ' . $in_or_out;
 
         if (isset($email_datetime[$datetime])) {
-            throw new Exception('Double.');
+            // Gaaah. Same sending time on two emails. Doing the hack one more level.
+            $datetime .= '_2';
+            if (isset($email_datetime[$datetime])) {
+                throw new Exception('Double.');
+            }
         }
+        $file_name = $datetime . ' - ' . $in_or_out;
         $email_datetime[$datetime] = $datetime;
 
         $obj = new stdClass();
