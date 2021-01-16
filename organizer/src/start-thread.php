@@ -10,13 +10,13 @@ if (!isset($_POST['entity_id'])) {
         <h1>Start email thread</h1>
         <input type="text" name="title" value=""> - Title<br>
         <input type="text" name="my_name" value=""> - My name<br>
-        <input type="text" name="my_email" value="<?=htmlescape($_GET['my_email'])?>"> - My email<br>
+        <input type="text" name="my_email" value="<?= htmlescape($_GET['my_email']) ?>"> - My email<br>
         <input type="text" name="labels" value=""> - Labels, space separated<br>
         <input type="text" name="entity_id" value=""> - Entity id<br>
         <input type="text" name="entity_title_prefix" value=""> - Entity title prefix (only used if first thread for this entity)<br>
         <input type="submit" value="Create thread">
     </form>
-<?php
+    <?php
     exit;
 }
 
@@ -30,7 +30,7 @@ $thread->archived = false;
 $thread->emails = array();
 
 $labels = explode(' ', $_POST['labels']);
-foreach($labels as $label) {
+foreach ($labels as $label) {
     $thread->labels[] = trim($label);
 }
 createThread($_POST['entity_id'], $_POST['entity_title_prefix'], $thread);

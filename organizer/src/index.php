@@ -56,65 +56,65 @@ $allThreads = getThreads();
         <td colspan="2">Status</td>
         <td>Labels</td>
     </tr>
-<?php
-
-foreach ($allThreads as $threads) {
-foreach ($threads->threads as $thread) {
-    ?>
-    <tr>
-        <td><?= $threads->entity_id ?></td>
-        <th><?= $threads->title_prefix ?></th>
-        <th><?= $thread->title ?></th>
-        <th><?= $thread->my_name ?></th>
-        <td><?= $thread->my_email ?></td>
-        <td><?= $thread->sent ? '<span class="label label_ok">Sent</span>' : '<span class="label label_warn">Not sent</span> ' ?></td>
-        <td><?= $thread->archived ? '<span class="label label_ok">Archived</span>' : '<span class="label label_warn">Not archived</span> ' ?></td>
-        <td><?php
-            foreach ($thread->labels as $label) {
-                ?><span class="label"><?= $label ?></span><?php
-            }
-            ?></td>
-        <td>
-            <?php
-            if (!isset($thread->emails)) {
-                $thread->emails = array();
-            }
-            foreach ($thread->emails as $email) {
-                if ($email->status_type == 'info') {
-                    $label_type = 'label';
-                }
-                elseif ($email->status_type == 'disabled') {
-                    $label_type = 'label label_disabled';
-                }
-                elseif ($email->status_type == 'danger') {
-                    $label_type = 'label label_warn';
-                }
-                elseif ($email->status_type == 'success') {
-                    $label_type = 'label label_ok';
-                }
-                elseif ($email->status_type == 'unknown') {
-                    $label_type = 'label';
-                }
-                else {
-                    throw new Exception('Unknown status_type: ' . $email->status_type);
-                }
-
-                ?>
-                <div <?= $email->ignore ? ' style="color: gray;"' : '' ?>>
-                    <?= $email->datetime_received ?>:
-                    <?= $email->email_type ?> -
-                    <span class="<?= $label_type ?>"><?= $email->status_text ?></span>
-                    <br>
-                    <i><?= htmlescape(isset($email->description) ? $email->description : '') ?></i>
-                </div>
-                <br>
-                <?php
-            }
-            ?>
-        </td>
-    </tr>
     <?php
-}
-}
-?>
+
+    foreach ($allThreads as $threads) {
+        foreach ($threads->threads as $thread) {
+            ?>
+            <tr>
+                <td><?= $threads->entity_id ?></td>
+                <th><?= $threads->title_prefix ?></th>
+                <th><?= $thread->title ?></th>
+                <th><?= $thread->my_name ?></th>
+                <td><?= $thread->my_email ?></td>
+                <td><?= $thread->sent ? '<span class="label label_ok">Sent</span>' : '<span class="label label_warn">Not sent</span> ' ?></td>
+                <td><?= $thread->archived ? '<span class="label label_ok">Archived</span>' : '<span class="label label_warn">Not archived</span> ' ?></td>
+                <td><?php
+                    foreach ($thread->labels as $label) {
+                        ?><span class="label"><?= $label ?></span><?php
+                    }
+                    ?></td>
+                <td>
+                    <?php
+                    if (!isset($thread->emails)) {
+                        $thread->emails = array();
+                    }
+                    foreach ($thread->emails as $email) {
+                        if ($email->status_type == 'info') {
+                            $label_type = 'label';
+                        }
+                        elseif ($email->status_type == 'disabled') {
+                            $label_type = 'label label_disabled';
+                        }
+                        elseif ($email->status_type == 'danger') {
+                            $label_type = 'label label_warn';
+                        }
+                        elseif ($email->status_type == 'success') {
+                            $label_type = 'label label_ok';
+                        }
+                        elseif ($email->status_type == 'unknown') {
+                            $label_type = 'label';
+                        }
+                        else {
+                            throw new Exception('Unknown status_type: ' . $email->status_type);
+                        }
+
+                        ?>
+                        <div <?= $email->ignore ? ' style="color: gray;"' : '' ?>>
+                            <?= $email->datetime_received ?>:
+                            <?= $email->email_type ?> -
+                            <span class="<?= $label_type ?>"><?= $email->status_text ?></span>
+                            <br>
+                            <i><?= htmlescape(isset($email->description) ? $email->description : '') ?></i>
+                        </div>
+                        <br>
+                        <?php
+                    }
+                    ?>
+                </td>
+            </tr>
+            <?php
+        }
+    }
+    ?>
 </table>

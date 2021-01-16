@@ -154,7 +154,7 @@ function moveEmails($mailbox) {
         echo 'MOVE TO ........ : ' . $should_be_moved_to . chr(10);
         if ($should_be_moved_to == 'INBOX') {
             foreach ($to_from as $email) {
-                echo '- <a href="start-thread.php?my_email=' . urlencode($email) . '">Start thread with ' . htmlescape($email) .'</a>'. chr(10);
+                echo '- <a href="start-thread.php?my_email=' . urlencode($email) . '">Start thread with ' . htmlescape($email) . '</a>' . chr(10);
             }
         }
         echo chr(10);
@@ -425,7 +425,7 @@ function saveEmails($mailbox, $folderJson, &$thread) {
         $found = false;
         foreach ($thread->emails as $thead_email) {
             if (!isset($thead_email->id)) {
-               // continue;
+                // continue;
                 var_dump($thead_email);
                 throw new Exception('Thread email missing ID ^');
             }
@@ -449,7 +449,7 @@ function saveEmails($mailbox, $folderJson, &$thread) {
 
             $thread->emails[] = $new_email;
 
-            usort($thread->emails, function($a, $b) {
+            usort($thread->emails, function ($a, $b) {
                 /* @var $a ThreadEmail */
                 /* @var $b ThreadEmail */
                 return strcmp($a->datetime_received, $b->datetime_received);
