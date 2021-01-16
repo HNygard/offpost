@@ -420,6 +420,12 @@ function saveEmails($mailbox, $folderJson, &$thread) {
 
         $found = false;
         foreach ($thread->emails as $thead_email) {
+            if (!isset($thead_email->id)) {
+               // continue;
+                var_dump($thead_email);
+                throw new Exception('Thread email missing ID ^');
+            }
+
             if ($thead_email->id == $file_name) {
                 $found = true;
             }
