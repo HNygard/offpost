@@ -11,7 +11,7 @@ $repo = new IdentityRepository($connection);
 $identities = $repo->getIdentities();
 
 
-$threads = getThreads('/organizer-data/threads/threads-1129-forsand-kommune.json');
+$threads = getThreads();
 foreach ($threads[0]->threads as $thread) {
     $id_found = false;
     foreach ($identities as $identity) {

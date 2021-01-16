@@ -28,7 +28,7 @@ foreach ($list_subscribed as $folder) {
 }
 
 echo chr(10) . '---- CREATING FOLDERS ----' . chr(10);
-$threads = getThreads('/organizer-data/threads/threads-1129-forsand-kommune.json');
+$threads = getThreads();
 $folder_that_should_exist = array('INBOX.Archive');
 foreach ($threads as $entity_threads) {
     foreach ($entity_threads->threads as $thread) {
@@ -154,7 +154,7 @@ function moveEmails($mailbox) {
         echo 'MOVE TO ........ : ' . $should_be_moved_to . chr(10);
         if ($should_be_moved_to == 'INBOX') {
             foreach ($to_from as $email) {
-                echo '- ' . $email . chr(10);
+                echo '- <a href="start-thread.php?my_email=' . urlencode($email) . '">Start thread with ' . htmlescape($email) .'</a>'. chr(10);
             }
         }
         echo chr(10);
