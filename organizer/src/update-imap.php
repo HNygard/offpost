@@ -55,7 +55,13 @@ foreach ($folder_that_should_exist as $title) {
 echo chr(10) . '---- ARCHIVING FOLDERS ----' . chr(10);
 $email_to_folder = array();
 function getThreadEmailFolder($entity_threads, $thread) {
-    $title = $entity_threads->title_prefix . ' - ' . $thread->title;
+    $title = $entity_threads->title_prefix . ' - ' . str_replace('/', '-', $thread->title);
+    $title = str_replace('Æ', 'AE', $title);
+    $title = str_replace('Ø', 'OE', $title);
+    $title = str_replace('Å', 'AA', $title);
+    $title = str_replace('æ', 'ae', $title);
+    $title = str_replace('ø', 'oe', $title);
+    $title = str_replace('å', 'aa', $title);
     return $thread->archived
         ? 'INBOX.Archive.' . $title
         : 'INBOX.' . $title;
