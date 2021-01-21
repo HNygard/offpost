@@ -37,9 +37,14 @@ Get a link like:
 Open it an create a thread with title, label and connected to Entity.
 
 Then sync identities with Roundcube:
-
 - http://localhost:25081/update-identities.php
 
 Open Roundcube and send from the identity.
-
 - http://localhost:25080/
+
+After, sync it to repo:
+- http://localhost:25081/update-imap.php
+
+Add details like
+- sent = true
+- status_type, status_text

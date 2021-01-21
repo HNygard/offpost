@@ -36,18 +36,18 @@ foreach ($threads as $entity_threads) {
     }
 }
 foreach ($folder_that_should_exist as $title) {
-    echo '-- ' . $title . '        ';
+    $outputPrefix = '-- ' . $title . '        ';
     if (str_contains($title, 'INBOX.Archive.')) {
-        echo '[ARCHIVED]' . chr(10);
+        //echo $outputPrefix . '[ARCHIVED]' . chr(10);
     }
     else {
         if (isset($folders[$server . $title])) {
-            echo '[OK]' . chr(10);
+            //echo $outputPrefix . '[OK]' . chr(10);
         }
         else {
             imap_createmailbox($mailbox, imap_utf7_encode($server . $title));
             checkForImapError();
-            echo '[CREATED]' . chr(10);
+            echo $outputPrefix . '[CREATED]' . chr(10);
         }
     }
 }
@@ -72,7 +72,7 @@ foreach ($threads as $entity_threads) {
         $title = $entity_threads->title_prefix . ' - ' . $thread->title;
         $email_to_folder[$thread->my_email] = getThreadEmailFolder($entity_threads, $thread);
         if ($thread->archived) {
-            echo '-- ' . $title . '        ';
+            $outputPrefix = '-- ' . $title . '        ';
             if (isset($folders[$server . 'INBOX.' . str_replace('INBOX.Archive.', '', $title)])) {
                 // -> Exists and should be moved
                 imap_renamemailbox(
@@ -81,14 +81,14 @@ foreach ($threads as $entity_threads) {
                     imap_utf7_encode($server . 'INBOX.Archive.' . $title)
                 );
                 checkForImapError();
-                echo '[ARCHIVED]' . chr(10);
+                echo $outputPrefix . '[ARCHIVED]' . chr(10);
             }
             elseif (isset($folders[$server . 'INBOX.Archive.' . $title])) {
-                echo '[OK]' . chr(10);
+                //echo $outputPrefix . '[OK]' . chr(10);
             }
             else {
                 // -> Don't exist
-                echo '[N/A]' . chr(10);
+                //echo $outputPrefix . '[N/A]' . chr(10);
             }
         }
     }
