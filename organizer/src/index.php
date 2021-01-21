@@ -12,6 +12,7 @@ $allThreads = getThreads();
 
 <li><a href="update-imap.php">Update email threads (folders) to IMAP</a></li>
 <li><a href="update-identities.php">Update identities into Roundcube</a></li>
+<li><a href="?archived">Show archived</a></li>
 
 <style>
     table tr td,
@@ -49,26 +50,35 @@ $allThreads = getThreads();
 <table>
 
     <tr>
-        <td>Entity</td>
-        <th colspan="2">Title</th>
-        <th>My name</th>
-        <td>My email</td>
-        <td colspan="2">Status</td>
+        <td>Entity name / id</td>
+        <th>Title / My name &lt;email&gt;</th>
+        <td>Status</td>
         <td>Labels</td>
     </tr>
     <?php
 
     foreach ($allThreads as $threads) {
         foreach ($threads->threads as $thread) {
+            if($thread->archived && !isset($_GET['archived'])) {
+                continue;
+            }
+
             ?>
             <tr>
-                <td><?= $threads->entity_id ?></td>
-                <th><?= $threads->title_prefix ?></th>
-                <th><?= $thread->title ?></th>
-                <th><?= $thread->my_name ?></th>
-                <td><?= $thread->my_email ?></td>
-                <td><?= $thread->sent ? '<span class="label label_ok">Sent</span>' : '<span class="label label_warn">Not sent</span> ' ?></td>
-                <td><?= $thread->archived ? '<span class="label label_ok">Archived</span>' : '<span class="label label_warn">Not archived</span> ' ?></td>
+                <td>
+                    <b><?= $threads->title_prefix ?></b><br>
+                    <span style="font-size: 0.8em;"><?= $threads->entity_id ?></span>
+                </td>
+                <td>
+                    <b><?= $thread->title ?></b><br>
+                    <span style="font-size: 0.8em;">
+                        <b><?= $thread->my_name ?></b>
+                        &lt;<?= $thread->my_email ?>&gt;
+                    </span>
+                </td>
+                <td>
+                    <?= $thread->sent ? '<span class="label label_ok">Sent</span>' : '<span class="label label_warn">Not sent</span> ' ?><br>
+                    <?= $thread->archived ? '<span class="label label_ok">Archived</span>' : '<span class="label label_warn">Not archived</span> ' ?></td>
                 <td><?php
                     foreach ($thread->labels as $label) {
                         ?><span class="label"><?= $label ?></span><?php
