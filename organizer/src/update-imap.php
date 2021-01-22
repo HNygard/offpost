@@ -361,7 +361,7 @@ function saveEmails($mailbox, $folderJson, &$thread) {
                     foreach ($structure->parts[$i]->dparameters as $object) {
                         if (strtolower($object->attribute) == 'filename') {
                             $attachments[$i]['is_attachment'] = true;
-                            $attachments[$i]['filename'] = $object->value;
+                            $attachments[$i]['filename'] = imap_utf8($object->value);
                         }
                     }
                 }
@@ -370,7 +370,7 @@ function saveEmails($mailbox, $folderJson, &$thread) {
                     foreach ($structure->parts[$i]->parameters as $object) {
                         if (strtolower($object->attribute) == 'name') {
                             $attachments[$i]['is_attachment'] = true;
-                            $attachments[$i]['name'] = $object->value;
+                            $attachments[$i]['name'] = imap_utf8($object->value);
                         }
                     }
                 }
@@ -381,6 +381,9 @@ function saveEmails($mailbox, $folderJson, &$thread) {
                     $att->filename = $attachments[$i]['filename'];
 
                     if (str_ends_with($att->name, '.pdf')) {
+                        $att->filetype = 'pdf';
+                    }
+                    elseif (str_ends_with($att->filename, '.pdf')) {
                         $att->filetype = 'pdf';
                     }
                     else {
