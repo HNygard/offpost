@@ -295,6 +295,9 @@ function saveEmails($mailbox, $folderJson, &$thread) {
         unset($mail_headers->Date);
         unset($mail_headers->Subject);
 
+        // Recent, changes all the time
+        unset($mail_headers->Recent);
+
         $in_or_out = $mail_headers->from[0]->mailbox . '@' . $mail_headers->from[0]->host == $thread->my_email
             ? 'OUT'
             : 'IN';
