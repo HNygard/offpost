@@ -395,7 +395,7 @@ function saveEmails($mailbox, $folderJson, &$thread) {
 
                     // Don't include the name, since we have no control over it.
                     $att->location = $file_name . ' - att ' . $i . '-' . md5($att->name) . '.' . $att->filetype;
-                    $obj->attachements[] = $att;
+                    $obj->attachments[] = $att;
 
                     $path = $folderJson . '/' . $att->location;
                     if (file_exists($path)) {
@@ -460,6 +460,15 @@ function saveEmails($mailbox, $folderJson, &$thread) {
 
             // TODO: Handle auto reply
             $new_email->ignore = false;
+
+            if (count($obj->attachments)) {
+                $new_email->attachments = array();
+                foreach($obj->attachments as $att) {
+                    $att->status_type = 'unknown';
+                    $att->status_text = 'uklassifisert-dok';
+                    $new_email->attachments[] = $att;
+                }
+            }
 
             $thread->emails[] = $new_email;
 

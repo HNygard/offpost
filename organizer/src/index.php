@@ -5,6 +5,27 @@ require_once __DIR__ . '/class/Threads.php';
 /* @var Threads[] $threads */
 $allThreads = getThreads();
 
+function getLabelType($type, $status_type) {
+    if ($status_type == 'info') {
+        $label_type = 'label';
+    }
+    elseif ($status_type == 'disabled') {
+        $label_type = 'label label_disabled';
+    }
+    elseif ($status_type == 'danger') {
+        $label_type = 'label label_warn';
+    }
+    elseif ($status_type == 'success') {
+        $label_type = 'label label_ok';
+    }
+    elseif ($status_type == 'unknown') {
+        $label_type = 'label';
+    }
+    else {
+        throw new Exception('Unknown status_type[' . $type . ']: ' . $status_type);
+    }
+    return $label_type;
+}
 
 ?>
 
@@ -90,24 +111,7 @@ $allThreads = getThreads();
                         $thread->emails = array();
                     }
                     foreach ($thread->emails as $email) {
-                        if ($email->status_type == 'info') {
-                            $label_type = 'label';
-                        }
-                        elseif ($email->status_type == 'disabled') {
-                            $label_type = 'label label_disabled';
-                        }
-                        elseif ($email->status_type == 'danger') {
-                            $label_type = 'label label_warn';
-                        }
-                        elseif ($email->status_type == 'success') {
-                            $label_type = 'label label_ok';
-                        }
-                        elseif ($email->status_type == 'unknown') {
-                            $label_type = 'label';
-                        }
-                        else {
-                            throw new Exception('Unknown status_type: ' . $email->status_type);
-                        }
+                        $label_type = getLabelType('email', $email->status_type);
 
                         ?>
                         <div <?= $email->ignore ? ' style="color: gray;"' : '' ?>>
@@ -116,6 +120,19 @@ $allThreads = getThreads();
                             <span class="<?= $label_type ?>"><?= $email->status_text ?></span>
                             <br>
                             <i><?= htmlescape(isset($email->description) ? $email->description : '') ?></i>
+                            <?php
+                            if (isset($email->attachments)) {
+                                foreach ($email->attachments as $att) {
+                                    $label_type = getLabelType('attachement', $att->status_type);
+                                    echo chr(10);
+                                    ?>
+                                    <li>
+                                        <span class="<?= $label_type ?>"><?= $att->status_text ?></span>
+                                        <?= $att->filetype ?> - <i><?= htmlentities($att->name, ENT_QUOTES) ?></i></li>
+                                    <?php
+                                }
+                            }
+                            ?>
                         </div>
                         <br>
                         <?php

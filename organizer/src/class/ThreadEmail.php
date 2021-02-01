@@ -1,8 +1,7 @@
 <?php
 
 class ThreadEmail {
-
-var $timestamp_received;
+    var $timestamp_received;
     var $id;
     var $datetime_received;
     var $ignore;
@@ -10,4 +9,6 @@ var $timestamp_received;
     var $status_type;
     var $status_text;
     var $description;
+    /* @var $attachments ThreadEmailAttachment[] */
+    var $attachments;
 }
