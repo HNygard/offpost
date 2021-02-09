@@ -264,7 +264,7 @@ foreach ($threads as $thread_file => $entity_threads) {
         saveEmails($mailboxThread, $folderJson, $thread);
         echo chr(10);
     }
-    file_put_contents($thread_file, json_encode($entity_threads, JSON_PRETTY_PRINT ^ JSON_UNESCAPED_UNICODE ^ JSON_UNESCAPED_SLASHES));
+    saveEntityThreads($entity_threads->entity_id, $entity_threads);
 }
 
 /**

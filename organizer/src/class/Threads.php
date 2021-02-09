@@ -25,6 +25,15 @@ function getThreadsForEntity($entityID) {
     return json_decode(file_get_contents($path));
 }
 
+/**
+ * @param $entityId
+ * @param Threads $entity_threads
+ */
+function saveEntityThreads($entityId, $entity_threads) {
+    $path = '/organizer-data/threads/threads-' . $entityId . '.json';
+    file_put_contents($path, json_encode($entity_threads, JSON_PRETTY_PRINT ^ JSON_UNESCAPED_UNICODE ^ JSON_UNESCAPED_SLASHES));
+}
+
 function createThread($entityId, $entityTitlePrefix, Thread $thread) {
     $existingThreads = getThreadsForEntity($entityId);
     if ($existingThreads == null) {

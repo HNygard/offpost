@@ -42,7 +42,10 @@ $allThreads = getThreads();
                     <span style="font-size: 0.8em;">
                         <b><?= $thread->my_name ?></b>
                         &lt;<?= $thread->my_email ?>&gt;
-                    </span>
+                    </span><br>
+                    [<a href="classify-email.php?entityId=<?=
+                        htmlescape($threads->entity_id)?>&threadId=<?=
+                        htmlescape(getThreadId($thread))?>">Classify</a>]
                 </td>
                 <td>
                     <?= $thread->sent ? '<span class="label label_ok">Sent</span>' : '<span class="label label_warn">Not sent</span> ' ?><br>
