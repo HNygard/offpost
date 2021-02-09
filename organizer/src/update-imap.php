@@ -253,10 +253,8 @@ echo chr(10) . '---- SAVE EMAILS ----' . chr(10);
 foreach ($threads as $thread_file => $entity_threads) {
     foreach ($entity_threads->threads as $thread) {
         $folder = getThreadEmailFolder($entity_threads, $thread);
-        $email_folder = str_replace(' ', '_', mb_strtolower($thread->title, 'UTF-8'));
-        $email_folder = str_replace('/', '-', $email_folder);
         echo '-- ' . $folder . chr(10);
-        $folderJson = '/organizer-data/threads/' . $entity_threads->entity_id . '/' . $email_folder;
+        $folderJson = '/organizer-data/threads/' . $entity_threads->entity_id . '/' . getThreadId($thread);
         if (!file_exists($folderJson)) {
             mkdir($folderJson, 0777, true);
         }

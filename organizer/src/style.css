@@ -1,0 +1,30 @@
+table tr td,
+table tr th {
+    border: 1px solid black;
+    padding: 5px;
+}
+
+span.label {
+    background-color: #94b1ef;
+    border: 1px solid #3f4b65;
+    border-radius: 2px;
+
+    padding-right: 5px;
+    padding-left: 5px;
+
+    margin-right: 5px;
+}
+
+span.label.label_ok {
+    background-color: #83f883;
+}
+
+span.label.label_warn {
+    background-color: #f8ab69;
+    border-color: #724f30;
+}
+
+span.label.label_disabled {
+    background-color: #c9cdc9;
+    border-color: #a8aca8;
+}

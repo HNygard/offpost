@@ -5,28 +5,6 @@ require_once __DIR__ . '/class/Threads.php';
 /* @var Threads[] $threads */
 $allThreads = getThreads();
 
-function getLabelType($type, $status_type) {
-    if ($status_type == 'info') {
-        $label_type = 'label';
-    }
-    elseif ($status_type == 'disabled') {
-        $label_type = 'label label_disabled';
-    }
-    elseif ($status_type == 'danger') {
-        $label_type = 'label label_warn';
-    }
-    elseif ($status_type == 'success') {
-        $label_type = 'label label_ok';
-    }
-    elseif ($status_type == 'unknown') {
-        $label_type = 'label';
-    }
-    else {
-        throw new Exception('Unknown status_type[' . $type . ']: ' . $status_type);
-    }
-    return $label_type;
-}
-
 ?>
 
 <h1>Threads</h1>
@@ -35,38 +13,7 @@ function getLabelType($type, $status_type) {
 <li><a href="update-identities.php">Update identities into Roundcube</a></li>
 <li><a href="?archived">Show archived</a></li>
 
-<style>
-    table tr td,
-    table tr th {
-        border: 1px solid black;
-        padding: 5px;
-    }
-
-    span.label {
-        background-color: #94b1ef;
-        border: 1px solid #3f4b65;
-        border-radius: 2px;
-
-        padding-right: 5px;
-        padding-left: 5px;
-
-        margin-right: 5px;
-    }
-
-    span.label.label_ok {
-        background-color: #83f883;
-    }
-
-    span.label.label_warn {
-        background-color: #f8ab69;
-        border-color: #724f30;
-    }
-
-    span.label.label_disabled {
-        background-color: #c9cdc9;
-        border-color: #a8aca8;
-    }
-</style>
+<link href="style.css" rel="stylesheet">
 
 <table>
 
