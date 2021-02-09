@@ -453,7 +453,8 @@ function saveEmails($mailbox, $folderJson, &$thread) {
             /* @var $new_email ThreadEmail */
             $new_email = new stdClass();
             $new_email->timestamp_received = $obj->timestamp;
-            $new_email->datetime_received = date('Y-m-d H:i:s');
+            $new_email->datetime_received = date('Y-m-d H:i:s', $new_email->timestamp_received);
+            $new_email->datetime_first_seen = date('Y-m-d H:i:s');
             $new_email->id = $file_name;
             $new_email->email_type = $in_or_out;
             $new_email->status_type = 'unknown';
