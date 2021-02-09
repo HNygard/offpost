@@ -389,6 +389,9 @@ function saveEmails($mailbox, $folderJson, &$thread) {
                     elseif (str_ends_with($att->filename, '.pdf')) {
                         $att->filetype = 'pdf';
                     }
+                    elseif (str_ends_with($att->filename, '.jpg')) {
+                        $att->filetype = 'jpg';
+                    }
                     else {
                         throw new Exception('Unknown file type: ' . $att->name);
                     }
@@ -461,7 +464,7 @@ function saveEmails($mailbox, $folderJson, &$thread) {
             // TODO: Handle auto reply
             $new_email->ignore = false;
 
-            if (count($obj->attachments)) {
+            if (isset($obj->attachments) && count($obj->attachments)) {
                 $new_email->attachments = array();
                 foreach($obj->attachments as $att) {
                     $att->status_type = 'unknown';
