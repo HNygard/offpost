@@ -56,7 +56,9 @@ if (isset($_POST['submit'])) {
         echo 'Message has been sent';
     }
 
-    // TODO: update label on thread => sent
+    // :: Update sent property on thread
+    $thread->sent = true;
+    saveEntityThreads($entityId, $threads);
 
     echo 'OK.';
     exit;
