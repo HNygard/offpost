@@ -390,6 +390,9 @@ function saveEmails($mailbox, $folderJson, &$thread) {
                     elseif (str_ends_with(strtolower($att->name), '.jpg')) {
                         $att->filetype = 'jpg';
                     }
+                    elseif(empty($att->name)) {
+                        $att->filetype = 'UNKNOWN';
+                    }
                     else {
                         throw new Exception('Unknown file type: ' . $att->name);
                     }
