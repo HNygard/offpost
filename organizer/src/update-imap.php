@@ -381,13 +381,13 @@ function saveEmails($mailbox, $folderJson, &$thread) {
                     $att->name = $attachments[$i]['name'];
                     $att->filename = $attachments[$i]['filename'];
 
-                    if (str_ends_with($att->name, '.pdf')) {
+                    if (str_ends_with(strtolower($att->name), '.pdf')) {
                         $att->filetype = 'pdf';
                     }
-                    elseif (str_ends_with($att->filename, '.pdf')) {
+                    elseif (str_ends_with(strtolower($att->name), '.pdf')) {
                         $att->filetype = 'pdf';
                     }
-                    elseif (str_ends_with($att->filename, '.jpg')) {
+                    elseif (str_ends_with(strtolower($att->name), '.jpg')) {
                         $att->filetype = 'jpg';
                     }
                     else {
