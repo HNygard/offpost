@@ -2,6 +2,22 @@
 
 require_once __DIR__ . '/class/Threads.php';
 
+/**
+ * Support multiple utf8 string in a row.
+ *
+ * Test data:
+ * echo imap_utf8_improved_by_hallvard('=?utf-8?B?VmVkcsO4cmVuZGUgYmVnasOmcmluZyBvbSBpbm5zeW4gaSBwb3N0bGlz?==?utf-8?B?dGUgc2lzdGUgMTAgw6VyICgyMDExLTIwMjEpIC0gdGlsYmFrZW1lbGRp?==?utf-8?B?bmcucGRm?=').chr(10);
+ * echo imap_utf8_improved_by_hallvard('=?utf-8?B?VmVkcsO4cmVuZGUgYmVnasOmcmluZyBvbSBpbm5zeW4gaSBwb3N0bGlz?==?utf-8?B?dGUgc2lzdGUgMTAgw6VyICgyMDExLTIwMjEpLnBkZg==?=').chr(10);
+ * echo imap_utf8_improved_by_hallvard('=?utf-8?B?VmVkcsO4cmVuZGUgYmVnasOmcmluZyBvbSBpbm5zeW4gaSBwb3N0bGlz?==?utf-8?B?dGUgc2lzdGUgMTAgw6VyICgyMDExLTIwMjEpIC0gdGlsYmFrZW1lbGRp?==?utf-8?B?bmcucGRm?=').chr(10);
+ */
+function imap_utf8_improved_by_hallvard($string) {
+    preg_match_all('/(\=\?utf\-8\?B\?[A-Za-z0-9=]*\?=)/', $string, $matches);
+    foreach ($matches[0] as $match) {
+        $string = str_replace($match, imap_utf8($match), $string);
+    }
+    return imap_utf8($string);
+}
+
 // sudo apt-get install php5-imap
 // + enable imap in PHP
 
@@ -371,7 +387,7 @@ function saveEmails($mailbox, $folderJson, &$thread) {
                     foreach ($structure->parts[$i]->parameters as $object) {
                         if (strtolower($object->attribute) == 'name') {
                             $attachments[$i]['is_attachment'] = true;
-                            $attachments[$i]['name'] = imap_utf8($object->value);
+                            $attachments[$i]['name'] = imap_utf8_improved_by_hallvard($object->value);
                         }
                     }
                 }
@@ -390,11 +406,19 @@ function saveEmails($mailbox, $folderJson, &$thread) {
                     elseif (str_ends_with(strtolower($att->name), '.jpg')) {
                         $att->filetype = 'jpg';
                     }
+                    elseif (str_ends_with(strtolower($att->name), '.docx')) {
+                        $att->filetype = 'docx';
+                    }
+                    elseif (str_ends_with(strtolower($att->name), '.rda')) {
+                        $att->filetype = 'UNKNOWN';
+                    }
                     elseif(empty($att->name)) {
                         $att->filetype = 'UNKNOWN';
                     }
                     else {
-                        throw new Exception('Unknown file type: ' . $att->name);
+                        throw new Exception("Unknown file type:\n" .
+                            "Name ......... : ". $att->name . "\n" .
+                            "File name .... : " . $att->filename);
                     }
 
                     // Don't include the name, since we have no control over it.
@@ -434,7 +458,7 @@ function saveEmails($mailbox, $folderJson, &$thread) {
 
         $email_json_file = $folderJson . '/' . $file_name . '.json';
         file_put_contents($email_json_file, json_encode($obj, JSON_PRETTY_PRINT ^ JSON_UNESCAPED_SLASHES ^ JSON_UNESCAPED_UNICODE));
-        chmod($email_json_file, 0777);
+//        chmod($email_json_file, 0777);
 
         if (!isset($thread->emails)) {
             $thread->emails = array();
