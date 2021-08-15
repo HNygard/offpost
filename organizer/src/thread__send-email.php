@@ -64,27 +64,6 @@ if (isset($_POST['submit'])) {
     exit;
 }
 
-function labelSelect($currentType, $id) {
-    if ($currentType != 'info'
-        && $currentType != 'disabled'
-        && $currentType != 'danger'
-        && $currentType != 'success'
-        && $currentType != 'unknown'
-    ) {
-        throw new Exception('Unknown type: ' . $currentType);
-    }
-
-    ?>
-    <select name="<?= $id ?>">
-        <option value="info" <?= $currentType == 'info' ? ' selected="selected"' : '' ?>>info</option>
-        <option value="disabled" <?= $currentType == 'disabled' ? ' selected="selected"' : '' ?>>disabled</option>
-        <option value="danger" <?= $currentType == 'danger' ? ' selected="selected"' : '' ?>>danger</option>
-        <option value="success" <?= $currentType == 'success' ? ' selected="selected"' : '' ?>>success</option>
-        <option value="unknown" <?= $currentType == 'unknown' ? ' selected="selected"' : '' ?>>unknown</option>
-    </select>
-    <?php
-}
-
 $starterMessages = array(
     "Søker innsyn.",
     "Søker innsyn i:",
@@ -92,7 +71,7 @@ $starterMessages = array(
     "Jeg ønsker innsyn:",
     "Jeg ønsker innsyn i:",
     "Kunne jeg fått innsyn i følgende?",
-    "Kunne jeg etter Offenetlova fått innsyn i følgende?",
+    "Kunne jeg etter Offentleglova få innsyn i følgende?",
     "Etter Offl:",
     "Etter Offentleglova",
     "Etter Offentleglova ønsker jeg",
