@@ -75,6 +75,9 @@ $email = str_replace('å', profileRandom(50, 'aa', 'a'), $email);
 $email = str_replace('æ', 'ae', $email);
 $email = str_replace('ø', profileRandom(50, 'oe', 'o'), $email);
 
+// Clean out spaces
+$email = str_replace(' ', '', $email);
+
 echo 'First name .... : ' . $first . chr(10);
 echo 'Middle name ... : ' . trim($middleShort) . chr(10);
 echo 'Last name ..... : ' . $last . chr(10);
