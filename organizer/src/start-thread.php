@@ -6,6 +6,15 @@ require_once __DIR__ . '/class/Threads.php';
 
 if (!isset($_POST['entity_id'])) {
     ?>
+    <style>
+        input {
+            width:500px;
+        }
+        textarea {
+            width: 700px;
+            height: 300px;
+        }
+    </style>
     <form method="POST">
         <h1>Start email thread</h1>
         <input type="text" name="title" value="<?= htmlescape(isset($_GET['title']) ? $_GET['title'] : '') ?>"> - Title<br>
@@ -14,6 +23,8 @@ if (!isset($_POST['entity_id'])) {
         <input type="text" name="labels" value="<?= htmlescape(isset($_GET['labels']) ? $_GET['labels'] : '') ?>"> - Labels, space separated<br>
         <input type="text" name="entity_id" value="<?= htmlescape(isset($_GET['entity_id']) ? $_GET['entity_id'] : '') ?>"> - Entity id<br>
         <input type="text" name="entity_title_prefix" value="<?= htmlescape(isset($_GET['entity_title_prefix']) ? $_GET['entity_title_prefix'] : '') ?>"> - Entity title prefix (only used if first thread for this entity)<br>
+        <input type="text" name="entity_email" value="<?= htmlescape(isset($_GET['entity_email']) ? $_GET['entity_email'] : '') ?>"> - Entity email<br>
+        <textarea name="body"><?= htmlescape(isset($_GET['body']) ? $_GET['body'] : '') ?></textarea><br><br>
         <input type="submit" value="Create thread">
     </form>
     <?php
@@ -33,6 +44,25 @@ $labels = explode(' ', $_POST['labels']);
 foreach ($labels as $label) {
     $thread->labels[] = trim($label);
 }
-createThread($_POST['entity_id'], $_POST['entity_title_prefix'], $thread);
+$newThread = createThread($_POST['entity_id'], $_POST['entity_title_prefix'], $thread);
+
+
+if (isset($_POST['body']) && !empty($_POST['body'])) {
+    // -> Send email
+    $entityId = $_POST['entity_id'];
+    $threadId = getThreadId($newThread);
+
+    $threads = getThreadsForEntity($entityId);
+
+    $thread = null;
+    foreach ($threads->threads as $thread1) {
+        if (getThreadId($thread1) == $threadId) {
+            $thread = $thread1;
+        }
+    }
+
+    sendThreadEmail($thread, $_POST['entity_email'], $_POST['title'], $_POST['body'], $entityId, $threads);
+}
+
 
 echo 'Created. <a href="./">Back</a>';

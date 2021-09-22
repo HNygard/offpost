@@ -46,6 +46,8 @@ function createThread($entityId, $entityTitlePrefix, Thread $thread) {
 
     file_put_contents('/organizer-data/threads/threads-' . $entityId . '.json',
         json_encode($existingThreads, JSON_PRETTY_PRINT ^ JSON_UNESCAPED_UNICODE ^ JSON_UNESCAPED_SLASHES));
+
+    return $thread;
 }
 
 function getThreadId($thread) {
