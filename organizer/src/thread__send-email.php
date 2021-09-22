@@ -14,53 +14,7 @@ foreach ($threads->threads as $thread1) {
 }
 
 if (isset($_POST['submit'])) {
-    require_once __DIR__ . '/vendor/autoload.php';
-    require_once __DIR__ . '/username-password-imap.php';
-    require_once __DIR__ . '/imap-connection.php';
-    $mailbox = openConnection();
-
-    $mail = new \PHPMailer\PHPMailer\PHPMailer(true);
-    $mail->XMailer = 'Roundcube thread starter';
-    $mail->isSMTP();
-    $mail->CharSet = \PHPMailer\PHPMailer\PHPMailer::CHARSET_UTF8;
-
-    $mail->Host = 'smtp.sendgrid.net';
-    $mail->SMTPAuth = true;
-    $mail->Username = $sendgridUsername;
-    $mail->Password = $sendgridPassword;
-    $mail->SMTPSecure = 'tls';
-    $mail->Port = 587;
-
-    echo '<pre>';
-    echo $mail->Port . '<br>';
-    $mail->From = $thread->my_email;
-    $mail->FromName = $thread->my_name;
-    $mail->addAddress($_POST['email-to']);     // Add a recipient
-    $mail->addBCC($mail->From);
-
-    $mail->WordWrap = 150;
-
-    $mail->Subject = $_POST['email-subject'];
-    $mail->Body = $_POST['email-body'];
-    //$mail->isHTML(true);                                  // Set email format to HTML
-    //$mail->AltBody = 'This is the body in plain text for non-HTML mail clients';
-
-    $mail->SMTPDebug = 2;
-    $mail->Timeout = 10;
-
-    if (!$mail->send()) {
-        echo 'Message could not be sent.';
-        echo 'Mailer Error: ' . $mail->ErrorInfo;
-    }
-    else {
-        echo 'Message has been sent';
-    }
-
-    // :: Update sent property on thread
-    $thread->sent = true;
-    saveEntityThreads($entityId, $threads);
-
-    echo 'OK.';
+    sendThreadEmail($thread, $_POST['email-to'], $_POST['email-subject'], $_POST['email-body'], $entityId, $threads);
     exit;
 }
 
