@@ -25,6 +25,10 @@ function getThreadsForEntity($entityID) {
     return json_decode(file_get_contents($path));
 }
 
+function getThreadFile($entityId, $thread, $attachement) {
+    return file_get_contents('/organizer-data/threads/' . $entityId . '/' . getThreadId($thread) .'/'.$attachement);
+}
+
 /**
  * @param $entityId
  * @param Threads $entity_threads
