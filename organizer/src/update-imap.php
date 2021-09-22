@@ -150,8 +150,10 @@ function moveEmails($mailbox) {
         $subject = $mail_headers->subject;
 
         $to_from = array();
-        foreach ($mail_headers->to as $email) {
-            $to_from[] = $email->mailbox . '@' . $email->host;
+        if(isset($mail_headers->to)) {
+            foreach ($mail_headers->to as $email) {
+                $to_from[] = $email->mailbox . '@' . $email->host;
+            }
         }
         foreach ($mail_headers->from as $email) {
             $to_from[] = $email->mailbox . '@' . $email->host;
@@ -323,13 +325,30 @@ function saveEmails($mailbox, $folderJson, &$thread) {
 
         if (isset($email_datetime[$datetime])) {
             // Gaaah. Same sending time on two emails. Doing the hack one more level.
-            $datetime .= '_2';
+            if (!isset($email_datetime[$datetime.'_2'])) {
+                $datetime .= '_2';
+            }
+            if (!isset($email_datetime[$datetime.'_3'])) {
+                $datetime .= '_3';
+            }
+            if (!isset($email_datetime[$datetime.'_4'])) {
+                $datetime .= '_4';
+            }
+            if (!isset($email_datetime[$datetime.'_5'])) {
+                $datetime .= '_5';
+            }
+
             if (isset($email_datetime[$datetime])) {
-                throw new Exception('Double.');
+                throw new Exception('Many.');
             }
         }
         $file_name = $datetime . ' - ' . $in_or_out;
         $email_datetime[$datetime] = $datetime;
+
+        $email_json_file = $folderJson . '/' . $file_name . '.json';
+        if (file_exists($email_json_file)) {
+            continue;
+        }
 
         $obj = new stdClass();
 
@@ -409,8 +428,17 @@ function saveEmails($mailbox, $folderJson, &$thread) {
                     elseif (str_ends_with(strtolower($att->name), '.jpg')) {
                         $att->filetype = 'jpg';
                     }
+                    elseif (str_ends_with(strtolower($att->name), '.png')) {
+                        $att->filetype = 'png';
+                    }
                     elseif (str_ends_with(strtolower($att->name), '.docx')) {
                         $att->filetype = 'docx';
+                    }
+                    elseif (str_ends_with(strtolower($att->name), '.xlsx')) {
+                        $att->filetype = 'xlsx';
+                    }
+                    elseif (str_ends_with(strtolower($att->name), '.zip')) {
+                        $att->filetype = 'zip';
                     }
                     elseif (str_ends_with(strtolower($att->name), '.rda')) {
                         $att->filetype = 'UNKNOWN';
@@ -457,11 +485,6 @@ function saveEmails($mailbox, $folderJson, &$thread) {
                 continue;
             }
         }
-
-
-        $email_json_file = $folderJson . '/' . $file_name . '.json';
-        file_put_contents($email_json_file, json_encode($obj, JSON_PRETTY_PRINT ^ JSON_UNESCAPED_SLASHES ^ JSON_UNESCAPED_UNICODE));
-//        chmod($email_json_file, 0777);
 
         if (!isset($thread->emails)) {
             $thread->emails = array();
@@ -520,5 +543,7 @@ function saveEmails($mailbox, $folderJson, &$thread) {
                 $thread->labels[] = 'uklassifisert-epost';
             }
         }
+
+        file_put_contents($email_json_file, json_encode($obj, JSON_PRETTY_PRINT ^ JSON_UNESCAPED_SLASHES ^ JSON_UNESCAPED_UNICODE));
     }
 }
