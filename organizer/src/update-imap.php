@@ -88,7 +88,7 @@ function getThreadEmailFolder($entity_threads, $thread) {
 
 foreach ($threads as $entity_threads) {
     foreach ($entity_threads->threads as $thread) {
-        $title = $entity_threads->title_prefix . ' - ' . $thread->title;
+        $title = str_replace('INBOX.Archive.', '', getThreadEmailFolder($entity_threads, $thread));
         $email_to_folder[$thread->my_email] = getThreadEmailFolder($entity_threads, $thread);
         if ($thread->archived) {
             $outputPrefix = '-- ' . $title . '        ';
