@@ -419,7 +419,22 @@ function saveEmails($mailbox, $folderJson, &$thread) {
                     $att->name = $attachments[$i]['name'];
                     $att->filename = $attachments[$i]['filename'];
 
-                    if (str_ends_with(strtolower($att->name), '.pdf')) {
+                    $att->name  = str_replace('=?UTF-8?Q?Stortingsvalg_=2D_Valgstyrets=5Fm=C3=B8tebok=5F1806=5F2021=2D09=2D29=2Epdf?=',
+                        'Stortingsvalg - Valgstyrets-møtebok-1806-2021.pdf', $att->name);
+                    $att->filename  = str_replace('=?UTF-8?Q?Stortingsvalg_=2D_Valgstyrets=5Fm=C3=B8tebok=5F1806=5F2021=2D09=2D29=2Epdf?=',
+                        'Stortingsvalg - Valgstyrets-møtebok-1806-2021.pdf', $att->filename);
+
+
+                    $att->name  = str_replace('=?UTF-8?Q?Samtingsvalg_=2D_Samevalgstyrets_m=C3=B8tebok=5F1806=5F2021=2D09=2D29=2Epd?=	f',
+                    'Samtingsvalg.pdf', $att->name);
+                    $att->filename  = str_replace('=?UTF-8?Q?Samtingsvalg_=2D_Samevalgstyrets_m=C3=B8tebok=5F1806=5F2021=2D09=2D29=2Epd?=	f',
+                    'Samtingsvalg.pdf', $att->filename);
+
+                    if (
+                        str_ends_with(strtolower($att->name), '.pdf')
+                        || str_ends_with(strtolower($att->name), '.pd f')
+                        || str_ends_with(strtolower($att->name), '.p df')
+                    ) {
                         $att->filetype = 'pdf';
                     }
                     elseif (str_ends_with(strtolower($att->name), '.pdf')) {
@@ -434,11 +449,17 @@ function saveEmails($mailbox, $folderJson, &$thread) {
                     elseif (str_ends_with(strtolower($att->name), '.docx')) {
                         $att->filetype = 'docx';
                     }
+                    elseif (str_ends_with(strtolower($att->name), '.doc')) {
+                        $att->filetype = 'doc';
+                    }
                     elseif (str_ends_with(strtolower($att->name), '.xlsx')) {
                         $att->filetype = 'xlsx';
                     }
                     elseif (str_ends_with(strtolower($att->name), '.zip')) {
                         $att->filetype = 'zip';
+                    }
+                    elseif (str_ends_with(strtolower($att->name), '.gz')) {
+                        $att->filetype = 'gz';
                     }
                     elseif (str_ends_with(strtolower($att->name), '.rda')) {
                         $att->filetype = 'UNKNOWN';
