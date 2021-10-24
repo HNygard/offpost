@@ -41,51 +41,62 @@ $last_names_to_clean = array_merge(
 //getNamesFromCsv(__DIR__ . '/motorvognregisteret-last-name.csv')
 );
 
-$first = $first_names_to_clean[array_rand($first_names_to_clean)];
-$last = $last_names_to_clean[array_rand($last_names_to_clean)];
+function getRandomNameAndEmail() {
+    global $first_names_to_clean, $last_names_to_clean;
+    $first = $first_names_to_clean[array_rand($first_names_to_clean)];
+    $last = $last_names_to_clean[array_rand($last_names_to_clean)];
 
-// Random: Å ha mellomnavn
-$middle = profileRandom(70, $last_names_to_clean[array_rand($last_names_to_clean)], '');
+    // Random: Å ha mellomnavn
+    $middle = profileRandom(70, $last_names_to_clean[array_rand($last_names_to_clean)], '');
 
-$first = mb_ucfirst(mb_strtolower($first, 'UTF-8'), 'UTF-8');
-$middle = mb_ucfirst(mb_strtolower($middle, 'UTF-8'), 'UTF-8');
-$last = mb_ucfirst(mb_strtolower($last, 'UTF-8'), 'UTF-8');
+    $first = mb_ucfirst(mb_strtolower($first, 'UTF-8'), 'UTF-8');
+    $middle = mb_ucfirst(mb_strtolower($middle, 'UTF-8'), 'UTF-8');
+    $last = mb_ucfirst(mb_strtolower($last, 'UTF-8'), 'UTF-8');
 
-$middleShort = '';
-if ($middle != '') {
-    // Random: Forkort mellomnavn
-    $middleShort = ' ' . profileRandom(70, $middle, substr($middle, 0, 1) . '.');
+    $middleShort = '';
+    if ($middle != '') {
+        // Random: Forkort mellomnavn
+        $middleShort = ' ' . profileRandom(70, $middle, substr($middle, 0, 1) . '.');
+    }
+
+    $email = mb_strtolower($first, 'UTF-8');
+
+    if ($middle != '') {
+        // Random: Short or full in email
+        $emailMiddle = profileRandom(20, $middleShort, $middle);
+        $emailMiddle = str_replace('.', '', $emailMiddle);
+        // Random: To include middle name in email
+        $email .= profileRandom(70, '.' . mb_strtolower($emailMiddle, 'UTF-8'), '');
+    }
+
+    $email .= '.' . mb_strtolower($last, 'UTF-8');
+    $email .= '@offpost.no';
+
+    // Random: Replace å with aa or a
+    $email = str_replace('å', profileRandom(50, 'aa', 'a'), $email);
+    $email = str_replace('æ', 'ae', $email);
+    $email = str_replace('ø', profileRandom(50, 'oe', 'o'), $email);
+
+    // Clean out spaces
+    $email = str_replace(' ', '', $email);
+
+    $obj = new stdClass();
+    $obj->firstName = $first;
+    $obj->middleName = $middleShort;
+    $obj->lastName = $last;
+    $obj->email = $email;
+    return $obj;
 }
 
-$email = mb_strtolower($first, 'UTF-8');
-
-if ($middle != '') {
-    // Random: Short or full in email
-    $emailMiddle = profileRandom(20, $middleShort, $middle);
-    $emailMiddle = str_replace('.', '', $emailMiddle);
-    // Random: To include middle name in email
-    $email .= profileRandom(70, '.' . mb_strtolower($emailMiddle, 'UTF-8'), '');
-}
-
-$email .= '.' . mb_strtolower($last, 'UTF-8');
-$email .= '@offpost.no';
-
-// Random: Replace å with aa or a
-$email = str_replace('å', profileRandom(50, 'aa', 'a'), $email);
-$email = str_replace('æ', 'ae', $email);
-$email = str_replace('ø', profileRandom(50, 'oe', 'o'), $email);
-
-// Clean out spaces
-$email = str_replace(' ', '', $email);
-
-echo 'First name .... : ' . $first . chr(10);
-echo 'Middle name ... : ' . trim($middleShort) . chr(10);
-echo 'Last name ..... : ' . $last . chr(10);
+$obj = getRandomNameAndEmail();
+echo 'First name .... : ' . $obj->firstName . chr(10);
+echo 'Middle name ... : ' . trim($obj->middleName) . chr(10);
+echo 'Last name ..... : ' . $obj->lastName. chr(10);
 echo chr(10);
-echo 'E-mail ........ : ' . $email . chr(10);
+echo 'E-mail ........ : ' . $obj->email . chr(10);
 
 echo chr(10);
 echo 'http://localhost:25081/start-thread.php'
-    . '?my_email=' . urlencode($email)
-    . '&my_name=' . urlencode($first . $middleShort . ' ' . $last)
+    . '?my_email=' . urlencode($obj->email)
+    . '&my_name=' . urlencode($obj->firstName . $obj->middleName . ' ' . $obj->lastName)
     . chr(10);
