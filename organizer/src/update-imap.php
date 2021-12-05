@@ -439,6 +439,7 @@ function saveEmails($mailbox, $folderJson, &$thread) {
                         str_ends_with(strtolower($att->name), '.pdf')
                         || str_ends_with(strtolower($att->name), '.pd f')
                         || str_ends_with(strtolower($att->name), '.p df')
+                        || str_ends_with(strtolower($att->name), '. pdf')
                     ) {
                         $att->filetype = 'pdf';
                     }
@@ -466,10 +467,16 @@ function saveEmails($mailbox, $folderJson, &$thread) {
                     elseif (str_ends_with(strtolower($att->name), '.gz')) {
                         $att->filetype = 'gz';
                     }
+                    elseif (str_ends_with(strtolower($att->name), '.gif')) {
+                        $att->filetype = 'gif';
+                    }
+                    elseif (str_ends_with(strtolower($att->name), '.eml')) {
+                        $att->filetype = 'eml';
+                    }
                     elseif (str_ends_with(strtolower($att->name), '.rda')) {
                         $att->filetype = 'UNKNOWN';
                     }
-                    elseif(empty($att->name)) {
+                    elseif(empty($att->name) || str_starts_with($att->name, 'Valgstyrets_møtebok_4649_2021-11-18')) {
                         $att->filetype = 'UNKNOWN';
                     }
                     else {
