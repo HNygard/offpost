@@ -11,7 +11,11 @@ require_once __DIR__ . '/class/Threads.php';
 $allThreads = getThreads();
 
 $threadsMatch = array();
-foreach ($allThreads as $entityThreads) {
+foreach ($allThreads as $entityFile => $entityThreads) {
+    if (!isset($entityThreads->threads)) {
+        throw new Exception('Error in file: ' . $entityFile);
+    }
+
     foreach ($entityThreads->threads as $thread) {
         foreach ($thread->labels as $label) {
             if ($label == $_GET['label']) {

@@ -35,6 +35,7 @@ function getThreadFile($entityId, $thread, $attachement) {
  */
 function saveEntityThreads($entityId, $entity_threads) {
     $path = '/organizer-data/threads/threads-' . $entityId . '.json';
+    logDebug('Writing to [' . $path . '].');
     file_put_contents($path, json_encode($entity_threads, JSON_PRETTY_PRINT ^ JSON_UNESCAPED_UNICODE ^ JSON_UNESCAPED_SLASHES));
 }
 

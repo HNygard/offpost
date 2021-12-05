@@ -25,7 +25,11 @@ $allThreads = getThreads();
     </tr>
     <?php
 
-    foreach ($allThreads as $threads) {
+    foreach ($allThreads as $file => $threads) {
+        if (!isset($threads->threads)) {
+            var_dump($file);
+        }
+
         foreach ($threads->threads as $thread) {
             if($thread->archived && !isset($_GET['archived'])) {
                 continue;
