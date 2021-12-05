@@ -2,6 +2,15 @@
 
 require_once __DIR__ . '/class/Threads.php';
 
+$debug = true;
+function logDebug($text) {
+    global $debug;
+    if ($debug) {
+        echo $text . chr(10);
+    }
+}
+
+
 $entityId = $_GET['entityId'];
 $threadId = $_GET['threadId'];
 $threads = getThreadsForEntity($entityId);

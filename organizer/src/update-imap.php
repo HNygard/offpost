@@ -94,13 +94,14 @@ foreach ($threads as $entity_threads) {
             $outputPrefix = '-- ' . $title . '        ';
             if (isset($folders[$server . 'INBOX.' . str_replace('INBOX.Archive.', '', $title)])) {
                 // -> Exists and should be moved
+                echo $outputPrefix;
                 imap_renamemailbox(
                     $mailbox,
                     imap_utf7_encode($server . 'INBOX.' . $title),
                     imap_utf7_encode($server . 'INBOX.Archive.' . $title)
                 );
                 checkForImapError();
-                echo $outputPrefix . '[ARCHIVED]' . chr(10);
+                echo '[ARCHIVED]' . chr(10);
             }
             elseif (isset($folders[$server . 'INBOX.Archive.' . $title])) {
                 //echo $outputPrefix . '[OK]' . chr(10);
@@ -359,7 +360,7 @@ function saveEmails($mailbox, $folderJson, &$thread) {
         $obj->date = $mail_headers->date;
         unset($mail_headers->date);
 
-        $mail_headers->toaddress = imap_utf8($mail_headers->toaddress);
+        $mail_headers->toaddress = isset($mail_headers->toaddress) ? imap_utf8($mail_headers->toaddress) : null;
         $mail_headers->fromaddress = imap_utf8($mail_headers->fromaddress);
         $mail_headers->senderaddress = imap_utf8($mail_headers->senderaddress);
         $mail_headers->reply_toaddress = imap_utf8($mail_headers->reply_toaddress);
@@ -380,6 +381,10 @@ function saveEmails($mailbox, $folderJson, &$thread) {
 
         $obj->body = imap_body($mailbox, $mail, FT_UID);
         checkForImapError();
+
+        if (json_encode($obj->body, JSON_PRETTY_PRINT ^ JSON_UNESCAPED_UNICODE ^ JSON_UNESCAPED_SLASHES) === false) {
+            $obj->body = mb_convert_encoding($obj->body, 'UTF-8', 'ISO-8859-1');
+        }
 
         $obj->mailHeaders = $mail_headers;
 
@@ -475,6 +480,22 @@ function saveEmails($mailbox, $folderJson, &$thread) {
 
                     // Don't include the name, since we have no control over it.
                     $att->location = $file_name . ' - att ' . $i . '-' . md5($att->name) . '.' . $att->filetype;
+
+                    json_encode($att, JSON_PRETTY_PRINT ^ JSON_UNESCAPED_SLASHES ^ JSON_UNESCAPED_UNICODE);
+                    if (json_last_error() != JSON_ERROR_NONE) {
+                        $name1 = $att->name;
+                        $name2 = $att->filename;
+                        $att->name = 'NAME NOT AVAILABLE - JSON ENCODE ERROR.';
+                        $att->filename = 'NAME NOT AVAILABLE - JSON ENCODE ERROR.';
+                        json_encode($att, JSON_PRETTY_PRINT ^ JSON_UNESCAPED_SLASHES ^ JSON_UNESCAPED_UNICODE);
+                        if (json_last_error() != JSON_ERROR_NONE) {
+                            var_dump($att);
+                            var_dump($name1);
+                            var_dump($name2);
+                            throw new Exception('Unable to read JSON.');
+                        }
+                    }
+
                     $obj->attachments[] = $att;
 
                     $path = $folderJson . '/' . $att->location;
@@ -565,6 +586,14 @@ function saveEmails($mailbox, $folderJson, &$thread) {
             }
         }
 
-        file_put_contents($email_json_file, json_encode($obj, JSON_PRETTY_PRINT ^ JSON_UNESCAPED_SLASHES ^ JSON_UNESCAPED_UNICODE));
+        logDebug('Writing email to [' . $email_json_file . ']');
+
+        $content = json_encode($obj, JSON_PRETTY_PRINT ^ JSON_UNESCAPED_SLASHES ^ JSON_UNESCAPED_UNICODE);
+        if (json_last_error() != JSON_ERROR_NONE) {
+            var_dump($obj);
+            throw new Exception('Unable to read JSON.');
+        }
+
+        file_put_contents($email_json_file, $content);
     }
 }
