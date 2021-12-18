@@ -3,8 +3,19 @@
 
 require_once __DIR__ . '/class/Thread.php';
 require_once __DIR__ . '/class/Threads.php';
+require_once __DIR__ . '/class/random-profile.php';
 
 if (!isset($_POST['entity_id'])) {
+    if (isset($_GET['my_profile']) && $_GET['my_profile'] == 'RANDOM') {
+        $obj = getRandomNameAndEmail();
+        $_GET['my_name'] = $obj->firstName . $obj->middleName . ' ' . $obj->lastName;
+        $_GET['my_email'] = $obj->email;
+        if (isset($_GET['body'])) {
+            $_GET['body'] .= "\n\n--\n" . $obj->firstName . $obj->middleName . ' ' . $obj->lastName;
+        }
+    }
+
+
     ?>
     <style>
         input {
@@ -19,7 +30,7 @@ if (!isset($_POST['entity_id'])) {
         <h1>Start email thread</h1>
         <input type="text" name="title" value="<?= htmlescape(isset($_GET['title']) ? $_GET['title'] : '') ?>"> - Title<br>
         <input type="text" name="my_name" value="<?= htmlescape(isset($_GET['my_name']) ? $_GET['my_name'] : '') ?>"> - My name<br>
-        <input type="text" name="my_email" value="<?= htmlescape($_GET['my_email']) ?>"> - My email<br>
+        <input type="text" name="my_email" value="<?= htmlescape(isset($_GET['my_email']) ? $_GET['my_email'] : '') ?>"> - My email<br>
         <input type="text" name="labels" value="<?= htmlescape(isset($_GET['labels']) ? $_GET['labels'] : '') ?>"> - Labels, space separated<br>
         <input type="text" name="entity_id" value="<?= htmlescape(isset($_GET['entity_id']) ? $_GET['entity_id'] : '') ?>"> - Entity id<br>
         <input type="text" name="entity_title_prefix" value="<?= htmlescape(isset($_GET['entity_title_prefix']) ? $_GET['entity_title_prefix'] : '') ?>"> - Entity title prefix (only used if first thread for this entity)<br>

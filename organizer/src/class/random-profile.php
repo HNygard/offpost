@@ -1,6 +1,6 @@
 <?php
 
-require_once __DIR__ . '/organizer/src/class/common.php';
+require_once __DIR__ . '/../class/common.php';
 
 function mb_ucfirst($string, $encoding) {
     $firstChar = mb_substr($string, 0, 1, $encoding);
@@ -29,14 +29,14 @@ function getNamesFromCsv($file1) {
 
 $first_names_to_clean = array_merge(
 // Source: SSB
-    getNamesFromCsv(__DIR__ . '/../name-and-email-cleaner/guttenavn.csv'),
-    getNamesFromCsv(__DIR__ . '/../name-and-email-cleaner/jentenavn.csv')
+    getNamesFromCsv(__DIR__ . '/../copy-name-and-email-cleaner/guttenavn.csv'),
+    getNamesFromCsv(__DIR__ . '/../copy-name-and-email-cleaner/jentenavn.csv')
 // Source: Motorvognregisteret (motorvognregisteret-extract-names.php)
 //getNamesFromCsv(__DIR__ . '/motorvognregisteret-first-name.csv')
 );
 $last_names_to_clean = array_merge(
 // Source: SSB
-    getNamesFromCsv(__DIR__ . '/../name-and-email-cleaner/etternavn.csv')
+    getNamesFromCsv(__DIR__ . '/../copy-name-and-email-cleaner/etternavn.csv')
 // Source: Motorvognregisteret (motorvognregisteret-extract-names.php)
 //getNamesFromCsv(__DIR__ . '/motorvognregisteret-last-name.csv')
 );
@@ -87,16 +87,3 @@ function getRandomNameAndEmail() {
     $obj->email = $email;
     return $obj;
 }
-
-$obj = getRandomNameAndEmail();
-echo 'First name .... : ' . $obj->firstName . chr(10);
-echo 'Middle name ... : ' . trim($obj->middleName) . chr(10);
-echo 'Last name ..... : ' . $obj->lastName. chr(10);
-echo chr(10);
-echo 'E-mail ........ : ' . $obj->email . chr(10);
-
-echo chr(10);
-echo 'http://localhost:25081/start-thread.php'
-    . '?my_email=' . urlencode($obj->email)
-    . '&my_name=' . urlencode($obj->firstName . $obj->middleName . ' ' . $obj->lastName)
-    . chr(10);
