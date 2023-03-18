@@ -473,6 +473,9 @@ function saveEmails($mailbox, $folderJson, &$thread) {
                     elseif (str_ends_with(strtolower($att->name), '.eml')) {
                         $att->filetype = 'eml';
                     }
+                    elseif (str_ends_with(strtolower($att->name), '.csv')) {
+                        $att->filetype = 'csv';
+                    }
                     elseif (str_ends_with(strtolower($att->name), '.rda')) {
                         $att->filetype = 'UNKNOWN';
                     }

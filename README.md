@@ -1,7 +1,7 @@
 
 # Start
 
-    sudo docker-compose up
+    docker-compose up
     
 Open Roundcube (mail client) should be ready with database at:
 - http://localhost:25080/
