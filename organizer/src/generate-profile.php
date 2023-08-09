@@ -16,10 +16,14 @@ echo 'http://localhost:25081/start-thread.php'
     . '&my_name=' . urlencode($obj->firstName . $obj->middleName . ' ' . $obj->lastName)
     . chr(10);
 
+echo '<pre>';
 
 $data = array();
 for ($i = 0; $i < 400; $i++) {
     $data[] = getRandomNameAndEmail();
 }
-echo '<pre>' . json_encode($data, JSON_UNESCAPED_SLASHES ^ JSON_PRETTY_PRINT ^ JSON_UNESCAPED_UNICODE) . '</pre>';
+$obj = new stdClass();
+$obj->comment = 'Created by Email Engine: http://localhost:25081/generate-profile.php';
+$obj->profiles = $data;
+echo json_encode($obj, JSON_UNESCAPED_SLASHES ^ JSON_PRETTY_PRINT ^ JSON_UNESCAPED_UNICODE) . '</pre>';
 echo json_last_error_msg() . chr(10);
