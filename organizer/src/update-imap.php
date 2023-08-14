@@ -64,9 +64,10 @@ foreach ($folder_that_should_exist as $title) {
             //echo $outputPrefix . '[OK]' . chr(10);
         }
         else {
+            echo $outputPrefix;
             imap_createmailbox($mailbox, imap_utf7_encode($server . $title));
             checkForImapError();
-            echo $outputPrefix . '[CREATED]' . chr(10);
+            echo '[CREATED]' . chr(10);
         }
     }
 }
