@@ -9,6 +9,7 @@ class ThreadEmail {
     var $status_type;
     var $status_text;
     var $description;
+    var $answer;
     /* @var $attachments ThreadEmailAttachment[] */
     var $attachments;
 }

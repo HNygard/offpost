@@ -2,6 +2,10 @@
 
 require_once __DIR__ . '/class/Threads.php';
 
+function logDebug($message) {
+    echo $message . '<br>' . chr(10);
+}
+
 $entityId = $_GET['entityId'];
 $threadId = $_GET['threadId'];
 $threads = getThreadsForEntity($entityId);
@@ -20,6 +24,7 @@ if (isset($_POST['submit'])) {
         $email->ignore = isset($_POST[$emailId . '-ignore']) && $_POST[$emailId . '-ignore'] == 'true';
         $email->status_text = $_POST[$emailId . '-status_text'];
         $email->status_type = $_POST[$emailId . '-status_type'];
+        $email->answer = $_POST[$emailId . '-answer'];
         if (isset($email->attachments)) {
             foreach ($email->attachments as $att) {
                 $attId = str_replace(' ', '_', str_replace('.', '_', $att->location));
@@ -34,7 +39,7 @@ if (isset($_POST['submit'])) {
     if (!$anyUnknown) {
         // -> Remove any 'unknown' labels
         $labels = array();
-        foreach($thread->labels as $label) {
+        foreach ($thread->labels as $label) {
             if ($label != 'uklassifisert-epost') {
                 $labels[] = $label;
             }
@@ -76,78 +81,88 @@ function labelSelect($currentType, $id) {
 <table style="width: 100%">
     <tr>
         <td style="width: 30%; vertical-align: top">
-<form method="post">
-    <?php
-    $firstOut = false;
-    foreach ($thread->emails as $email) {
-      //echo '<pre>';  var_dump($email);
-        $emailId = str_replace(' ', '_', str_replace('.', '_', $email->id));
-        ?>
-        <div <?= $email->ignore ? ' style="color: gray;"' : '' ?>>
-            <hr>
-            <?= $email->datetime_received ?>:
-            <?= $email->email_type ?><br>
-
-            <input type="button"
-                   style="font-size: 2em; padding: 0.5em; float: right"
-                   data-url="<?= '/file.php?entityId=' . urlencode($threads->entity_id)
-                   . '&threadId=' . urlencode(getThreadId($thread))
-                   . '&body=' . urlencode($email->id) ?>" onclick="document.getElementById('viewer-iframe').src = this.getAttribute('data-url');" value="Open"><br>
-
-            <input type="checkbox"
-                   value="true"
-                   name="<?= $emailId . '-ignore' ?>"
-                <?= $email->ignore ? ' checked="checked"' : '' ?>> Ignore<br>
-
-            <?php
-            labelSelect($email->status_type, $emailId . '-status_type');
-            ?>
-            Status type<br>
-            <input type="text" name="<?= $emailId . '-status_text' ?>" value="<?= htmlescape($email->status_text) ?>"> Status text
-
-            <?php
-            if (!$firstOut && $email->email_type == 'OUT') {
-                ?>
-                <br><input type="text" value="Initiell henvendelse"> - <span style="color: blue">Forslag</span>
+            <form method="post">
                 <?php
-                $firstOut = true;
-            }
-            ?>
-
-            <br>
-            <i><?= htmlescape(isset($email->description) ? $email->description : '') ?></i>
-            <?php
-            if (isset($email->attachments)) {
-                foreach ($email->attachments as $att) {
-                    $attId = str_replace(' ', '_', str_replace('.', '_', $att->location));
-                    ?><br><br>
-                    <?= $att->filetype ?> - <i><?= htmlentities($att->name, ENT_QUOTES) ?></i><br>
-                    <input type="button"
-                           style="font-size: 2em; padding: 0.5em; float: right"
-                           data-url="<?='/file.php?entityId=' . urlencode($threads->entity_id)
-                    . '&threadId='. urlencode(getThreadId($thread))
-                    . '&attachment=' . urlencode($att->location)?>" onclick="document.getElementById('viewer-iframe').src = this.getAttribute('data-url');" value="Open"><br>
-                    <?php
-                    labelSelect($att->status_type, $emailId . '-att-' . $attId . '-status_type');
+                $firstOut = false;
+                foreach ($thread->emails as $email) {
+                    //echo '<pre>';  var_dump($email);
+                    $emailId = str_replace(' ', '_', str_replace('.', '_', $email->id));
                     ?>
-                    Status type<br>
-                    <input type="text"
-                           value="<?= htmlescape($att->status_text) ?>"
-                           name="<?= $emailId . '-att-' . $attId . '-status_text' ?>"> Status text
+                    <div <?= $email->ignore ? ' style="color: gray;"' : '' ?>>
+                        <hr>
+                        <?= $email->datetime_received ?>:
+                        <?= $email->email_type ?><br>
+
+                        <input type="button"
+                               style="font-size: 2em; padding: 0.5em; float: right"
+                               data-url="<?= '/file.php?entityId=' . urlencode($threads->entity_id)
+                               . '&threadId=' . urlencode(getThreadId($thread))
+                               . '&body=' . urlencode($email->id) ?>"
+                               onclick="document.getElementById('viewer-iframe').src = this.getAttribute('data-url');" value="Open"><br>
+
+                        <input type="checkbox"
+                               value="true"
+                               name="<?= $emailId . '-ignore' ?>"
+                            <?= $email->ignore ? ' checked="checked"' : '' ?>> Ignore<br>
+
+                        <?php
+                        labelSelect($email->status_type, $emailId . '-status_type');
+                        ?>
+                        Status type<br>
+                        <input type="text" name="<?= $emailId . '-status_text' ?>" value="<?= htmlescape($email->status_text) ?>"> Status
+                        text
+
+                        <?php
+                        if (!$firstOut && $email->email_type == 'OUT') {
+                            ?>
+                            <br><input type="text" value="Initiell henvendelse"> - <span style="color: blue">Forslag</span>
+                            <?php
+                            $firstOut = true;
+                        }
+                        ?>
+
+                        <br>
+                        <textarea name="<?= $emailId . '-answer' ?>"
+                                  style="width: 400px; height: 200px"><?= htmlescape(isset($email->answer) ? $email->answer : '') ?></textarea>
+
+                        <br>
+                        <i><?= htmlescape(isset($email->description) ? $email->description : '') ?></i>
+                        <?php
+                        if (isset($email->attachments)) {
+                            foreach ($email->attachments as $att) {
+                                $attId = str_replace(' ', '_', str_replace('.', '_', $att->location));
+                                ?><br><br>
+                                <?= $att->filetype ?> - <i><?= htmlentities($att->name, ENT_QUOTES) ?></i><br>
+                                <input type="button"
+                                       style="font-size: 2em; padding: 0.5em; float: right"
+                                       data-url="<?= '/file.php?entityId=' . urlencode($threads->entity_id)
+                                       . '&threadId=' . urlencode(getThreadId($thread))
+                                       . '&attachment=' . urlencode($att->location) ?>"
+                                       onclick="document.getElementById('viewer-iframe').src = this.getAttribute('data-url');" value="Open">
+                                <br>
+                                <?php
+                                labelSelect($att->status_type, $emailId . '-att-' . $attId . '-status_type');
+                                ?>
+                                Status type<br>
+                                <input type="text"
+                                       value="<?= htmlescape($att->status_text) ?>"
+                                       name="<?= $emailId . '-att-' . $attId . '-status_text' ?>"> Status text
+                                <?php
+                            }
+                        }
+                        ?>
+                    </div>
+                    <br>
                     <?php
                 }
-            }
-            ?>
-        </div>
-        <br>
-        <?php
-    }
-    ?>
-    <hr>
-    <input type="submit" value="Save" name="submit">
-</form>
+                ?>
+                <hr>
+                <input type="submit" value="Save" name="submit"
+                       style="font-size: 2em; padding: 0.5em;">
+            </form>
         </td>
-        <td><iframe id="viewer-iframe" style="width: 100%; height: 900px"></iframe>
+        <td>
+            <iframe id="viewer-iframe" style="width: 100%; height: 900px"></iframe>
         </td>
     </tr>
 </table>
