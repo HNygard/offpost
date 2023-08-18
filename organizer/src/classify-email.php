@@ -73,16 +73,26 @@ function labelSelect($currentType, $id) {
 
 [<a href=".">Hovedside</a>]
 
+<table style="width: 100%">
+    <tr>
+        <td style="width: 30%; vertical-align: top">
 <form method="post">
     <?php
     $firstOut = false;
     foreach ($thread->emails as $email) {
+      //echo '<pre>';  var_dump($email);
         $emailId = str_replace(' ', '_', str_replace('.', '_', $email->id));
         ?>
         <div <?= $email->ignore ? ' style="color: gray;"' : '' ?>>
             <hr>
             <?= $email->datetime_received ?>:
             <?= $email->email_type ?><br>
+
+            <input type="button"
+                   style="font-size: 2em; padding: 0.5em; float: right"
+                   data-url="<?= '/file.php?entityId=' . urlencode($threads->entity_id)
+                   . '&threadId=' . urlencode(getThreadId($thread))
+                   . '&body=' . urlencode($email->id) ?>" onclick="document.getElementById('viewer-iframe').src = this.getAttribute('data-url');" value="Open"><br>
 
             <input type="checkbox"
                    value="true"
@@ -112,6 +122,11 @@ function labelSelect($currentType, $id) {
                     $attId = str_replace(' ', '_', str_replace('.', '_', $att->location));
                     ?><br><br>
                     <?= $att->filetype ?> - <i><?= htmlentities($att->name, ENT_QUOTES) ?></i><br>
+                    <input type="button"
+                           style="font-size: 2em; padding: 0.5em; float: right"
+                           data-url="<?='/file.php?entityId=' . urlencode($threads->entity_id)
+                    . '&threadId='. urlencode(getThreadId($thread))
+                    . '&attachment=' . urlencode($att->location)?>" onclick="document.getElementById('viewer-iframe').src = this.getAttribute('data-url');" value="Open"><br>
                     <?php
                     labelSelect($att->status_type, $emailId . '-att-' . $attId . '-status_type');
                     ?>
@@ -131,3 +146,8 @@ function labelSelect($currentType, $id) {
     <hr>
     <input type="submit" value="Save" name="submit">
 </form>
+        </td>
+        <td><iframe id="viewer-iframe" style="width: 100%; height: 900px"></iframe>
+        </td>
+    </tr>
+</table>
