@@ -384,7 +384,7 @@ function saveEmails($mailbox, $folderJson, &$thread) {
             $mail_headers->reply_to[0]->personal = imap_utf8($mail_headers->reply_to[0]->personal);
         }
 
-        $obj->attachements = array();
+        $obj->attachments = array();
 
         $obj->body = imap_body($mailbox, $mail, FT_UID);
         checkForImapError();
