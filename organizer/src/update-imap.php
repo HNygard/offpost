@@ -347,7 +347,13 @@ function saveEmails($mailbox, $folderJson, &$thread) {
         $file_name = $datetime . ' - ' . $in_or_out;
         $email_datetime[$datetime] = $datetime;
 
+        $email_raw_file = $folderJson . '/' . $file_name . '.eml';
+        if (!file_exists($email_raw_file)) {
+            file_put_contents($email_raw_file, imap_fetchbody($mailbox, $mail, ""));
+        }
+
         $email_json_file = $folderJson . '/' . $file_name . '.json';
+
         if (file_exists($email_json_file)) {
             continue;
         }
