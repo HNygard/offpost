@@ -21,7 +21,7 @@ function openConnection($folder = 'INBOX') {
 
     global $server;
     try {
-        $m = imap_open($server . $folder, $yourEmail, $yourEmailPassword, NULL, 1,
+        $m = imap_open($server . $folder, $yourEmail, $yourEmailPassword, 0, 1,
             array('DISABLE_AUTHENTICATOR' => 'PLAIN'));
         checkForImapError();
         return $m;
