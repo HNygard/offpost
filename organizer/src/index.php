@@ -61,6 +61,9 @@ $allThreads = getThreads();
                     [<a href="thread__send-email.php?entityId=<?=
                         htmlescape($threads->entity_id)?>&threadId=<?=
                         htmlescape(getThreadId($thread))?>">Send email</a>]
+                    [<a href="setSuccessForThreadAndDocument.php?entityId=<?=
+                        htmlescape($threads->entity_id)?>&threadId=<?=
+                        htmlescape(getThreadId($thread))?>">Archive thread</a>]
 
                 </td>
                 <?php /* Status */ ?>

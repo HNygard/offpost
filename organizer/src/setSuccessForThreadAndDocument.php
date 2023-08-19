@@ -27,7 +27,7 @@ foreach($thread->emails as $email) {
         continue;
     }
     foreach($email->attachments as $att) {
-        if ($att->location == $_GET['attachment']) {
+        if (isset($_GET['attachment']) && $att->location == $_GET['attachment']) {
             $att->status_type = 'success';
             $att->status_text = 'Document OK';
         }
