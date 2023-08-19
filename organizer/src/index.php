@@ -35,12 +35,20 @@ $allThreads = getThreads();
                 continue;
             }
 
+            if (isset($_GET['label_filter'])) {
+                if (!in_array($_GET['label_filter'], $thread->labels)) {
+                    continue;
+                }
+            }
+
             ?>
             <tr>
+                <?php /* Entity name / id */ ?>
                 <td>
                     <b><?= $threads->title_prefix ?></b><br>
                     <span style="font-size: 0.8em;"><?= $threads->entity_id ?></span>
                 </td>
+                <?php /* Title / My name <email> */ ?>
                 <td>
                     <b><?= $thread->title ?></b><br>
                     <span style="font-size: 0.8em;">
@@ -55,12 +63,14 @@ $allThreads = getThreads();
                         htmlescape(getThreadId($thread))?>">Send email</a>]
 
                 </td>
+                <?php /* Status */ ?>
                 <td>
                     <?= $thread->sent ? '<span class="label label_ok">Sent</span>' : '<span class="label label_warn">Not sent</span> ' ?><br>
                     <?= $thread->archived ? '<span class="label label_ok">Archived</span>' : '<span class="label label_warn">Not archived</span> ' ?></td>
+                <?php /* Labels */ ?>
                 <td><?php
                     foreach ($thread->labels as $label) {
-                        ?><span class="label"><?= $label ?></span><?php
+                        ?><span class="label"><a href="?label_filter=<?=urlencode($label)?>"><?= $label ?></a></span><?php
                     }
                     ?></td>
                 <td>
