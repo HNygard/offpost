@@ -62,7 +62,7 @@ foreach ($thread->emails as $email) {
             $html = $htmlPart ? $htmlPart->getContent() : '';
 
             echo '<b>Plain text version:</b><br>' . chr(10);
-            echo '<pre>'.$plainText . '</pre><br><br>' . chr(10) . chr(10);
+            echo '<pre>' . $htmlConvert(imap_qprint($plainText)) . '</pre><br><br>' . chr(10) . chr(10);
 
             echo 'HTML version:<br>' . chr(10);
             echo $htmlConvert(base64_decode($html)) . '<br><br>' . chr(10) . chr(10);
