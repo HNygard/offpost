@@ -65,6 +65,8 @@ $allThreads = getThreads();
                         htmlescape($threads->entity_id)?>&threadId=<?=
                         htmlescape(getThreadId($thread))?>">Archive thread</a>]
 
+
+
                 </td>
                 <?php /* Status */ ?>
                 <td>

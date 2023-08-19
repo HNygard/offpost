@@ -10,7 +10,16 @@ $debug = true;
 function logDebug($text) {
     global $debug;
     if ($debug) {
-        echo $text . chr(10);
+        global $last_time;
+        $time = time();
+        $diff = $time - $last_time;
+        $last_time = $time;
+        echo date('Y-m-d H:i:s', $last_time)
+            . ' (+ ' . $diff . ' sec)'
+            . ($diff > 10 ? ' VERY' : '')
+            . ($diff > 5 ? ' HEAVY' : '')
+            . ' - '
+            . $text . chr(10);
     }
 }
 

@@ -30,14 +30,14 @@ require_once __DIR__ . '/imap-connection.php';
 $mailbox = openConnection();
 
 
-echo '---- EXISTING FOLDERS ----' . chr(10);
+logDebug('---- EXISTING FOLDERS ----');
 $list = imap_list($mailbox, $server, "*");
 $list_subscribed = imap_lsub($mailbox, $server, '*');
 
 asort($list);
 $folders = array();
 foreach ($list as $folder) {
-    echo '-- ' . $folder . chr(10);
+    logDebug('-- ' . $folder);
     $folders[$folder] = $folder;
 }
 
@@ -45,8 +45,8 @@ $folders_subscribed = array();
 foreach ($list_subscribed as $folder) {
     $folders_subscribed[$folder] = $folder;
 }
-
-echo chr(10) . '---- CREATING FOLDERS ----' . chr(10);
+logDebug('');
+logDebug('---- CREATING FOLDERS ----');
 $threads = getThreads();
 $folder_that_should_exist = array('INBOX.Archive');
 foreach ($threads as $entity_threads) {
@@ -64,15 +64,16 @@ foreach ($folder_that_should_exist as $title) {
             //echo $outputPrefix . '[OK]' . chr(10);
         }
         else {
-            echo $outputPrefix;
+            logDebug($outputPrefix);
             imap_createmailbox($mailbox, imap_utf7_encode($server . $title));
             checkForImapError();
-            echo '[CREATED]' . chr(10);
+            logDebug('[CREATED]');
         }
     }
 }
 
-echo chr(10) . '---- ARCHIVING FOLDERS ----' . chr(10);
+logDebug('');
+logDebug('---- ARCHIVING FOLDERS ----');
 $email_to_folder = array();
 function getThreadEmailFolder($entity_threads, $thread) {
     $title = $entity_threads->title_prefix . ' - ' . str_replace('/', '-', $thread->title);
@@ -95,14 +96,14 @@ foreach ($threads as $entity_threads) {
             $outputPrefix = '-- ' . $title . '        ';
             if (isset($folders[$server . 'INBOX.' . str_replace('INBOX.Archive.', '', $title)])) {
                 // -> Exists and should be moved
-                echo $outputPrefix;
+                logDebug($outputPrefix);
                 imap_renamemailbox(
                     $mailbox,
                     imap_utf7_encode($server . 'INBOX.' . $title),
                     imap_utf7_encode($server . 'INBOX.Archive.' . $title)
                 );
                 checkForImapError();
-                echo '[ARCHIVED]' . chr(10);
+                logDebug('[ARCHIVED]');
             }
             elseif (isset($folders[$server . 'INBOX.Archive.' . $title])) {
                 //echo $outputPrefix . '[OK]' . chr(10);
@@ -114,25 +115,26 @@ foreach ($threads as $entity_threads) {
         }
     }
 }
-
-echo chr(10) . '---- SUBSCRIBE TO FOLDERS ----' . chr(10);
-echo '(only listing new subscriptions)' . chr(10);
+logDebug('');
+logDebug('---- SUBSCRIBE TO FOLDERS ----');
+logDebug('(only listing new subscriptions)');
 foreach ($folder_that_should_exist as $title) {
     if (!isset($folders_subscribed[$server . $title])) {
-        echo '-- ' . $title . '        ';
+        logDebug('-- ' . $title . '        ');
         imap_subscribe($mailbox, imap_utf7_encode($server . $title));
         checkForImapError();
-        echo '[SUBSCRIBED]' . chr(10);
+        logDebug('[SUBSCRIBED]');
     }
 }
 
-echo chr(10) . '---- SEARCH EMAILS ----' . chr(10);
+logDebug('');
+logDebug('---- SEARCH EMAILS ----');
 
-echo '-- INBOX' . chr(10);
+logDebug('-- INBOX');
 moveEmails($mailbox);
 imap_close($mailbox, CL_EXPUNGE);
 
-echo '-- INBOX.Sent' . chr(10);
+logDebug('-- INBOX.Sent');
 $mailboxSent = openConnection('INBOX.Sent');
 moveEmails($mailboxSent);
 imap_close($mailboxSent, CL_EXPUNGE);
@@ -152,7 +154,7 @@ function moveEmails($mailbox) {
         $subject = $mail_headers->subject;
 
         $to_from = array();
-        if(isset($mail_headers->to)) {
+        if (isset($mail_headers->to)) {
             foreach ($mail_headers->to as $email) {
                 $to_from[] = $email->mailbox . '@' . $email->host;
             }
@@ -171,22 +173,22 @@ function moveEmails($mailbox) {
         $should_be_moved_to = 'INBOX';
         foreach ($to_from as $email) {
             if (isset($email_to_folder[$email])) {
-                echo 'FOUND : ' . $email_to_folder[$email] . chr(10);
+                logDebug('FOUND : ' . $email_to_folder[$email]);
                 $should_be_moved_to = $email_to_folder[$email];
             }
         }
 
         $from = $mail_headers->from[0]->mailbox . '@' . $mail_headers->from[0]->host;
 
-        echo 'FROM ........... : ' . $from . chr(10);
-        echo 'SUBJECT ........ : ' . $subject . chr(10);
-        echo 'MOVE TO ........ : ' . $should_be_moved_to . chr(10);
+        logDebug('FROM ........... : ' . $from);
+        logDebug('SUBJECT ........ : ' . $subject);
+        logDebug('MOVE TO ........ : ' . $should_be_moved_to);
         if ($should_be_moved_to == 'INBOX') {
             foreach ($to_from as $email) {
                 echo '- <a href="start-thread.php?my_email=' . urlencode($email) . '">Start thread with ' . htmlescape($email) . '</a>' . chr(10);
             }
         }
-        echo chr(10);
+        logDebug('');
 
         imap_mail_move($mailbox, $mail, $should_be_moved_to, CP_UID);
         checkForImapError();
@@ -271,21 +273,22 @@ function moveEmails($mailbox) {
 }
 
 
-echo chr(10) . '---- SAVE EMAILS ----' . chr(10);
+logDebug('');
+logDebug('---- SAVE EMAILS ----');
 
 foreach ($threads as $thread_file => $entity_threads) {
     foreach ($entity_threads->threads as $thread) {
         $folder = getThreadEmailFolder($entity_threads, $thread);
-        echo '-- ' . $folder . chr(10);
+        logDebug('-- ' . $folder);
         $folderJson = '/organizer-data/threads/' . $entity_threads->entity_id . '/' . getThreadId($thread);
         if (!file_exists($folderJson)) {
             mkdir($folderJson, 0777, true);
         }
-        echo '   Folder ... : ' . $folderJson . chr(10);
+        logDebug('   Folder ... : ' . $folderJson);
 
         $mailboxThread = openConnection($folder);
         saveEmails($mailboxThread, $folderJson, $thread);
-        echo chr(10);
+        logDebug('');
     }
     saveEntityThreads($entity_threads->entity_id, $entity_threads);
 }
@@ -327,16 +330,16 @@ function saveEmails($mailbox, $folderJson, &$thread) {
 
         if (isset($email_datetime[$datetime])) {
             // Gaaah. Same sending time on two emails. Doing the hack one more level.
-            if (!isset($email_datetime[$datetime.'_2'])) {
+            if (!isset($email_datetime[$datetime . '_2'])) {
                 $datetime .= '_2';
             }
-            if (!isset($email_datetime[$datetime.'_3'])) {
+            if (!isset($email_datetime[$datetime . '_3'])) {
                 $datetime .= '_3';
             }
-            if (!isset($email_datetime[$datetime.'_4'])) {
+            if (!isset($email_datetime[$datetime . '_4'])) {
                 $datetime .= '_4';
             }
-            if (!isset($email_datetime[$datetime.'_5'])) {
+            if (!isset($email_datetime[$datetime . '_5'])) {
                 $datetime .= '_5';
             }
 
@@ -431,16 +434,16 @@ function saveEmails($mailbox, $folderJson, &$thread) {
                     $att->name = $attachments[$i]['name'];
                     $att->filename = $attachments[$i]['filename'];
 
-                    $att->name  = str_replace('=?UTF-8?Q?Stortingsvalg_=2D_Valgstyrets=5Fm=C3=B8tebok=5F1806=5F2021=2D09=2D29=2Epdf?=',
+                    $att->name = str_replace('=?UTF-8?Q?Stortingsvalg_=2D_Valgstyrets=5Fm=C3=B8tebok=5F1806=5F2021=2D09=2D29=2Epdf?=',
                         'Stortingsvalg - Valgstyrets-møtebok-1806-2021.pdf', $att->name);
-                    $att->filename  = str_replace('=?UTF-8?Q?Stortingsvalg_=2D_Valgstyrets=5Fm=C3=B8tebok=5F1806=5F2021=2D09=2D29=2Epdf?=',
+                    $att->filename = str_replace('=?UTF-8?Q?Stortingsvalg_=2D_Valgstyrets=5Fm=C3=B8tebok=5F1806=5F2021=2D09=2D29=2Epdf?=',
                         'Stortingsvalg - Valgstyrets-møtebok-1806-2021.pdf', $att->filename);
 
 
-                    $att->name  = str_replace('=?UTF-8?Q?Samtingsvalg_=2D_Samevalgstyrets_m=C3=B8tebok=5F1806=5F2021=2D09=2D29=2Epd?=	f',
-                    'Samtingsvalg.pdf', $att->name);
-                    $att->filename  = str_replace('=?UTF-8?Q?Samtingsvalg_=2D_Samevalgstyrets_m=C3=B8tebok=5F1806=5F2021=2D09=2D29=2Epd?=	f',
-                    'Samtingsvalg.pdf', $att->filename);
+                    $att->name = str_replace('=?UTF-8?Q?Samtingsvalg_=2D_Samevalgstyrets_m=C3=B8tebok=5F1806=5F2021=2D09=2D29=2Epd?=	f',
+                        'Samtingsvalg.pdf', $att->name);
+                    $att->filename = str_replace('=?UTF-8?Q?Samtingsvalg_=2D_Samevalgstyrets_m=C3=B8tebok=5F1806=5F2021=2D09=2D29=2Epd?=	f',
+                        'Samtingsvalg.pdf', $att->filename);
 
                     if (
                         str_ends_with(strtolower($att->name), '.pdf')
@@ -486,12 +489,12 @@ function saveEmails($mailbox, $folderJson, &$thread) {
                     elseif (str_ends_with(strtolower($att->name), '.rda')) {
                         $att->filetype = 'UNKNOWN';
                     }
-                    elseif(empty($att->name) || str_starts_with($att->name, 'Valgstyrets_møtebok_4649_2021-11-18')) {
+                    elseif (empty($att->name) || str_starts_with($att->name, 'Valgstyrets_møtebok_4649_2021-11-18')) {
                         $att->filetype = 'UNKNOWN';
                     }
                     else {
                         throw new Exception("Unknown file type:\n" .
-                            "Name ......... : ". $att->name . "\n" .
+                            "Name ......... : " . $att->name . "\n" .
                             "File name .... : " . $att->filename);
                     }
 
@@ -577,7 +580,7 @@ function saveEmails($mailbox, $folderJson, &$thread) {
 
             if (isset($obj->attachments) && count($obj->attachments)) {
                 $new_email->attachments = array();
-                foreach($obj->attachments as $att) {
+                foreach ($obj->attachments as $att) {
                     $att->status_type = 'unknown';
                     $att->status_text = 'uklassifisert-dok';
                     $new_email->attachments[] = $att;
