@@ -91,7 +91,10 @@ function getThreadEmailFolder($entity_threads, $thread) {
 foreach ($threads as $entity_threads) {
     foreach ($entity_threads->threads as $thread) {
         $title = str_replace('INBOX.Archive.', '', getThreadEmailFolder($entity_threads, $thread));
-        $email_to_folder[$thread->my_email] = getThreadEmailFolder($entity_threads, $thread);
+        if (!$thread->archived) {
+            // -> Only move from inbox/sent email into thread folders that are not archived
+            $email_to_folder[$thread->my_email] = getThreadEmailFolder($entity_threads, $thread);
+        }
         if ($thread->archived) {
             $outputPrefix = '-- ' . $title . '        ';
             if (isset($folders[$server . 'INBOX.' . str_replace('INBOX.Archive.', '', $title)])) {
@@ -286,8 +289,24 @@ foreach ($threads as $thread_file => $entity_threads) {
         }
         logDebug('   Folder ... : ' . $folderJson);
 
+        if (file_exists($folderJson . '/archiving_finished.json')) {
+            if (!$thread->archived) {
+                // Folder have been unarchived.
+                unlink($folderJson . '/archiving_finished.json');
+            }
+            else {
+                // Not checking this folder again.
+                continue;
+            }
+        }
         $mailboxThread = openConnection($folder);
         saveEmails($mailboxThread, $folderJson, $thread);
+
+        if ($thread->archived) {
+            logDebug('Archiving finished.');
+            file_put_contents($folderJson . '/archiving_finished.json', '{"date": "'.date('Y-m-d H:i:s') . '"}');
+        }
+
         logDebug('');
     }
     saveEntityThreads($entity_threads->entity_id, $entity_threads);
