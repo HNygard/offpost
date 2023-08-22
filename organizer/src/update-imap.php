@@ -381,7 +381,7 @@ function saveEmails($mailbox, $folderJson, &$thread) {
 
         $email_raw_file = $folderJson . '/' . $file_name . '.eml';
         if (!file_exists($email_raw_file)) {
-            file_put_contents($email_raw_file, imap_fetchbody($mailbox, $mail, ""));
+            file_put_contents($email_raw_file, imap_fetchbody($mailbox, $mail, "", FT_UID));
         }
 
         $email_json_file = $folderJson . '/' . $file_name . '.json';
