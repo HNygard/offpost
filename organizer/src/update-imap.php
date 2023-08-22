@@ -276,6 +276,19 @@ function moveEmails($mailbox) {
 }
 
 
+$cache_file = '/organizer-data/cache-threads.json';
+if (!file_exists($cache_file)) {
+    $cache = new stdClass();
+    $cache->thread_modified = array();
+}
+else {
+    $cache = json_decode(file_get_contents($cache_file));
+}
+function writeCache() {
+    global $cache_file, $cache;
+    file_put_contents($cache_file, json_encode($cache, JSON_PRETTY_PRINT ^ JSON_UNESCAPED_SLASHES ^ JSON_UNESCAPED_UNICODE));
+}
+
 logDebug('');
 logDebug('---- SAVE EMAILS ----');
 
@@ -300,6 +313,19 @@ foreach ($threads as $thread_file => $entity_threads) {
             }
         }
 
+        if (isset($_GET['update-only-before'])) {
+            $last_modified = 0;
+            if (isset($cache->{$folderJson})) {
+                $last_modified = $cache->{$folderJson};
+            }
+            if ($last_modified > strtotime($_GET['update-only-before'])) {
+                logDebug('   Skipping. Last modified: ' . date('Y-m-d H:i:s', $last_modified));
+                continue;
+            }
+            logDebug('   Updating. Last modified: ' . date('Y-m-d H:i:s', $last_modified));
+        }
+
+
         try {
             $mailboxThread = openConnection($folder);
             saveEmails($mailboxThread, $folderJson, $thread);
@@ -308,6 +334,9 @@ foreach ($threads as $thread_file => $entity_threads) {
                 logDebug('Archiving finished.');
                 file_put_contents($folderJson . '/archiving_finished.json', '{"date": "' . date('Y-m-d H:i:s') . '"}');
             }
+
+            $cache->{$folderJson} = time();
+            writeCache();
         }
         catch(Exception $e) {
             logDebug('ERROR during saveEmails().');
