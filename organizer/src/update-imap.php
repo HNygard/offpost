@@ -299,12 +299,22 @@ foreach ($threads as $thread_file => $entity_threads) {
                 continue;
             }
         }
-        $mailboxThread = openConnection($folder);
-        saveEmails($mailboxThread, $folderJson, $thread);
 
-        if ($thread->archived) {
-            logDebug('Archiving finished.');
-            file_put_contents($folderJson . '/archiving_finished.json', '{"date": "'.date('Y-m-d H:i:s') . '"}');
+        try {
+            $mailboxThread = openConnection($folder);
+            saveEmails($mailboxThread, $folderJson, $thread);
+
+            if ($thread->archived) {
+                logDebug('Archiving finished.');
+                file_put_contents($folderJson . '/archiving_finished.json', '{"date": "' . date('Y-m-d H:i:s') . '"}');
+            }
+        }
+        catch(Exception $e) {
+            logDebug('ERROR during saveEmails().');
+            logDebug($e->getMessage());
+            logDebug($e->getTraceAsString());
+            //sleep(30);
+            throw $e;
         }
 
         logDebug('');
