@@ -72,6 +72,30 @@ function labelSelect($currentType, $id) {
     </select>
     <?php
 }
+function secondsToHumanReadable($seconds) {
+    $days = floor($seconds / (24 * 60 * 60));
+    $seconds -= $days * (24 * 60 * 60);
+
+    $hours = floor($seconds / (60 * 60));
+    $seconds -= $hours * (60 * 60);
+
+    $minutes = floor($seconds / 60);
+    $seconds -= $minutes * 60;
+
+    $result = "";
+    if ($days > 0) {
+        return $days . " day" . ($days == 1 ? "" : "s") . " ";
+    }
+    if ($hours > 0) {
+        $result .= $hours . " hour" . ($hours == 1 ? "" : "s") . " ";
+    }
+    if ($minutes > 0) {
+        $result .= $minutes . " minute" . ($minutes == 1 ? "" : "s") . " ";
+    }
+    $result .= $seconds . " second" . ($seconds == 1 ? "" : "s");
+
+    return $result;
+}
 
 ?>
 <link href="style.css" rel="stylesheet">
@@ -94,13 +118,16 @@ function labelSelect($currentType, $id) {
             <form method="post">
                 <?php
                 $firstOut = false;
+                $last_email_time = 0;
                 foreach ($thread->emails as $email) {
-                    //echo '<pre>';  var_dump($email);
                     $emailId = str_replace(' ', '_', str_replace('.', '_', $email->id));
+                    $time_since_last_email = strtotime($email->datetime_received) - $last_email_time;
+                    $since_last_text = $last_email_time == 0 ? 'FIRST' : secondsToHumanReadable($time_since_last_email) . ' since last';
+                    $last_email_time = strtotime($email->datetime_received);
                     ?>
                     <div <?= $email->ignore ? ' style="color: gray;"' : '' ?>>
                         <hr>
-                        <?= $email->datetime_received ?>:
+                        <?= $email->datetime_received ?> (<?= $since_last_text ?>):
                         <?= $email->email_type ?><br>
 
                         <input type="button"
