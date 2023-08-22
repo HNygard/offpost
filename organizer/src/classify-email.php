@@ -151,10 +151,18 @@ function secondsToHumanReadable($seconds) {
 
                         <?php
                         $forslag = array();
-
                         if (!$firstOut && $email->email_type == 'OUT') {
                             $forslag[] = array('info', 'Initiell henvendelse');
                             $firstOut = true;
+                        }
+                        if ($time_since_last_email < 60 && $email->email_type == 'IN') {
+                            $forslag[] = array('disabled', 'Autosvar');
+                        }
+                        $autoforslag = count($forslag) > 0;
+
+                        if (!$autoforslag) {
+                            $forslag[] = array('success', 'Svar mottatt');
+                            $forslag[] = array('danger', 'Avslag');
                         }
 
                         if (count($forslag)) {
@@ -162,15 +170,18 @@ function secondsToHumanReadable($seconds) {
                             foreach ($forslag as $f) {
                                 ?>
                                 [<a onclick="settForslag('<?= $emailId ?>', '<?= $f[0] ?>', '<?= $f[1] ?>'); return false;"
-                                        href="#"><?= $f[0] ?> - <?= $f[1] ?></a>]
+                                        href="#" class="label-<?=$f[0]?>"><?= $f[0] ?> - <?= $f[1] ?></a>]
                                 <?php
                             }
                         }
+
+
+                        $textarea_style = $autoforslag ? 'width: 200px; height: 1em' : 'width: 400px; height: 200px;'
                         ?>
 
                         <br>
                         <textarea name="<?= $emailId . '-answer' ?>"
-                                  style="width: 400px; height: 200px"><?= htmlescape(isset($email->answer) ? $email->answer : '') ?></textarea>
+                                  style="<?= $textarea_style ?>"><?= htmlescape(isset($email->answer) ? $email->answer : '') ?></textarea>
 
                         <br>
                         <i><?= htmlescape(isset($email->description) ? $email->description : '') ?></i>
