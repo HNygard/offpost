@@ -78,6 +78,16 @@ function labelSelect($currentType, $id) {
 
 [<a href=".">Hovedside</a>]
 
+<script>
+    function settForslag(emailId, forslagStatus, forslagTekst) {
+        var selectElement = document.querySelector('select[name="' + emailId + '-status_type"]');
+        selectElement.value = forslagStatus;
+
+        var inputElement = document.querySelector('input[name="' + emailId + '-status_text"]');
+        inputElement.value = forslagTekst;
+    }
+</script>
+
 <table style="width: 100%">
     <tr>
         <td style="width: 30%; vertical-align: top">
@@ -113,11 +123,21 @@ function labelSelect($currentType, $id) {
                         text
 
                         <?php
+                        $forslag = array();
+
                         if (!$firstOut && $email->email_type == 'OUT') {
-                            ?>
-                            <br><input type="text" value="Initiell henvendelse"> - <span style="color: blue">Forslag</span>
-                            <?php
+                            $forslag[] = array('info', 'Initiell henvendelse');
                             $firstOut = true;
+                        }
+
+                        if (count($forslag)) {
+                            ?><br><span style="color: blue">Forslag:</span><?php
+                            foreach ($forslag as $f) {
+                                ?>
+                                [<a onclick="settForslag('<?= $emailId ?>', '<?= $f[0] ?>', '<?= $f[1] ?>'); return false;"
+                                        href="#"><?= $f[0] ?> - <?= $f[1] ?></a>]
+                                <?php
+                            }
                         }
                         ?>
 
