@@ -18,9 +18,6 @@ foreach ($threads->threads as $thread1) {
 }
 
 foreach ($thread->emails as $email) {
-    if (!isset($email->attachments)) {
-        continue;
-    }
     if (isset($_GET['body']) && $_GET['body'] == $email->id) {
         $eml = getThreadFile($entityId, $thread, $email->id . '.eml');
         $message = new Message(['raw' => $eml]);
@@ -84,6 +81,9 @@ foreach ($thread->emails as $email) {
         exit;
     }
 
+    if (!isset($email->attachments)) {
+        continue;
+    }
     if (isset($_GET['attachment'])) {
         foreach ($email->attachments as $att) {
             if ($att->location == $_GET['attachment']) {
