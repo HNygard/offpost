@@ -23,6 +23,9 @@ foreach ($allThreads as $entityFile => $entityThreads) {
                 $thread->entity_id = $entityThreads->entity_id;
 
                 foreach($thread->emails as $emails) {
+                    $emails->link = 'http://localhost:25081/file.php?entityId=' . urlencode($entityThreads->entity_id)
+                        . '&threadId='. urlencode(getThreadId($thread))
+                        . '&body=' . urlencode($emails->id);
                     if (!isset($emails->attachments)) {
                         continue;
                     }

@@ -67,7 +67,7 @@ foreach ($thread->emails as $email) {
         }
         else {
             // If the message is not multipart, simply echo the content
-            echo $message->getContent();
+            echo '<pre>' . $htmlConvert(imap_qprint($message->getContent())) . '</pre>';
         }
 
         unset($email_content->subject);
