@@ -17,6 +17,7 @@ foreach ($allThreads as $entityFile => $entityThreads) {
     }
 
     foreach ($entityThreads->threads as $thread) {
+        $thread->thread_id = getThreadId($thread);
         foreach ($thread->labels as $label) {
             if ($label == $_GET['label']) {
 
@@ -33,6 +34,10 @@ foreach ($allThreads as $entityFile => $entityThreads) {
                         $att->link = 'http://localhost:25081/file.php?entityId=' . urlencode($entityThreads->entity_id)
                             . '&threadId='. urlencode(getThreadId($thread))
                             . '&attachment=' . urlencode($att->location);
+                        $att->linkText = 'http://localhost:25081/file.php?entityId=' . urlencode($entityThreads->entity_id)
+                            . '&threadId='. urlencode(getThreadId($thread))
+                            . '&attachment=' . urlencode($att->location)
+                            . '&text=true';
                         $att->linkSetSuccess = 'http://localhost:25081/setSuccessForThreadAndDocument.php?entityId=' . urlencode($entityThreads->entity_id)
                             . '&threadId='. urlencode(getThreadId($thread))
                             . '&attachment=' . urlencode($att->location);
