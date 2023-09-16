@@ -17,6 +17,7 @@ if (!isset($_POST['entity_id'])) {
 
 
     ?>
+    <body  onload="document.getElementById('startthreadform-2023-09-12').submit();">
     <style>
         input {
             width:500px;
@@ -26,7 +27,7 @@ if (!isset($_POST['entity_id'])) {
             height: 300px;
         }
     </style>
-    <form method="POST">
+    <form method="POST" id="startthreadform-<?=date('Y-m-d')?>">
         <h1>Start email thread</h1>
         <input type="text" name="title" value="<?= htmlescape(isset($_GET['title']) ? $_GET['title'] : '') ?>"> - Title<br>
         <input type="text" name="my_name" value="<?= htmlescape(isset($_GET['my_name']) ? $_GET['my_name'] : '') ?>"> - My name<br>
@@ -38,6 +39,7 @@ if (!isset($_POST['entity_id'])) {
         <textarea name="body"><?= htmlescape(isset($_GET['body']) ? $_GET['body'] : '') ?></textarea><br><br>
         <input type="submit" value="Create thread">
     </form>
+    </body>
     <?php
     exit;
 }
@@ -76,4 +78,4 @@ if (isset($_POST['body']) && !empty($_POST['body'])) {
 }
 
 
-echo 'Created. <a href="./">Back</a>';
+echo '<br>Created. <a href="./">Back</a>';
