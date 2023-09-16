@@ -101,8 +101,7 @@ function sendThreadEmail($thread, $emailTo, $emailSubject, $emailBody, $entityId
     $mail->SMTPSecure = 'tls';
     $mail->Port = 587;
 
-    echo '<pre>';
-    echo $mail->Port . '<br>';
+    echo '<div style="height: 400px; overflow-y: scroll; font-family: monospace;">';
     $mail->From = $thread->my_email;
     $mail->FromName = $thread->my_name;
     $mail->addAddress($emailTo);     // Add a recipient
@@ -119,10 +118,14 @@ function sendThreadEmail($thread, $emailTo, $emailSubject, $emailBody, $entityId
     $mail->Timeout = 10;
 
     if (!$mail->send()) {
+        echo '</div>';
+        echo '<pre style="color: red; font-size: 2em;">';
         echo 'Message could not be sent.';
         echo 'Mailer Error: ' . $mail->ErrorInfo;
     }
     else {
+        echo '</div>';
+        echo '<pre style="color: green; font-size: 2em;">';
         echo 'Message has been sent';
     }
 
@@ -130,7 +133,6 @@ function sendThreadEmail($thread, $emailTo, $emailSubject, $emailBody, $entityId
     $thread->sent = true;
     saveEntityThreads($entityId, $threads);
 
-    echo 'OK.';
 }
 
 class Threads {
