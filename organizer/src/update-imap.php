@@ -529,6 +529,12 @@ function saveEmails($mailbox, $folderJson, &$thread) {
                     elseif (str_ends_with(strtolower($att->name), '.xlsx')) {
                         $att->filetype = 'xlsx';
                     }
+                    elseif (str_ends_with(strtolower($att->name), '.xlsm')) {
+                        $att->filetype = 'xlsm';
+                    }
+                    elseif (str_ends_with(strtolower($att->name), '.pptx')) {
+                        $att->filetype = 'pptx';
+                    }
                     elseif (str_ends_with(strtolower($att->name), '.zip')) {
                         $att->filetype = 'zip';
                     }
@@ -544,10 +550,15 @@ function saveEmails($mailbox, $folderJson, &$thread) {
                     elseif (str_ends_with(strtolower($att->name), '.csv')) {
                         $att->filetype = 'csv';
                     }
+                    elseif (str_ends_with(strtolower($att->name), '.txt')) {
+                        $att->filetype = 'txt';
+                    }
                     elseif (str_ends_with(strtolower($att->name), '.rda')) {
                         $att->filetype = 'UNKNOWN';
                     }
-                    elseif (empty($att->name) || str_starts_with($att->name, 'Valgstyrets_møtebok_4649_2021-11-18')) {
+                    elseif (empty($att->name)
+                        || str_starts_with($att->name, 'Valgstyrets_møtebok_4649_2021-11-18')
+                    || str_starts_with($att->name, 'Outlook-kvafjord k')) {
                         $att->filetype = 'UNKNOWN';
                     }
                     else {
