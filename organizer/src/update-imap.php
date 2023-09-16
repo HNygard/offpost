@@ -91,7 +91,7 @@ function getThreadEmailFolder($entity_threads, $thread) {
 foreach ($threads as $entity_threads) {
     foreach ($entity_threads->threads as $thread) {
         $title = str_replace('INBOX.Archive.', '', getThreadEmailFolder($entity_threads, $thread));
-        if (!$thread->archived) {
+        if (!$thread->archived && $thread->my_email != 'dmarc@offpost.no') {
             // -> Only move from inbox/sent email into thread folders that are not archived
             $email_to_folder[$thread->my_email] = getThreadEmailFolder($entity_threads, $thread);
         }
