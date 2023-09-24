@@ -46,7 +46,7 @@ if (!isset($_POST['entity_id'])) {
 
 
     ?>
-    <body  onload="document.getElementById('startthreadform-2023-09-12').submit();">
+    <body  onload="document.getElementById('startthreadform-2023-09-17').submit();">
     <style>
         input {
             width:500px;
@@ -96,13 +96,17 @@ if ($thread == null) {
     $newThread = createThread($_POST['entity_id'], $_POST['entity_title_prefix'], $thread);
     $threadId = getThreadId($newThread);
 
-    $threads = getThreadsForEntity($entityId);
+    $threads = getThreadsForEntity($_POST['entity_id']);
 
     $thread = null;
     foreach ($threads->threads as $thread1) {
         if (getThreadId($thread1) == $threadId) {
             $thread = $thread1;
         }
+    }
+
+    if ($thread == null) {
+        throw new Exception('Error. Missing thread.');
     }
 }
 
