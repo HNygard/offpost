@@ -31,6 +31,9 @@ if ($threadId != null) {
 
     $_GET['my_name'] = $thread->my_name;
     $_GET['my_email'] = $thread->my_email;
+
+    $_GET['body'] = str_replace('MY_EMAIL', $thread->my_email, $_GET['body']);
+    $_GET['body'] = str_replace('MY_NAME', $thread->my_name, $_GET['body']);
 }
 
 if (!isset($_POST['entity_id'])) {
@@ -60,7 +63,7 @@ if (!isset($_POST['entity_id'])) {
         <h1>Start email thread</h1>
         <?php
         if ($thread != null) {
-            ?><div style="background-color: #66CC66; font-size: 3em; padding: 10px;">Continue thread...</div><br><br><?php
+            ?><div style="background-color: #66CC66; font-size: 3em; padding: 10px;">Continue existing thread...</div><br><br><?php
         }
         ?>
         <input type="text" name="title" value="<?= htmlescape(isset($_GET['title']) ? $_GET['title'] : '') ?>"> - Title<br>
