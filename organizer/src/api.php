@@ -1,5 +1,9 @@
 <?php
 
+require 'vendor/autoload.php';
+
+use Laminas\Mail\Storage\Message;
+
 if (!isset($_GET['label'])) {
     throw new Exception('No "label" param given.');
 }
@@ -27,6 +31,12 @@ foreach ($allThreads as $entityFile => $entityThreads) {
                     $emails->link = 'http://localhost:25081/file.php?entityId=' . urlencode($entityThreads->entity_id)
                         . '&threadId='. urlencode(getThreadId($thread))
                         . '&body=' . urlencode($emails->id);
+
+
+                    $eml = getThreadFile($thread->entity_id, $thread, $emails->id . '.eml');
+                    $message = new Message(['raw' => $eml]);
+                    $emails->subject = $message->getHeader('subject')->getFieldValue();
+
                     if (!isset($emails->attachments)) {
                         continue;
                     }

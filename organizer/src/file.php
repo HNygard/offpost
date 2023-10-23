@@ -37,7 +37,7 @@ foreach ($thread->emails as $email) {
         $message = new Message(['raw' => $eml]);
 
         $email_content = json_decode(getThreadFile($entityId, $thread, $email->id . '.json'));
-        echo '<h1>Subject: ' . htmlescape($message->getHeader('subject')->getFieldValue()) . '</h1>' . chr(10);
+        echo '<h1 id="email-subject">Subject: ' . htmlescape($message->getHeader('subject')->getFieldValue()) . '</h1>' . chr(10);
         echo '<b>Date: ' . $email_content->date . '</b><br>' . chr(10);
         //echo '<b>Sender: ' . $email_content->senderAddress . '</b><br>'.chr(10);
 
