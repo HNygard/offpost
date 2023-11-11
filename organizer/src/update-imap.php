@@ -14,6 +14,86 @@ require_once __DIR__ . '/class/Threads.php';
  * echo imap_utf8_improved_by_hallvard('=?utf-8?B?VmVkcsO4cmVuZGUgYmVnasOmcmluZyBvbSBpbm5zeW4gaSBwb3N0bGlz?==?utf-8?B?dGUgc2lzdGUgMTAgw6VyICgyMDExLTIwMjEpIC0gdGlsYmFrZW1lbGRp?==?utf-8?B?bmcucGRm?=').chr(10);
  */
 function imap_utf8_improved_by_hallvard($string) {
+    if (str_starts_with($string, "iso-8859-1''")
+        || str_starts_with($string, "ISO-8859-1''")) {
+        $string = str_replace("iso-8859-1''", '', $string);
+        $string = str_replace("ISO-8859-1''", '', $string);
+
+        if (
+            str_contains($string, '%20')
+            || str_contains($string, '%E6')
+            || str_contains($string, '%F8')
+
+        ) {
+            foreach (array(
+                         '%E6' => 'æ',
+                         '%C0' => 'À',
+                         '%C1' => 'Á',
+                         '%C2' => 'Â',
+                         '%C3' => 'Ã',
+                         '%C4' => 'Ä',
+                         '%C5' => 'Å',
+                         '%C6' => 'Æ',
+                         '%C7' => 'Ç',
+                         '%C8' => 'È',
+                         '%C9' => 'É',
+                         '%CA' => 'Ê',
+                         '%CB' => 'Ë',
+                         '%CC' => 'Ì',
+                         '%CD' => 'Í',
+                         '%CE' => 'Î',
+                         '%CF' => 'Ï',
+                         '%D0' => 'Ð',
+                         '%D1' => 'Ñ',
+                         '%D2' => 'Ò',
+                         '%D3' => 'Ó',
+                         '%D4' => 'Ô',
+                         '%D5' => 'Õ',
+                         '%D6' => 'Ö',
+                         '%D8' => 'Ø',
+                         '%D9' => 'Ù',
+                         '%DA' => 'Ú',
+                         '%DB' => 'Û',
+                         '%DC' => 'Ü',
+                         '%DD' => 'Ý',
+                         '%DE' => 'Þ',
+                         '%DF' => 'ß',
+                         '%E0' => 'à',
+                         '%E1' => 'á',
+                         '%E2' => 'â',
+                         '%E3' => 'ã',
+                         '%E4' => 'ä',
+                         '%E5' => 'å',
+                         '%E6' => 'æ',
+                         '%E7' => 'ç',
+                         '%E8' => 'è',
+                         '%E9' => 'é',
+                         '%EA' => 'ê',
+                         '%EB' => 'ë',
+                         '%EC' => 'ì',
+                         '%ED' => 'í',
+                         '%EE' => 'î',
+                         '%EF' => 'ï',
+                         '%F0' => 'ð',
+                         '%F1' => 'ñ',
+                         '%F2' => 'ò',
+                         '%F3' => 'ó',
+                         '%F4' => 'ô',
+                         '%F5' => 'õ',
+                         '%F6' => 'ö',
+                         '%F8' => 'ø',
+                         '%F9' => 'ù',
+                         '%FA' => 'ú',
+                         '%FB' => 'û',
+                         '%FC' => 'ü',
+                    ) as $a => $b) {
+                $string = str_replace($a, $b, $string);
+
+            }
+            $string = urldecode($string);
+        }
+
+    }
     preg_match_all('/(\=\?utf\-8\?B\?[A-Za-z0-9=]*\?=)/', $string, $matches);
     foreach ($matches[0] as $match) {
         $string = str_replace($match, imap_utf8($match), $string);
@@ -471,16 +551,18 @@ function saveEmails($mailbox, $folderJson, &$thread) {
 
                 if ($structure->parts[$i]->ifdparameters) {
                     foreach ($structure->parts[$i]->dparameters as $object) {
-                        if (strtolower($object->attribute) == 'filename') {
+                        if (strtolower($object->attribute) == 'filename'
+                            || strtolower($object->attribute) == 'filename*') {
                             $attachments[$i]['is_attachment'] = true;
-                            $attachments[$i]['filename'] = imap_utf8($object->value);
+                            $attachments[$i]['filename'] = imap_utf8_improved_by_hallvard($object->value);
                         }
                     }
                 }
 
                 if ($structure->parts[$i]->ifparameters) {
                     foreach ($structure->parts[$i]->parameters as $object) {
-                        if (strtolower($object->attribute) == 'name') {
+                        if (strtolower($object->attribute) == 'name'
+                            || strtolower($object->attribute) == 'name*') {
                             $attachments[$i]['is_attachment'] = true;
                             $attachments[$i]['name'] = imap_utf8_improved_by_hallvard($object->value);
                         }
@@ -572,6 +654,8 @@ function saveEmails($mailbox, $folderJson, &$thread) {
 
                     json_encode($att, JSON_PRETTY_PRINT ^ JSON_UNESCAPED_SLASHES ^ JSON_UNESCAPED_UNICODE);
                     if (json_last_error() != JSON_ERROR_NONE) {
+                        echo 'NAME NOT AVAILABLE - JSON ENCODE ERROR' . chr(10);
+                        var_dump($att);
                         $name1 = $att->name;
                         $name2 = $att->filename;
                         $att->name = 'NAME NOT AVAILABLE - JSON ENCODE ERROR.';
