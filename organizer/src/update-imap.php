@@ -357,12 +357,13 @@ function moveEmails($mailbox) {
 
 
 $cache_file = '/organizer-data/cache-threads.json';
-if (!file_exists($cache_file)) {
+$cache = null;
+if (file_exists($cache_file)) {
+    $cache = json_decode(file_get_contents($cache_file));
+}
+if ($cache == null) {
     $cache = new stdClass();
     $cache->thread_modified = array();
-}
-else {
-    $cache = json_decode(file_get_contents($cache_file));
 }
 function writeCache() {
     global $cache_file, $cache;
