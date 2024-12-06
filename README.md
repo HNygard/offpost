@@ -1,4 +1,4 @@
-# Production
+# Offpost
 
 Offpost (previously "email-engine" internally) is a service for sending emails to public entities.
 
@@ -7,73 +7,71 @@ Offpost (previously "email-engine" internally) is a service for sending emails t
 Offpost is a PHP application running on a web server.
 
 ## Components
-- organizer
-        Main program.
-        Provides a client, API and JSON storage for the email threads.
-        Creates threads.
-        Creates "identities" in Roundcube to let Roundcube know about the different threads.
-        Organizer sorts email using IMAP folders directly on the server.
-- Roundcube
-        Webmail client using the IMAP server directly.
-        The email threads are folders on the IMAP server.
-        Roundcube is using MySQL for storage.
-- Sendgrid
-        Used to send emails.
-        Copy to the IMAP server is done by Sendgrid.
-- IMAP server
-        Used to store email threads.
-        The email threads are folders on the IMAP server.
 
------
+### Organizer
+- Main program that provides client, API and JSON storage for email threads
+- Creates threads and "identities" in Roundcube
+- Sorts email using IMAP folders directly on the server
 
-# Development
+### Roundcube
+- Webmail client using the IMAP server directly
+- Email threads are stored as folders on the IMAP server
+- Uses MySQL for storage
 
-## Start
+### Sendgrid
+- Used to send emails
+- Handles copying to the IMAP server
 
-    docker-compose up
-    
-Open Roundcube (mail client) should be ready with database at:
-- http://localhost:25080/
-- User name and password for entering Roundcube is located in `username-password-imap.php`.
+### IMAP Server
+- Used to store email threads
+- Email threads are organized as folders on the server
 
-If new db, Create the Roundcube identities (not persistent in Roundcube db):
-- http://localhost:25081/update-identities.php
+## Development
 
-Update IMAP into git repo and sort into folders in IMAP:
-- http://localhost:25081/update-imap.php
+### Setup
 
-## Using
+1. Start the services:
+```bash
+docker-compose up
+```
 
-Organizer (My PHP client):
-- http://localhost:25081/
+2. Access Roundcube (mail client):
+- URL: http://localhost:25080/
+- Credentials are located in `username-password-imap.php`
 
-PHPMyAdmin:
-- http://localhost:25082/
+3. For new database setup:
+- Create Roundcube identities: http://localhost:25081/update-identities.php
+- Update IMAP and sort folders: http://localhost:25081/update-imap.php
 
-Test tools:
-- http://localhost:25081/send-test-mail.php
+### Available Services
 
-## Sending email (starting new thread)
+- Organizer (PHP Client): http://localhost:25081/
+- PHPMyAdmin: http://localhost:25082/
+- Test Tools: http://localhost:25081/send-test-mail.php
 
-Start by generating a profile and start thread:
+### Starting a New Email Thread
 
-    php generate-profile.php
+1. Generate a profile:
+```bash
+php generate-profile.php
+```
 
-Get a link like:
+2. Use the generated link (example):
+```
+http://localhost:25081/start-thread.php?my_email=asmund.visnes%40offpost.no&my_name=%C3%85smund+Visnes
+```
 
-- http://localhost:25081/start-thread.php?my_email=asmund.visnes%40offpost.no&my_name=%C3%85smund+Visnes
+3. Create thread:
+   - Set title and label
+   - Connect to Entity
 
-Open it an create a thread with title, label and connected to Entity.
+4. Sync with Roundcube:
+   - Update identities: http://localhost:25081/update-identities.php
+   - Open Roundcube: http://localhost:25080/
+   - Send email from the identity
 
-Then sync identities with Roundcube:
-- http://localhost:25081/update-identities.php
-
-Open Roundcube and send from the identity.
-- http://localhost:25080/
-
-After, sync it to repo:
-- http://localhost:25081/update-imap.php
-
-Add details like
-- sent = true
-- status_type, status_text
+5. Post-send steps:
+   - Sync to repo: http://localhost:25081/update-imap.php
+   - Update thread details:
+     - Set sent = true
+     - Update status_type and status_text
