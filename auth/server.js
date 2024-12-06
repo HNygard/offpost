@@ -62,38 +62,8 @@ const configuration = {
   },
   interactions: {
     url(ctx, interaction) {
-      return `/oidc/interaction/${interaction.uid}`;
+      return `/interaction/${interaction.uid}`;
     }
-  },
-  async interactionDetails(ctx) {
-    const { uid, prompt, params } = await ctx.oidc.provider.Interaction.find(ctx.params.uid);
-    return {
-      uid,
-      prompt,
-      params,
-      client: await ctx.oidc.provider.Client.find(params.client_id),
-    };
-  },
-  async interactionResult(ctx) {
-    const grant = new ctx.oidc.provider.Grant({
-      accountId: 'test123',
-      clientId: ctx.oidc.client.clientId,
-    });
-    grant.addOIDCScope('openid email profile');
-    await grant.save();
-
-    const result = {
-      login: {
-        account: 'test123',
-        remember: true,
-        ts: Math.floor(Date.now() / 1000),
-      },
-      consent: {
-        grantId: grant.jti,
-      },
-    };
-
-    return result;
   }
 };
 
@@ -132,7 +102,58 @@ const configuration = {
     logger.info('Grant success', { client: ctx.oidc.client.clientId });
   });
 
+  // Mount OIDC provider routes first
   app.use('/oidc', oidc.callback());
+
+  // Then add the interaction endpoint
+  app.use('/interaction/:uid', async (req, res, next) => {
+    try {
+      const {
+        uid, prompt, params, session,
+      } = await oidc.interactionDetails(req, res);
+      
+      logger.info('Processing interaction', { uid, prompt, params });
+
+      const client = await oidc.Client.find(params.client_id);
+      
+      switch (prompt.name) {
+        case 'login': {
+          const result = {
+            login: {
+              accountId: 'test123',
+              remember: true,
+            },
+          };
+          
+          await oidc.interactionFinished(req, res, result, { mergeWithLastSubmission: false });
+          break;
+        }
+        case 'consent': {
+          const grant = new oidc.Grant({
+            accountId: 'test123',
+            clientId: client.clientId,
+          });
+          
+          grant.addOIDCScope('openid email profile');
+          await grant.save();
+          
+          const result = {
+            consent: {
+              grantId: grant.jti,
+            },
+          };
+          
+          await oidc.interactionFinished(req, res, result, { mergeWithLastSubmission: true });
+          break;
+        }
+        default:
+          next(new Error('Unsupported prompt'));
+      }
+    } catch (err) {
+      logger.error('Interaction error', { error: err.message, stack: err.stack });
+      next(err);
+    }
+  });
   
   app.listen(3000, () => {
     logger.info('Auth service started', { 
