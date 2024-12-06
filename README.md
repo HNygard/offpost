@@ -2,6 +2,28 @@
 
 Offpost (previously "email-engine" internally) is a service for sending emails to public entities.
 
+## Architecture
+
+Offpost is a PHP application running on a web server.
+
+## Components
+- organizer
+        Main program.
+        Provides a client, API and JSON storage for the email threads.
+        Creates threads.
+        Creates "identities" in Roundcube to let Roundcube know about the different threads.
+        Organizer sorts email using IMAP folders directly on the server.
+- Roundcube
+        Webmail client using the IMAP server directly.
+        The email threads are folders on the IMAP server.
+        Roundcube is using MySQL for storage.
+- Sendgrid
+        Used to send emails.
+        Copy to the IMAP server is done by Sendgrid.
+- IMAP server
+        Used to store email threads.
+        The email threads are folders on the IMAP server.
+
 -----
 
 # Development
