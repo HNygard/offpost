@@ -15,7 +15,7 @@ function requireAuth() {
         // Store the current URL to redirect back after login
         $_SESSION['redirect_after_login'] = $_SERVER['REQUEST_URI'];
         
-        // Redirect to auth service
+        // Redirect to auth service using frontend URL
         header('Location: ' . $auth_url . '/oidc/auth?' . http_build_query([
             'client_id' => 'organizer',
             'response_type' => 'code',
@@ -28,13 +28,15 @@ function requireAuth() {
 }
 
 function handleCallback($code) {
-    $auth_url = getenv('AUTH_URL');
-    if (!$auth_url) {
+    $frontend_auth_url = getenv('AUTH_URL');
+    $server_auth_url = 'http://auth:3000';  // Server-to-server URL using Docker service name
+
+    if (!$frontend_auth_url) {
         die('AUTH_URL environment variable not set');
     }
 
-    // Exchange code for tokens
-    $response = file_get_contents($auth_url . '/oidc/token', false, stream_context_create([
+    // Exchange code for tokens using server-to-server URL
+    $response = file_get_contents($server_auth_url . '/oidc/token', false, stream_context_create([
         'http' => [
             'method' => 'POST',
             'header' => 'Content-Type: application/x-www-form-urlencoded',
@@ -54,8 +56,8 @@ function handleCallback($code) {
 
     $tokens = json_decode($response, true);
     
-    // Get user info
-    $userinfo = file_get_contents($auth_url . '/oidc/me', false, stream_context_create([
+    // Get user info using server-to-server URL
+    $userinfo = file_get_contents($server_auth_url . '/oidc/me', false, stream_context_create([
         'http' => [
             'header' => 'Authorization: Bearer ' . $tokens['access_token']
         ]
