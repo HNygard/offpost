@@ -10,6 +10,10 @@ $allThreads = getThreads();
 
 ?>
 
+<div style="text-align: right; padding: 10px;">
+    Logged in as: <?= htmlspecialchars($_SESSION['user']['name'] ?? $_SESSION['user']['email'] ?? 'Unknown User') ?>
+</div>
+
 <h1>Threads</h1>
 
 <li><a href="update-imap.php?update-only-before=<?= date('Y-m-d H:i:s') ?>">Update email threads (folders) to IMAP</a></li>
