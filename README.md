@@ -2,6 +2,8 @@
 
 Offpost (previously "email-engine" internally) is a service for sending emails to public entities.
 
+From 06.12.2024, this project have been written by AI tools.
+
 ## Architecture
 
 Offpost is a PHP application running on a web server.
