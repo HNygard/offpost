@@ -1,0 +1,128 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Login</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+            margin: 0;
+            background-color: #f5f5f5;
+        }
+        .login-container {
+            background: white;
+            padding: 20px;
+            border-radius: 5px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
+        .form-group {
+            margin-bottom: 15px;
+        }
+        label {
+            display: block;
+            margin-bottom: 5px;
+        }
+        input {
+            width: 200px;
+            padding: 8px;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+        }
+        button {
+            background: #007bff;
+            color: white;
+            border: none;
+            padding: 10px 15px;
+            border-radius: 4px;
+            cursor: pointer;
+        }
+        button:hover {
+            background: #0056b3;
+        }
+        .message {
+            margin-top: 10px;
+            padding: 10px;
+            border-radius: 4px;
+        }
+        .error {
+            background: #ffe6e6;
+            color: #d63031;
+        }
+        .pending {
+            background: #fff3cd;
+            color: #856404;
+        }
+    </style>
+</head>
+<body>
+    <div class="login-container">
+        <form id="loginForm">
+            <div class="form-group">
+                <label for="username">Username:</label>
+                <input type="text" id="username" name="username" required>
+            </div>
+            <button type="submit">Login</button>
+        </form>
+        <div id="message" style="display: none;" class="message"></div>
+    </div>
+    <script>
+        document.getElementById('loginForm').addEventListener('submit', async (e) => {
+            e.preventDefault();
+            const username = document.getElementById('username').value;
+            const messageDiv = document.getElementById('message');
+            
+            try {
+                const response = await fetch('/login', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({ username })
+                });
+                const data = await response.json();
+                
+                if (data.error) {
+                    messageDiv.textContent = data.error;
+                    messageDiv.className = 'message error';
+                    messageDiv.style.display = 'block';
+                    return;
+                }
+
+                if (data.user.authenticated === "PENDING") {
+                    messageDiv.textContent = "User registration pending approval. Please wait...";
+                    messageDiv.className = 'message pending';
+                    messageDiv.style.display = 'block';
+                    return;
+                }
+
+                // Get the return URL from query parameters
+                const urlParams = new URLSearchParams(window.location.search);
+                const returnTo = urlParams.get('returnTo');
+
+                if (returnTo) {
+                    // Append login token to the return URL
+                    const redirectUrl = `${returnTo}${returnTo.includes('?') ? '&' : '?'}token=${data.loginToken}`;
+                    window.location.href = redirectUrl;
+                }
+            } catch (error) {
+                console.error('Login error:', error);
+                messageDiv.textContent = 'Login failed. Please try again.';
+                messageDiv.className = 'message error';
+                messageDiv.style.display = 'block';
+            }
+        });
+
+        // Check for return URL in query parameters
+        const urlParams = new URLSearchParams(window.location.search);
+        if (!urlParams.get('returnTo')) {
+            const messageDiv = document.getElementById('message');
+            messageDiv.textContent = 'Invalid login request';
+            messageDiv.className = 'message error';
+            messageDiv.style.display = 'block';
+        }
+    </script>
+</body>
+</html>

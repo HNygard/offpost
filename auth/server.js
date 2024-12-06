@@ -2,6 +2,8 @@ import { Provider } from 'oidc-provider';
 import express from 'express';
 import cors from 'cors';
 import winston from 'winston';
+import fs from 'fs/promises';
+import path from 'path';
 
 // Configure Winston logger
 const logger = winston.createLogger({
@@ -20,6 +22,71 @@ const logger = winston.createLogger({
 const app = express();
 app.use(cors());
 app.use(express.json());
+app.use(express.static('public'));
+
+// Simple in-memory store for active logins
+const activeLogins = new Map();
+
+// User management functions
+async function loadUsers() {
+  try {
+    const data = await fs.readFile('users.json', 'utf8');
+    return JSON.parse(data).users;
+  } catch (error) {
+    logger.error('Error loading users:', error);
+    return [];
+  }
+}
+
+async function saveUsers(users) {
+  try {
+    await fs.writeFile('users.json', JSON.stringify({ users }, null, 2));
+  } catch (error) {
+    logger.error('Error saving users:', error);
+  }
+}
+
+async function findUser(username) {
+  const users = await loadUsers();
+  return users.find(user => user.username === username);
+}
+
+async function createUser(username) {
+  const users = await loadUsers();
+  const newUser = {
+    username,
+    id: `user-${Date.now()}`,
+    authenticated: "PENDING"
+  };
+  users.push(newUser);
+  await saveUsers(users);
+  return newUser;
+}
+
+// Login endpoint
+app.post('/login', async (req, res) => {
+  try {
+    const { username } = req.body;
+    if (!username) {
+      return res.status(400).json({ error: 'Username is required' });
+    }
+
+    let user = await findUser(username);
+    if (!user) {
+      user = await createUser(username);
+      logger.info('Created new user', { username });
+    }
+
+    // Generate login token and store user
+    const loginToken = Math.random().toString(36).substring(2);
+    activeLogins.set(loginToken, user);
+
+    res.json({ success: true, user, loginToken });
+  } catch (error) {
+    logger.error('Login error:', error);
+    res.status(500).json({ error: 'Internal server error' });
+  }
+});
 
 const configuration = {
   clients: [{
@@ -38,19 +105,23 @@ const configuration = {
   },
   claims: {
     openid: ['sub'],
-    email: ['email', 'email_verified'],
     profile: ['name']
   },
   findAccount: async (ctx, id) => {
     logger.debug('Finding account', { id });
+    const users = await loadUsers();
+    const user = users.find(u => u.id === id);
+    
+    if (!user || user.authenticated !== "SUCCESS") {
+      throw new Error('User not found or not authenticated');
+    }
+
     return {
-      accountId: 'test123',
+      accountId: user.id,
       async claims() {
         return {
-          sub: 'test123',
-          email: 'test@example.com',
-          email_verified: true,
-          name: 'Test User'
+          sub: user.id,
+          name: user.username
         };
       },
     };
@@ -102,25 +173,36 @@ const configuration = {
     logger.info('Grant success', { client: ctx.oidc.client.clientId });
   });
 
-  // Mount OIDC provider routes first
+  // Mount OIDC provider routes
   app.use('/oidc', oidc.callback());
 
-  // Then add the interaction endpoint
-  app.use('/interaction/:uid', async (req, res, next) => {
+  // Interaction endpoint
+  app.use('/interaction/:uid', async (req, res) => {
     try {
       const {
-        uid, prompt, params, session,
+        uid, prompt, params
       } = await oidc.interactionDetails(req, res);
       
       logger.info('Processing interaction', { uid, prompt, params });
 
-      const client = await oidc.Client.find(params.client_id);
-      
+      // Get login token from query params
+      const loginToken = req.query.token;
+      const user = loginToken ? activeLogins.get(loginToken) : null;
+
+      if (!user) {
+        return res.redirect('/login.html');
+      }
+
+      // Check if user is properly authenticated
+      if (user.authenticated !== "SUCCESS") {
+        return res.status(401).json({ error: 'User not approved yet' });
+      }
+
       switch (prompt.name) {
         case 'login': {
           const result = {
             login: {
-              accountId: 'test123',
+              accountId: user.id,
               remember: true,
             },
           };
@@ -130,11 +212,11 @@ const configuration = {
         }
         case 'consent': {
           const grant = new oidc.Grant({
-            accountId: 'test123',
-            clientId: client.clientId,
+            accountId: user.id,
+            clientId: params.client_id,
           });
           
-          grant.addOIDCScope('openid email profile');
+          grant.addOIDCScope('openid profile');
           await grant.save();
           
           const result = {
@@ -147,11 +229,11 @@ const configuration = {
           break;
         }
         default:
-          next(new Error('Unsupported prompt'));
+          throw new Error('Unsupported prompt');
       }
     } catch (err) {
       logger.error('Interaction error', { error: err.message, stack: err.stack });
-      next(err);
+      res.status(500).json({ error: err.message });
     }
   });
   
