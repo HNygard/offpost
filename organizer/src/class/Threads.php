@@ -7,6 +7,10 @@ function getThreads() {
     $threads = array();
     /* @var Threads[] $threads */
     foreach($files as $file) {
+        if (basename($file) === '.gitignore') {
+            continue;
+        }
+
         $threads[$file] = json_decode(file_get_contents($file));
     }
     return $threads;
