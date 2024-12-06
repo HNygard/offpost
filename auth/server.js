@@ -55,13 +55,25 @@ const configuration = {
       },
     };
   },
-  // Skip interaction by immediately returning login result
   async renderError(ctx, out, error) {
     logger.error('Render error', { error });
     ctx.type = 'json';
     ctx.body = { error: error.message };
   },
-  // Auto-handle interaction without redirect
+  interactions: {
+    url(ctx, interaction) {
+      return `/oidc/interaction/${interaction.uid}`;
+    }
+  },
+  async interactionDetails(ctx) {
+    const { uid, prompt, params } = await ctx.oidc.provider.Interaction.find(ctx.params.uid);
+    return {
+      uid,
+      prompt,
+      params,
+      client: await ctx.oidc.provider.Client.find(params.client_id),
+    };
+  },
   async interactionResult(ctx) {
     const grant = new ctx.oidc.provider.Grant({
       accountId: 'test123',
@@ -69,10 +81,19 @@ const configuration = {
     });
     grant.addOIDCScope('openid email profile');
     await grant.save();
-    return {
-      login: { accountId: 'test123' },
-      consent: { grantId: grant.jti }
+
+    const result = {
+      login: {
+        account: 'test123',
+        remember: true,
+        ts: Math.floor(Date.now() / 1000),
+      },
+      consent: {
+        grantId: grant.jti,
+      },
     };
+
+    return result;
   }
 };
 
@@ -81,7 +102,11 @@ const configuration = {
 
   // Request logging
   app.use((req, res, next) => {
-    logger.info('Request', { method: req.method, url: req.url });
+    logger.info('Incoming request', { 
+      method: req.method, 
+      url: req.url,
+      params: req.query 
+    });
     next();
   });
 
@@ -110,6 +135,9 @@ const configuration = {
   app.use('/oidc', oidc.callback());
   
   app.listen(3000, () => {
-    logger.info('Auth service started', { port: 3000 });
+    logger.info('Auth service started', { 
+      port: 3000,
+      env: process.env.NODE_ENV || 'development'
+    });
   });
 })();
