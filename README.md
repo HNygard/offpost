@@ -1,5 +1,12 @@
+# Production
 
-# Start
+Offpost (previously "email-engine" internally) is a service for sending emails to public entities.
+
+-----
+
+# Development
+
+## Start
 
     docker-compose up
     
@@ -13,7 +20,7 @@ If new db, Create the Roundcube identities (not persistent in Roundcube db):
 Update IMAP into git repo and sort into folders in IMAP:
 - http://localhost:25081/update-imap.php
 
-# Using
+## Using
 
 Organizer (My PHP client):
 - http://localhost:25081/
@@ -24,7 +31,7 @@ PHPMyAdmin:
 Test tools:
 - http://localhost:25081/send-test-mail.php
 
-# Sending email (starting new thread)
+## Sending email (starting new thread)
 
 Start by generating a profile and start thread:
 
