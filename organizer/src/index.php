@@ -1,6 +1,9 @@
 <?php
-
+require_once __DIR__ . '/auth.php';
 require_once __DIR__ . '/class/Threads.php';
+
+// Require authentication
+requireAuth();
 
 /* @var Threads[] $threads */
 $allThreads = getThreads();

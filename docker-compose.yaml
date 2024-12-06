@@ -4,12 +4,6 @@ roundcube:
     - mysql
   ports:
     - "25080:80"
-#  environment:
-#    ROUNDCUBEMAIL_DSNW: mysql://mail:mail@mysql/roundcubemail
-#    ROUNDCUBEMAIL_SMTP_SERVER: tls://smtp.sendgrid.net
-#    ROUNDCUBEMAIL_SMTP_PORT: 587
-#    ROUNDCUBEMAIL_DEFAULT_HOST: ssl://imap.one.com:993/imap/ssl
-#    ROUNDCUBEMAIL_DEFAULT_PORT: 993
   volumes:
     # See config in https://github.com/roundcube/roundcubemail-docker/blob/master/apache/docker-entrypoint.sh
     - ./organizer/src/username-password-smtp.php:/username-password-smtp.php
@@ -36,6 +30,16 @@ organizer:
     - "25081:80"
   links:
     - mysql:mysql
+    - auth:auth
   volumes:
     - ./organizer/src:/php-frontend
     - ./data/:/organizer-data
+  environment:
+    - AUTH_URL=http://localhost:25083
+
+auth:
+  build: ./auth
+  ports:
+    - "25083:3000"
+  volumes:
+    - ./data/users:/data/users
