@@ -30,37 +30,61 @@ const activeLogins = new Map();
 // User management functions
 async function loadUsers() {
   try {
-    const data = await fs.readFile('users.json', 'utf8');
-    return JSON.parse(data).users;
+    const usersDir = path.join('data', 'users');
+    const files = await fs.readdir(usersDir);
+    const users = [];
+    
+    for (const file of files) {
+      if (file.endsWith('.json')) {
+        const data = await fs.readFile(path.join(usersDir, file), 'utf8');
+        users.push(JSON.parse(data));
+      }
+    }
+    return users;
   } catch (error) {
     logger.error('Error loading users:', error);
     return [];
   }
 }
 
-async function saveUsers(users) {
+async function saveUser(user) {
   try {
-    await fs.writeFile('users.json', JSON.stringify({ users }, null, 2));
+    const usersDir = path.join('data', 'users');
+    await fs.mkdir(usersDir, { recursive: true });
+    
+    // Use username as part of the file path
+    const filePath = path.join(usersDir, `${user.username}.json`);
+    await fs.writeFile(filePath, JSON.stringify(user, null, 2));
   } catch (error) {
-    logger.error('Error saving users:', error);
+    logger.error('Error saving user:', error);
+    throw error;
   }
 }
 
 async function findUser(username) {
-  const users = await loadUsers();
-  return users.find(user => user.username === username);
+  try {
+    const usersDir = path.join('data', 'users');
+    const filePath = path.join(usersDir, `${username}.json`);
+    const data = await fs.readFile(filePath, 'utf8');
+    return JSON.parse(data);
+  } catch (error) {
+    return null;
+  }
 }
 
 async function createUser(username) {
-  const users = await loadUsers();
   const newUser = {
     username,
     id: `user-${Date.now()}`,
     authenticated: "PENDING"
   };
-  users.push(newUser);
-  await saveUsers(users);
+  await saveUser(newUser);
   return newUser;
+}
+
+// Username validation function
+function isValidUsername(username) {
+  return /^[a-zA-Z]+$/.test(username);
 }
 
 // Login endpoint
@@ -69,6 +93,10 @@ app.post('/login', async (req, res) => {
     const { username } = req.body;
     if (!username) {
       return res.status(400).json({ error: 'Username is required' });
+    }
+
+    if (!isValidUsername(username)) {
+      return res.status(400).json({ error: 'Username must contain only letters (a-z, A-Z)' });
     }
 
     let user = await findUser(username);
