@@ -30,7 +30,7 @@ const activeLogins = new Map();
 // User management functions
 async function loadUsers() {
   try {
-    const usersDir = path.join('data', 'users');
+    const usersDir = '/data/users';
     const files = await fs.readdir(usersDir);
     const users = [];
     
@@ -49,7 +49,7 @@ async function loadUsers() {
 
 async function saveUser(user) {
   try {
-    const usersDir = path.join('data', 'users');
+    const usersDir = '/data/users';
     await fs.mkdir(usersDir, { recursive: true });
     
     // Use username as part of the file path
@@ -63,7 +63,7 @@ async function saveUser(user) {
 
 async function findUser(username) {
   try {
-    const usersDir = path.join('data', 'users');
+    const usersDir = '/data/users';
     const filePath = path.join(usersDir, `${username}.json`);
     const data = await fs.readFile(filePath, 'utf8');
     return JSON.parse(data);
@@ -205,20 +205,24 @@ const configuration = {
   app.use('/oidc', oidc.callback());
 
   // Interaction endpoint
-  app.use('/interaction/:uid', async (req, res) => {
+  app.get('/interaction/:uid', async (req, res) => {
     try {
-      const {
-        uid, prompt, params
-      } = await oidc.interactionDetails(req, res);
+      const details = await oidc.interactionDetails(req, res);
+      const { uid, prompt, params } = details;
       
       logger.info('Processing interaction', { uid, prompt, params });
 
       // Get login token from query params
       const loginToken = req.query.token;
-      const user = loginToken ? activeLogins.get(loginToken) : null;
+      
+      // If no login token, redirect to login page with interaction UID
+      if (!loginToken) {
+        return res.redirect(`/login.html?uid=${uid}`);
+      }
 
+      const user = activeLogins.get(loginToken);
       if (!user) {
-        return res.redirect('/login.html');
+        return res.redirect(`/login.html?uid=${uid}&error=invalid_token`);
       }
 
       // Check if user is properly authenticated

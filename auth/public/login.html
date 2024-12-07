@@ -98,14 +98,17 @@
                     return;
                 }
 
-                // Get the return URL from query parameters
+                // Get the interaction URL from query parameters
                 const urlParams = new URLSearchParams(window.location.search);
-                const returnTo = urlParams.get('returnTo');
+                const uid = urlParams.get('uid');
 
-                if (returnTo) {
-                    // Append login token to the return URL
-                    const redirectUrl = `${returnTo}${returnTo.includes('?') ? '&' : '?'}token=${data.loginToken}`;
-                    window.location.href = redirectUrl;
+                if (uid) {
+                    // Redirect to the interaction endpoint with the login token
+                    window.location.href = `/interaction/${uid}?token=${data.loginToken}`;
+                } else {
+                    messageDiv.textContent = 'Invalid login request: missing interaction ID';
+                    messageDiv.className = 'message error';
+                    messageDiv.style.display = 'block';
                 }
             } catch (error) {
                 console.error('Login error:', error);
@@ -115,11 +118,11 @@
             }
         });
 
-        // Check for return URL in query parameters
+        // Check for interaction UID in query parameters
         const urlParams = new URLSearchParams(window.location.search);
-        if (!urlParams.get('returnTo')) {
+        if (!urlParams.get('uid')) {
             const messageDiv = document.getElementById('message');
-            messageDiv.textContent = 'Invalid login request';
+            messageDiv.textContent = 'Invalid login request: missing interaction ID';
             messageDiv.className = 'message error';
             messageDiv.style.display = 'block';
         }
