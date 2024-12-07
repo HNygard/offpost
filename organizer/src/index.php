@@ -21,6 +21,8 @@ $allThreads = getThreads();
     <div class="container">
         <div class="user-info">
             Logged in as: <?= htmlspecialchars($_SESSION['user']['name'] ?? $_SESSION['user']['email'] ?? 'Unknown User') ?>
+            <br>
+            <a href="logout.php">Logout</a>
         </div>
 
         <h1>Email Engine Organizer</h1>
@@ -70,15 +72,15 @@ $allThreads = getThreads();
                                 &lt;<?= $thread->my_email ?>&gt;
                             </span><br>
                             <div class="action-links">
-                                [<a href="classify-email.php?entityId=<?=
+                                <a href="classify-email.php?entityId=<?=
                                     htmlescape($threads->entity_id)?>&threadId=<?=
-                                    htmlescape(getThreadId($thread))?>">Classify</a>]
-                                [<a href="thread__send-email.php?entityId=<?=
+                                    htmlescape(getThreadId($thread))?>">Classify</a>
+                                <a href="thread__send-email.php?entityId=<?=
                                     htmlescape($threads->entity_id)?>&threadId=<?=
-                                    htmlescape(getThreadId($thread))?>">Send email</a>]
-                                [<a href="setSuccessForThreadAndDocument.php?entityId=<?=
+                                    htmlescape(getThreadId($thread))?>">Send email</a>
+                                <a href="setSuccessForThreadAndDocument.php?entityId=<?=
                                     htmlescape($threads->entity_id)?>&threadId=<?=
-                                    htmlescape(getThreadId($thread))?>">Archive thread</a>]
+                                    htmlescape(getThreadId($thread))?>">Archive thread</a>
                             </div>
                         </td>
                         <?php /* Status */ ?>
