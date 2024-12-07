@@ -106,12 +106,24 @@ span.label.label_disabled {
     border-color: #a8aca8;
 }
 
+.action-links {
+    margin: 10px 0;
+}
+
 .action-links a {
+    display: inline-block;
     color: #3498db;
     text-decoration: none;
-    margin-right: 10px;
+    margin: 5px 10px 5px 0;
+    padding: 6px 12px;
+    background-color: #f8f9fa;
+    border: 1px solid #dee2e6;
+    border-radius: 4px;
+    transition: all 0.2s ease-in-out;
 }
 
 .action-links a:hover {
-    text-decoration: underline;
+    background-color: #e9ecef;
+    border-color: #3498db;
+    text-decoration: none;
 }
