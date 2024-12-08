@@ -45,6 +45,13 @@ docker-compose up
 - Create Roundcube identities: http://localhost:25081/update-identities.php
 - Update IMAP and sort folders: http://localhost:25081/update-imap.php
 
+### Running Tests
+
+To run the organizer tests:
+```bash
+cd organizer/src && ./vendor/bin/phpunit tests/
+```
+
 ### Available Services
 
 - Organizer (PHP Client): http://localhost:25081/
