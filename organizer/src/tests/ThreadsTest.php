@@ -36,7 +36,40 @@ class MockEmailService implements IEmailService {
     }
 }
 
+// Mock version of saveEntityThreads for testing
+function saveEntityThreads($entityId, $entity_threads) {
+    global $mockSavedThreads;
+    $mockSavedThreads[$entityId] = $entity_threads;
+}
+
 class ThreadsTest extends TestCase {
+    protected function setUp(): void {
+        parent::setUp();
+        global $mockSavedThreads;
+        $mockSavedThreads = [];
+    }
+
+    public function testSaveEntityThreads() {
+        global $mockSavedThreads;
+        
+        // Arrange
+        $entityId = 'test-entity';
+        $threads = new Threads();
+        $threads->entity_id = $entityId;
+        $threads->title_prefix = 'Test';
+        $threads->threads = [];
+
+        // Act
+        saveEntityThreads($entityId, $threads);
+
+        // Assert
+        $this->assertArrayHasKey($entityId, $mockSavedThreads);
+        $savedThreads = $mockSavedThreads[$entityId];
+        $this->assertEquals($entityId, $savedThreads->entity_id);
+        $this->assertEquals('Test', $savedThreads->title_prefix);
+        $this->assertIsArray($savedThreads->threads);
+    }
+
     public function testSendThreadEmail() {
         // Arrange
         $thread = new stdClass();
