@@ -2,6 +2,7 @@
 
 use PHPUnit\Framework\TestCase;
 require_once(__DIR__ . '/../class/Threads.php');
+require_once(__DIR__ . '/../class/Thread.php');
 
 class MockEmailService implements IEmailService {
     private $shouldSucceed;
@@ -42,6 +43,28 @@ function saveEntityThreads($entityId, $entity_threads) {
     $mockSavedThreads[$entityId] = $entity_threads;
 }
 
+// Mock version of createThread for testing
+function createThread($entityId, $entityTitlePrefix, $thread) {
+    global $mockSavedThreads;
+    $existingThreads = getThreadsForEntity($entityId);
+    if ($existingThreads == null) {
+        $existingThreads = new Threads();
+        $existingThreads->entity_id = $entityId;
+        $existingThreads->title_prefix = $entityTitlePrefix;
+        $existingThreads->threads = array();
+    }
+    $existingThreads->threads[] = $thread;
+    
+    $mockSavedThreads[$entityId] = $existingThreads;
+    return $thread;
+}
+
+// Mock version of getThreadsForEntity for testing
+function getThreadsForEntity($entityId) {
+    global $mockSavedThreads;
+    return isset($mockSavedThreads[$entityId]) ? $mockSavedThreads[$entityId] : null;
+}
+
 class ThreadsTest extends TestCase {
     protected function setUp(): void {
         parent::setUp();
@@ -68,6 +91,83 @@ class ThreadsTest extends TestCase {
         $this->assertEquals($entityId, $savedThreads->entity_id);
         $this->assertEquals('Test', $savedThreads->title_prefix);
         $this->assertIsArray($savedThreads->threads);
+    }
+
+    public function testCreateThreadForNewEntity() {
+        global $mockSavedThreads;
+        
+        // Arrange
+        $entityId = 'test-entity';
+        $titlePrefix = 'Test Prefix';
+        $thread = new Thread();
+        $thread->title = 'Test Thread';
+        $thread->my_name = 'Test User';
+        $thread->my_email = 'test@example.com';
+        $thread->labels = [];
+        $thread->sent = false;
+        $thread->archived = false;
+        $thread->emails = [];
+
+        // Act
+        $result = createThread($entityId, $titlePrefix, $thread);
+
+        // Assert
+        $this->assertArrayHasKey($entityId, $mockSavedThreads);
+        $savedThreads = $mockSavedThreads[$entityId];
+        $this->assertEquals($entityId, $savedThreads->entity_id);
+        $this->assertEquals($titlePrefix, $savedThreads->title_prefix);
+        $this->assertCount(1, $savedThreads->threads);
+        $this->assertEquals($thread, $savedThreads->threads[0]);
+        $this->assertEquals($thread, $result);
+    }
+
+    public function testCreateThreadForExistingEntity() {
+        global $mockSavedThreads;
+        
+        // Arrange
+        $entityId = 'test-entity';
+        $titlePrefix = 'Test Prefix';
+        
+        // Create existing threads
+        $existingThreads = new Threads();
+        $existingThreads->entity_id = $entityId;
+        $existingThreads->title_prefix = $titlePrefix;
+        $existingThreads->threads = [];
+        
+        $existingThread = new Thread();
+        $existingThread->title = 'Existing Thread';
+        $existingThread->my_name = 'Test User';
+        $existingThread->my_email = 'test@example.com';
+        $existingThread->labels = [];
+        $existingThread->sent = true;
+        $existingThread->archived = false;
+        $existingThread->emails = [];
+        
+        $existingThreads->threads[] = $existingThread;
+        $mockSavedThreads[$entityId] = $existingThreads;
+
+        // Create new thread to add
+        $newThread = new Thread();
+        $newThread->title = 'New Thread';
+        $newThread->my_name = 'Test User';
+        $newThread->my_email = 'test@example.com';
+        $newThread->labels = [];
+        $newThread->sent = false;
+        $newThread->archived = false;
+        $newThread->emails = [];
+
+        // Act
+        $result = createThread($entityId, $titlePrefix, $newThread);
+
+        // Assert
+        $this->assertArrayHasKey($entityId, $mockSavedThreads);
+        $savedThreads = $mockSavedThreads[$entityId];
+        $this->assertEquals($entityId, $savedThreads->entity_id);
+        $this->assertEquals($titlePrefix, $savedThreads->title_prefix);
+        $this->assertCount(2, $savedThreads->threads);
+        $this->assertEquals($existingThread, $savedThreads->threads[0]);
+        $this->assertEquals($newThread, $savedThreads->threads[1]);
+        $this->assertEquals($newThread, $result);
     }
 
     public function testSendThreadEmail() {

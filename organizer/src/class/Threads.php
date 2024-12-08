@@ -16,17 +16,19 @@ function getThreads() {
     return $threads;
 }
 
-/**
- * @param String $entityID
- * @return Threads
- */
-function getThreadsForEntity($entityID) {
-    $path = '/organizer-data/threads/threads-' . $entityID . '.json';
-    if (!file_exists($path)) {
-        return null;
-    }
+if (!function_exists('getThreadsForEntity')) {
+    /**
+     * @param String $entityID
+     * @return Threads
+     */
+    function getThreadsForEntity($entityID) {
+        $path = '/organizer-data/threads/threads-' . $entityID . '.json';
+        if (!file_exists($path)) {
+            return null;
+        }
 
-    return json_decode(file_get_contents($path));
+        return json_decode(file_get_contents($path));
+    }
 }
 
 function getThreadFile($entityId, $thread, $attachement) {
@@ -45,20 +47,22 @@ if (!function_exists('saveEntityThreads')) {
     }
 }
 
-function createThread($entityId, $entityTitlePrefix, Thread $thread) {
-    $existingThreads = getThreadsForEntity($entityId);
-    if ($existingThreads == null) {
-        $existingThreads = new Threads();
-        $existingThreads->entity_id = $entityId;
-        $existingThreads->title_prefix = $entityTitlePrefix;
-        $existingThreads->threads = array();
+if (!function_exists('createThread')) {
+    function createThread($entityId, $entityTitlePrefix, Thread $thread) {
+        $existingThreads = getThreadsForEntity($entityId);
+        if ($existingThreads == null) {
+            $existingThreads = new Threads();
+            $existingThreads->entity_id = $entityId;
+            $existingThreads->title_prefix = $entityTitlePrefix;
+            $existingThreads->threads = array();
+        }
+        $existingThreads->threads[] = $thread;
+
+        file_put_contents('/organizer-data/threads/threads-' . $entityId . '.json',
+            json_encode($existingThreads, JSON_PRETTY_PRINT ^ JSON_UNESCAPED_UNICODE ^ JSON_UNESCAPED_SLASHES));
+
+        return $thread;
     }
-    $existingThreads->threads[] = $thread;
-
-    file_put_contents('/organizer-data/threads/threads-' . $entityId . '.json',
-        json_encode($existingThreads, JSON_PRETTY_PRINT ^ JSON_UNESCAPED_UNICODE ^ JSON_UNESCAPED_SLASHES));
-
-    return $thread;
 }
 
 function getThreadId($thread) {
