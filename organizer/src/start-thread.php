@@ -116,7 +116,17 @@ if ($thread == null) {
 
 if (isset($_POST['body']) && !empty($_POST['body'])) {
     // -> Send email
-    sendThreadEmail($thread, $_POST['entity_email'], $_POST['title'], $_POST['body'], $entityId, $threads);
+    $result = sendThreadEmail($thread, $_POST['entity_email'], $_POST['title'], $_POST['body'], $entityId, $threads);
+    
+    echo '<div style="height: 400px; overflow-y: scroll; font-family: monospace;">';
+    echo $result['debug'];
+    echo '</div>';
+    
+    if ($result['success']) {
+        echo '<pre style="color: green; font-size: 2em;">Message has been sent</pre>';
+    } else {
+        echo '<pre style="color: red; font-size: 2em;">Message could not be sent. Mailer Error: ' . $result['error'] . '</pre>';
+    }
 }
 
 

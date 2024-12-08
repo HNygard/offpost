@@ -14,7 +14,17 @@ foreach ($threads->threads as $thread1) {
 }
 
 if (isset($_POST['submit'])) {
-    sendThreadEmail($thread, $_POST['email-to'], $_POST['email-subject'], $_POST['email-body'], $entityId, $threads);
+    $result = sendThreadEmail($thread, $_POST['email-to'], $_POST['email-subject'], $_POST['email-body'], $entityId, $threads);
+    
+    echo '<div style="height: 400px; overflow-y: scroll; font-family: monospace;">';
+    echo $result['debug'];
+    echo '</div>';
+    
+    if ($result['success']) {
+        echo '<pre style="color: green; font-size: 2em;">Message has been sent</pre>';
+    } else {
+        echo '<pre style="color: red; font-size: 2em;">Message could not be sent. Mailer Error: ' . $result['error'] . '</pre>';
+    }
     exit;
 }
 

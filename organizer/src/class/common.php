@@ -33,3 +33,10 @@ function getFilesInDirectoryNoRecursive($dir) {
 function htmlescape($html) {
     return htmlentities($html, ENT_QUOTES);
 }
+
+if (!function_exists('logDebug')) {
+    function logDebug($message) {
+        echo date('Y-m-d H:i:s')
+        . $message . chr(10);
+    }
+}
