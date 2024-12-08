@@ -3,8 +3,6 @@
 set_time_limit(0);
 ini_set('memory_limit', '-1');
 
-require_once __DIR__ . '/class/Threads.php';
-
 /**
  * Support multiple utf8 string in a row.
  *
@@ -107,6 +105,7 @@ function imap_utf8_improved_by_hallvard($string) {
 echo '<pre>';
 
 require_once __DIR__ . '/imap-connection.php';
+require_once __DIR__ . '/class/Threads.php';
 $mailbox = openConnection();
 
 
