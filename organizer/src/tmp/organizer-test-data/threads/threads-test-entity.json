@@ -1,0 +1,33 @@
+{
+    "title_prefix": "Test",
+    "entity_id": "test-entity",
+    "threads": [
+        {
+            "title": "Test Thread",
+            "my_name": "Test User",
+            "my_email": "test@example.com",
+            "labels": [],
+            "sent": false,
+            "archived": false,
+            "emails": []
+        },
+        {
+            "title": "Existing Thread",
+            "my_name": "Test User",
+            "my_email": "test@example.com",
+            "labels": [],
+            "sent": true,
+            "archived": false,
+            "emails": []
+        },
+        {
+            "title": "New Thread",
+            "my_name": "Test User",
+            "my_email": "test@example.com",
+            "labels": [],
+            "sent": false,
+            "archived": false,
+            "emails": []
+        }
+    ]
+}

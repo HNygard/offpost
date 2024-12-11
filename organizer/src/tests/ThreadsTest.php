@@ -1,8 +1,11 @@
 <?php
 
 use PHPUnit\Framework\TestCase;
+
+require_once(__DIR__ . '/bootstrap.php');
 require_once(__DIR__ . '/../class/Threads.php');
 require_once(__DIR__ . '/../class/Thread.php');
+require_once(__DIR__ . '/../class/ThreadFileOperations.php');
 
 class MockEmailService implements IEmailService {
     private $shouldSucceed;
@@ -37,44 +40,45 @@ class MockEmailService implements IEmailService {
     }
 }
 
-// Mock version of saveEntityThreads for testing
-function saveEntityThreads($entityId, $entity_threads) {
-    global $mockSavedThreads;
-    $mockSavedThreads[$entityId] = $entity_threads;
-}
-
-// Mock version of createThread for testing
-function createThread($entityId, $entityTitlePrefix, $thread) {
-    global $mockSavedThreads;
-    $existingThreads = getThreadsForEntity($entityId);
-    if ($existingThreads == null) {
-        $existingThreads = new Threads();
-        $existingThreads->entity_id = $entityId;
-        $existingThreads->title_prefix = $entityTitlePrefix;
-        $existingThreads->threads = array();
-    }
-    $existingThreads->threads[] = $thread;
-    
-    $mockSavedThreads[$entityId] = $existingThreads;
-    return $thread;
-}
-
-// Mock version of getThreadsForEntity for testing
-function getThreadsForEntity($entityId) {
-    global $mockSavedThreads;
-    return isset($mockSavedThreads[$entityId]) ? $mockSavedThreads[$entityId] : null;
-}
-
 class ThreadsTest extends TestCase {
+    private $testDataDir;
+    private $threadsDir;
+
     protected function setUp(): void {
         parent::setUp();
-        global $mockSavedThreads;
-        $mockSavedThreads = [];
+        $this->testDataDir = DATA_DIR;
+        $this->threadsDir = THREADS_DIR;
+        
+        // Create test directories
+        if (!file_exists($this->threadsDir)) {
+            mkdir($this->threadsDir, 0777, true);
+        }
+    }
+
+    protected function tearDown(): void {
+        // Clean up test directories
+        $this->removeDirectory($this->threadsDir);
+        parent::tearDown();
+    }
+    
+    private function removeDirectory($dir) {
+        if (!file_exists($dir)) {
+            return;
+        }
+        
+        $files = array_diff(scandir($dir), array('.', '..'));
+        foreach ($files as $file) {
+            $path = joinPaths($dir, $file);
+            if (is_dir($path)) {
+                $this->removeDirectory($path);
+            } else {
+                unlink($path);
+            }
+        }
+        rmdir($dir);
     }
 
     public function testSaveEntityThreads() {
-        global $mockSavedThreads;
-        
         // Arrange
         $entityId = 'test-entity';
         $threads = new Threads();
@@ -86,16 +90,14 @@ class ThreadsTest extends TestCase {
         saveEntityThreads($entityId, $threads);
 
         // Assert
-        $this->assertArrayHasKey($entityId, $mockSavedThreads);
-        $savedThreads = $mockSavedThreads[$entityId];
+        $savedThreads = getThreadsForEntity($entityId);
+        $this->assertNotNull($savedThreads);
         $this->assertEquals($entityId, $savedThreads->entity_id);
         $this->assertEquals('Test', $savedThreads->title_prefix);
         $this->assertIsArray($savedThreads->threads);
     }
 
     public function testCreateThreadForNewEntity() {
-        global $mockSavedThreads;
-        
         // Arrange
         $entityId = 'test-entity';
         $titlePrefix = 'Test Prefix';
@@ -112,8 +114,8 @@ class ThreadsTest extends TestCase {
         $result = createThread($entityId, $titlePrefix, $thread);
 
         // Assert
-        $this->assertArrayHasKey($entityId, $mockSavedThreads);
-        $savedThreads = $mockSavedThreads[$entityId];
+        $savedThreads = getThreadsForEntity($entityId);
+        $this->assertNotNull($savedThreads);
         $this->assertEquals($entityId, $savedThreads->entity_id);
         $this->assertEquals($titlePrefix, $savedThreads->title_prefix);
         $this->assertCount(1, $savedThreads->threads);
@@ -122,18 +124,11 @@ class ThreadsTest extends TestCase {
     }
 
     public function testCreateThreadForExistingEntity() {
-        global $mockSavedThreads;
-        
         // Arrange
         $entityId = 'test-entity';
         $titlePrefix = 'Test Prefix';
         
-        // Create existing threads
-        $existingThreads = new Threads();
-        $existingThreads->entity_id = $entityId;
-        $existingThreads->title_prefix = $titlePrefix;
-        $existingThreads->threads = [];
-        
+        // Create existing thread
         $existingThread = new Thread();
         $existingThread->title = 'Existing Thread';
         $existingThread->my_name = 'Test User';
@@ -143,8 +138,7 @@ class ThreadsTest extends TestCase {
         $existingThread->archived = false;
         $existingThread->emails = [];
         
-        $existingThreads->threads[] = $existingThread;
-        $mockSavedThreads[$entityId] = $existingThreads;
+        createThread($entityId, $titlePrefix, $existingThread);
 
         // Create new thread to add
         $newThread = new Thread();
@@ -160,8 +154,8 @@ class ThreadsTest extends TestCase {
         $result = createThread($entityId, $titlePrefix, $newThread);
 
         // Assert
-        $this->assertArrayHasKey($entityId, $mockSavedThreads);
-        $savedThreads = $mockSavedThreads[$entityId];
+        $savedThreads = getThreadsForEntity($entityId);
+        $this->assertNotNull($savedThreads);
         $this->assertEquals($entityId, $savedThreads->entity_id);
         $this->assertEquals($titlePrefix, $savedThreads->title_prefix);
         $this->assertCount(2, $savedThreads->threads);
