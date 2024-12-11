@@ -1,6 +1,5 @@
 TODO for Cline.
 
-
 - [x] Refactor Threads.php
     - [x] Split out file operations into ThreadFileOperations.php
     - [x] Split out utility functions into ThreadUtils.php
@@ -8,14 +7,10 @@ TODO for Cline.
 - [ ] Rig for testing
     - [x] Search for file operations and make the path configurable
     - [ ] Basic unit tests for thread functionality
-        - [ ] Test ThreadFileOperations.php
-            - [ ] Test getThreads() function
-                - [ ] Test reading multiple thread files
-                - [ ] Test handling of .gitignore file
-                - [ ] Test empty directory case
-            - [ ] Test getThreadFile() function
-                - [ ] Test valid file retrieval
-                - [ ] Test handling of non-existent files
+        - [x] Test ThreadFileOperations.php
+            - [x] Test getThreads() function
+            - [x] Test getThreadFile() function
+            - [x] Test getThreadsForEntity() function
         - [ ] Test ThreadUtils.php
             - [ ] Test getThreadId() function
                 - [ ] Test UTF-8 string normalization
@@ -24,20 +19,36 @@ TODO for Cline.
             - [ ] Test getLabelType() function
                 - [ ] Test all status types (info, disabled, danger, success, unknown)
                 - [ ] Test error case for invalid status type
-        - [ ] Test ThreadEmailService.php
-            - [ ] Test PHPMailerService class
-                - [ ] Test successful email sending
-                - [ ] Test failed email sending
-                - [ ] Test BCC functionality
-                - [ ] Test error handling
-                - [ ] Test debug output
+        - [x] Test ThreadEmailService.php
+            - [x] Test email sending success/failure
+            - [x] Test email data validation
+            - [x] Test error handling
+            - [x] Test debug output
     - [ ] update-imap.php
-        - [ ] Restructure into multiple file to make it testable
-        - [ ] Make tests
-    - [ ] Setup development imap server
-    - [ ] Send emails using smtp and receive on development imap server
+        - [ ] Restructure into multiple files to make it testable
+        - [ ] Add unit tests for IMAP operations
+        - [ ] Add integration tests with test IMAP server
+    - [ ] Setup development IMAP server
+        - [ ] Docker container for IMAP server
+        - [ ] Configuration for test environment
+        - [ ] Test data setup scripts
+    - [ ] End-to-end testing
+        - [ ] Test email flow from SMTP to IMAP
+        - [ ] Test thread creation and updates
+        - [ ] Test attachment handling
 - [ ] GUI for reading threads
-- [ ] GUI for repling to threads
+    - [ ] Thread list view
+    - [ ] Thread detail view
+    - [ ] Email composition interface
+    - [ ] Attachment handling UI
+- [ ] GUI for replying to threads
+    - [ ] Reply form with rich text editor
+    - [ ] Template system for common responses
+    - [ ] Attachment upload functionality
 
 TODO - medium term:
-- [ ] Automatic follow up. If no replies are given, execute according to plan. Scheduled email sending.
+- [ ] Automatic follow up
+    - [ ] Scheduled email sending system
+    - [ ] Response tracking
+    - [ ] Automated reminder system
+    - [ ] Configurable follow-up rules
