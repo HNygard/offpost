@@ -1,0 +1,13 @@
+TODOs - short term:
+- [ ] Rig for testing
+    - [ ] Basic unit tests for Threads.php
+    - [ ] update-imap.php
+        - [ ] Restructure into multiple file to make it testable
+        - [ ] Make tests
+    - [ ] Setup development imap server
+    - [ ] Send emails using smtp and receive on development imap server
+- [ ] GUI for reading threads
+- [ ] GUI for repling to threads
+
+TODO - medium term:
+- [ ] Automatic follow up. If no replies are given, execute according to plan. Scheduled email sending.
