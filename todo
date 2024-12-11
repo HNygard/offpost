@@ -31,7 +31,7 @@ TODO for Cline.
             - [x] ImapEmailProcessor: Email and cache handling
             - [x] ImapAttachmentHandler: Attachment processing
         - [ ] Add unit tests for IMAP operations
-            - [ ] Test ImapConnection class
+            - [x] Test ImapConnection class
             - [ ] Test ImapFolderManager class
             - [ ] Test ImapEmailProcessor class
             - [ ] Test ImapAttachmentHandler class
