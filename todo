@@ -25,8 +25,16 @@ TODO for Cline.
             - [x] Test error handling
             - [x] Test debug output
     - [ ] update-imap.php
-        - [ ] Restructure into multiple files to make it testable
+        - [x] Restructure into multiple files to make it testable
+            - [x] ImapConnection: Core IMAP connection handling
+            - [x] ImapFolderManager: Folder operations
+            - [x] ImapEmailProcessor: Email and cache handling
+            - [x] ImapAttachmentHandler: Attachment processing
         - [ ] Add unit tests for IMAP operations
+            - [ ] Test ImapConnection class
+            - [ ] Test ImapFolderManager class
+            - [ ] Test ImapEmailProcessor class
+            - [ ] Test ImapAttachmentHandler class
         - [ ] Add integration tests with test IMAP server
     - [ ] Setup development IMAP server
         - [ ] Docker container for IMAP server
