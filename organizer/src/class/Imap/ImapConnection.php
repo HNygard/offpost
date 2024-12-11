@@ -8,21 +8,30 @@ class ImapConnection {
     private string $password;
     private $connection = null;
     private bool $debug;
+    private ImapWrapper $wrapper;
 
     /**
      * @param string $server IMAP server address with protocol and port e.g. {imap.one.com:993/imap/ssl}
      * @param string $email Email address for authentication
      * @param string $password Password for authentication
      * @param bool $debug Whether to enable debug logging
+     * @param ImapWrapper|null $wrapper IMAP wrapper for testing
      */
-    public function __construct(string $server, string $email, string $password, bool $debug = false) {
+    public function __construct(
+        string $server, 
+        string $email, 
+        string $password, 
+        bool $debug = false,
+        ?ImapWrapper $wrapper = null
+    ) {
         $this->server = $server;
         $this->email = $email;
         $this->password = $password;
         $this->debug = $debug;
+        $this->wrapper = $wrapper ?? new ImapWrapper();
 
         // Set custom error handler for IMAP operations
-        set_error_handler([$this, 'errorHandler']);
+        \set_error_handler([$this, 'errorHandler']);
     }
 
     /**
@@ -40,21 +49,21 @@ class ImapConnection {
      * @throws \Exception if connection fails
      */
     public function openConnection(string $folder = 'INBOX') {
-        try {
-            $this->connection = imap_open(
-                $this->server . $folder, 
-                $this->email, 
-                $this->password, 
-                0, 
-                1,
-                ['DISABLE_AUTHENTICATOR' => 'PLAIN']
-            );
-            $this->checkForImapError();
-            return $this->connection;
-        } catch (\Exception $e) {
-            $this->checkForImapError();
-            throw $e;
+        $this->connection = $this->wrapper->open(
+            $this->server . $folder, 
+            $this->email, 
+            $this->password, 
+            0, 
+            1,
+            ['DISABLE_AUTHENTICATOR' => 'PLAIN']
+        );
+
+        if ($this->connection === false) {
+            $error = $this->wrapper->lastError();
+            throw new \Exception(!empty($error) ? 'IMAP error: ' . $error : 'Connection failed');
         }
+
+        return $this->connection;
     }
 
     /**
@@ -63,7 +72,7 @@ class ImapConnection {
      * @throws \Exception if IMAP error exists
      */
     public function checkForImapError() {
-        $error = imap_last_error();
+        $error = $this->wrapper->lastError();
         if (!empty($error)) {
             throw new \Exception('IMAP error: ' . $error);
         }
@@ -74,7 +83,7 @@ class ImapConnection {
      */
     public function logDebug(string $text) {
         if ($this->debug) {
-            $time = time();
+            $time = \time();
             static $lastTime = null;
             
             if ($lastTime === null) {
@@ -91,7 +100,7 @@ class ImapConnection {
                 $heavyIndicator = ' HEAVY';
             }
             
-            echo date('Y-m-d H:i:s', $time)
+            echo \date('Y-m-d H:i:s', $time)
                 . ' (+ ' . $diff . ' sec)'
                 . $heavyIndicator
                 . ' - '
@@ -110,16 +119,16 @@ class ImapConnection {
             throw new \Exception('No active IMAP connection');
         }
 
-        $list = imap_list($this->connection, $this->server, "*");
+        $list = $this->wrapper->list($this->connection, $this->server, "*");
         $this->checkForImapError();
         
         if (!$list) {
             return [];
         }
 
-        sort($list);
-        return array_map(function($folder) {
-            return str_replace($this->server, '', $folder);
+        \sort($list);
+        return \array_map(function($folder) {
+            return \str_replace($this->server, '', $folder);
         }, $list);
     }
 
@@ -134,16 +143,16 @@ class ImapConnection {
             throw new \Exception('No active IMAP connection');
         }
 
-        $list = imap_lsub($this->connection, $this->server, '*');
+        $list = $this->wrapper->lsub($this->connection, $this->server, '*');
         $this->checkForImapError();
         
         if (!$list) {
             return [];
         }
 
-        sort($list);
-        return array_map(function($folder) {
-            return str_replace($this->server, '', $folder);
+        \sort($list);
+        return \array_map(function($folder) {
+            return \str_replace($this->server, '', $folder);
         }, $list);
     }
 
@@ -158,7 +167,7 @@ class ImapConnection {
             throw new \Exception('No active IMAP connection');
         }
 
-        imap_createmailbox($this->connection, imap_utf7_encode($this->server . $folderName));
+        $this->wrapper->createMailbox($this->connection, $this->wrapper->utf7Encode($this->server . $folderName));
         $this->checkForImapError();
     }
 
@@ -173,7 +182,43 @@ class ImapConnection {
             throw new \Exception('No active IMAP connection');
         }
 
-        imap_subscribe($this->connection, imap_utf7_encode($this->server . $folderName));
+        $this->wrapper->subscribe($this->connection, $this->wrapper->utf7Encode($this->server . $folderName));
+        $this->checkForImapError();
+    }
+
+    /**
+     * Move an email to a different folder
+     * 
+     * @param int $uid UID of the email to move
+     * @param string $targetFolder Name of the target folder
+     * @throws \Exception if operation fails
+     */
+    public function moveEmail(int $uid, string $targetFolder) {
+        if (!$this->connection) {
+            throw new \Exception('No active IMAP connection');
+        }
+
+        $this->wrapper->mailMove($this->connection, (string)$uid, $targetFolder, CP_UID);
+        $this->checkForImapError();
+    }
+
+    /**
+     * Rename/move a folder
+     * 
+     * @param string $oldName Current name of the folder
+     * @param string $newName New name for the folder
+     * @throws \Exception if operation fails
+     */
+    public function renameFolder(string $oldName, string $newName) {
+        if (!$this->connection) {
+            throw new \Exception('No active IMAP connection');
+        }
+
+        $this->wrapper->renameMailbox(
+            $this->connection,
+            $this->wrapper->utf7Encode($this->server . $oldName),
+            $this->wrapper->utf7Encode($this->server . $newName)
+        );
         $this->checkForImapError();
     }
 
@@ -184,7 +229,7 @@ class ImapConnection {
      */
     public function closeConnection(int $flag = 0) {
         if ($this->connection) {
-            imap_close($this->connection, $flag);
+            $this->wrapper->close($this->connection, $flag);
             $this->connection = null;
         }
     }

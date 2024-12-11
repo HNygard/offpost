@@ -45,12 +45,16 @@ class ImapFolderManager {
      * Move email to specified folder
      */
     public function moveEmail(int $uid, string $targetFolder): void {
-        $imapStream = $this->connection->getConnection();
-        if (!$imapStream) {
+        if (!$this->connection->getConnection()) {
             throw new \Exception('No active IMAP connection');
         }
 
-        imap_mail_move($imapStream, $uid, $targetFolder, CP_UID);
+        // Ensure target folder exists and is subscribed
+        $this->ensureFolderExists($targetFolder);
+        $this->ensureFolderSubscribed($targetFolder);
+        
+        // Perform the move using ImapConnection's methods
+        $this->connection->moveEmail($uid, $targetFolder);
         $this->connection->checkForImapError();
     }
 
@@ -58,17 +62,12 @@ class ImapFolderManager {
      * Rename/move folder
      */
     public function renameFolder(string $oldName, string $newName): void {
-        $imapStream = $this->connection->getConnection();
-        if (!$imapStream) {
+        if (!$this->connection->getConnection()) {
             throw new \Exception('No active IMAP connection');
         }
 
-        $server = '{imap.one.com:993/imap/ssl}'; // TODO: Get from connection
-        imap_renamemailbox(
-            $imapStream,
-            imap_utf7_encode($server . $oldName),
-            imap_utf7_encode($server . $newName)
-        );
+        // Perform the rename using ImapConnection's methods
+        $this->connection->renameFolder($oldName, $newName);
         $this->connection->checkForImapError();
 
         // Update local folder lists
