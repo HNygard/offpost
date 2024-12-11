@@ -1,15 +1,42 @@
 TODO for Cline.
 
 
+- [x] Refactor Threads.php
+    - [x] Split out file operations into ThreadFileOperations.php
+    - [x] Split out utility functions into ThreadUtils.php
+    - [x] Split out email services into ThreadEmailService.php
 - [ ] Rig for testing
-    - [ ] Basic unit tests for Threads.php
-    - [ ] update-imap.php
+    - [ ] Basic unit tests for thread functionality
+        - [ ] Test ThreadFileOperations.php
+            - [ ] Test getThreads() function
+                - [ ] Test reading multiple thread files
+                - [ ] Test handling of .gitignore file
+                - [ ] Test empty directory case
+            - [ ] Test getThreadFile() function
+                - [ ] Test valid file retrieval
+                - [ ] Test handling of non-existent files
+        - [ ] Test ThreadUtils.php
+            - [ ] Test getThreadId() function
+                - [ ] Test UTF-8 string normalization
+                - [ ] Test space replacement
+                - [ ] Test forward slash replacement
+            - [ ] Test getLabelType() function
+                - [ ] Test all status types (info, disabled, danger, success, unknown)
+                - [ ] Test error case for invalid status type
+        - [ ] Test ThreadEmailService.php
+            - [ ] Test PHPMailerService class
+                - [ ] Test successful email sending
+                - [ ] Test failed email sending
+                - [ ] Test BCC functionality
+                - [ ] Test error handling
+                - [ ] Test debug output
+    - [ ] update-imap.php
         - [ ] Restructure into multiple file to make it testable
         - [ ] Make tests
     - [ ] Setup development imap server
     - [ ] Send emails using smtp and receive on development imap server
-- [ ] GUI for reading threads
+- [ ] GUI for reading threads
 - [ ] GUI for repling to threads
 
 TODO - medium term:
-- [ ] Automatic follow up. If no replies are given, execute according to plan. Scheduled email sending.
+- [ ] Automatic follow up. If no replies are given, execute according to plan. Scheduled email sending.
