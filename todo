@@ -11,14 +11,14 @@ TODO for Cline.
             - [x] Test getThreads() function
             - [x] Test getThreadFile() function
             - [x] Test getThreadsForEntity() function
-        - [ ] Test ThreadUtils.php
-            - [ ] Test getThreadId() function
-                - [ ] Test UTF-8 string normalization
-                - [ ] Test space replacement
-                - [ ] Test forward slash replacement
-            - [ ] Test getLabelType() function
-                - [ ] Test all status types (info, disabled, danger, success, unknown)
-                - [ ] Test error case for invalid status type
+        - [x] Test ThreadUtils.php
+            - [x] Test getThreadId() function
+                - [x] Test UTF-8 string normalization
+                - [x] Test space replacement
+                - [x] Test forward slash replacement
+            - [x] Test getLabelType() function
+                - [x] Test all status types (info, disabled, danger, success, unknown)
+                - [x] Test error case for invalid status type
         - [x] Test ThreadEmailService.php
             - [x] Test email sending success/failure
             - [x] Test email data validation
