@@ -1,0 +1,36 @@
+version: '3'
+
+services:
+  roundcube:
+    image: roundcube/roundcubemail:1.4.x-apache
+    links:
+      - mysql
+    ports:
+      - "25080:80"
+    volumes:
+      - ./organizer/src/username-password-smtp.php:/username-password-smtp.php
+      - ./roundcubemail.config.php:/var/roundcube/config/config.email-engine.inc.php
+
+  mysql:
+    image: mysql:5.6
+    environment:
+      MYSQL_ROOT_PASSWORD: root
+      MYSQL_DATABASE: roundcubemail
+      MYSQL_USER: mail
+      MYSQL_PASSWORD: mail
+
+  organizer:
+    build: ./organizer
+    ports:
+      - "25081:80"
+    links:
+      - mysql:mysql
+    volumes:
+      - ./organizer/src:/php-frontend
+      - ./data/:/organizer-data
+    environment:
+      - AUTH_URL=https://TODO
+      - ENVIRONMENT=production
+
+volumes:
+  mysql_data:

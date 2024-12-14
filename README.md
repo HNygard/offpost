@@ -28,13 +28,17 @@ Offpost is a PHP application running on a web server.
 - Used to store email threads
 - Email threads are organized as folders on the server
 
+### Auth Service (Development Only)
+- Simple authentication service for development
+- Not intended for production use
+
 ## Development
 
 ### Setup
 
-1. Start the services:
+1. Start the development services:
 ```bash
-docker-compose up
+docker-compose -f docker-compose.dev.yaml up
 ```
 
 2. Access Roundcube (mail client):
@@ -44,6 +48,15 @@ docker-compose up
 3. For new database setup:
 - Create Roundcube identities: http://localhost:25081/update-identities.php
 - Update IMAP and sort folders: http://localhost:25081/update-imap.php
+
+### Production
+
+For production deployment:
+```bash
+docker-compose -f docker-compose.prod.yaml up
+```
+
+Note: The auth service is only available in development. For production, implement your own authentication system.
 
 ### Running Tests
 
@@ -55,7 +68,7 @@ cd organizer/src && ./vendor/bin/phpunit tests/
 ### Available Services
 
 - Organizer (PHP Client): http://localhost:25081/
-- PHPMyAdmin: http://localhost:25082/
+- PHPMyAdmin: http://localhost:25082/ (development only)
 - Test Tools: http://localhost:25081/send-test-mail.php
 
 ### Starting a New Email Thread
