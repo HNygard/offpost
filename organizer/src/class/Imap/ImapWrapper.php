@@ -62,4 +62,12 @@ class ImapWrapper {
     public function utf8(string $text): string {
         return \imap_utf8($text);
     }
+
+    public function fetchstructure(mixed $imap_stream, int $msg_number, int $options = 0): object {
+        return \imap_fetchstructure($imap_stream, $msg_number, $options);
+    }
+
+    public function fetchbody(mixed $imap_stream, int $msg_number, string $section, int $options = 0): string {
+        return \imap_fetchbody($imap_stream, $msg_number, $section, $options);
+    }
 }

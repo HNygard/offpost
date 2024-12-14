@@ -291,6 +291,45 @@ class ImapConnection {
     }
 
     /**
+     * Get message structure
+     * 
+     * @param int $uid Message UID
+     * @param int $options Options for fetching structure (e.g. FT_UID)
+     * @return object Message structure
+     * @throws \Exception if operation fails
+     */
+    public function getFetchstructure(int $uid, int $options = 0): object {
+        if (!$this->connection) {
+            throw new \Exception('No active IMAP connection');
+        }
+
+        $result = $this->wrapper->fetchstructure($this->connection, $uid, $options);
+        $this->checkForImapError();
+        
+        return $result;
+    }
+
+    /**
+     * Get message body part
+     * 
+     * @param int $uid Message UID
+     * @param string $section Message section
+     * @param int $options Options for fetching body (e.g. FT_UID)
+     * @return string Message body part
+     * @throws \Exception if operation fails
+     */
+    public function getFetchbody(int $uid, string $section, int $options = 0): string {
+        if (!$this->connection) {
+            throw new \Exception('No active IMAP connection');
+        }
+
+        $result = $this->wrapper->fetchbody($this->connection, $uid, $section, $options);
+        $this->checkForImapError();
+        
+        return $result;
+    }
+
+    /**
      * Convert text to UTF-8
      * 
      * @param string $text Text to convert

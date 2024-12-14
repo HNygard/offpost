@@ -33,8 +33,9 @@ TODO for Cline.
         - [ ] Add unit tests for IMAP operations
             - [x] Test ImapConnection class
             - [x] Test ImapFolderManager class
-            - [ ] Test ImapEmailProcessor class
+            - [x] Test ImapEmailProcessor class
             - [ ] Test ImapAttachmentHandler class
+        - [ ] Figure out why testProcessAttachmentsWithDifferentFileTypes does not work
         - [ ] Add integration tests with test IMAP server
     - [ ] Setup development IMAP server
         - [ ] Docker container for IMAP server

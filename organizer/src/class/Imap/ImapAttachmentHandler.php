@@ -17,13 +17,7 @@ class ImapAttachmentHandler {
      * Process attachments from an email
      */
     public function processAttachments(int $uid): array {
-        $imapStream = $this->connection->getConnection();
-        if (!$imapStream) {
-            throw new \Exception('No active IMAP connection');
-        }
-
-        $structure = imap_fetchstructure($imapStream, $uid, FT_UID);
-        $this->connection->checkForImapError();
+        $structure = $this->connection->getFetchstructure($uid, FT_UID);
 
         if (!isset($structure->parts) || !count($structure->parts)) {
             return [];
@@ -83,8 +77,20 @@ class ImapAttachmentHandler {
         // Handle special cases
         $att = $this->handleSpecialCases($att);
 
-        // Determine file type
+        // If name is empty, use filename
+        if (empty($att->name)) {
+            $att->name = $att->filename;
+        }
+        // If filename is empty, use name
+        if (empty($att->filename)) {
+            $att->filename = $att->name;
+        }
+
+        // Determine file type from either name or filename
         $att->filetype = $this->determineFileType($att->name);
+        if ($att->filetype === null) {
+            $att->filetype = $this->determineFileType($att->filename);
+        }
         if ($att->filetype === null) {
             return null;
         }
@@ -96,16 +102,8 @@ class ImapAttachmentHandler {
      * Save attachment to file
      */
     public function saveAttachment(int $uid, int $partNumber, object $attachment, string $savePath): void {
-        $imapStream = $this->connection->getConnection();
-        if (!$imapStream) {
-            throw new \Exception('No active IMAP connection');
-        }
-
-        $content = imap_fetchbody($imapStream, $uid, $partNumber, FT_UID);
-        $this->connection->checkForImapError();
-
-        $structure = imap_fetchstructure($imapStream, $uid, FT_UID);
-        $this->connection->checkForImapError();
+        $content = $this->connection->getFetchbody($uid, (string)$partNumber, FT_UID);
+        $structure = $this->connection->getFetchstructure($uid, FT_UID);
 
         if ($structure->parts[$partNumber - 1]->encoding == 3) { // BASE64
             $content = base64_decode($content);
@@ -122,6 +120,13 @@ class ImapAttachmentHandler {
      * Decode UTF-8 string from IMAP
      */
     private function decodeUtf8String(string $string): string {
+        // If it's a plain string without any encoding markers, return as is
+        if (!str_starts_with($string, "iso-8859-1''") && 
+            !str_starts_with($string, "ISO-8859-1''") &&
+            !preg_match('/(\=\?utf\-8\?B\?[A-Za-z0-9=]*\?=)/', $string)) {
+            return $string;
+        }
+
         if (str_starts_with($string, "iso-8859-1''") || 
             str_starts_with($string, "ISO-8859-1''")) {
             $string = str_replace(["iso-8859-1''", "ISO-8859-1''"], '', $string);
@@ -141,11 +146,12 @@ class ImapAttachmentHandler {
         // Handle Base64 encoded UTF-8 strings
         if (preg_match_all('/(\=\?utf\-8\?B\?[A-Za-z0-9=]*\?=)/', $string, $matches)) {
             foreach ($matches[0] as $match) {
-                $string = str_replace($match, imap_utf8($match), $string);
+                $string = str_replace($match, $this->connection->utf8($match), $string);
             }
+            return $this->connection->utf8($string);
         }
 
-        return imap_utf8($string);
+        return $string;
     }
 
     /**
@@ -171,20 +177,23 @@ class ImapAttachmentHandler {
      * Determine file type from filename
      */
     private function determineFileType(string $filename): ?string {
+        if (empty($filename)) {
+            return null;
+        }
+
         $filename = strtolower($filename);
         
         // Handle special cases where filename might have spaces
         $filename = str_replace(['. pdf', '.p df', '.pd f'], '.pdf', $filename);
 
-        foreach ($this->supportedTypes as $type) {
-            if (str_ends_with($filename, '.' . $type)) {
-                return $type;
-            }
+        // Get the file extension
+        $extension = pathinfo($filename, PATHINFO_EXTENSION);
+        if (in_array($extension, $this->supportedTypes)) {
+            return $extension;
         }
 
         // Special cases where we return UNKNOWN
-        if (empty($filename) || 
-            str_starts_with($filename, 'Valgstyrets_møtebok_4649_2021-11-18') ||
+        if (str_starts_with($filename, 'Valgstyrets_møtebok_4649_2021-11-18') ||
             str_starts_with($filename, 'Outlook-kvafjord k') ||
             str_ends_with($filename, '.rda')) {
             return 'UNKNOWN';
