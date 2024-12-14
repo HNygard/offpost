@@ -38,7 +38,7 @@ Offpost is a PHP application running on a web server.
 
 1. Start the development services:
 ```bash
-docker-compose -f docker-compose.dev.yaml up
+docker-compose -f docker-compose.dev.yaml up -d
 ```
 
 2. Access Roundcube (mail client):
@@ -53,7 +53,7 @@ docker-compose -f docker-compose.dev.yaml up
 
 For production deployment:
 ```bash
-docker-compose -f docker-compose.prod.yaml up
+docker-compose -f docker-compose.prod.yaml up -d
 ```
 
 Note: The auth service is only available in development. For production, implement your own authentication system.
