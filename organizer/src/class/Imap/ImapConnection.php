@@ -223,6 +223,84 @@ class ImapConnection {
     }
 
     /**
+     * Search for emails using IMAP search criteria
+     * 
+     * @param string $criteria The search criteria
+     * @param int $options Search options (e.g. SE_UID)
+     * @return array Array of message numbers or UIDs matching the criteria
+     * @throws \Exception if operation fails
+     */
+    public function search(string $criteria, int $options = 0): array {
+        if (!$this->connection) {
+            throw new \Exception('No active IMAP connection');
+        }
+
+        $result = $this->wrapper->search($this->connection, $criteria, $options);
+        $this->checkForImapError();
+        
+        return $result ?: [];
+    }
+
+    /**
+     * Get message number for a UID
+     * 
+     * @param int $uid The UID to get message number for
+     * @return int The message number
+     */
+    public function getMsgno(int $uid): int {
+        if (!$this->connection) {
+            throw new \Exception('No active IMAP connection');
+        }
+
+        return $this->wrapper->msgno($this->connection, $uid);
+    }
+
+    /**
+     * Get header info for a message
+     * 
+     * @param int $msgno The message number
+     * @return object Header information
+     */
+    public function getHeaderInfo(int $msgno): object {
+        if (!$this->connection) {
+            throw new \Exception('No active IMAP connection');
+        }
+
+        $result = $this->wrapper->headerinfo($this->connection, $msgno);
+        $this->checkForImapError();
+        
+        return $result;
+    }
+
+    /**
+     * Get message body
+     * 
+     * @param int $uid The message UID
+     * @param int $options Options for fetching body (e.g. FT_UID)
+     * @return string The message body
+     */
+    public function getBody(int $uid, int $options = 0): string {
+        if (!$this->connection) {
+            throw new \Exception('No active IMAP connection');
+        }
+
+        $result = $this->wrapper->body($this->connection, $uid, $options);
+        $this->checkForImapError();
+        
+        return $result;
+    }
+
+    /**
+     * Convert text to UTF-8
+     * 
+     * @param string $text Text to convert
+     * @return string UTF-8 encoded text
+     */
+    public function utf8(string $text): string {
+        return $this->wrapper->utf8($text);
+    }
+
+    /**
      * Close the IMAP connection
      * 
      * @param int $flag Optional flag for imap_close (e.g. CL_EXPUNGE)

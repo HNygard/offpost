@@ -5,7 +5,7 @@ namespace Imap;
 class ImapEmailProcessor {
     private ImapConnection $connection;
     private string $cacheFile;
-    private ?object $cache;
+    private ?object $cache = null;
 
     public function __construct(ImapConnection $connection, string $cacheFile = '/organizer-data/cache-threads.json') {
         $this->connection = $connection;
@@ -71,7 +71,7 @@ class ImapEmailProcessor {
         }
 
         $emails = [];
-        $mailUIDs = imap_search($imapStream, "ALL", SE_UID);
+        $mailUIDs = $this->connection->search("ALL", SE_UID);
         $this->connection->checkForImapError();
 
         if (!$mailUIDs) {
@@ -94,10 +94,8 @@ class ImapEmailProcessor {
      * Process a single email
      */
     private function processEmail(int $uid): ?object {
-        $imapStream = $this->connection->getConnection();
-        
-        $msgNo = imap_msgno($imapStream, $uid);
-        $headers = imap_headerinfo($imapStream, $msgNo);
+        $msgNo = $this->connection->getMsgno($uid);
+        $headers = $this->connection->getHeaderInfo($msgNo);
         $this->connection->checkForImapError();
 
         if (!$headers) {
@@ -112,27 +110,27 @@ class ImapEmailProcessor {
         $email->date = $headers->date;
         
         // Clean up and convert character encodings
-        $email->toaddress = isset($headers->toaddress) ? imap_utf8($headers->toaddress) : null;
-        $email->fromaddress = imap_utf8($headers->fromaddress);
-        $email->senderaddress = imap_utf8($headers->senderaddress);
-        $email->reply_toaddress = imap_utf8($headers->reply_toaddress);
+        $email->toaddress = isset($headers->toaddress) ? $this->connection->utf8($headers->toaddress) : null;
+        $email->fromaddress = $this->connection->utf8($headers->fromaddress);
+        $email->senderaddress = $this->connection->utf8($headers->senderaddress);
+        $email->reply_toaddress = $this->connection->utf8($headers->reply_toaddress);
 
         // Convert personal names to UTF-8
         if (isset($headers->to[0]->personal)) {
-            $headers->to[0]->personal = imap_utf8($headers->to[0]->personal);
+            $headers->to[0]->personal = $this->connection->utf8($headers->to[0]->personal);
         }
         if (isset($headers->from[0]->personal)) {
-            $headers->from[0]->personal = imap_utf8($headers->from[0]->personal);
+            $headers->from[0]->personal = $this->connection->utf8($headers->from[0]->personal);
         }
         if (isset($headers->sender[0]->personal)) {
-            $headers->sender[0]->personal = imap_utf8($headers->sender[0]->personal);
+            $headers->sender[0]->personal = $this->connection->utf8($headers->sender[0]->personal);
         }
         if (isset($headers->reply_to[0]->personal)) {
-            $headers->reply_to[0]->personal = imap_utf8($headers->reply_to[0]->personal);
+            $headers->reply_to[0]->personal = $this->connection->utf8($headers->reply_to[0]->personal);
         }
 
         // Get email body
-        $email->body = imap_body($imapStream, $uid, FT_UID);
+        $email->body = $this->connection->getBody($uid, FT_UID);
         $this->connection->checkForImapError();
 
         // Ensure body is UTF-8

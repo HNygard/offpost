@@ -42,4 +42,24 @@ class ImapWrapper {
     public function renameMailbox(mixed $imap_stream, string $old_name, string $new_name): bool {
         return \imap_renamemailbox($imap_stream, $old_name, $new_name);
     }
+
+    public function search(mixed $imap_stream, string $criteria, int $options = SE_FREE, string $charset = ""): array|false {
+        return \imap_search($imap_stream, $criteria, $options, $charset);
+    }
+
+    public function msgno(mixed $imap_stream, int $uid): int {
+        return \imap_msgno($imap_stream, $uid);
+    }
+
+    public function headerinfo(mixed $imap_stream, int $msg_number): object|false {
+        return \imap_headerinfo($imap_stream, $msg_number);
+    }
+
+    public function body(mixed $imap_stream, int $msg_number, int $options = 0): string|false {
+        return \imap_body($imap_stream, $msg_number, $options);
+    }
+
+    public function utf8(string $text): string {
+        return \imap_utf8($text);
+    }
 }
