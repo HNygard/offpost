@@ -34,7 +34,9 @@ TODO for Cline.
             - [x] Test ImapConnection class
             - [x] Test ImapFolderManager class
             - [x] Test ImapEmailProcessor class
-            - [ ] Test ImapAttachmentHandler class
+            - [x] Test ImapAttachmentHandler class
+                - [x] Test attachment processing with different file types (currently all detected as PDF)
+                - [x] Test special encoding handling for filenames
         - [ ] Figure out why testProcessAttachmentsWithDifferentFileTypes does not work
         - [ ] Add integration tests with test IMAP server
     - [ ] Setup development IMAP server
