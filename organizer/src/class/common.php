@@ -75,6 +75,10 @@ function htmlescape($html) {
 
 if (!function_exists('logDebug')) {
     function logDebug($message) {
+        // Skip debug output during tests
+        if (defined('PHPUNIT_RUNNING') && PHPUNIT_RUNNING === true) {
+            return;
+        }
         echo date('Y-m-d H:i:s')
         . $message . chr(10);
     }
