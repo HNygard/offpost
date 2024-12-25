@@ -1,7 +1,12 @@
 <?php
 
+require_once __DIR__ . '/auth.php';
+
 set_time_limit(0);
 ini_set('memory_limit', '-1');
+
+// Require authentication
+requireAuth();
 
 require_once __DIR__ . '/class/Imap/ImapWrapper.php';
 require_once __DIR__ . '/class/Imap/ImapConnection.php';

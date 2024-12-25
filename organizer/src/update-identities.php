@@ -1,6 +1,10 @@
 <?php
 
+require_once __DIR__ . '/auth.php';
 require_once __DIR__ . '/class/Identity.php';
+
+// Require authentication
+requireAuth();
 require_once __DIR__ . '/class/Threads.php';
 
 

@@ -1,7 +1,10 @@
 <?php
 
-
+require_once __DIR__ . '/auth.php';
 require_once __DIR__ . '/class/Thread.php';
+
+// Require authentication
+requireAuth();
 require_once __DIR__ . '/class/Threads.php';
 require_once __DIR__ . '/class/random-profile.php';
 

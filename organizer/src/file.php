@@ -1,6 +1,10 @@
 <?php
 
+require_once __DIR__ . '/auth.php';
 require 'vendor/autoload.php';
+
+// Require authentication
+requireAuth();
 
 use Laminas\Mail\Storage\Message;
 

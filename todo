@@ -7,7 +7,7 @@ TODO for Cline.
 - [x] Rewrite auth service to automatic create tokens since it's only for development
     - Goal: Opening http://localhost:25081/ should work. It should redirect to login and then back. Verify that tokens are used.
     - [x] Look into the auth service to figure out tasks.
-- [ ] Separate docker compose config prod and dev
+- [x] Separate docker compose config prod and dev
 - [ ] Rig for testing
     - [x] Search for file operations and make the path configurable
     - [ ] Basic unit tests for thread functionality
