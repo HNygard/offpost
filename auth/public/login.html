@@ -8,14 +8,14 @@
                 const response = await fetch('/dev-login');
                 const data = await response.json();
                 
-                // Get the interaction UID from URL parameters
+                // Get all the original OIDC parameters
                 const urlParams = new URLSearchParams(window.location.search);
-                const uid = urlParams.get('uid');
-
-                if (uid) {
-                    // Redirect back to interaction endpoint with dev token
-                    window.location.href = `/interaction/${uid}?token=${data.loginToken}`;
-                }
+                
+                // Redirect back to the OIDC auth endpoint with the dev token
+                const oidcParams = new URLSearchParams(urlParams);
+                oidcParams.append('token', data.loginToken);
+                
+                window.location.href = `/oidc/auth?${oidcParams.toString()}`;
             } catch (error) {
                 console.error('Auto-login failed:', error);
             }

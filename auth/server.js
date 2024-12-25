@@ -120,6 +120,21 @@ const configuration = {
   },
   findAccount: async (ctx, id) => {
     logger.debug('Finding account', { id });
+    
+    // In development, always return the dev user
+    if (id === DEV_USER.id) {
+      return {
+        accountId: DEV_USER.id,
+        async claims() {
+          return {
+            sub: DEV_USER.id,
+            name: DEV_USER.username
+          };
+        },
+      };
+    }
+    
+    // For non-dev users, check the users directory
     const users = await loadUsers();
     const user = users.find(u => u.id === id);
     
@@ -150,6 +165,9 @@ const configuration = {
 };
 
 (async () => {
+  // Save dev user on startup
+  await saveUser(DEV_USER);
+  
   const oidc = new Provider('http://localhost:25083', configuration);
 
   // Request logging
@@ -184,8 +202,22 @@ const configuration = {
     logger.info('Grant success', { client: ctx.oidc.client.clientId });
   });
 
-  // Mount OIDC provider routes
+  // Mount OIDC provider routes first
   app.use('/oidc', oidc.callback());
+
+  // Custom auth middleware to handle auto-login
+  app.use('/oidc/auth', async (req, res, next) => {
+    const { token } = req.query;
+
+    // No token or invalid token - redirect to login page
+    if (!token || token !== DEV_LOGIN_TOKEN) {
+      const loginUrl = '/login.html?' + new URLSearchParams(req.query).toString();
+      return res.redirect(loginUrl);
+    }
+
+    // Valid token - let OIDC provider handle the request
+    next();
+  });
 
   // Interaction endpoint
   app.get('/interaction/:uid', async (req, res) => {
