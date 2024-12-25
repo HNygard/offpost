@@ -24,8 +24,15 @@ app.use(cors());
 app.use(express.json());
 app.use(express.static('public'));
 
-// Simple in-memory store for active logins
-const activeLogins = new Map();
+// Development auto-login token
+const DEV_LOGIN_TOKEN = 'dev-token';
+
+// Auto-created development user
+const DEV_USER = {
+  username: 'devuser',
+  id: 'dev-user-id',
+  authenticated: 'SUCCESS'
+};
 
 // User management functions
 async function loadUsers() {
@@ -76,7 +83,7 @@ async function createUser(username) {
   const newUser = {
     username,
     id: `user-${Date.now()}`,
-    authenticated: "PENDING"
+    authenticated: "SUCCESS" // Auto-authenticate for development
   };
   await saveUser(newUser);
   return newUser;
@@ -87,33 +94,9 @@ function isValidUsername(username) {
   return /^[a-zA-Z]+$/.test(username);
 }
 
-// Login endpoint
-app.post('/login', async (req, res) => {
-  try {
-    const { username } = req.body;
-    if (!username) {
-      return res.status(400).json({ error: 'Username is required' });
-    }
-
-    if (!isValidUsername(username)) {
-      return res.status(400).json({ error: 'Username must contain only letters (a-z, A-Z)' });
-    }
-
-    let user = await findUser(username);
-    if (!user) {
-      user = await createUser(username);
-      logger.info('Created new user', { username });
-    }
-
-    // Generate login token and store user
-    const loginToken = Math.random().toString(36).substring(2);
-    activeLogins.set(loginToken, user);
-
-    res.json({ success: true, user, loginToken });
-  } catch (error) {
-    logger.error('Login error:', error);
-    res.status(500).json({ error: 'Internal server error' });
-  }
+// Auto-login endpoint for development
+app.get('/dev-login', (req, res) => {
+  res.json({ success: true, user: DEV_USER, loginToken: DEV_LOGIN_TOKEN });
 });
 
 const configuration = {
@@ -215,20 +198,8 @@ const configuration = {
       // Get login token from query params
       const loginToken = req.query.token;
       
-      // If no login token, redirect to login page with interaction UID
-      if (!loginToken) {
-        return res.redirect(`/login.html?uid=${uid}`);
-      }
-
-      const user = activeLogins.get(loginToken);
-      if (!user) {
-        return res.redirect(`/login.html?uid=${uid}&error=invalid_token`);
-      }
-
-      // Check if user is properly authenticated
-      if (user.authenticated !== "SUCCESS") {
-        return res.status(401).json({ error: 'User not approved yet' });
-      }
+          // In development, always use the dev user
+      const user = DEV_USER;
 
       switch (prompt.name) {
         case 'login': {
