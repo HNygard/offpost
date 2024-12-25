@@ -11,6 +11,22 @@ if ($environment == 'development') {
     $config['smtp_port'] = '25';
     $config['smtp_user'] = 'user@localhost';
     $config['smtp_pass'] = 'password';
+    $config['ssl_verify_peer'] = false;
+    $config['ssl_verify_host'] = false;
+    $config['imap_conn_options'] = array(
+        'ssl' => array(
+            'verify_peer' => false,
+            'verify_peer_name' => false,
+            'allow_self_signed' => true
+        )
+    );
+    $config['smtp_conn_options'] = array(
+        'ssl' => array(
+            'verify_peer' => false,
+            'verify_peer_name' => false,
+            'allow_self_signed' => true
+        )
+    );
 }
 elseif ($environment == 'production') {
     $config['default_host'] = 'ssl://imap.one.com:993/imap/ssl';
