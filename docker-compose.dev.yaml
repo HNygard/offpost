@@ -1,8 +1,18 @@
 version: '3'
 
+networks:
+  app-network:
+    driver: bridge
+    ipam:
+      config:
+        - subnet: 172.30.0.0/16
+          gateway: 172.30.0.1
+
 services:
   greenmail:
     image: greenmail/standalone:1.6.12
+    networks:
+      - app-network
     ports:
       - "25025:25"    # SMTP
       - "25143:143"   # IMAP
@@ -13,6 +23,8 @@ services:
 
   roundcube:
     image: roundcube/roundcubemail:1.4.x-apache
+    networks:
+      - app-network
     links:
       - mysql
       - greenmail:greenmail
@@ -24,6 +36,8 @@ services:
 
   mysql:
     image: mysql:5.6
+    networks:
+      - app-network
     environment:
       MYSQL_ROOT_PASSWORD: root
       MYSQL_DATABASE: roundcubemail
@@ -32,6 +46,8 @@ services:
 
   phpmyadmin:
     image: phpmyadmin/phpmyadmin
+    networks:
+      - app-network
     ports:
       - "25082:80"
     links:
@@ -39,6 +55,8 @@ services:
 
   organizer:
     build: ./organizer
+    networks:
+      - app-network
     ports:
       - "25081:80"
     links:
@@ -60,6 +78,8 @@ services:
       context: ./auth
       args:
         NODE_ENV: development
+    networks:
+      - app-network
     ports:
       - "25083:3000"
     volumes:
