@@ -1,6 +1,7 @@
 <?php
 
 require_once __DIR__ . '/common.php';
+require_once __DIR__ . '/Thread.php';
 
 function getThreads() {
     $files = getFilesInDirectoryNoRecursive(THREADS_DIR);
