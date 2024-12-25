@@ -49,8 +49,14 @@ class ImapConnection {
      * @throws \Exception if connection fails
      */
     public function openConnection(string $folder = 'INBOX') {
+        // Add /novalidate-cert for greenmail to accept self-signed certificates
+        $server = $this->server;
+        if (strpos($server, 'greenmail:') !== false && strpos($server, '/novalidate-cert') === false) {
+            $server = str_replace('}', '/novalidate-cert}', $server);
+        }
+
         $this->connection = $this->wrapper->open(
-            $this->server . $folder, 
+            $server . $folder, 
             $this->email, 
             $this->password, 
             0, 
