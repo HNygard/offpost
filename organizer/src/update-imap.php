@@ -3,6 +3,7 @@
 set_time_limit(0);
 ini_set('memory_limit', '-1');
 
+require_once __DIR__ . '/class/Imap/ImapWrapper.php';
 require_once __DIR__ . '/class/Imap/ImapConnection.php';
 require_once __DIR__ . '/class/Imap/ImapFolderManager.php';
 require_once __DIR__ . '/class/Imap/ImapEmailProcessor.php';
