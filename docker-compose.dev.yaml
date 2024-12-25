@@ -1,10 +1,21 @@
 version: '3'
 
 services:
+  greenmail:
+    image: greenmail/standalone:1.6.12
+    ports:
+      - "25025:25"    # SMTP
+      - "25143:143"   # IMAP
+      - "25465:465"   # SMTPS
+      - "25993:993"   # IMAPS
+    environment:
+      - GREENMAIL_OPTS=-Dgreenmail.setup.test.all -Dgreenmail.hostname=0.0.0.0 -Dgreenmail.users=user:password@localhost
+
   roundcube:
     image: roundcube/roundcubemail:1.4.x-apache
     links:
       - mysql
+      - greenmail:greenmail
     ports:
       - "25080:80"
     volumes:
@@ -33,12 +44,16 @@ services:
     links:
       - mysql:mysql
       - auth:auth
+      - greenmail:greenmail
     volumes:
       - ./organizer/src:/php-frontend
       - ./data/:/organizer-data
     environment:
       - AUTH_URL=http://localhost:25083
       - ENVIRONMENT=development
+      - IMAP_SERVER={greenmail:993/imap/ssl}
+      - IMAP_EMAIL=user@localhost
+      - IMAP_PASSWORD=password
 
   auth:
     build:
