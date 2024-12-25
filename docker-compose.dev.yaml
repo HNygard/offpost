@@ -7,7 +7,7 @@ services:
       - "25025:25"    # SMTP
       - "25143:143"   # IMAP
       - "25465:465"   # SMTPS
-      - "25993:993"   # IMAPS
+      - "25993:3993"   # IMAPS
     environment:
       - GREENMAIL_OPTS=-Dgreenmail.setup.test.all -Dgreenmail.hostname=0.0.0.0 -Dgreenmail.users=user:password@localhost
 
@@ -51,7 +51,7 @@ services:
     environment:
       - AUTH_URL=http://localhost:25083
       - ENVIRONMENT=development
-      - IMAP_SERVER={greenmail:993/imap/ssl}
+      - IMAP_SERVER={greenmail:3993/imap/ssl}
       - IMAP_EMAIL=user@localhost
       - IMAP_PASSWORD=password
 

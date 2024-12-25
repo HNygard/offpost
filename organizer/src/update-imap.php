@@ -82,7 +82,7 @@ processMailbox($connection, $folderManager, $emailProcessor, 'INBOX', $emailToFo
 $connection->closeConnection(CL_EXPUNGE);
 
 $connection->logDebug('-- INBOX.Sent');
-$connection = new ImapConnection($server, $yourEmail, $yourEmailPassword, true);
+$connection = new ImapConnection($imapServer, $yourEmail, $yourEmailPassword, true);
 $connection->openConnection('INBOX.Sent');
 processMailbox($connection, $folderManager, $emailProcessor, 'INBOX.Sent', $emailToFolder);
 $connection->closeConnection(CL_EXPUNGE);
