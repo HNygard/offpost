@@ -10,6 +10,7 @@ services:
     volumes:
       - ./organizer/src/username-password-smtp.php:/username-password-smtp.php
       - ./roundcubemail.config.php:/var/roundcube/config/config.email-engine.inc.php
+    restart: unless-stopped
 
   mysql:
     image: mysql:5.6
@@ -18,6 +19,7 @@ services:
       MYSQL_DATABASE: roundcubemail
       MYSQL_USER: mail
       MYSQL_PASSWORD: mail
+    restart: unless-stopped
 
   organizer:
     build: ./organizer
@@ -31,6 +33,4 @@ services:
     environment:
       - AUTH_URL=https://TODO
       - ENVIRONMENT=production
-
-volumes:
-  mysql_data:
+    restart: unless-stopped
