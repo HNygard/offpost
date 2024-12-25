@@ -46,6 +46,7 @@ services:
       - "25083:3000"
     volumes:
       - ./data/users:/data/users
+      - ./auth:/app
     environment:
       - NODE_ENV=development
       - OIDC_ISSUER_URL=http://localhost:25083
