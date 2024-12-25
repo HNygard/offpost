@@ -4,6 +4,7 @@ TODO for Cline.
     - [x] Split out file operations into ThreadFileOperations.php
     - [x] Split out utility functions into ThreadUtils.php
     - [x] Split out email services into ThreadEmailService.php
+- [ ] Separate docker compose config prod and dev
 - [ ] Rig for testing
     - [x] Search for file operations and make the path configurable
     - [ ] Basic unit tests for thread functionality
@@ -37,7 +38,7 @@ TODO for Cline.
             - [x] Test ImapAttachmentHandler class
                 - [x] Test attachment processing with different file types (currently all detected as PDF)
                 - [x] Test special encoding handling for filenames
-        - [ ] Figure out why testProcessAttachmentsWithDifferentFileTypes does not work
+        - [x] Figure out why testProcessAttachmentsWithDifferentFileTypes does not work
         - [ ] Add integration tests with test IMAP server
     - [ ] Setup development IMAP server
         - [ ] Docker container for IMAP server
