@@ -26,8 +26,7 @@ require_once __DIR__ . '/username-password-imap.php';
 echo '<pre>';
 
 // Initialize IMAP connection
-$server = '{imap.one.com:993/imap/ssl}';
-$connection = new ImapConnection($server, $yourEmail, $yourEmailPassword, true);
+$connection = new ImapConnection($imapServer, $yourEmail, $yourEmailPassword, true);
 $connection->openConnection();
 
 // Initialize managers
