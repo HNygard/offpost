@@ -19,7 +19,7 @@ services:
       - "25465:465"   # SMTPS
       - "25993:3993"   # IMAPS
     environment:
-      - GREENMAIL_OPTS=-Dgreenmail.setup.test.all -Dgreenmail.hostname=0.0.0.0 -Dgreenmail.users=user:password@localhost
+      - GREENMAIL_OPTS=-Dgreenmail.setup.test.all -Dgreenmail.hostname=0.0.0.0 -Dgreenmail.users=greenmail-user:EzUVrHxLVrF2@localhost
 
   roundcube:
     image: roundcube/roundcubemail:1.4.x-apache
@@ -70,8 +70,8 @@ services:
       - AUTH_URL=http://localhost:25083
       - ENVIRONMENT=development
       - IMAP_SERVER={greenmail:3993/imap/ssl}
-      - IMAP_EMAIL=user@localhost
-      - IMAP_PASSWORD=password
+      - IMAP_EMAIL=greenmail-user
+      - IMAP_PASSWORD=EzUVrHxLVrF2
 
   auth:
     build:

@@ -9,8 +9,8 @@ if ($environment == 'development') {
     $config['default_port'] = '993';
     $config['smtp_server'] = 'greenmail';
     $config['smtp_port'] = '25';
-    $config['smtp_user'] = 'user@localhost';
-    $config['smtp_pass'] = 'password';
+    $config['smtp_user'] = 'greenmail-user';
+    $config['smtp_pass'] = 'EzUVrHxLVrF2';
     $config['ssl_verify_peer'] = false;
     $config['ssl_verify_host'] = false;
     $config['imap_conn_options'] = array(
