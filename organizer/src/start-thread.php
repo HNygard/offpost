@@ -52,33 +52,121 @@ if (!isset($_POST['entity_id'])) {
 
 
     ?>
-    <body  onload="document.getElementById('startthreadform-2023-09-17').submit();">
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Start Email Thread - Email Engine Organizer</title>
+    <link href="style.css" rel="stylesheet">
     <style>
-        input {
-            width:500px;
+        .form-group {
+            margin-bottom: 15px;
         }
-        textarea {
-            width: 700px;
+        .form-group label {
+            display: block;
+            margin-bottom: 5px;
+            color: #34495e;
+            font-weight: bold;
+        }
+        .form-group input[type="text"],
+        .form-group textarea {
+            width: 100%;
+            padding: 8px;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+            font-size: 14px;
+        }
+        .form-group textarea {
             height: 300px;
+            resize: vertical;
+        }
+        .form-group input[type="submit"] {
+            background-color: #3498db;
+            color: white;
+            padding: 10px 20px;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 16px;
+            transition: background-color 0.2s;
+        }
+        .form-group input[type="submit"]:hover {
+            background-color: #2980b9;
+        }
+        .continue-thread {
+            background-color: #66CC66;
+            color: white;
+            padding: 15px;
+            margin-bottom: 20px;
+            border-radius: 4px;
+            font-size: 1.2em;
         }
     </style>
-    <form method="POST" id="startthreadform-<?=date('Y-m-d')?>">
-        <h1>Start email thread</h1>
-        <?php
-        if ($thread != null) {
-            ?><div style="background-color: #66CC66; font-size: 3em; padding: 10px;">Continue existing thread...</div><br><br><?php
-        }
-        ?>
-        <input type="text" name="title" value="<?= htmlescape(isset($_GET['title']) ? $_GET['title'] : '') ?>"> - Title<br>
-        <input type="text" name="my_name" value="<?= htmlescape(isset($_GET['my_name']) ? $_GET['my_name'] : '') ?>"> - My name<br>
-        <input type="text" name="my_email" value="<?= htmlescape(isset($_GET['my_email']) ? $_GET['my_email'] : '') ?>"> - My email<br>
-        <input type="text" name="labels" value="<?= htmlescape(isset($_GET['labels']) ? $_GET['labels'] : '') ?>"> - Labels, space separated<br>
-        <input type="text" name="entity_id" value="<?= htmlescape(isset($_GET['entity_id']) ? $_GET['entity_id'] : '') ?>"> - Entity id<br>
-        <input type="text" name="entity_title_prefix" value="<?= htmlescape(isset($_GET['entity_title_prefix']) ? $_GET['entity_title_prefix'] : '') ?>"> - Entity title prefix (only used if first thread for this entity)<br>
-        <input type="text" name="entity_email" value="<?= htmlescape(isset($_GET['entity_email']) ? $_GET['entity_email'] : '') ?>"> - Entity email<br>
-        <input type="text" name="thread_id" value="<?= htmlescape(isset($_GET['thread_id']) ? $_GET['thread_id'] : '') ?>"> - Thread id (continue thread)<br>
-        <textarea name="body"><?= htmlescape(isset($_GET['body']) ? $_GET['body'] : '') ?></textarea><br><br>
-        <input type="submit" value="Create thread">
+</head>
+<body onload="document.getElementById('startthreadform-2023-09-17').submit();">
+    <div class="container">
+        <div class="user-info">
+            <a href="./">← Back to threads</a>
+        </div>
+        
+        <h1>Start Email Thread</h1>
+        
+        <form method="POST" id="startthreadform-<?=date('Y-m-d')?>">
+            <?php if ($thread != null): ?>
+                <div class="continue-thread">Continue existing thread...</div>
+            <?php endif; ?>
+
+            <div class="form-group">
+                <label for="title">Title</label>
+                <input type="text" id="title" name="title" value="<?= htmlescape(isset($_GET['title']) ? $_GET['title'] : '') ?>">
+            </div>
+
+            <div class="form-group">
+                <label for="my_name">My Name</label>
+                <input type="text" id="my_name" name="my_name" value="<?= htmlescape(isset($_GET['my_name']) ? $_GET['my_name'] : '') ?>">
+            </div>
+
+            <div class="form-group">
+                <label for="my_email">My Email</label>
+                <input type="text" id="my_email" name="my_email" value="<?= htmlescape(isset($_GET['my_email']) ? $_GET['my_email'] : '') ?>">
+            </div>
+
+            <div class="form-group">
+                <label for="labels">Labels (space separated)</label>
+                <input type="text" id="labels" name="labels" value="<?= htmlescape(isset($_GET['labels']) ? $_GET['labels'] : '') ?>">
+            </div>
+
+            <div class="form-group">
+                <label for="entity_id">Entity ID</label>
+                <input type="text" id="entity_id" name="entity_id" value="<?= htmlescape(isset($_GET['entity_id']) ? $_GET['entity_id'] : '') ?>">
+            </div>
+
+            <div class="form-group">
+                <label for="entity_title_prefix">Entity Title Prefix</label>
+                <input type="text" id="entity_title_prefix" name="entity_title_prefix" value="<?= htmlescape(isset($_GET['entity_title_prefix']) ? $_GET['entity_title_prefix'] : '') ?>">
+                <small style="color: #666; display: block; margin-top: 5px;">Only used if first thread for this entity</small>
+            </div>
+
+            <div class="form-group">
+                <label for="entity_email">Entity Email</label>
+                <input type="text" id="entity_email" name="entity_email" value="<?= htmlescape(isset($_GET['entity_email']) ? $_GET['entity_email'] : '') ?>">
+            </div>
+
+            <div class="form-group">
+                <label for="thread_id">Thread ID</label>
+                <input type="text" id="thread_id" name="thread_id" value="<?= htmlescape(isset($_GET['thread_id']) ? $_GET['thread_id'] : '') ?>">
+                <small style="color: #666; display: block; margin-top: 5px;">Used to continue an existing thread</small>
+            </div>
+
+            <div class="form-group">
+                <label for="body">Message Body</label>
+                <textarea id="body" name="body"><?= htmlescape(isset($_GET['body']) ? $_GET['body'] : '') ?></textarea>
+            </div>
+
+            <div class="form-group">
+                <input type="submit" value="Create Thread">
+            </div>
     </form>
     </body>
     <?php

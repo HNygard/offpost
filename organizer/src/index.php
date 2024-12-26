@@ -29,6 +29,7 @@ $allThreads = getThreads();
         <h2>Threads</h2>
 
         <ul class="nav-links">
+            <li><a href="start-thread.php">Start new thread</a></li>
             <li><a href="update-imap.php?update-only-before=<?= date('Y-m-d H:i:s') ?>">Update email threads (folders) to IMAP</a></li>
             <li><a href="update-identities.php">Update identities into Roundcube</a></li>
             <li><a href="?archived">Show archived</a></li>
