@@ -3,10 +3,14 @@
 namespace Imap;
 
 class ImapWrapper {
-    private function checkError(string $operation) {
+    private function checkError(string $operation, ?array $params = null) {
         $error = \imap_last_error();
         if ($error !== false) {
-            throw new \Exception("IMAP error during $operation: $error");
+            $context = '';
+            if ($params) {
+                $context = ' [' . implode(', ', $params) . ']';
+            }
+            throw new \Exception("IMAP error during $operation$context: $error");
         }
     }
 
@@ -40,7 +44,7 @@ class ImapWrapper {
 
     public function open(string $mailbox, string $username, string $password, int $options = 0, int $retries = 0, array $flags = []): mixed {
         $result = \imap_open($mailbox, $username, $password, $options, $retries, $flags);
-        $this->checkError('open');
+        $this->checkError('open', ['mailbox: ' . $mailbox, 'username: ' . $username]);
         return $result;
     }
 
