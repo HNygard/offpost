@@ -117,7 +117,7 @@ foreach ($threads as $threadFile => $entityThreads) {
         }
 
         try {
-            $connection = new ImapConnection($server, $yourEmail, $yourEmailPassword, true);
+            $connection = new ImapConnection($imapServer, $yourEmail, $yourEmailPassword, true);
             $connection->openConnection($folder);
             
             saveThreadEmails(

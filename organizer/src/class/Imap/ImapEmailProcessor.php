@@ -105,6 +105,7 @@ class ImapEmailProcessor {
         $email = new \stdClass();
         
         // Basic email information
+        $email->uid = $uid;
         $email->subject = $headers->subject;
         $email->timestamp = strtotime($headers->date);
         $email->date = $headers->date;
