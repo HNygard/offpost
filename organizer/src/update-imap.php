@@ -84,6 +84,10 @@ $connection->closeConnection(CL_EXPUNGE);
 $connection->logDebug('-- INBOX.Sent');
 $connection = new ImapConnection($imapServer, $yourEmail, $yourEmailPassword, true);
 $connection->openConnection('INBOX.Sent');
+$folderManager = new ImapFolderManager($connection);
+$folderManager->initialize();
+$emailProcessor = new ImapEmailProcessor($connection);
+$attachmentHandler = new ImapAttachmentHandler($connection);
 processMailbox($connection, $folderManager, $emailProcessor, 'INBOX.Sent', $emailToFolder);
 $connection->closeConnection(CL_EXPUNGE);
 
@@ -119,6 +123,10 @@ foreach ($threads as $threadFile => $entityThreads) {
         try {
             $connection = new ImapConnection($imapServer, $yourEmail, $yourEmailPassword, true);
             $connection->openConnection($folder);
+            $folderManager = new ImapFolderManager($connection);
+            $folderManager->initialize();
+            $emailProcessor = new ImapEmailProcessor($connection);
+            $attachmentHandler = new ImapAttachmentHandler($connection);
             
             saveThreadEmails(
                 $connection,
