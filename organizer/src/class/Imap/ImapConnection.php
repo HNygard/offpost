@@ -2,6 +2,8 @@
 
 namespace Imap;
 
+use Exception;
+
 class ImapConnection {
     private string $server;
     private string $email;
@@ -38,7 +40,7 @@ class ImapConnection {
      * Custom error handler that converts PHP errors to exceptions
      */
     public function errorHandler($errno, $errstr, $errfile, $errline) {
-        throw new \ErrorException($errstr, 0, $errno, $errfile, $errline);
+        throw new \ErrorException('ImapConnection-errorHandler: ' . $errstr, 0, $errno, $errfile, $errline);
     }
 
     /**
