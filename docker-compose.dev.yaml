@@ -14,9 +14,9 @@ services:
     networks:
       - app-network
     ports:
-      - "25025:25"    # SMTP
-      - "25143:143"   # IMAP
-      - "25465:465"   # SMTPS
+      - "25025:3025"    # SMTP
+      - "25143:3143"   # IMAP
+      - "25465:3465"   # SMTPS
       - "25993:3993"   # IMAPS
     environment:
       - GREENMAIL_OPTS=-Dgreenmail.setup.test.all -Dgreenmail.hostname=0.0.0.0 -Dgreenmail.users=greenmail-user:EzUVrHxLVrF2@localhost

@@ -6,9 +6,9 @@ $config['db_dsnw'] = 'mysql://mail:mail@mysql/roundcubemail';
 $config['db_dsnr'] = '';
 if ($environment == 'development') {
     $config['default_host'] = 'ssl://greenmail:3993';
-    $config['default_port'] = '993';
+    $config['default_port'] = '3993';
     $config['smtp_server'] = 'greenmail';
-    $config['smtp_port'] = '25';
+    $config['smtp_port'] = '3025';
     $config['smtp_user'] = 'greenmail-user';
     $config['smtp_pass'] = 'EzUVrHxLVrF2';
     $config['ssl_verify_peer'] = false;
