@@ -58,12 +58,8 @@ class ImapConnectionTest extends TestCase
             ->method('open')
             ->willReturn(false);
 
-        $this->mockWrapper->expects($this->once())
-            ->method('lastError')
-            ->willReturn('Connection failed');
-
         $this->expectException(\Exception::class);
-        $this->expectExceptionMessage('IMAP error: Connection failed');
+        $this->expectExceptionMessage('Failed to establish IMAP connection');
         
         $this->imapConnection->openConnection();
     }
@@ -205,16 +201,6 @@ class ImapConnectionTest extends TestCase
     {
         $this->expectException(\ErrorException::class);
         $this->imapConnection->errorHandler(E_WARNING, 'Test error', __FILE__, __LINE__);
-    }
-
-    public function testCheckForImapError()
-    {
-        $this->mockWrapper->expects($this->once())
-            ->method('lastError')
-            ->willReturn('');
-
-        $this->imapConnection->checkForImapError();
-        $this->assertTrue(true);
     }
 
     public function testConnectionClosedOnDestruct()

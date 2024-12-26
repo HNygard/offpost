@@ -55,7 +55,6 @@ class ImapFolderManager {
         
         // Perform the move using ImapConnection's methods
         $this->connection->moveEmail($uid, $targetFolder);
-        $this->connection->checkForImapError();
     }
 
     /**
@@ -68,7 +67,6 @@ class ImapFolderManager {
 
         // Perform the rename using ImapConnection's methods
         $this->connection->renameFolder($oldName, $newName);
-        $this->connection->checkForImapError();
 
         // Update local folder lists
         $key = array_search($oldName, $this->existingFolders);

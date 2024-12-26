@@ -72,7 +72,6 @@ class ImapEmailProcessor {
 
         $emails = [];
         $mailUIDs = $this->connection->search("ALL", SE_UID);
-        $this->connection->checkForImapError();
 
         if (!$mailUIDs) {
             $this->connection->logDebug('No emails found in folder: ' . $folder);
@@ -96,7 +95,6 @@ class ImapEmailProcessor {
     private function processEmail(int $uid): ?object {
         $msgNo = $this->connection->getMsgno($uid);
         $headers = $this->connection->getHeaderInfo($msgNo);
-        $this->connection->checkForImapError();
 
         if (!$headers) {
             return null;
@@ -132,7 +130,6 @@ class ImapEmailProcessor {
 
         // Get email body
         $email->body = $this->connection->getBody($uid, FT_UID);
-        $this->connection->checkForImapError();
 
         // Ensure body is UTF-8
         if (json_encode($email->body, JSON_PRETTY_PRINT ^ JSON_UNESCAPED_UNICODE ^ JSON_UNESCAPED_SLASHES) === false) {
