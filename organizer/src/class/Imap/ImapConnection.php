@@ -57,8 +57,9 @@ class ImapConnection {
             $server = str_replace('}', '/novalidate-cert}', $server);
         }
 
+        $fullMailbox = $server . $folder;
         $this->connection = $this->wrapper->open(
-            $server . $folder, 
+            $fullMailbox,
             $this->email, 
             $this->password, 
             0, 
@@ -67,23 +68,10 @@ class ImapConnection {
         );
 
         if ($this->connection === false) {
-            $error = $this->wrapper->lastError();
-            throw new \Exception(!empty($error) ? 'IMAP error: ' . $error : 'Connection failed');
+            throw new \Exception('Failed to establish IMAP connection');
         }
 
         return $this->connection;
-    }
-
-    /**
-     * Check for IMAP errors and throw exception if found
-     * 
-     * @throws \Exception if IMAP error exists
-     */
-    public function checkForImapError() {
-        $error = $this->wrapper->lastError();
-        if (!empty($error)) {
-            throw new \Exception('IMAP error: ' . $error);
-        }
     }
 
     /**
@@ -128,7 +116,6 @@ class ImapConnection {
         }
 
         $list = $this->wrapper->list($this->connection, $this->server, "*");
-        $this->checkForImapError();
         
         if (!$list) {
             return [];
@@ -152,7 +139,6 @@ class ImapConnection {
         }
 
         $list = $this->wrapper->lsub($this->connection, $this->server, '*');
-        $this->checkForImapError();
         
         if (!$list) {
             return [];
@@ -176,7 +162,6 @@ class ImapConnection {
         }
 
         $this->wrapper->createMailbox($this->connection, $this->wrapper->utf7Encode($this->server . $folderName));
-        $this->checkForImapError();
     }
 
     /**
@@ -191,7 +176,6 @@ class ImapConnection {
         }
 
         $this->wrapper->subscribe($this->connection, $this->wrapper->utf7Encode($this->server . $folderName));
-        $this->checkForImapError();
     }
 
     /**
@@ -207,7 +191,6 @@ class ImapConnection {
         }
 
         $this->wrapper->mailMove($this->connection, (string)$uid, $targetFolder, CP_UID);
-        $this->checkForImapError();
     }
 
     /**
@@ -227,7 +210,6 @@ class ImapConnection {
             $this->wrapper->utf7Encode($this->server . $oldName),
             $this->wrapper->utf7Encode($this->server . $newName)
         );
-        $this->checkForImapError();
     }
 
     /**
@@ -244,7 +226,6 @@ class ImapConnection {
         }
 
         $result = $this->wrapper->search($this->connection, $criteria, $options);
-        $this->checkForImapError();
         
         return $result ?: [];
     }
@@ -275,7 +256,6 @@ class ImapConnection {
         }
 
         $result = $this->wrapper->headerinfo($this->connection, $msgno);
-        $this->checkForImapError();
         
         return $result;
     }
@@ -293,7 +273,6 @@ class ImapConnection {
         }
 
         $result = $this->wrapper->body($this->connection, $uid, $options);
-        $this->checkForImapError();
         
         return $result;
     }
@@ -312,7 +291,6 @@ class ImapConnection {
         }
 
         $result = $this->wrapper->fetchstructure($this->connection, $uid, $options);
-        $this->checkForImapError();
         
         return $result;
     }
@@ -332,7 +310,6 @@ class ImapConnection {
         }
 
         $result = $this->wrapper->fetchbody($this->connection, $uid, $section, $options);
-        $this->checkForImapError();
         
         return $result;
     }
