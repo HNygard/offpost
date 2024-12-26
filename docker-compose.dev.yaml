@@ -25,6 +25,8 @@ services:
     image: roundcube/roundcubemail:1.4.x-apache
     networks:
       - app-network
+    depends_on:
+      - mysql
     links:
       - mysql
       - greenmail:greenmail
@@ -33,6 +35,12 @@ services:
     volumes:
       - ./organizer/src/username-password-smtp.php:/username-password-smtp.php
       - ./roundcubemail.config.php:/var/roundcube/config/config.email-engine.inc.php
+    environment:
+      - ROUNDCUBEMAIL_DB_TYPE=mysql
+      - ROUNDCUBEMAIL_DB_HOST=mysql
+      - ROUNDCUBEMAIL_DB_USER=mail
+      - ROUNDCUBEMAIL_DB_PASSWORD=mail
+      - ROUNDCUBEMAIL_DB_NAME=roundcubemail
 
   mysql:
     image: mysql:5.6
