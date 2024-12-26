@@ -83,12 +83,12 @@ $connection->closeConnection(CL_EXPUNGE);
 
 $connection->logDebug('-- INBOX.Sent');
 $connection = new ImapConnection($imapServer, $yourEmail, $yourEmailPassword, true);
-$connection->openConnection('INBOX.Sent');
+$connection->openConnection($imapSentFolder);
 $folderManager = new ImapFolderManager($connection);
 $folderManager->initialize();
 $emailProcessor = new ImapEmailProcessor($connection);
 $attachmentHandler = new ImapAttachmentHandler($connection);
-processMailbox($connection, $folderManager, $emailProcessor, 'INBOX.Sent', $emailToFolder);
+processMailbox($connection, $folderManager, $emailProcessor, $imapSentFolder, $emailToFolder);
 $connection->closeConnection(CL_EXPUNGE);
 
 // Process thread folders
