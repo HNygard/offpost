@@ -19,7 +19,10 @@ services:
       - "25465:3465"   # SMTPS
       - "25993:3993"   # IMAPS
     environment:
-      - GREENMAIL_OPTS=-Dgreenmail.setup.test.all -Dgreenmail.hostname=0.0.0.0 -Dgreenmail.users=greenmail-user:EzUVrHxLVrF2@localhost
+      - GREENMAIL_OPTS=
+        -Dgreenmail.setup.test.all
+        -Dgreenmail.hostname=0.0.0.0
+        -Dgreenmail.users=greenmail-user:EzUVrHxLVrF2@localhost
 
   roundcube:
     image: roundcube/roundcubemail:1.4.x-apache
