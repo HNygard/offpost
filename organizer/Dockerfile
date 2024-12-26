@@ -11,7 +11,16 @@ RUN docker-php-ext-configure imap --with-kerberos --with-imap-ssl \
 
 RUN a2enmod rewrite
 
+# Add user with same UID/GID as host user
+RUN usermod -u 1000 www-data && groupmod -g 1000 www-data
+
+# Configure Apache to run workers as www-data
+RUN chown -R www-data:www-data /var/run/apache2 /var/lock/apache2 /var/log/apache2
+
 COPY localhost.conf /etc/apache2/conf-enabled/localhost.conf
 COPY phpdev.ini /usr/local/etc/php/conf.d/phpdev.ini
+COPY docker-entrypoint.sh /usr/local/bin/
 
-CMD apache2-foreground
+RUN chmod +x /usr/local/bin/docker-entrypoint.sh
+
+ENTRYPOINT ["/usr/local/bin/docker-entrypoint.sh"]
