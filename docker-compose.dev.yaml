@@ -22,7 +22,7 @@ services:
       - GREENMAIL_OPTS=
         -Dgreenmail.setup.test.all
         -Dgreenmail.hostname=0.0.0.0
-        -Dgreenmail.users=greenmail-user:EzUVrHxLVrF2@localhost
+        -Dgreenmail.users=greenmail-user:EzUVrHxLVrF2@dev.offpost.no
 
   roundcube:
     image: roundcube/roundcubemail:1.4.x-apache
