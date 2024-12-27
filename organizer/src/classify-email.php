@@ -102,11 +102,106 @@ function secondsToHumanReadable($seconds) {
 }
 
 ?>
-<link href="style.css" rel="stylesheet">
-
-[<a href=".">Hovedside</a>]
-
-<script>
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Classify Email - Email Engine Organizer</title>
+    <link href="style.css" rel="stylesheet">
+    <style>
+        .form-group {
+            margin-bottom: 15px;
+        }
+        .form-group label {
+            display: block;
+            margin-bottom: 5px;
+            color: #34495e;
+            font-weight: bold;
+        }
+        .form-group input[type="text"],
+        .form-group textarea,
+        .form-group select {
+            width: 100%;
+            padding: 8px;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+            font-size: 14px;
+        }
+        .form-group textarea {
+            resize: vertical;
+        }
+        .btn {
+            background-color: #3498db;
+            color: white;
+            padding: 10px 20px;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 16px;
+            transition: background-color 0.2s;
+        }
+        .btn:hover {
+            background-color: #2980b9;
+        }
+        .btn-open {
+            float: right;
+            font-size: 1.2em;
+            padding: 8px 16px;
+        }
+        .email-item {
+            padding: 15px;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+            margin-bottom: 15px;
+        }
+        .email-item.ignored {
+            opacity: 0.7;
+            background-color: #f5f5f5;
+        }
+        .viewer-container {
+            width: 100%;
+            height: 900px;
+            border: none;
+        }
+        .textarea-small {
+            height: 2em;
+            width: 100%;
+        }
+        .textarea-large {
+            height: 200px;
+            width: 100%;
+        }
+        .suggestions {
+            margin: 10px 0;
+        }
+        .suggestions span {
+            color: #3498db;
+            font-weight: bold;
+            margin-right: 10px;
+        }
+        .suggestions a {
+            text-decoration: none;
+            margin: 0 5px;
+            padding: 4px 8px;
+            border-radius: 3px;
+        }
+        .suggestions a:hover {
+            opacity: 0.8;
+        }
+        .attachment-item {
+            margin: 15px 0;
+            padding: 10px;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+            background-color: #f9f9f9;
+        }
+        .attachment-name {
+            font-style: italic;
+            margin: 5px 0;
+        }
+    </style>
+    <script>
     function settForslag(emailId, forslagStatus, forslagTekst) {
         var selectElement = document.querySelector('select[name="' + emailId + '-status_type"]');
         selectElement.value = forslagStatus;
@@ -116,9 +211,16 @@ function secondsToHumanReadable($seconds) {
     }
 </script>
 
-<table style="width: 100%">
-    <tr>
-        <td style="width: 30%; vertical-align: top">
+<body>
+    <div class="container">
+        <?php include 'header.php'; ?>
+        
+        <h1>Classify Email</h1>
+
+        <div class="content">
+            <table style="width: 100%">
+                <tr>
+                    <td style="width: 30%; vertical-align: top">
             <form method="post">
                 <?php
                 $firstOut = false;
@@ -129,29 +231,38 @@ function secondsToHumanReadable($seconds) {
                     $since_last_text = $last_email_time == 0 ? 'FIRST' : secondsToHumanReadable($time_since_last_email) . ' since last';
                     $last_email_time = strtotime($email->datetime_received);
                     ?>
-                    <div <?= $email->ignore ? ' style="color: gray;"' : '' ?>>
+                    <div class="email-item<?= $email->ignore ? ' ignored' : '' ?>">
                         <hr>
                         <?= $email->datetime_received ?> (<?= $since_last_text ?>):
                         <?= $email->email_type ?><br>
 
-                        <input type="button"
-                               style="font-size: 2em; padding: 0.5em; float: right"
-                               data-url="<?= '/file.php?entityId=' . urlencode($threads->entity_id)
-                               . '&threadId=' . urlencode(getThreadId($thread))
-                               . '&body=' . urlencode($email->id) ?>"
-                               onclick="document.getElementById('viewer-iframe').src = this.getAttribute('data-url');" value="Open"><br>
+                        <div class="form-group">
+                            <input type="button"
+                                   class="btn btn-open"
+                                   data-url="<?= '/file.php?entityId=' . urlencode($threads->entity_id)
+                                   . '&threadId=' . urlencode(getThreadId($thread))
+                                   . '&body=' . urlencode($email->id) ?>"
+                                   onclick="document.getElementById('viewer-iframe').src = this.getAttribute('data-url');" value="Open">
+                        </div>
 
-                        <input type="checkbox"
-                               value="true"
-                               name="<?= $emailId . '-ignore' ?>"
-                            <?= $email->ignore ? ' checked="checked"' : '' ?>> Ignore<br>
+                        <div class="form-group">
+                            <label>
+                                <input type="checkbox"
+                                       value="true"
+                                       name="<?= $emailId . '-ignore' ?>"
+                                    <?= $email->ignore ? ' checked="checked"' : '' ?>> Ignore
+                            </label>
+                        </div>
 
-                        <?php
-                        labelSelect($email->status_type, $emailId . '-status_type');
-                        ?>
-                        Status type<br>
-                        <input type="text" name="<?= $emailId . '-status_text' ?>" value="<?= htmlescape($email->status_text) ?>"> Status
-                        text
+                        <div class="form-group">
+                            <label>Status Type</label>
+                            <?php labelSelect($email->status_type, $emailId . '-status_type'); ?>
+                        </div>
+
+                        <div class="form-group">
+                            <label>Status Text</label>
+                            <input type="text" name="<?= $emailId . '-status_text' ?>" value="<?= htmlescape($email->status_text) ?>">
+                        </div>
 
                         <?php
                         $forslag = array();
@@ -170,22 +281,22 @@ function secondsToHumanReadable($seconds) {
                         }
 
                         if (count($forslag)) {
-                            ?><br><span style="color: blue">Forslag:</span><?php
-                            foreach ($forslag as $f) {
-                                ?>
-                                [<a onclick="settForslag('<?= $emailId ?>', '<?= $f[0] ?>', '<?= $f[1] ?>'); return false;"
-                                        href="#" class="label-<?=$f[0]?>"><?= $f[0] ?> - <?= $f[1] ?></a>]
+                            ?><div class="suggestions">
+                                <span>Suggestions:</span>
+                                <?php foreach ($forslag as $f) { ?>
+                                    <a onclick="settForslag('<?= $emailId ?>', '<?= $f[0] ?>', '<?= $f[1] ?>'); return false;"
+                                       href="#" class="label-<?=$f[0]?>"><?= $f[0] ?> - <?= $f[1] ?></a>
                                 <?php
                             }
+                            ?></div><?php
                         }
-
-
-                        $textarea_style = $autoforslag ? 'width: 200px; height: 1em' : 'width: 400px; height: 200px;'
                         ?>
 
-                        <br>
-                        <textarea name="<?= $emailId . '-answer' ?>"
-                                  style="<?= $textarea_style ?>"><?= htmlescape(isset($email->answer) ? $email->answer : '') ?></textarea>
+                        <div class="form-group">
+                            <label>Answer</label>
+                            <textarea name="<?= $emailId . '-answer' ?>"
+                                    class="<?= $autoforslag ? 'textarea-small' : 'textarea-large' ?>"><?= htmlescape(isset($email->answer) ? $email->answer : '') ?></textarea>
+                        </div>
 
                         <br>
                         <i><?= htmlescape(isset($email->description) ? $email->description : '') ?></i>
@@ -193,22 +304,31 @@ function secondsToHumanReadable($seconds) {
                         if (isset($email->attachments)) {
                             foreach ($email->attachments as $att) {
                                 $attId = str_replace(' ', '_', str_replace('.', '_', $att->location));
-                                ?><br><br>
-                                <?= $att->filetype ?> - <i><?= htmlentities($att->name, ENT_QUOTES) ?></i><br>
-                                <input type="button"
-                                       style="font-size: 2em; padding: 0.5em; float: right"
-                                       data-url="<?= '/file.php?entityId=' . urlencode($threads->entity_id)
-                                       . '&threadId=' . urlencode(getThreadId($thread))
-                                       . '&attachment=' . urlencode($att->location) ?>"
-                                       onclick="document.getElementById('viewer-iframe').src = this.getAttribute('data-url');" value="Open">
-                                <br>
-                                <?php
-                                labelSelect($att->status_type, $emailId . '-att-' . $attId . '-status_type');
-                                ?>
-                                Status type<br>
-                                <input type="text"
-                                       value="<?= htmlescape($att->status_text) ?>"
-                                       name="<?= $emailId . '-att-' . $attId . '-status_text' ?>"> Status text
+                                ?><div class="attachment-item">
+                                    <div class="form-group">
+                                        <div class="attachment-name">
+                                            <?= $att->filetype ?> - <?= htmlentities($att->name, ENT_QUOTES) ?>
+                                        </div>
+                                        <input type="button"
+                                               class="btn btn-open"
+                                               data-url="<?= '/file.php?entityId=' . urlencode($threads->entity_id)
+                                               . '&threadId=' . urlencode(getThreadId($thread))
+                                               . '&attachment=' . urlencode($att->location) ?>"
+                                               onclick="document.getElementById('viewer-iframe').src = this.getAttribute('data-url');" value="Open">
+                                    </div>
+                                    
+                                    <div class="form-group">
+                                        <label>Status Type</label>
+                                        <?php labelSelect($att->status_type, $emailId . '-att-' . $attId . '-status_type'); ?>
+                                    </div>
+                                    
+                                    <div class="form-group">
+                                        <label>Status Text</label>
+                                        <input type="text"
+                                               value="<?= htmlescape($att->status_text) ?>"
+                                               name="<?= $emailId . '-att-' . $attId . '-status_text' ?>">
+                                    </div>
+                                </div>
                                 <?php
                             }
                         }
@@ -219,12 +339,17 @@ function secondsToHumanReadable($seconds) {
                 }
                 ?>
                 <hr>
-                <input type="submit" value="Save" name="submit"
-                       style="font-size: 2em; padding: 0.5em;">
+                <div class="form-group">
+                    <input type="submit" value="Save" name="submit" class="btn">
+                </div>
             </form>
-        </td>
-        <td>
-            <iframe id="viewer-iframe" style="width: 100%; height: 900px"></iframe>
-        </td>
-    </tr>
-</table>
+                    </td>
+                    <td>
+                        <iframe id="viewer-iframe" class="viewer-container"></iframe>
+                    </td>
+                </tr>
+            </table>
+        </div>
+    </div>
+</body>
+</html>
