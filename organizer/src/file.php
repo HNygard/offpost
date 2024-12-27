@@ -29,7 +29,7 @@ foreach ($thread->emails as $email) {
         switch ($message->getHeaders()->getEncoding()) {
             case 'ASCII':
                 $htmlConvert = function ($html) {
-                    return utf8_encode($html);
+                    return mb_convert_encoding($html, 'UTF-8', 'ISO-8859-1');
                 };
                 break;
             default:
