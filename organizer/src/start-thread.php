@@ -106,9 +106,7 @@ if (!isset($_POST['entity_id'])) {
 </head>
 <body onload="document.getElementById('startthreadform-2023-09-17').submit();">
     <div class="container">
-        <div class="user-info">
-            <a href="./">← Back to threads</a>
-        </div>
+        <?php include 'header.php'; ?>
         
         <h1>Start Email Thread</h1>
         

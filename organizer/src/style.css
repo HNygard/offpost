@@ -15,10 +15,36 @@ body {
 }
 
 .user-info {
-    text-align: right;
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
     padding: 10px;
     color: #666;
     font-size: 0.9em;
+    background-color: #f8f9fa;
+    border-radius: 4px;
+    margin-bottom: 20px;
+}
+
+.login-info {
+    text-align: right;
+}
+
+.nav-back {
+    text-align: left;
+}
+
+.spacer {
+    flex-grow: 1;
+}
+
+.nav-back a, .login-info a {
+    color: #3498db;
+    text-decoration: none;
+}
+
+.nav-back a:hover, .login-info a:hover {
+    text-decoration: underline;
 }
 
 h1 {

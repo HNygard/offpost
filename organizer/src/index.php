@@ -19,11 +19,7 @@ $allThreads = getThreads();
 </head>
 <body>
     <div class="container">
-        <div class="user-info">
-            Logged in as: <?= htmlspecialchars($_SESSION['user']['name'] ?? $_SESSION['user']['email'] ?? 'Unknown User') ?>
-            <br>
-            <a href="logout.php">Logout</a>
-        </div>
+        <?php include 'header.php'; ?>
 
         <h1>Email Engine Organizer</h1>
         <h2>Threads</h2>
