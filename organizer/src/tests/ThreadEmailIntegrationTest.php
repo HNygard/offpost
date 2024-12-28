@@ -1,5 +1,16 @@
 <?php
 
+// IMAP message type constants if not already defined
+if (!defined('TYPETEXT')) define('TYPETEXT', 0);
+if (!defined('TYPEMULTIPART')) define('TYPEMULTIPART', 1);
+if (!defined('TYPEMESSAGE')) define('TYPEMESSAGE', 2);
+if (!defined('TYPEAPPLICATION')) define('TYPEAPPLICATION', 3);
+if (!defined('TYPEAUDIO')) define('TYPEAUDIO', 4);
+if (!defined('TYPEIMAGE')) define('TYPEIMAGE', 5);
+if (!defined('TYPEVIDEO')) define('TYPEVIDEO', 6);
+if (!defined('TYPEMODEL')) define('TYPEMODEL', 7);
+if (!defined('TYPEOTHER')) define('TYPEOTHER', 8);
+
 use PHPUnit\Framework\TestCase;
 use Imap\ImapConnection;
 
@@ -75,7 +86,7 @@ class ThreadEmailIntegrationTest extends TestCase {
         rmdir($dir);
     }
 
-    private function waitForEmail($subject, $maxWaitSeconds = 10): bool {
+    private function waitForEmail($subject, $maxWaitSeconds = 10): ?array {
         $startTime = time();
         while (time() - $startTime < $maxWaitSeconds) {
             try {
@@ -89,7 +100,12 @@ class ThreadEmailIntegrationTest extends TestCase {
                         $msgno = $this->imapConnection->getMsgno($uid);
                         $header = $this->imapConnection->getHeaderInfo($msgno);
                         if ($header && $header->subject === $subject) {
-                            return true;
+                            // Get message structure for content type info
+                            $structure = $this->imapConnection->getFetchstructure($msgno);
+                            return [
+                                'header' => $header,
+                                'structure' => $structure
+                            ];
                         }
                     }
                 }
@@ -100,7 +116,7 @@ class ThreadEmailIntegrationTest extends TestCase {
                 $this->fail('IMAP error while waiting for email: ' . $e->getMessage());
             }
         }
-        return false;
+        return null;
     }
 
     public function testSendAndReceiveEmail() {
@@ -137,7 +153,62 @@ class ThreadEmailIntegrationTest extends TestCase {
         $this->assertTrue($result['success'], 'Failed to send email: ' . $result['error'] . "\nDebug: " . $result['debug']);
         
         // Wait for and verify email receipt
-        $emailReceived = $this->waitForEmail($subject);
-        $this->assertTrue($emailReceived, 'Email was not received within the timeout period');
+        $email = $this->waitForEmail($subject);
+        $this->assertNotNull($email, 'Email was not received within the timeout period');
+
+        // Get raw headers from the email we found
+        $msgno = $this->imapConnection->getMsgno($email['header']->Msgno);
+        $rawHeaders = imap_fetchheader($this->imapConnection->getConnection(), $msgno);
+        
+        // Parse raw headers into an associative array
+        $headerLines = explode("\n", $rawHeaders);
+        $parsedHeaders = [];
+        $currentHeader = '';
+        
+        foreach ($headerLines as $line) {
+            if (preg_match('/^([A-Za-z-]+):\s*(.*)$/', $line, $matches)) {
+                $currentHeader = $matches[1];
+                $parsedHeaders[$currentHeader] = trim($matches[2]);
+            } elseif (strlen(trim($line)) > 0 && $currentHeader) {
+                // Handle multi-line headers
+                $parsedHeaders[$currentHeader] .= ' ' . trim($line);
+            }
+        }
+        
+        // Define expected headers and their values
+        $expectedHeaders = [
+            'Return-Path' => '<' . $thread->my_email . '>',
+            'To' => $this->testEntityEmail,
+            'From' => $thread->my_name . ' <' . $thread->my_email . '>',
+            'Subject' => $subject,
+            'X-Mailer' => 'Roundcube thread starter',
+            'MIME-Version' => '1.0',
+            'Content-Type' => 'text/plain; charset=utf-8'
+        ];
+        
+        // Verify all expected headers exist with correct values
+        foreach ($expectedHeaders as $headerName => $expectedValue) {
+            $this->assertArrayHasKey($headerName, $parsedHeaders, "Header '$headerName' is missing");
+            $this->assertEquals($expectedValue, $parsedHeaders[$headerName], "Header '$headerName' value does not match");
+        }
+        
+        // Verify presence and format of variable headers
+        $this->assertArrayHasKey('Message-ID', $parsedHeaders, "Header 'Message-ID' is missing");
+        $this->assertMatchesRegularExpression('/<[^>]+@kendra>/', $parsedHeaders['Message-ID'], "Invalid Message-ID format");
+        
+        $this->assertArrayHasKey('Date', $parsedHeaders, "Header 'Date' is missing");
+        $this->assertNotFalse(strtotime($parsedHeaders['Date']), "Invalid Date format");
+        
+        $this->assertArrayHasKey('Received', $parsedHeaders, "Header 'Received' is missing");
+        $this->assertMatchesRegularExpression('/from .+ \(HELO kendra\); .+/', $parsedHeaders['Received'], "Invalid Received format");
+        
+        // Verify no unexpected headers exist
+        $expectedHeaderNames = array_merge(
+            array_keys($expectedHeaders),
+            ['Message-ID', 'Date', 'Received']
+        );
+        $unexpectedHeaders = array_diff(array_keys($parsedHeaders), $expectedHeaderNames);
+        $this->assertEmpty($unexpectedHeaders, 'Unexpected headers found: ' . implode(', ', $unexpectedHeaders));
+        
     }
 }
