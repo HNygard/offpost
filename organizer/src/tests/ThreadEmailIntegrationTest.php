@@ -120,11 +120,16 @@ class ThreadEmailIntegrationTest extends TestCase {
     }
 
     public function testSendAndReceiveEmail() {
+        // Create unique test data
+        $uniqueId = uniqid();
+        $testName = "Test User " . $uniqueId;
+        $testEmail = "test." . $uniqueId . "@example.com";
+        
         // Create a new thread
         $thread = new Thread();
-        $thread->title = 'Integration Test Thread';
-        $thread->my_name = 'Test User';
-        $thread->my_email = 'test@example.com';
+        $thread->title = 'Test Thread - ' . $uniqueId;
+        $thread->my_name = $testName;
+        $thread->my_email = $testEmail;
         $thread->labels = [];
         $thread->sent = false;
         $thread->archived = false;
