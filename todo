@@ -8,19 +8,21 @@ TODO for Cline.
     - Goal: Opening http://localhost:25081/ should work. It should redirect to login and then back. Verify that tokens are used.
     - [x] Look into the auth service to figure out tasks.
 - [x] Separate docker compose config prod and dev
-- [ ] End to end testing
-    - [ ] Add STMP and IMAP server to docker compose development
+- [x] End to end testing
+    - [x] Add SMTP and IMAP server to docker compose development
 - [ ] Rig for testing
     - [ ] update-imap.php
-        - [ ] Add integration tests with test IMAP server
-    - [ ] Setup development IMAP server
-        - [ ] Docker container for IMAP server
-        - [ ] Configuration for test environment
-        - [ ] Test data setup scripts
-    - [ ] End-to-end testing
-        - [ ] Test email flow from SMTP to IMAP
-        - [ ] Test thread creation and updates
-        - [ ] Test attachment handling
+        - [x] Add integration tests with test IMAP server
+        - [ ] Split update-imap into testable things
+- [ ] Setup development IMAP server
+    - [x] Docker container for IMAP server
+    - [x] Configuration for test environment
+    - [ ] Test data setup scripts
+- [ ] End-to-end testing
+    - [x] Test email flow from SMTP to IMAP
+    - [x] Test thread creation 
+    - [ ] Test thread updates
+    - [ ] Test attachment handling
 - [ ] GUI for reading threads
     - [ ] Thread list view
     - [ ] Thread detail view
