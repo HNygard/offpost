@@ -16,13 +16,17 @@ class PHPMailerService implements IEmailService {
     private $host;
     private $username;
     private $password;
+    private $port;
+    private $secure;
     private $lastError;
     private $debugOutput;
 
-    public function __construct($host, $username, $password) {
+    public function __construct($host, $username, $password, $port = 587, $secure = 'tls') {
         $this->host = $host;
         $this->username = $username;
         $this->password = $password;
+        $this->port = $port;
+        $this->secure = $secure;
     }
 
     public function sendEmail($from, $fromName, $to, $subject, $body, $bcc = null) {
@@ -37,8 +41,8 @@ class PHPMailerService implements IEmailService {
         $mail->SMTPAuth = true;
         $mail->Username = $this->username;
         $mail->Password = $this->password;
-        $mail->SMTPSecure = 'tls';
-        $mail->Port = 587;
+        $mail->SMTPSecure = $this->secure;
+        $mail->Port = $this->port;
 
         ob_start();
         $mail->SMTPDebug = 2;
@@ -79,9 +83,11 @@ function sendThreadEmail($thread, $emailTo, $emailSubject, $emailBody, $entityId
     if ($emailService === null) {
         require_once __DIR__ . '/../username-password-imap.php';
         $emailService = new PHPMailerService(
-            'smtp.sendgrid.net',
-            $sendgridUsername,
-            $sendgridPassword
+            $smtpServer,
+            $smtpUsername,
+            $smtpPassword,
+            $smtpPort,
+            $smtpSecure
         );
     }
 

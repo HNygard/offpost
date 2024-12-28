@@ -26,12 +26,12 @@ $mail->Port = 587;
 */
 
 // Direct
-$mail->Host = 'smtp.sendgrid.net';
+$mail->Host = $smtpServer;
 $mail->SMTPAuth = true;
-$mail->Username = $sendgridUsername;
-$mail->Password = $sendgridPassword;
+$mail->Username = $smtpUsername;
+$mail->Password = $smtpPassword;
 $mail->SMTPSecure = 'tls';
-$mail->Port = 587;
+$mail->Port = $smtpPort;
 
 echo '<pre>';
 echo $mail->Port . '<br>';

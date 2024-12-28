@@ -31,15 +31,15 @@ if ($environment == 'development') {
 elseif ($environment == 'production') {
     $config['default_host'] = 'ssl://imap.one.com:993/imap/ssl';
     $config['default_port'] = '993';
-    $config['smtp_server'] = 'tls://smtp.sendgrid.net';
-    $config['smtp_port'] = '587';
-    $config['smtp_user'] = $sendgridUsername;
-    $config['smtp_pass'] = $sendgridPassword;
+    $config['smtp_user'] = $smtpUsername;
+    $config['smtp_pass'] = $smtpPassword;
 }
 else {
     echo 'Unknown environment: ' . $environment;
     exit;
 }
+$config['smtp_server'] = 'tls://' . $smtpServer;
+$config['smtp_port'] = $smtpPort;
 $config['temp_dir'] = '/tmp/roundcube-temp';
 $config['plugins'] = ['archive', 'zipdownload'];
 $config['zipdownload_selection'] = true;
