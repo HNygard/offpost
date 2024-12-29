@@ -69,6 +69,9 @@ $allThreads = getThreads();
                                 &lt;<?= $thread->my_email ?>&gt;
                             </span><br>
                             <div class="action-links">
+                                <a href="view-thread.php?entityId=<?=
+                                    htmlescape($threads->entity_id)?>&threadId=<?=
+                                    htmlescape(getThreadId($thread))?>">View thread</a>
                                 <a href="classify-email.php?entityId=<?=
                                     htmlescape($threads->entity_id)?>&threadId=<?=
                                     htmlescape(getThreadId($thread))?>">Classify</a>
