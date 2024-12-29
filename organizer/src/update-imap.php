@@ -29,6 +29,7 @@ try {
     $connection->openConnection();
     
     $folderManager = new ImapFolderManager($connection);
+    $folderManager->initialize();  // Initialize folder manager to populate existing folders
     $emailProcessor = new ImapEmailProcessor($connection);
     $attachmentHandler = new ImapAttachmentHandler($connection);
     
@@ -71,6 +72,7 @@ try {
     $connection->openConnection($imapSentFolder);
     
     $folderManager = new ImapFolderManager($connection);
+    $folderManager->initialize();  // Initialize folder manager to populate existing folders
     $emailProcessor = new ImapEmailProcessor($connection);
     $threadEmailMover = new ThreadEmailMover($connection, $folderManager, $emailProcessor);
     
@@ -106,6 +108,8 @@ try {
                 $connection = new ImapConnection($imapServer, $yourEmail, $yourEmailPassword, true);
                 $connection->openConnection($folder);
                 
+                $folderManager = new ImapFolderManager($connection);
+                $folderManager->initialize();  // Initialize folder manager to populate existing folders
                 $emailProcessor = new ImapEmailProcessor($connection);
                 $attachmentHandler = new ImapAttachmentHandler($connection);
                 $threadEmailSaver = new ThreadEmailSaver($connection, $emailProcessor, $attachmentHandler);
