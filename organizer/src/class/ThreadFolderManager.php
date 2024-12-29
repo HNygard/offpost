@@ -8,10 +8,10 @@ use Imap\ImapConnection;
 use Imap\ImapFolderManager;
 
 class ThreadFolderManager {
-    private ImapConnection $connection;
-    private ImapFolderManager $folderManager;
+    private \Imap\ImapConnection $connection;
+    private \Imap\ImapFolderManager $folderManager;
 
-    public function __construct(ImapConnection $connection) {
+    public function __construct(\Imap\ImapConnection $connection) {
         $this->connection = $connection;
         $this->folderManager = new ImapFolderManager($connection);
     }

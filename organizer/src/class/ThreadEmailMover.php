@@ -10,14 +10,14 @@ use Imap\ImapFolderManager;
 use Imap\ImapEmailProcessor;
 
 class ThreadEmailMover {
-    private ImapConnection $connection;
-    private ImapFolderManager $folderManager;
-    private ImapEmailProcessor $emailProcessor;
+    private \Imap\ImapConnection $connection;
+    private \Imap\ImapFolderManager $folderManager;
+    private \Imap\ImapEmailProcessor $emailProcessor;
 
     public function __construct(
-        ImapConnection $connection,
-        ImapFolderManager $folderManager,
-        ImapEmailProcessor $emailProcessor
+        \Imap\ImapConnection $connection,
+        \Imap\ImapFolderManager $folderManager,
+        \Imap\ImapEmailProcessor $emailProcessor
     ) {
         $this->connection = $connection;
         $this->folderManager = $folderManager;
