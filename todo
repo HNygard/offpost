@@ -14,10 +14,9 @@ TODO for Cline.
     - [x] update-imap.php
         - [x] Add integration tests with test IMAP server
         - [x] Split update-imap into testable things
-- [ ] New thread concepts
-    - Reply to thread
-    - Enable notiication for replies
-    - Automatic follow up
+- [x] GUI for reading threads
+    - [x] Thread list view
+    - [x] Thread detail view
 - [ ] Setup development IMAP server
     - [x] Docker container for IMAP server
     - [x] Configuration for test environment
@@ -27,15 +26,20 @@ TODO for Cline.
     - [x] Test thread creation 
     - [ ] Test thread updates
     - [ ] Test attachment handling
-- [ ] GUI for reading threads you have access to
-    - [ ] Thread list view
-    - [ ] Thread detail view
-    - [ ] Email composition interface
-    - [ ] Attachment handling UI
+- [ ] Authorization per thread
+    - [ ] Implement thread level authorization
+        - [ ] User have access to thread. Multiple users can be assigned to a thread.
+    - [ ] Implement public threads using property "public"
+        - [ ] In GUI for thread creation
+        - [ ] In GUI for thread view - toggle "public"
 - [ ] GUI for replying to threads
     - [ ] Reply form with rich text editor
     - [ ] Template system for common responses
     - [ ] Attachment upload functionality
+- [ ] New thread concepts
+    - Reply to thread
+    - Enable notiication for replies
+    - Automatic follow up
 
 TODO - medium term:
 - [ ] Automatic follow up
