@@ -195,8 +195,8 @@ span.label.label_disabled {
     border: 1px solid #dee2e6;
     border-radius: 6px;
     padding: 15px;
-    margin-bottom: 15px;
-    box-shadow: 0 1px 3px rgba(0,0,0,0.05);
+    margin-bottom: 30px;
+    border-bottom: 4px solid #cbd5e0;
 }
 
 .email-item.ignored {
@@ -241,20 +241,19 @@ span.label.label_disabled {
     border-top: 1px solid #eee;
 }
 
-.attachments h4 {
-    margin: 0 0 10px 0;
-    color: #34495e;
+.attachments-label {
+    color: #666;
+    font-size: 0.9em;
 }
 
-.attachments ul {
-    list-style: none;
-    padding: 0;
-    margin: 0;
+.attachments-list {
+    margin-top: 5px;
 }
 
-.attachments li {
-    margin: 5px 0;
-    padding: 5px 0;
+.attachment-item {
+    margin: 8px 0;
+    padding-left: 10px;
+    border-left: 2px solid #eee;
 }
 
 .attachments a {
@@ -264,4 +263,24 @@ span.label.label_disabled {
 
 .attachments a:hover {
     text-decoration: underline;
+}
+
+.email-item {
+    background: white;
+    border: 1px solid #dee2e6;
+    border-radius: 6px;
+    padding: 15px;
+    margin-bottom: 35px;
+    position: relative;
+}
+
+.email-item:not(:last-child)::after {
+    content: '';
+    position: absolute;
+    bottom: -18px;
+    left: 10%;
+    right: 10%;
+    height: 1px;
+    background: #cbd5e0;
+    box-shadow: 0 2px 0 #e2e8f0;
 }

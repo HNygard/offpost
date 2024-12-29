@@ -103,22 +103,22 @@ if (!$thread) {
 
                     <?php if (isset($email->attachments) && count($email->attachments) > 0): ?>
                         <div class="attachments">
-                            <h4>Attachments:</h4>
-                            <ul>
+                            <span class="attachments-label">Attachments:</span>
+                            <div class="attachments-list">
                                 <?php foreach ($email->attachments as $att):
                                     $label_type = getLabelType('attachement', $att->status_type);
                                 ?>
-                                    <li>
-                                        <span class="<?= $label_type ?>"><?= htmlescape($att->status_text) ?></span>
-                                        <?= htmlescape($att->filetype) ?> - 
-                                        <?php if (isset($att->location)): ?>
-                                            <a href="file.php?entityId=<?= htmlescape($entityId) ?>&threadId=<?= htmlescape($threadId) ?>&attachment=<?= urlencode($att->location) ?>"><?= htmlescape($att->name) ?></a>
-                                        <?php else: ?>
-                                            <?= htmlescape($att->name) ?>
-                                        <?php endif; ?>
-                                    </li>
+                                <div class="attachment-item">
+                                    <span class="<?= $label_type ?>"><?= htmlescape($att->status_text) ?></span>
+                                    <?= htmlescape($att->filetype) ?> - 
+                                    <?php if (isset($att->location)): ?>
+                                        <a href="file.php?entityId=<?= htmlescape($entityId) ?>&threadId=<?= htmlescape($threadId) ?>&attachment=<?= urlencode($att->location) ?>"><?= htmlescape($att->name) ?></a>
+                                    <?php else: ?>
+                                        <?= htmlescape($att->name) ?>
+                                    <?php endif; ?>
+                                </div>
                                 <?php endforeach; ?>
-                            </ul>
+                            </div>
                         </div>
                     <?php endif; ?>
                 </div>

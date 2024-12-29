@@ -10,12 +10,14 @@ TODO for Cline.
 - [x] Separate docker compose config prod and dev
 - [x] End to end testing
     - [x] Add SMTP and IMAP server to docker compose development
-- [ ] Rig for testing
-    - [ ] update-imap.php
+- [x] Rig for testing
+    - [x] update-imap.php
         - [x] Add integration tests with test IMAP server
-        - [ ] Split update-imap into testable things
-- [ ] New imap handling
-    - [ ] Save emails from IMAP to data folders + move email to general archive folder
+        - [x] Split update-imap into testable things
+- [ ] New thread concepts
+    - Reply to thread
+    - Enable notiication for replies
+    - Automatic follow up
 - [ ] Setup development IMAP server
     - [x] Docker container for IMAP server
     - [x] Configuration for test environment
@@ -25,7 +27,7 @@ TODO for Cline.
     - [x] Test thread creation 
     - [ ] Test thread updates
     - [ ] Test attachment handling
-- [ ] GUI for reading threads
+- [ ] GUI for reading threads you have access to
     - [ ] Thread list view
     - [ ] Thread detail view
     - [ ] Email composition interface

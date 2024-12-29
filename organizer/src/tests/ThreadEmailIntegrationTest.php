@@ -119,7 +119,7 @@ class ThreadEmailIntegrationTest extends TestCase {
         return null;
     }
 
-    public function testSendAndReceiveEmail() {
+    public function testStartThread() {
         // Create unique test data
         $uniqueId = uniqid();
         $testName = "Test User " . $uniqueId;
