@@ -127,4 +127,140 @@ class ThreadFolderManagerTest extends TestCase {
         // Call method
         $this->threadFolderManager->initialize();
     }
+
+    public function testCreateRequiredFoldersWithError() {
+        $threads = [
+            (object)[
+                'title_prefix' => 'Test',
+                'threads' => [
+                    (object)[
+                        'title' => 'Thread 1',
+                        'archived' => false
+                    ]
+                ]
+            ]
+        ];
+
+        // Simulate folder creation error
+        $this->mockImapFolderManager->expects($this->once())
+            ->method('createThreadFolders')
+            ->willThrowException(new Exception('Failed to create folder'));
+
+        $this->expectException(Exception::class);
+        $this->expectExceptionMessage('Failed to create folder');
+
+        $this->threadFolderManager->createRequiredFolders($threads);
+    }
+
+    public function testArchiveThreadFolderWithNonexistentFolder() {
+        $entityThreads = (object)[
+            'title_prefix' => 'Test',
+            'threads' => []
+        ];
+        
+        $thread = (object)[
+            'title' => 'Thread 1',
+            'archived' => true
+        ];
+
+        // Simulate folder doesn't exist
+        $this->mockImapFolderManager->expects($this->once())
+            ->method('getExistingFolders')
+            ->willReturn(['INBOX.Other']);
+
+        // Should not attempt to archive non-existent folder
+        $this->mockImapFolderManager->expects($this->never())
+            ->method('archiveFolder');
+
+        $this->threadFolderManager->archiveThreadFolder($entityThreads, $thread);
+    }
+
+    public function testArchiveThreadFolderWithError() {
+        $entityThreads = (object)[
+            'title_prefix' => 'Test',
+            'threads' => []
+        ];
+        
+        $thread = (object)[
+            'title' => 'Thread 1',
+            'archived' => true
+        ];
+
+        // Folder exists
+        $this->mockImapFolderManager->expects($this->once())
+            ->method('getExistingFolders')
+            ->willReturn(['INBOX.Test - Thread 1']);
+
+        // Simulate archiving error
+        $this->mockImapFolderManager->expects($this->once())
+            ->method('archiveFolder')
+            ->willThrowException(new Exception('Failed to archive folder'));
+
+        $this->expectException(Exception::class);
+        $this->expectExceptionMessage('Failed to archive folder');
+
+        $this->threadFolderManager->archiveThreadFolder($entityThreads, $thread);
+    }
+
+    public function testGetThreadEmailFolderWithInvalidCharacters() {
+        $entityThreads = (object)[
+            'title_prefix' => 'Test',
+            'threads' => []
+        ];
+        
+        $thread = (object)[
+            'title' => 'Thread/With\\Invalid:Characters*?"<>|',
+            'archived' => false
+        ];
+
+        $folder = $this->threadFolderManager->getThreadEmailFolder($entityThreads, $thread);
+        
+        // Verify invalid characters are replaced with dashes
+        $this->assertEquals('INBOX.Test - Thread-With-Invalid-Characters------', $folder);
+    }
+
+    public function testGetThreadEmailFolderWithLongTitle() {
+        $entityThreads = (object)[
+            'title_prefix' => 'Test',
+            'threads' => []
+        ];
+        
+        // Create a very long title (80 chars max for folder name)
+        $longTitle = str_repeat('a', 100);
+        $expectedTitle = substr($longTitle, 0, 70) . '...';
+        
+        $thread = (object)[
+            'title' => $longTitle,
+            'archived' => false
+        ];
+
+        $folder = $this->threadFolderManager->getThreadEmailFolder($entityThreads, $thread);
+        
+        // Verify folder name is truncated correctly
+        $this->assertEquals('INBOX.Test - ' . $expectedTitle, $folder);
+    }
+
+    public function testCreateRequiredFoldersWithConcurrentOperations() {
+        $threads = [
+            (object)[
+                'title_prefix' => 'Test',
+                'threads' => [
+                    (object)[
+                        'title' => 'Thread 1',
+                        'archived' => false
+                    ]
+                ]
+            ]
+        ];
+
+        // Simulate folder creation error
+        $this->mockImapFolderManager->expects($this->once())
+            ->method('createThreadFolders')
+            ->willThrowException(new Exception('Failed to create folder: already exists'));
+
+        $this->expectException(Exception::class);
+        $this->expectExceptionMessage('Failed to create folder: already exists');
+
+        $this->threadFolderManager->createRequiredFolders($threads);
+    }
 }

@@ -47,7 +47,12 @@ class ThreadEmailMover {
             }
             
             if ($targetFolder === 'INBOX') {
-                $unmatchedAddresses = array_merge($unmatchedAddresses, $addresses);
+                // Only add addresses that aren't in emailToFolder and aren't DMARC
+                foreach ($addresses as $address) {
+                    if (!isset($emailToFolder[$address]) && $address !== 'dmarc@offpost.no') {
+                        $unmatchedAddresses[] = $address;
+                    }
+                }
             }
             
             $this->folderManager->moveEmail($email->uid, $targetFolder);

@@ -66,12 +66,22 @@ class ThreadFolderManager {
      * @return string IMAP folder path
      */
     public function getThreadEmailFolder($entityThreads, $thread): string {
-        $title = $entityThreads->title_prefix . ' - ' . str_replace('/', '-', $thread->title);
+        $title = $entityThreads->title_prefix . ' - ' . $thread->title;
+        
+        // Replace Nordic characters
         $title = str_replace(
             ['Æ', 'Ø', 'Å', 'æ', 'ø', 'å'],
             ['AE', 'OE', 'AA', 'ae', 'oe', 'aa'],
             $title
         );
+        
+        // Replace invalid IMAP folder characters
+        $title = preg_replace('/[\\\\\/:*?"<>|]/', '-', $title);
+        
+        // Ensure reasonable length (max 80 chars for folder name)
+        if (strlen($title) > 80) {
+            $title = substr($title, 0, 77) . '...';
+        }
         
         return $thread->archived ? 'INBOX.Archive.' . $title : 'INBOX.' . $title;
     }

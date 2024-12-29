@@ -216,6 +216,138 @@ class ThreadEmailSaverTest extends TestCase {
         $this->assertNotNull($archiveData->date);
     }
 
+    public function testSaveThreadEmailsWithFileSystemError() {
+        // Create test data with invalid permissions
+        $folderJson = '/root/test_thread';
+        $thread = (object)[
+            'my_email' => 'test@example.com',
+            'labels' => []
+        ];
+        $folder = 'INBOX.Test';
+
+        $testEmail = (object)[
+            'uid' => 1,
+            'timestamp' => time(),
+            'mailHeaders' => (object)[
+                'subject' => 'Test Email',
+                'from' => 'sender@example.com'
+            ]
+        ];
+
+        // Expect exception due to permission error
+        $this->expectException(Exception::class);
+        $this->expectExceptionMessage('ImapConnection-errorHandler: mkdir(): Permission denied');
+
+        $this->threadEmailSaver->saveThreadEmails($folderJson, $thread, $folder);
+    }
+
+    public function testSaveThreadEmailsWithMalformedEmail() {
+        // Create test data with malformed email
+        $folderJson = $this->tempDir . '/test_thread';
+        mkdir($folderJson, 0777, true);
+        $thread = (object)[
+            'my_email' => 'test@example.com',
+            'labels' => []
+        ];
+        $folder = 'INBOX.Test';
+
+        $malformedEmail = (object)[
+            'uid' => 1,
+            'timestamp' => time(),
+            'mailHeaders' => null // Malformed headers
+        ];
+
+        // Set up mock expectations
+        $this->mockEmailProcessor->expects($this->once())
+            ->method('processEmails')
+            ->willReturn([$malformedEmail]);
+
+        $this->expectException(Exception::class);
+        $this->expectExceptionMessage('Failed to process email: Invalid email headers');
+
+        $this->threadEmailSaver->saveThreadEmails($folderJson, $thread, $folder);
+    }
+
+    public function testSaveThreadEmailsWithConnectionFailure() {
+        // Create test data
+        $folderJson = $this->tempDir . '/test_thread';
+        mkdir($folderJson, 0777, true);
+        $thread = (object)[
+            'my_email' => 'test@example.com',
+            'labels' => []
+        ];
+        $folder = 'INBOX.Test';
+
+        $testEmail = (object)[
+            'uid' => 1,
+            'timestamp' => time(),
+            'mailHeaders' => (object)[
+                'subject' => 'Test Email',
+                'from' => 'sender@example.com'
+            ]
+        ];
+
+        // Set up mock expectations
+        $this->mockEmailProcessor->expects($this->once())
+            ->method('processEmails')
+            ->willReturn([$testEmail]);
+
+        $this->mockEmailProcessor->expects($this->once())
+            ->method('getEmailDirection')
+            ->willReturn('incoming');
+
+        $this->mockEmailProcessor->expects($this->once())
+            ->method('generateEmailFilename')
+            ->willReturn('test_email_1');
+
+        // Simulate connection failure
+        $this->mockConnection->expects($this->once())
+            ->method('getRawEmail')
+            ->willThrowException(new Exception('Connection lost'));
+
+        $this->expectException(Exception::class);
+        $this->expectExceptionMessage('Failed to process email: Connection lost');
+
+        $this->threadEmailSaver->saveThreadEmails($folderJson, $thread, $folder);
+    }
+
+    public function testSaveThreadEmailsWithConcurrentAccess() {
+        // Create test data
+        $folderJson = $this->tempDir . '/test_thread';
+        mkdir($folderJson);
+        
+        // Create a lock file to simulate concurrent access
+        file_put_contents($folderJson . '/thread.lock', '');
+        
+        $thread = (object)[
+            'my_email' => 'test@example.com',
+            'labels' => []
+        ];
+        $folder = 'INBOX.Test';
+
+        $this->expectException(Exception::class);
+        $this->expectExceptionMessage('Thread is locked');
+
+        $this->threadEmailSaver->saveThreadEmails($folderJson, $thread, $folder);
+    }
+
+    public function testFinishThreadProcessingWithError() {
+        // Create test data with invalid permissions
+        $folderJson = '/root/test_thread'; // Directory with no write permission
+        $thread = (object)[
+            'archived' => true
+        ];
+
+        $this->mockEmailProcessor->expects($this->once())
+            ->method('updateFolderCache')
+            ->willThrowException(new Exception('Failed to update folder cache'));
+
+        $this->expectException(Exception::class);
+        $this->expectExceptionMessage('Failed to update folder cache');
+
+        $this->threadEmailSaver->finishThreadProcessing($folderJson, $thread);
+    }
+
     public function testEmailExistsInThread() {
         // Create test thread with existing email
         $thread = (object)[

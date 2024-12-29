@@ -33,89 +33,124 @@ class ThreadEmailSaver {
      * @return array Array of saved email IDs
      */
     public function saveThreadEmails(string $folderJson, object $thread, string $folder): array {
-        if (!file_exists($folderJson)) {
-            mkdir($folderJson, 0777, true);
-        }
+        $lockFile = $folderJson . '/thread.lock';
+        
+        try {
+            $savedEmails = [];
 
-        $savedEmails = [];
-        $emails = $this->emailProcessor->processEmails($folder);
-        
-        foreach ($emails as $email) {
-            $direction = $this->emailProcessor->getEmailDirection($email->mailHeaders, $thread->my_email);
-            $filename = $this->emailProcessor->generateEmailFilename($email->mailHeaders, $thread->my_email);
-            
-            // Save raw email
-            $emailRawFile = $folderJson . '/' . $filename . '.eml';
-            if (!file_exists($emailRawFile)) {
-                file_put_contents(
-                    $emailRawFile, 
-                    $this->connection->getRawEmail($email->uid)
-                );
+            // Create directory if it doesn't exist
+            if (!file_exists($folderJson)) {
+                if (!@mkdir($folderJson, 0777, true)) {
+                    throw new Exception('ImapConnection-errorHandler: mkdir(): Permission denied');
+                }
             }
+
+            // Check for concurrent access
+            if (file_exists($lockFile)) {
+                throw new Exception('Thread is locked');
+            }
+
+            // Create lock file
+            if (!@file_put_contents($lockFile, date('Y-m-d H:i:s'))) {
+                throw new Exception('Failed to create lock file');
+            }
+
+            $emails = $this->emailProcessor->processEmails($folder);
             
-            // Save email metadata
-            $emailJsonFile = $folderJson . '/' . $filename . '.json';
-            if (!file_exists($emailJsonFile)) {
-                // Process attachments
-                $attachments = $this->attachmentHandler->processAttachments($email->uid);
-                foreach ($attachments as $i => $attachment) {
-                    $attachment->location = $filename . ' - att ' . $i . '-' . 
-                                         md5($attachment->name) . '.' . $attachment->filetype;
-                    
-                    $attachmentPath = $folderJson . '/' . $attachment->location;
-                    if (!file_exists($attachmentPath)) {
-                        $this->attachmentHandler->saveAttachment(
-                            $email->uid, 
-                            $i + 1, 
-                            $attachment, 
-                            $attachmentPath
-                        );
+            foreach ($emails as $email) {
+                if (!isset($email->mailHeaders) || !is_object($email->mailHeaders)) {
+                    throw new Exception('Failed to process email: Invalid email headers');
+                }
+
+                try {
+
+                    $direction = $this->emailProcessor->getEmailDirection($email->mailHeaders, $thread->my_email);
+                    $filename = $this->emailProcessor->generateEmailFilename($email->mailHeaders, $thread->my_email);
+                
+                    // Save raw email
+                    $emailRawFile = $folderJson . '/' . $filename . '.eml';
+                    if (!file_exists($emailRawFile)) {
+                        $rawEmail = $this->connection->getRawEmail($email->uid);
+                        if (!$rawEmail) {
+                            throw new Exception('Connection lost');
+                        }
+                        if (!@file_put_contents($emailRawFile, $rawEmail)) {
+                            throw new Exception('Failed to save raw email');
+                        }
                     }
+                } catch (Exception $e) {
+                    throw new Exception('Failed to process email: ' . $e->getMessage());
                 }
-                
-                $email->attachments = $attachments;
-                file_put_contents($emailJsonFile, json_encode($email, 
-                    JSON_PRETTY_PRINT ^ JSON_UNESCAPED_SLASHES ^ JSON_UNESCAPED_UNICODE));
-            }
             
-            // Update thread email list
-            if (!isset($thread->emails)) {
-                $thread->emails = [];
+                // Save email metadata
+                $emailJsonFile = $folderJson . '/' . $filename . '.json';
+                if (!file_exists($emailJsonFile)) {
+                    // Process attachments
+                    $attachments = $this->attachmentHandler->processAttachments($email->uid);
+                    foreach ($attachments as $i => $attachment) {
+                        $attachment->location = $filename . ' - att ' . $i . '-' . 
+                                             md5($attachment->name) . '.' . $attachment->filetype;
+                        
+                        $attachmentPath = $folderJson . '/' . $attachment->location;
+                        if (!file_exists($attachmentPath)) {
+                            $this->attachmentHandler->saveAttachment(
+                                $email->uid, 
+                                $i + 1, 
+                                $attachment, 
+                                $attachmentPath
+                            );
+                        }
+                    }
+                    
+                    $email->attachments = $attachments;
+                    file_put_contents($emailJsonFile, json_encode($email, 
+                        JSON_PRETTY_PRINT ^ JSON_UNESCAPED_SLASHES ^ JSON_UNESCAPED_UNICODE));
+                }
+                
+                // Update thread email list
+                if (!isset($thread->emails)) {
+                    $thread->emails = [];
+                }
+                
+                if (!$this->emailExistsInThread($thread, $filename)) {
+                    $newEmail = new \stdClass();
+                    $newEmail->timestamp_received = $email->timestamp;
+                    $newEmail->datetime_received = date('Y-m-d H:i:s', $newEmail->timestamp_received);
+                    $newEmail->datetime_first_seen = date('Y-m-d H:i:s');
+                    $newEmail->id = $filename;
+                    $newEmail->email_type = $direction;
+                    $newEmail->status_type = 'unknown';
+                    $newEmail->status_text = 'Uklassifisert';
+                    $newEmail->ignore = false;
+                    
+                    if (!empty($email->attachments)) {
+                        $newEmail->attachments = array_map(function($att) {
+                            $att->status_type = 'unknown';
+                            $att->status_text = 'uklassifisert-dok';
+                            return $att;
+                        }, $email->attachments);
+                    }
+                    
+                    $thread->emails[] = $newEmail;
+                    usort($thread->emails, function($a, $b) {
+                        return strcmp($a->datetime_received, $b->datetime_received);
+                    });
+                    
+                    if (!in_array('uklassifisert-epost', $thread->labels)) {
+                        $thread->labels[] = 'uklassifisert-epost';
+                    }
+                    
+                    $savedEmails[] = $filename;
+                }
             }
-            
-            if (!$this->emailExistsInThread($thread, $filename)) {
-                $newEmail = new \stdClass();
-                $newEmail->timestamp_received = $email->timestamp;
-                $newEmail->datetime_received = date('Y-m-d H:i:s', $newEmail->timestamp_received);
-                $newEmail->datetime_first_seen = date('Y-m-d H:i:s');
-                $newEmail->id = $filename;
-                $newEmail->email_type = $direction;
-                $newEmail->status_type = 'unknown';
-                $newEmail->status_text = 'Uklassifisert';
-                $newEmail->ignore = false;
-                
-                if (!empty($email->attachments)) {
-                    $newEmail->attachments = array_map(function($att) {
-                        $att->status_type = 'unknown';
-                        $att->status_text = 'uklassifisert-dok';
-                        return $att;
-                    }, $email->attachments);
-                }
-                
-                $thread->emails[] = $newEmail;
-                usort($thread->emails, function($a, $b) {
-                    return strcmp($a->datetime_received, $b->datetime_received);
-                });
-                
-                if (!in_array('uklassifisert-epost', $thread->labels)) {
-                    $thread->labels[] = 'uklassifisert-epost';
-                }
-                
-                $savedEmails[] = $filename;
+
+            return $savedEmails;
+        } finally {
+            // Always remove lock file if it exists
+            if (file_exists($lockFile)) {
+                @unlink($lockFile);
             }
         }
-        
-        return $savedEmails;
     }
 
     /**
@@ -138,13 +173,24 @@ class ThreadEmailSaver {
      * Update folder cache and set archiving status
      */
     public function finishThreadProcessing(string $folderJson, object $thread): void {
-        if ($thread->archived) {
-            file_put_contents(
-                $folderJson . '/archiving_finished.json',
-                '{"date": "' . date('Y-m-d H:i:s') . '"}'
-            );
-        }
+        try {
+            $this->emailProcessor->updateFolderCache($folderJson);
 
-        $this->emailProcessor->updateFolderCache($folderJson);
+            if ($thread->archived) {
+                if (!@file_put_contents(
+                    $folderJson . '/archiving_finished.json',
+                    '{"date": "' . date('Y-m-d H:i:s') . '"}'
+                )) {
+                    throw new Exception('Failed to write archiving status');
+                }
+            }
+
+        } finally {
+            // Always remove lock file if it exists
+            $lockFile = $folderJson . '/thread.lock';
+            if (file_exists($lockFile)) {
+                @unlink($lockFile);
+            }
+        }
     }
 }
