@@ -10,14 +10,14 @@ use Imap\ImapEmailProcessor;
 use Imap\ImapAttachmentHandler;
 
 class ThreadEmailSaver {
-    private ImapConnection $connection;
-    private ImapEmailProcessor $emailProcessor;
-    private ImapAttachmentHandler $attachmentHandler;
+    private \Imap\ImapConnection $connection;
+    private \Imap\ImapEmailProcessor $emailProcessor;
+    private \Imap\ImapAttachmentHandler $attachmentHandler;
 
     public function __construct(
-        ImapConnection $connection,
-        ImapEmailProcessor $emailProcessor,
-        ImapAttachmentHandler $attachmentHandler
+        \Imap\ImapConnection $connection,
+        \Imap\ImapEmailProcessor $emailProcessor,
+        \Imap\ImapAttachmentHandler $attachmentHandler
     ) {
         $this->connection = $connection;
         $this->emailProcessor = $emailProcessor;
@@ -49,7 +49,7 @@ class ThreadEmailSaver {
             if (!file_exists($emailRawFile)) {
                 file_put_contents(
                     $emailRawFile, 
-                    imap_fetchbody($this->connection->getConnection(), $email->uid, "", FT_UID)
+                    $this->connection->getRawEmail($email->uid)
                 );
             }
             

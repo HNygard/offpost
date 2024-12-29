@@ -341,6 +341,26 @@ class ImapConnection {
      * 
      * @return resource|null The IMAP stream or null if not connected
      */
+    /**
+     * Get raw email content
+     * 
+     * @param int $uid Message UID
+     * @return string Raw email content
+     * @throws \Exception if operation fails
+     */
+    public function getRawEmail(int $uid): string {
+        if (!$this->connection) {
+            throw new \Exception('No active IMAP connection');
+        }
+
+        return $this->wrapper->fetchbody($this->connection, $uid, "", FT_UID);
+    }
+
+    /**
+     * Get the current IMAP connection resource
+     * 
+     * @return resource|null The IMAP stream or null if not connected
+     */
     public function getConnection() {
         return $this->connection;
     }
