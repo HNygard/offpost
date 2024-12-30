@@ -1,13 +1,15 @@
 <?php
 
-$options = getopt('', ['execute']);
+$options = getopt('', ['execute', 'user:']);
 $dryRun = !isset($options['execute']);
+$userId = isset($options['user']) ? $options['user'] : null;
 
-if ($argc < 2 || $argc > 3) {
-    echo "Usage: php update-thread-ids.php <threads_directory> [--execute]\n";
+if ($argc < 2) {
+    echo "Usage: php update-thread-ids.php <threads_directory> [--execute] [--user=USER_ID]\n";
     echo "Example: php update-thread-ids.php /path/to/data/threads\n";
     echo "Options:\n";
-    echo "  --execute    Actually perform the changes (default: dry run)\n";
+    echo "  --execute         Actually perform the changes (default: dry run)\n";
+    echo "  --user=USER_ID    Set up user access for migrated threads\n";
     exit(1);
 }
 
@@ -74,7 +76,7 @@ function moveThreadData($entityId, $oldThreadId, $newThreadId, $dryRun = true) {
     echo "Moved data from $oldPath to $newPath\n";
 }
 
-function updateThreadIds($dryRun = true) {
+function updateThreadIds($dryRun = true, $userId = null) {
     $threads = getThreads();
     $updated = false;
 
@@ -102,6 +104,16 @@ function updateThreadIds($dryRun = true) {
                 // Move data from old to new location if needed
                 if ($oldId) {
                     moveThreadData($entityId, $oldId, $thread->id);
+                    
+                    // Set up user access if user ID provided
+                    if ($userId) {
+                        if ($dryRun) {
+                            echo "[DRY RUN] Would grant access to user $userId for thread: " . $thread->title . "\n";
+                        } else {
+                            $thread->addUser($userId, true);
+                            echo "Granted access to user $userId for thread: " . $thread->title . "\n";
+                        }
+                    }
                 }
             }
         }
@@ -131,7 +143,10 @@ function getThreadId($thread) {
 
 // Run the update
 echo "Starting thread ID update and data migration in: $threadsDir\n";
-updateThreadIds($dryRun);
+if ($userId) {
+    echo "Will set up access for user: $userId\n";
+}
+updateThreadIds($dryRun, $userId);
 if ($dryRun) {
     echo "\n[DRY RUN] Completed simulation of changes. No actual changes were made.\n";
     echo "[DRY RUN] Use --execute flag to perform these changes.\n";
