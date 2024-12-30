@@ -1,12 +1,33 @@
 <?php
 require_once __DIR__ . '/auth.php';
 require_once __DIR__ . '/class/Threads.php';
+require_once __DIR__ . '/class/ThreadAuthorization.php';
 
 // Require authentication
 requireAuth();
 
 /* @var Threads[] $threads */
 $allThreads = getThreads();
+$userId = $_SESSION['user']['sub']; // OpenID Connect subject identifier
+
+// Filter threads based on user access
+$filteredThreads = [];
+foreach ($allThreads as $file => $threads) {
+    $filteredThreads[$file] = clone $threads;
+    $filteredThreads[$file]->threads = [];
+    
+    if (!isset($threads->threads)) {
+        continue;
+    }
+
+    foreach ($threads->threads as $thread) {
+        if (ThreadAuthorizationManager::canUserAccessThread($thread->id, $userId)) {
+            $filteredThreads[$file]->threads[] = $thread;
+        }
+    }
+}
+
+$allThreads = $filteredThreads;
 
 ?>
 <!DOCTYPE html>
@@ -40,9 +61,6 @@ $allThreads = getThreads();
             </tr>
             <?php
             foreach ($allThreads as $file => $threads) {
-                if (!isset($threads->threads)) {
-                    var_dump($file);
-                }
 
                 foreach ($threads->threads as $thread) {
                     if($thread->archived && !isset($_GET['archived'])) {
