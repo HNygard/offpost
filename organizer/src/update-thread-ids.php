@@ -67,7 +67,7 @@ function generateThreadId() {
     return uniqid('thread_', true);
 }
 
-function moveThreadData($entityId, $oldThreadId, $newThreadId, $dryRun = true) {
+function moveThreadData($entityId, $oldThreadId, $newThreadId, $dryRun) {
     $oldPath = joinPaths(THREADS_DIR, $entityId, $oldThreadId);
     $newPath = joinPaths(THREADS_DIR, $entityId, $newThreadId);
 
@@ -107,7 +107,7 @@ function moveThreadData($entityId, $oldThreadId, $newThreadId, $dryRun = true) {
     echo "Moved data from $oldPath to $newPath\n";
 }
 
-function updateThreadIds($dryRun = true, $userId = null) {
+function updateThreadIds($dryRun, $userId = null) {
     $threads = getThreads();
     $updated = false;
 
@@ -133,7 +133,7 @@ function updateThreadIds($dryRun = true, $userId = null) {
             }
             
             // Move data from old to new location if needed
-            moveThreadData($entityId, $oldId, $thread->id);
+            moveThreadData($entityId, $oldId, $thread->id, $dryRun);
                 
             // Set up user access if user ID provided
             if ($userId) {
