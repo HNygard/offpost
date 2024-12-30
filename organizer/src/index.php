@@ -89,16 +89,16 @@ $allThreads = $filteredThreads;
                             <div class="action-links">
                                 <a href="view-thread.php?entityId=<?=
                                     htmlescape($threads->entity_id)?>&threadId=<?=
-                                    htmlescape(getThreadId($thread))?>">View thread</a>
+                                    htmlescape($thread->id)?>">View thread</a>
                                 <a href="classify-email.php?entityId=<?=
                                     htmlescape($threads->entity_id)?>&threadId=<?=
-                                    htmlescape(getThreadId($thread))?>">Classify</a>
+                                    htmlescape($thread->id)?>">Classify</a>
                                 <a href="thread__send-email.php?entityId=<?=
                                     htmlescape($threads->entity_id)?>&threadId=<?=
-                                    htmlescape(getThreadId($thread))?>">Send email</a>
+                                    htmlescape($thread->id)?>">Send email</a>
                                 <a href="setSuccessForThreadAndDocument.php?entityId=<?=
                                     htmlescape($threads->entity_id)?>&threadId=<?=
-                                    htmlescape(getThreadId($thread))?>">Archive thread</a>
+                                    htmlescape($thread->id)?>">Archive thread</a>
                             </div>
                         </td>
                         <?php /* Status */ ?>

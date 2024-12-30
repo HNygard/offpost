@@ -86,7 +86,7 @@ $threadEntity = null;
 foreach ($allThreads as $file => $threads) {
     if ($threads->entity_id === $entityId) {
         foreach ($threads->threads as $t) {
-            if (getThreadId($t) === $threadId) {
+            if ($t->id === $threadId) {
                 $thread = $t;
                 $threadEntity = $threads;
                 break 2;

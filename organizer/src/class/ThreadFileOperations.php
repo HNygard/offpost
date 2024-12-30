@@ -54,7 +54,7 @@ if (!function_exists('getThreadsForEntity')) {
 }
 
 function getThreadFile($entityId, $thread, $attachement) {
-    $threadId = is_string($thread) ? $thread : getThreadId($thread);
+    $threadId = is_string($thread) ? $thread : $thread->id;
     return file_get_contents(joinPaths(THREADS_DIR, $entityId, $threadId, $attachement));
 }
 

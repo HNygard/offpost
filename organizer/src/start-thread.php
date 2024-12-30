@@ -23,7 +23,7 @@ if ($threadId != null) {
     $threads = getThreadsForEntity($entityId);
 
     foreach ($threads->threads as $thread1) {
-        if (getThreadId($thread1) == $threadId) {
+        if ($thread1->id == $threadId) {
             $thread = $thread1;
         }
     }
@@ -194,7 +194,7 @@ if ($thread == null) {
         $thread->labels[] = trim($label);
     }
     $newThread = createThread($_POST['entity_id'], $_POST['entity_title_prefix'], $thread);
-    $threadId = getThreadId($newThread);
+    $threadId = $newThread->id;
 
     // Set creator as owner using OpenID Connect subject identifier
     $userId = $_SESSION['user']['sub']; // From OpenID Connect session
@@ -204,7 +204,7 @@ if ($thread == null) {
 
     $thread = null;
     foreach ($threads->threads as $thread1) {
-        if (getThreadId($thread1) == $threadId) {
+        if ($thread1->id == $threadId) {
             $thread = $thread1;
         }
     }

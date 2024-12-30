@@ -32,6 +32,7 @@ TODO for Cline.
     - [ ] Implement public threads using property "public"
         - [ ] In GUI for thread creation
         - [ ] In GUI for thread view - toggle "public"
+    - [ ] Start thread can continue an existing thread. Check that the user have access to the thread.
 - [ ] GUI for replying to threads
     - [ ] Reply form with rich text editor
     - [ ] Template system for common responses

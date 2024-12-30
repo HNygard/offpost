@@ -86,7 +86,7 @@ try {
             $folder = $threadFolderManager->getThreadEmailFolder($entityThreads, $thread);
             $connection->logDebug("-- $folder");
             
-            $folderJson = '/organizer-data/threads/' . $entityThreads->entity_id . '/' . getThreadId($thread);
+            $folderJson = '/organizer-data/threads/' . $entityThreads->entity_id . '/' . $thread->id;
             $connection->logDebug("   Folder ... : $folderJson");
             
             // Skip if already archived

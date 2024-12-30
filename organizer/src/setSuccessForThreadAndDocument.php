@@ -21,7 +21,7 @@ $threads = getThreadsForEntity($entityId);
 
 $thread = null;
 foreach ($threads->threads as $thread1) {
-    if (getThreadId($thread1) == $threadId) {
+    if ($thread1->id == $threadId) {
         $thread = $thread1;
     }
 }

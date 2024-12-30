@@ -16,7 +16,7 @@ $threads = getThreadsForEntity($entityId);
 
 $thread = null;
 foreach ($threads->threads as $thread1) {
-    if (getThreadId($thread1) == $threadId) {
+    if ($thread1->id == $threadId) {
         $thread = $thread1;
     }
 }
@@ -240,7 +240,7 @@ function secondsToHumanReadable($seconds) {
                             <input type="button"
                                    class="btn btn-open"
                                    data-url="<?= '/file.php?entityId=' . urlencode($threads->entity_id)
-                                   . '&threadId=' . urlencode(getThreadId($thread))
+                                   . '&threadId=' . urlencode($thread->id)
                                    . '&body=' . urlencode($email->id) ?>"
                                    onclick="document.getElementById('viewer-iframe').src = this.getAttribute('data-url');" value="Open">
                         </div>
@@ -312,7 +312,7 @@ function secondsToHumanReadable($seconds) {
                                         <input type="button"
                                                class="btn btn-open"
                                                data-url="<?= '/file.php?entityId=' . urlencode($threads->entity_id)
-                                               . '&threadId=' . urlencode(getThreadId($thread))
+                                               . '&threadId=' . urlencode($thread->id)
                                                . '&attachment=' . urlencode($att->location) ?>"
                                                onclick="document.getElementById('viewer-iframe').src = this.getAttribute('data-url');" value="Open">
                                     </div>

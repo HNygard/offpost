@@ -21,7 +21,7 @@ foreach ($allThreads as $entityFile => $entityThreads) {
     }
 
     foreach ($entityThreads->threads as $thread) {
-        $thread->thread_id = getThreadId($thread);
+        $thread->thread_id = $thread->id;
         foreach ($thread->labels as $label) {
             if ($label == $_GET['label']) {
 
@@ -29,7 +29,7 @@ foreach ($allThreads as $entityFile => $entityThreads) {
 
                 foreach($thread->emails as $emails) {
                     $emails->link = 'http://localhost:25081/file.php?entityId=' . urlencode($entityThreads->entity_id)
-                        . '&threadId='. urlencode(getThreadId($thread))
+                        . '&threadId='. urlencode($thread->id)
                         . '&body=' . urlencode($emails->id);
 
 
@@ -42,14 +42,14 @@ foreach ($allThreads as $entityFile => $entityThreads) {
                     }
                     foreach($emails->attachments as $att) {
                         $att->link = 'http://localhost:25081/file.php?entityId=' . urlencode($entityThreads->entity_id)
-                            . '&threadId='. urlencode(getThreadId($thread))
+                            . '&threadId='. urlencode($thread->id)
                             . '&attachment=' . urlencode($att->location);
                         $att->linkText = 'http://localhost:25081/file.php?entityId=' . urlencode($entityThreads->entity_id)
-                            . '&threadId='. urlencode(getThreadId($thread))
+                            . '&threadId='. urlencode($thread->id)
                             . '&attachment=' . urlencode($att->location)
                             . '&text=true';
                         $att->linkSetSuccess = 'http://localhost:25081/setSuccessForThreadAndDocument.php?entityId=' . urlencode($entityThreads->entity_id)
-                            . '&threadId='. urlencode(getThreadId($thread))
+                            . '&threadId='. urlencode($thread->id)
                             . '&attachment=' . urlencode($att->location);
                     }
                 }
