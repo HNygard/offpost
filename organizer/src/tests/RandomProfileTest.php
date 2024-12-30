@@ -100,7 +100,7 @@ class RandomProfileTest extends TestCase
     {
         // Generate multiple profiles to ensure they're different
         $profiles = [];
-        for ($i = 0; $i < 5; $i++) {
+        for ($i = 0; $i < 10; $i++) {
             $profiles[] = getRandomNameAndEmail();
         }
 
