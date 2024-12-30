@@ -158,6 +158,13 @@ if (!isset($_POST['entity_id'])) {
             </div>
 
             <div class="form-group">
+                <label>
+                    <input type="checkbox" id="public" name="public" value="1" <?= isset($_GET['public']) && $_GET['public'] ? 'checked' : '' ?>>
+                    Make thread public (anyone can view)
+                </label>
+            </div>
+
+            <div class="form-group">
                 <label for="body">Message Body</label>
                 <textarea id="body" name="body"><?= htmlescape(isset($_GET['body']) ? $_GET['body'] : '') ?></textarea>
             </div>
@@ -179,6 +186,7 @@ if ($thread == null) {
     $thread->labels = array();
     $thread->sent = false;
     $thread->archived = false;
+    $thread->public = isset($_POST['public']) && $_POST['public'] === '1';
     $thread->emails = array();
 
     $labels = explode(' ', $_POST['labels']);
@@ -186,7 +194,10 @@ if ($thread == null) {
         $thread->labels[] = trim($label);
     }
     $newThread = createThread($_POST['entity_id'], $_POST['entity_title_prefix'], $thread);
-    $threadId = getThreadId($newThread);
+    
+    // Set creator as owner
+    $userId = $_SESSION['user_id']; // From requireAuth()
+    $newThread->addUser($userId, true);
 
     $threads = getThreadsForEntity($_POST['entity_id']);
 

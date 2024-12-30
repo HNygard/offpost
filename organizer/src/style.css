@@ -182,6 +182,95 @@ span.label.label_disabled {
     line-height: 1.5;
 }
 
+.thread-management {
+    background: #fff;
+    padding: 20px;
+    border-radius: 6px;
+    margin: 20px 0;
+    border: 1px solid #dee2e6;
+}
+
+.thread-management h3 {
+    margin-top: 0;
+    color: #34495e;
+    border-bottom: 2px solid #3498db;
+    padding-bottom: 10px;
+}
+
+.thread-management .status {
+    color: #666;
+    margin-left: 10px;
+    font-size: 0.9em;
+}
+
+.authorized-users {
+    margin-top: 20px;
+}
+
+.authorized-users h4 {
+    color: #34495e;
+    margin-bottom: 15px;
+}
+
+.user-item {
+    padding: 10px;
+    border-bottom: 1px solid #eee;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    background: #f8f9fa;
+    border-radius: 4px;
+    margin-bottom: 5px;
+}
+
+.add-user-form {
+    margin-top: 20px;
+    display: flex;
+    gap: 10px;
+    padding: 15px;
+    background: #f8f9fa;
+    border-radius: 4px;
+}
+
+.add-user-form input[type="text"] {
+    flex: 1;
+    padding: 8px 12px;
+    border: 1px solid #dee2e6;
+    border-radius: 4px;
+    font-size: 14px;
+}
+
+.add-user-form input[type="text"]:focus {
+    border-color: #3498db;
+    outline: none;
+    box-shadow: 0 0 0 2px rgba(52, 152, 219, 0.2);
+}
+
+.button {
+    background: #3498db;
+    color: white;
+    border: none;
+    padding: 8px 15px;
+    border-radius: 4px;
+    cursor: pointer;
+    font-size: 14px;
+    transition: all 0.2s ease;
+}
+
+.button:hover {
+    background: #2980b9;
+}
+
+.button.small {
+    padding: 4px 8px;
+    font-size: 12px;
+    background: #e74c3c;
+}
+
+.button.small:hover {
+    background: #c0392b;
+}
+
 .status-labels {
     margin: 10px 0;
 }
