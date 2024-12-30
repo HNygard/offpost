@@ -25,12 +25,14 @@ if ($dryRun) {
     echo "[DRY RUN] Use --execute flag to perform actual changes\n\n";
 }
 
-require_once __DIR__ . '/class/common.php';
-require_once __DIR__ . '/class/Thread.php';
-require_once __DIR__ . '/class/ThreadFileOperations.php';
-
 // Override THREADS_DIR constant for this script
 define('THREADS_DIR', $threadsDir);
+
+require_once __DIR__ . '/class/common.php';
+require_once __DIR__ . '/class/Thread.php';
+require_once __DIR__ . '/class/ThreadUtils.php';
+require_once __DIR__ . '/class/ThreadFileOperations.php';
+
 
 function generateThreadId() {
     return uniqid('thread_', true);
@@ -90,30 +92,27 @@ function updateThreadIds($dryRun = true, $userId = null) {
         $entityId = str_replace('threads-', '', basename($file, '.json'));
 
         foreach ($threadsData->threads as $thread) {
-            $oldId = null;
+            $oldId = getThreadId($thread); // Get old ID if it exists
             
             // Check if we need to generate a new ID
             if (!isset($thread->id)) {
-                $oldId = getThreadId($thread); // Get old ID if it exists
                 echo "Found thread without ID: " . $thread->title . "\n";
                 $thread->id = generateThreadId();
                 $needsSaving = true;
                 $updated = true;
                 echo "Generated new ID: " . $thread->id . "\n";
+            }
+            
+            // Move data from old to new location if needed
+            moveThreadData($entityId, $oldId, $thread->id);
                 
-                // Move data from old to new location if needed
-                if ($oldId) {
-                    moveThreadData($entityId, $oldId, $thread->id);
-                    
-                    // Set up user access if user ID provided
-                    if ($userId) {
-                        if ($dryRun) {
-                            echo "[DRY RUN] Would grant access to user $userId for thread: " . $thread->title . "\n";
-                        } else {
-                            $thread->addUser($userId, true);
-                            echo "Granted access to user $userId for thread: " . $thread->title . "\n";
-                        }
-                    }
+            // Set up user access if user ID provided
+            if ($userId) {
+                if ($dryRun) {
+                    echo "[DRY RUN] Would grant access to user $userId for thread: " . $thread->title . "\n";
+                } else {
+                    $thread->addUser($userId, true);
+                    echo "Granted access to user $userId for thread: " . $thread->title . "\n";
                 }
             }
         }
@@ -131,14 +130,6 @@ function updateThreadIds($dryRun = true, $userId = null) {
     if (!$updated) {
         echo "All threads already have IDs. No updates needed.\n";
     }
-}
-
-// Helper function to get old thread ID format
-function getThreadId($thread) {
-    if (!isset($thread->title)) {
-        return null;
-    }
-    return preg_replace('/[^a-z0-9]+/i', '-', strtolower($thread->title));
 }
 
 // Run the update
