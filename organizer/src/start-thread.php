@@ -194,9 +194,10 @@ if ($thread == null) {
         $thread->labels[] = trim($label);
     }
     $newThread = createThread($_POST['entity_id'], $_POST['entity_title_prefix'], $thread);
-    
-    // Set creator as owner
-    $userId = $_SESSION['user_id']; // From requireAuth()
+    $threadId = getThreadId($newThread);
+
+    // Set creator as owner using OpenID Connect subject identifier
+    $userId = $_SESSION['user']['sub']; // From OpenID Connect session
     $newThread->addUser($userId, true);
 
     $threads = getThreadsForEntity($_POST['entity_id']);
