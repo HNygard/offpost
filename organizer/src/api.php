@@ -21,6 +21,9 @@ foreach ($allThreads as $entityFile => $entityThreads) {
     }
 
     foreach ($entityThreads->threads as $thread) {
+        # Copy object to stdClass
+        $thread = json_decode(json_encode($thread));
+
         $thread->thread_id = $thread->id;
         foreach ($thread->labels as $label) {
             if ($label == $_GET['label']) {
