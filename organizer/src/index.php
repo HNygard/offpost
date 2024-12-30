@@ -21,6 +21,15 @@ foreach ($allThreads as $file => $threads) {
     }
 
     foreach ($threads->threads as $thread) {
+        if($thread->archived && !isset($_GET['archived'])) {
+            continue;
+        }
+
+        if (isset($_GET['label_filter'])) {
+            if (!in_array($_GET['label_filter'], $thread->labels)) {
+                continue;
+            }
+        }
         if (ThreadAuthorizationManager::canUserAccessThread($thread->id, $userId)) {
             $filteredThreads[$file]->threads[] = $thread;
         }
@@ -52,6 +61,20 @@ $allThreads = $filteredThreads;
             <li><a href="?archived">Show archived</a></li>
         </ul>
 
+        <?php
+
+            if (isset($_GET['label_filter']) && count($allThreads) > 0) {
+                ?>
+        Filtered on label: <?= htmlspecialchars($_GET['label_filter'], ENT_QUOTES) ?>
+        <ul class="nav-links">
+            <li><a href="/">Back to all threads</a></li>
+            <li><a href="api.php?label=<?=urlencode($_GET['label_filter'])?>">View API response for label</a></li>
+        </ul>
+        
+        <?php
+            }
+        ?>
+
         <table>
             <tr>
                 <td>Entity name / id</td>
@@ -63,15 +86,6 @@ $allThreads = $filteredThreads;
             foreach ($allThreads as $file => $threads) {
 
                 foreach ($threads->threads as $thread) {
-                    if($thread->archived && !isset($_GET['archived'])) {
-                        continue;
-                    }
-
-                    if (isset($_GET['label_filter'])) {
-                        if (!in_array($_GET['label_filter'], $thread->labels)) {
-                            continue;
-                        }
-                    }
                     ?>
                     <tr>
                         <?php /* Entity name / id */ ?>
