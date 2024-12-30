@@ -1,19 +1,48 @@
 <?php
 
-$options = getopt('', ['execute', 'user:']);
+// Debug all arguments
+echo "All arguments:\n";
+for ($i = 0; $i < $argc; $i++) {
+    echo "[$i] " . $argv[$i] . "\n";
+}
+echo "\n";
+
+// Parse command line options
+$longopts = [
+    "execute",     // no value
+    "user:",       // requires value
+];
+
+// Need to tell getopt to look at all arguments, not just those after script name
+$options = getopt("", $longopts, $optind);
 $dryRun = !isset($options['execute']);
-$userId = isset($options['user']) ? $options['user'] : null;
+$userId = $options['user'] ?? null;
+
+// Debug parsed options
+echo "Parsed options:\n";
+var_export($options);
+echo "\n\n";
+
+// Debug final values
+echo "Dry run: " . ($dryRun ? "yes" : "no") . "\n";
+echo "User ID: " . ($userId ?? "not set") . "\n\n";
 
 if ($argc < 2) {
-    echo "Usage: php update-thread-ids.php <threads_directory> [--execute] [--user=USER_ID]\n";
-    echo "Example: php update-thread-ids.php /path/to/data/threads\n";
+    echo "Usage: php update-thread-ids.php [--execute] [--user=USER_ID] <threads_directory>\n";
+    echo "Example: php update-thread-ids.php --user=123 /path/to/data/threads\n";
     echo "Options:\n";
     echo "  --execute         Actually perform the changes (default: dry run)\n";
     echo "  --user=USER_ID    Set up user access for migrated threads\n";
     exit(1);
 }
 
-$threadsDir = $argv[1];
+// Get the directory argument after parsing options
+$threadsDir = $argv[$optind] ?? null;
+
+if (!$threadsDir) {
+    echo "Error: No threads directory specified\n";
+    exit(1);
+}
 
 if (!is_dir($threadsDir)) {
     echo "Error: Directory '$threadsDir' does not exist\n";
