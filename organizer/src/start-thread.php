@@ -2,6 +2,7 @@
 
 require_once __DIR__ . '/auth.php';
 require_once __DIR__ . '/class/Thread.php';
+require_once __DIR__ . '/class/ThreadAuthorization.php';
 
 // Require authentication
 requireAuth();
@@ -31,6 +32,11 @@ if ($threadId != null) {
         throw new Exception('Unknown thread_id');
     }
 
+    // Check if user has access to continue this thread
+    $userId = $_SESSION['user']['sub'];
+    if (!ThreadAuthorizationManager::canUserAccessThread($threadId, $userId)) {
+        throw new Exception('You do not have access to continue this thread');
+    }
 
     $_GET['my_name'] = $thread->my_name;
     $_GET['my_email'] = $thread->my_email;

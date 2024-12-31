@@ -27,11 +27,11 @@ TODO for Cline.
     - [ ] Test thread updates
     - [ ] Test attachment handling
 - [ ] Authorization per thread
-    - [ ] Implement thread level authorization
-        - [ ] User have access to thread. Multiple users can be assigned to a thread.
-    - [ ] Implement public threads using property "public"
-        - [ ] In GUI for thread creation
-        - [ ] In GUI for thread view - toggle "public"
+    - [x] Implement thread level authorization
+        - [x] User have access to thread. Multiple users can be assigned to a thread.
+    - [x] Implement public threads using property "public"
+        - [x] In GUI for thread creation
+        - [x] In GUI for thread view - toggle "public"
     - [ ] Start thread can continue an existing thread. Check that the user have access to the thread.
 - [ ] GUI for replying to threads
     - [ ] Reply form with rich text editor
