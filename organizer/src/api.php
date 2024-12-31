@@ -10,6 +10,7 @@ if (!isset($_GET['label'])) {
 
 
 require_once __DIR__ . '/class/Threads.php';
+require_once __DIR__ . '/class/ThreadLabelFilter.php';
 
 /* @var Threads[] $threads */
 $allThreads = getThreads();
@@ -25,12 +26,10 @@ foreach ($allThreads as $entityFile => $entityThreads) {
         $thread = json_decode(json_encode($thread));
 
         $thread->thread_id = $thread->id;
-        foreach ($thread->labels as $label) {
-            if ($label == $_GET['label']) {
+        if (ThreadLabelFilter::matches($thread, $_GET['label'])) {
+            $thread->entity_id = $entityThreads->entity_id;
 
-                $thread->entity_id = $entityThreads->entity_id;
-
-                foreach($thread->emails as $emails) {
+            foreach($thread->emails as $emails) {
                     $emails->link = 'http://localhost:25081/file.php?entityId=' . urlencode($entityThreads->entity_id)
                         . '&threadId='. urlencode($thread->id)
                         . '&body=' . urlencode($emails->id);
@@ -57,8 +56,7 @@ foreach ($allThreads as $entityFile => $entityThreads) {
                     }
                 }
 
-                $threadsMatch[] = $thread;
-            }
+            $threadsMatch[] = $thread;
         }
     }
 }

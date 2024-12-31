@@ -2,6 +2,7 @@
 require_once __DIR__ . '/auth.php';
 require_once __DIR__ . '/class/Threads.php';
 require_once __DIR__ . '/class/ThreadAuthorization.php';
+require_once __DIR__ . '/class/ThreadLabelFilter.php';
 
 // Require authentication
 requireAuth();
@@ -25,10 +26,8 @@ foreach ($allThreads as $file => $threads) {
             continue;
         }
 
-        if (isset($_GET['label_filter'])) {
-            if (!in_array($_GET['label_filter'], $thread->labels)) {
-                continue;
-            }
+        if (isset($_GET['label_filter']) && !ThreadLabelFilter::matches($thread, $_GET['label_filter'])) {
+            continue;
         }
         if (ThreadAuthorizationManager::canUserAccessThread($thread->id, $userId)) {
             $filteredThreads[$file]->threads[] = $thread;
