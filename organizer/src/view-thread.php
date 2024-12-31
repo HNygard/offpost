@@ -131,13 +131,13 @@ if ($thread->isUserOwner($userId)) {
             </p>
 
             <div class="status-labels">
-                <?= $thread->sent ? '<span class="label label_ok">Sent</span>' : '<span class="label label_warn">Not sent</span>' ?>
-                <?= $thread->archived ? '<span class="label label_ok">Archived</span>' : '<span class="label label_warn">Not archived</span>' ?>
+                <?= $thread->sent ? '<span class="label label_ok"><a href="/?label_filter=sent">Sent</a></span>' : '<span class="label label_warn"><a href="/?label_filter=not_sent">Not sent</a></span>' ?>
+                <?= $thread->archived ? '<span class="label label_ok"><a href="/?label_filter=archived">Archived</a></span>' : '<span class="label label_warn"><a href="/?label_filter=not_archived">Not archived</a></span>' ?>
             </div>
 
             <div class="labels">
                 <?php foreach ($thread->labels as $label): ?>
-                    <span class="label"><?= htmlescape($label) ?></span>
+                    <span class="label"><a href="/?label_filter=<?=urlencode($label)?>"><?= htmlescape($label) ?></a></span>
                 <?php endforeach; ?>
             </div>
 
