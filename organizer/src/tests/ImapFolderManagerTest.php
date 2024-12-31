@@ -118,6 +118,26 @@ class ImapFolderManagerTest extends TestCase
         $this->assertContains($folderName, $this->folderManager->getExistingFolders());
     }
 
+    public function testEnsureFolderExistsIsCaseInsensitive()
+    {
+        $folderName = 'ExistingFolder';
+        $existingFolders = [$this->testServer . $folderName];
+        
+        $this->mockWrapper->method('list')
+            ->willReturn($existingFolders);
+        
+        $this->folderManager->initialize();
+
+        $this->mockWrapper->expects($this->never())
+            ->method('createMailbox');
+
+        // Test with different case
+        $this->folderManager->ensureFolderExists('existingfolder');
+        $this->folderManager->ensureFolderExists('EXISTINGFOLDER');
+        
+        $this->assertContains($folderName, $this->folderManager->getExistingFolders());
+    }
+
     public function testEnsureFolderSubscribedWhenNotSubscribed()
     {
         $this->mockWrapper->method('lsub')

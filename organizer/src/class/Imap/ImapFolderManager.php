@@ -23,7 +23,15 @@ class ImapFolderManager {
      * Create folder if it doesn't exist
      */
     public function ensureFolderExists(string $folderName): void {
-        if (!in_array($folderName, $this->existingFolders)) {
+        // Case insensitive check for existing folder
+        $folderExists = false;
+        foreach ($this->existingFolders as $existingFolder) {
+            if (strcasecmp($existingFolder, $folderName) === 0) {
+                $folderExists = true;
+                break;
+            }
+        }
+        if (!$folderExists) {
             $this->connection->logDebug("Creating folder: $folderName");
             $this->connection->createFolder($folderName);
             $this->existingFolders[] = $folderName;
