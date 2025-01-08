@@ -20,7 +20,7 @@ class ThreadFolderManagerTest extends TestCase {
         $this->mockImapFolderManager = $this->createMock(ImapFolderManager::class);
         
         // Create ThreadFolderManager with mock connection
-        $this->threadFolderManager = new ThreadFolderManager($this->mockConnection);
+        $this->threadFolderManager = new ThreadFolderManager($this->mockConnection, $this->mockImapFolderManager);
         
         // Use reflection to replace the folderManager with our mock
         $reflection = new ReflectionClass($this->threadFolderManager);

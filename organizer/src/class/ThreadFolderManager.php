@@ -11,9 +11,9 @@ class ThreadFolderManager {
     private \Imap\ImapConnection $connection;
     private \Imap\ImapFolderManager $folderManager;
 
-    public function __construct(\Imap\ImapConnection $connection) {
+    public function __construct(\Imap\ImapConnection $connection, ImapFolderManager $folderManager) {
         $this->connection = $connection;
-        $this->folderManager = new ImapFolderManager($connection);
+        $this->folderManager = $folderManager;
     }
 
     /**

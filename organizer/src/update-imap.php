@@ -34,7 +34,7 @@ try {
     $attachmentHandler = new ImapAttachmentHandler($connection);
     
     // Initialize managers
-    $threadFolderManager = new ThreadFolderManager($connection);
+    $threadFolderManager = new ThreadFolderManager($connection, $folderManager);
     $threadEmailMover = new ThreadEmailMover($connection, $folderManager, $emailProcessor);
     $threadEmailSaver = new ThreadEmailSaver($connection, $emailProcessor, $attachmentHandler);
     

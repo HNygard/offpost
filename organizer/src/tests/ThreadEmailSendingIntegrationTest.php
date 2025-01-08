@@ -13,16 +13,26 @@ if (!defined('TYPEOTHER')) define('TYPEOTHER', 8);
 
 use PHPUnit\Framework\TestCase;
 use Imap\ImapConnection;
+use Imap\ImapFolderManager;
+use Imap\ImapEmailProcessor;
+use Imap\ImapAttachmentHandler;
 
 require_once(__DIR__ . '/bootstrap.php');
+require_once(__DIR__ . '/../class/common.php');
 require_once(__DIR__ . '/../class/ThreadEmailService.php');
 require_once(__DIR__ . '/../class/Threads.php');
 require_once(__DIR__ . '/../class/Thread.php');
 require_once(__DIR__ . '/../class/ThreadEmailService.php');
+require_once(__DIR__ . '/../class/ThreadFolderManager.php');
+require_once(__DIR__ . '/../class/ThreadEmailMover.php');
+require_once(__DIR__ . '/../class/ThreadEmailSaver.php');
 require_once(__DIR__ . '/../class/Imap/ImapWrapper.php');
 require_once(__DIR__ . '/../class/Imap/ImapConnection.php');
+require_once(__DIR__ . '/../class/Imap/ImapFolderManager.php');
+require_once(__DIR__ . '/../class/Imap/ImapEmailProcessor.php');
+require_once(__DIR__ . '/../class/Imap/ImapAttachmentHandler.php');
 
-class ThreadEmailIntegrationTest extends TestCase {
+class ThreadEmailSendingIntegrationTest extends TestCase {
     private $imapConnection;
     private $threadEmailService;
     private $testEntityId = 'test-entity-development';
@@ -32,13 +42,27 @@ class ThreadEmailIntegrationTest extends TestCase {
         parent::setUp();
         
         // Set up IMAP connection using greenmail test credentials
-        // Set up IMAP connection using greenmail test credentials
         $this->imapConnection = new ImapConnection(
             '{localhost:25993/imap/ssl/novalidate-cert}',
             'public-entity',
             'KjMnBvCxZq9Y',
             true  // Enable debug logging
         );
+        
+        // Clean up any previous test emails
+        try {
+            $this->imapConnection->openConnection();
+            $testEmails = imap_search($this->imapConnection->getConnection(), 'SUBJECT "Test Receive Email"');
+            if ($testEmails) {
+                foreach ($testEmails as $email) {
+                    imap_delete($this->imapConnection->getConnection(), $email);
+                }
+                imap_expunge($this->imapConnection->getConnection());
+            }
+        }
+        catch(Exception $e) {
+        }
+
         
         // Set up SMTP service using greenmail test credentials
         $this->threadEmailService = new PHPMailerService(
@@ -58,12 +82,16 @@ class ThreadEmailIntegrationTest extends TestCase {
     protected function tearDown(): void {
         // Clean up test data
         if (file_exists(THREADS_DIR)) {
-            $this->removeDirectory(THREADS_DIR);
+            //$this->removeDirectory(THREADS_DIR);
         }
         
         // Close IMAP connection
         if ($this->imapConnection) {
-            $this->imapConnection->closeConnection();
+            try {
+                $this->imapConnection->closeConnection();
+            } catch (Exception $e) {
+                // Ignore close errors
+            }
         }
         
         parent::tearDown();
@@ -162,8 +190,7 @@ class ThreadEmailIntegrationTest extends TestCase {
         $this->assertNotNull($email, 'Email was not received within the timeout period');
 
         // Get raw headers from the email we found
-        $msgno = $this->imapConnection->getMsgno($email['header']->Msgno);
-        $rawHeaders = imap_fetchheader($this->imapConnection->getConnection(), $msgno);
+        $rawHeaders = imap_fetchheader($this->imapConnection->getConnection(), $email['header']->Msgno);
         
         // Parse raw headers into an associative array
         $headerLines = explode("\n", $rawHeaders);
@@ -214,6 +241,5 @@ class ThreadEmailIntegrationTest extends TestCase {
         );
         $unexpectedHeaders = array_diff(array_keys($parsedHeaders), $expectedHeaderNames);
         $this->assertEmpty($unexpectedHeaders, 'Unexpected headers found: ' . implode(', ', $unexpectedHeaders));
-        
     }
 }
