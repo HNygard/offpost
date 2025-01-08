@@ -151,6 +151,8 @@ class ThreadEmailReceiveIntegrationTest extends TestCase {
      * This test checks what happens when we receive emails in our system from a public entity.
      */
     public function testReceiveEmail() {
+        // :: Setup
+
         // Create test thread
         $uniqueId = uniqid();
         $thread = new Thread();
@@ -191,6 +193,7 @@ class ThreadEmailReceiveIntegrationTest extends TestCase {
         $altBoundary = "----=_Part_" . $uniqueId . "_alt";
         
         // Headers
+        $email_time = mktime(12, 0, 0, 1, 1, 2021);
         $email .= "Return-Path: <sender@example.com>\r\n";
         $email .= "From: sender@example.com\r\n";
         $email .= "To: " . $thread->my_email . "\r\n";
@@ -198,7 +201,7 @@ class ThreadEmailReceiveIntegrationTest extends TestCase {
         $email .= "Message-ID: " . $messageId . "\r\n";
         $email .= "Thread-Topic: " . $subject . "\r\n";
         $email .= "Thread-Index: " . $threadIndex . "\r\n";
-        $email .= "Date: " . date('r') . "\r\n";
+        $email .= "Date: " . date('r', $email_time) . "\r\n";
         $email .= "MIME-Version: 1.0\r\n";
         $email .= "Content-Type: multipart/mixed;\r\n boundary=\"" . $boundary . "\"\r\n";
         $email .= "\r\n";
@@ -227,7 +230,7 @@ class ThreadEmailReceiveIntegrationTest extends TestCase {
         // Create entity threads structure
         $entityThreads = new Threads();
         $entityThreads->entity_id = $this->testEntityId;
-        $entityThreads->title_prefix = 'Test';
+        $entityThreads->title_prefix = 'Test ' . $uniqueId;
         $entityThreads->threads = [$createdThread];
         
         // Create required folders
@@ -242,6 +245,8 @@ class ThreadEmailReceiveIntegrationTest extends TestCase {
             }
         }
 
+        // :: Act
+
         // Build email to folder mapping and process INBOX
         $emailToFolder = $threadEmailMover->buildEmailToFolderMapping([$entityThreads]);
         $threadEmailMover->processMailbox('INBOX', $emailToFolder);
@@ -250,33 +255,24 @@ class ThreadEmailReceiveIntegrationTest extends TestCase {
         $threadFolder = $threadFolderManager->getThreadEmailFolder($entityThreads, $createdThread);
         
         // Save thread emails
-        $folderJson = THREADS_DIR . '/' . $entityThreads->entity_id . '/' . $createdThread->id;
-        $threadEmailSaver->saveThreadEmails($folderJson, $createdThread, $threadFolder);
+        $threadDir = THREADS_DIR . '/' . $entityThreads->entity_id . '/' . $createdThread->id;
+        $threadEmailSaver->saveThreadEmails($threadDir, $createdThread, $threadFolder);
 
-        // Verify email was saved
-        $this->assertTrue(file_exists($folderJson), 'Thread folder should exist');
-        $emailFiles = glob($folderJson . '/*.eml');
-        $this->assertNotEmpty($emailFiles, 'Email file should exist in thread folder');
-
-        // Debug email files
-        foreach ($emailFiles as $emailFile) {
-            echo "\nEmail file: " . basename($emailFile) . "\n";
-            $savedEmail = file_get_contents($emailFile);
-            echo "Email content:\n" . $savedEmail . "\n";
-        }
+        // :: Assert
         
-        // Find the email file that contains our test subject
-        $testEmailFile = null;
-        foreach ($emailFiles as $emailFile) {
-            $content = file_get_contents($emailFile);
-            if (strpos($content, "Subject: Test Receive Email " . $uniqueId) !== false) {
-                $testEmailFile = $emailFile;
-                $savedEmail = $content;
-                break;
-            }
-        }
+        // Verify thread folder structure and files
+        $this->assertTrue(file_exists($threadDir), 'Thread folder should exist');
+        $this->assertTrue(is_dir($threadDir), 'Thread directory should exist');
         
-        $this->assertNotNull($testEmailFile, 'Test email file should exist');
+        // List all files in thread directory
+        $threadFiles = array_diff(scandir($threadDir), array('.', '..'));
+        $testEmailFile = date('Y-m-d_His', $email_time) . ' - IN.eml';
+        $this->assertEquals([
+            2 => $testEmailFile,
+            3 => date('Y-m-d_His', $email_time) . ' - IN.json',
+        ], $threadFiles, 'Thread directory should contain the right files.');
+        
+        $savedEmail = file_get_contents($threadDir . '/' . $testEmailFile);
         
         // Verify required headers
         $this->assertStringContainsString('Return-Path:', $savedEmail, 'Email should have Return-Path header');
@@ -296,15 +292,13 @@ class ThreadEmailReceiveIntegrationTest extends TestCase {
         // Verify email body content
         $this->assertStringContainsString(base64_encode($plainBody), $savedEmail, 'Email should contain the base64 encoded test body');
         
-        // Verify attachment was saved with correct MD5 hash pattern
-        /*
-        $pattern = $folderJson . '/*att *-' . md5($attachmentName) . '.pdf';
-        $attachmentFiles = glob($pattern);
-        $this->assertNotEmpty($attachmentFiles, 'Attachment file should exist in thread folder: ' . $pattern);
-        $savedAttachment = file_get_contents($attachmentFiles[0]);
-        $this->assertEquals($attachmentContent, $savedAttachment, 'Attachment content should match');
-        */
-        
+        // Verify email metadata in thread
+        $this->assertIsArray($createdThread->emails, 'Thread should have emails array');
+        $this->assertNotEmpty($createdThread->emails, 'Thread should have at least one email');
+        $latestEmail = end($createdThread->emails);
+        $this->assertEquals('IN', $latestEmail->email_type, 'Email type should be IN');
+        $this->assertEquals('unknown', $latestEmail->status_type, 'Status type should be unknown');
+        $this->assertEquals('Uklassifisert', $latestEmail->status_text, 'Status text should be Uklassifisert');
     }
 
 }
