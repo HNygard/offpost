@@ -241,7 +241,11 @@ class ImapConnection {
             throw new \Exception('No active IMAP connection');
         }
 
-        return $this->wrapper->msgno($this->connection, $uid);
+        $msgno = $this->wrapper->msgno($this->connection, $uid);
+        if ($msgno <= 0) {
+            throw new \Exception("Invalid message number for UID: $uid");
+        }
+        return $msgno;
     }
 
     /**

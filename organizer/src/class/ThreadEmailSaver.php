@@ -41,7 +41,7 @@ class ThreadEmailSaver {
             // Create directory if it doesn't exist
             if (!file_exists($folderJson)) {
                 if (!@mkdir($folderJson, 0777, true)) {
-                    throw new Exception('ImapConnection-errorHandler: mkdir(): Permission denied');
+                    throw new Exception('ImapConnection-errorHandler: mkdir(): Permission denied: ' . $folderJson);
                 }
             }
 
