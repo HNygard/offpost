@@ -17,6 +17,14 @@ TODO for Cline.
 - [x] GUI for reading threads
     - [x] Thread list view
     - [x] Thread detail view
+- [x] Authorization per thread
+    - [x] Implement thread level authorization
+        - [x] User have access to thread. Multiple users can be assigned to a thread.
+    - [x] Implement public threads using property "public"
+        - [x] In GUI for thread creation
+        - [x] In GUI for thread view - toggle "public"
+    - [x] Start thread can continue an existing thread. Check that the user have access to the thread.
+- [ ] Update-imap - folder creation should be done in class so that logic is the same in tests and update-imap.php
 - [ ] Setup development IMAP server
     - [x] Docker container for IMAP server
     - [x] Configuration for test environment
@@ -26,13 +34,6 @@ TODO for Cline.
     - [x] Test thread creation 
     - [ ] Test thread updates
     - [ ] Test attachment handling
-- [ ] Authorization per thread
-    - [x] Implement thread level authorization
-        - [x] User have access to thread. Multiple users can be assigned to a thread.
-    - [x] Implement public threads using property "public"
-        - [x] In GUI for thread creation
-        - [x] In GUI for thread view - toggle "public"
-    - [ ] Start thread can continue an existing thread. Check that the user have access to the thread.
 - [ ] GUI for replying to threads
     - [ ] Reply form with rich text editor
     - [ ] Template system for common responses
