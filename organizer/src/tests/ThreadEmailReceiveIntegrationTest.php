@@ -170,7 +170,7 @@ class ThreadEmailReceiveIntegrationTest extends TestCase {
 
         // Initialize components needed for email processing
         $folderManager = new ImapFolderManager($this->imapConnection);
-        $emailProcessor = new ImapEmailProcessor($this->imapConnection);
+        $emailProcessor = new ImapEmailProcessor($this->imapConnection, THREADS_DIR . '/test-cache-threads.json');
         $attachmentHandler = new ImapAttachmentHandler($this->imapConnection);
         
         $threadFolderManager = new ThreadFolderManager($this->imapConnection, $folderManager);
@@ -257,6 +257,10 @@ class ThreadEmailReceiveIntegrationTest extends TestCase {
         // Save thread emails
         $threadDir = THREADS_DIR . '/' . $entityThreads->entity_id . '/' . $createdThread->id;
         $threadEmailSaver->saveThreadEmails($threadDir, $createdThread, $threadFolder);
+        $threadEmailSaver->finishThreadProcessing($threadDir, $createdThread);
+
+        // Save entity thread
+        saveEntityThreads($entityThreads->entity_id, $entityThreads);
 
         // :: Assert
         
@@ -272,6 +276,7 @@ class ThreadEmailReceiveIntegrationTest extends TestCase {
             3 => date('Y-m-d_His', $email_time) . ' - IN.json',
         ], $threadFiles, 'Thread directory should contain the right files.');
         
+        // Read the saved email file to verify its contents
         $savedEmail = file_get_contents($threadDir . '/' . $testEmailFile);
         
         // Verify required headers
@@ -291,14 +296,48 @@ class ThreadEmailReceiveIntegrationTest extends TestCase {
         
         // Verify email body content
         $this->assertStringContainsString(base64_encode($plainBody), $savedEmail, 'Email should contain the base64 encoded test body');
+
+        // Read the threads again to verify final state
+        $entityThreads = getThreadsForEntity($this->testEntityId);
+        $updatedThread = null;
+        foreach ($entityThreads->threads as $thread) {
+            if ($thread->id === $createdThread->id) {
+                $updatedThread = $thread;
+                break;
+            }
+        }
         
-        // Verify email metadata in thread
-        $this->assertIsArray($createdThread->emails, 'Thread should have emails array');
-        $this->assertNotEmpty($createdThread->emails, 'Thread should have at least one email');
-        $latestEmail = end($createdThread->emails);
-        $this->assertEquals('IN', $latestEmail->email_type, 'Email type should be IN');
-        $this->assertEquals('unknown', $latestEmail->status_type, 'Status type should be unknown');
-        $this->assertEquals('Uklassifisert', $latestEmail->status_text, 'Status text should be Uklassifisert');
+        $this->assertNotNull($updatedThread, 'Thread should exist in entity threads');
+        
+        // Get dynamic values from actual thread for comparison
+        $threadId = $updatedThread->id;
+        $datetime_first_seen = $updatedThread->emails[0]->datetime_first_seen;
+        
+        // Create expected thread object
+        $expectedThread = json_decode('{
+            "id": "' . $threadId . '",
+            "title": "Test Thread - ' . $uniqueId . '",
+            "my_name": "Test User",
+            "my_email": "test@example.com",
+            "labels": ["uklassifisert-epost"],
+            "sent": false,
+            "archived": false,
+            "public": false,
+            "emails": [{
+                "timestamp_received": ' . $email_time . ',
+                "datetime_received": "2021-01-01 12:00:00",
+                "datetime_first_seen": "' . $datetime_first_seen . '",
+                "id": "2021-01-01_120000 - IN",
+                "email_type": "IN",
+                "status_type": "unknown",
+                "status_text": "Uklassifisert",
+                "ignore": false
+            }]
+        }');
+        
+        $this->assertEquals(json_encode($expectedThread, JSON_PRETTY_PRINT ^ JSON_UNESCAPED_UNICODE ^JSON_UNESCAPED_SLASHES),
+        json_encode($updatedThread, JSON_PRETTY_PRINT ^ JSON_UNESCAPED_UNICODE ^JSON_UNESCAPED_SLASHES),
+         'Thread should match expected structure'); 
     }
 
 }
