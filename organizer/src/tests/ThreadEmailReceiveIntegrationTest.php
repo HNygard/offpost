@@ -187,10 +187,9 @@ class ThreadEmailReceiveIntegrationTest extends TestCase {
         $messageId = '<' . uniqid() . '@test.local>';
         $threadIndex = 'AQHZ' . bin2hex(random_bytes(6));
         
-        // Create email content
+        // Create email content with proper MIME structure
         $email = "";
-        $boundary = "----=_Part_" . $uniqueId;
-        $altBoundary = "----=_Part_" . $uniqueId . "_alt";
+        $boundary = "=_Part_" . $uniqueId;
         
         // Headers
         $email_time = mktime(12, 0, 0, 1, 1, 2021);
@@ -206,12 +205,20 @@ class ThreadEmailReceiveIntegrationTest extends TestCase {
         $email .= "Content-Type: multipart/mixed;\r\n boundary=\"" . $boundary . "\"\r\n";
         $email .= "\r\n";
         
-        // Plain text version
+        // Part 1: Plain text
         $email .= "--" . $boundary . "\r\n";
         $email .= "Content-Type: text/plain; charset=utf-8\r\n";
         $email .= "Content-Transfer-Encoding: base64\r\n";
         $email .= "\r\n";
-        $email .= chunk_split(string: base64_encode($plainBody)) . "\r\n";
+        $email .= chunk_split(base64_encode($plainBody));
+        
+        // Part 2: PDF attachment
+        $email .= "--" . $boundary . "\r\n";
+        $email .= "Content-Type: application/pdf; name=\"" . $attachmentName . "\"\r\n";
+        $email .= "Content-Transfer-Encoding: base64\r\n";
+        $email .= "Content-Disposition: attachment; filename=\"" . $attachmentName . "\";\r\n";
+        $email .= "\r\n";
+        $email .= chunk_split(base64_encode($attachmentContent));
         
         // End of message
         $email .= "--" . $boundary . "--\r\n";
@@ -271,10 +278,20 @@ class ThreadEmailReceiveIntegrationTest extends TestCase {
         // List all files in thread directory
         $threadFiles = array_diff(scandir($threadDir), array('.', '..'));
         $testEmailFile = date('Y-m-d_His', $email_time) . ' - IN.eml';
-        $this->assertEquals([
-            2 => $testEmailFile,
-            3 => date('Y-m-d_His', $email_time) . ' - IN.json',
-        ], $threadFiles, 'Thread directory should contain the right files.');
+        // Expected files including attachment
+        $expectedFiles = [
+            $testEmailFile,
+            date('Y-m-d_His', $email_time) . ' - IN.json',
+            date('Y-m-d_His', $email_time) . ' - IN - att 1-'. md5($attachmentName) . '.pdf'
+        ];
+        sort($threadFiles);
+        sort($expectedFiles);
+        $this->assertEquals($expectedFiles, $threadFiles, 'Thread directory should contain the right files including attachment.');
+
+        // Verify attachment content
+        $attachmentPath = $threadDir . '/' . date('Y-m-d_His', $email_time) . ' - IN - att 1-'. md5($attachmentName) . '.pdf';
+        $this->assertTrue(file_exists($attachmentPath), 'Attachment file should exist');
+        $this->assertEquals($attachmentContent, file_get_contents($attachmentPath), 'Attachment content should match');
         
         // Read the saved email file to verify its contents
         $savedEmail = file_get_contents($threadDir . '/' . $testEmailFile);
@@ -331,7 +348,17 @@ class ThreadEmailReceiveIntegrationTest extends TestCase {
                 "email_type": "IN",
                 "status_type": "unknown",
                 "status_text": "Uklassifisert",
-                "ignore": false
+                "ignore": false,
+                "attachments": [
+                    {
+                        "name": "test.pdf",
+                        "filename": "test.pdf",
+                        "filetype": "pdf",
+                        "location": "2021-01-01_120000 - IN - att 1-754dc77d28e62763c4916970d595a10f.pdf",
+                        "status_type": "unknown",
+                        "status_text": "uklassifisert-dok"
+                    }
+                ]
             }]
         }');
         

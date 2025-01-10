@@ -88,14 +88,15 @@ class ThreadEmailSaver {
                     // Process attachments
                     $attachments = $this->attachmentHandler->processAttachments($email->uid);
                     foreach ($attachments as $i => $attachment) {
-                        $attachment->location = $filename . ' - att ' . $i . '-' . 
+                        $j = $i + 1;
+                        $attachment->location = $filename . ' - att ' . $j . '-' .
                                              md5($attachment->name) . '.' . $attachment->filetype;
                         
                         $attachmentPath = $folderJson . '/' . $attachment->location;
                         if (!file_exists($attachmentPath)) {
                             $this->attachmentHandler->saveAttachment(
-                                $email->uid, 
-                                $i + 1, 
+                                $email->uid,
+                                $j + 1,
                                 $attachment, 
                                 $attachmentPath
                             );
