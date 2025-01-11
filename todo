@@ -1,39 +1,16 @@
 TODO for Cline.
 
-- [x] Refactor Threads.php
-    - [x] Split out file operations into ThreadFileOperations.php
-    - [x] Split out utility functions into ThreadUtils.php
-    - [x] Split out email services into ThreadEmailService.php
-- [x] Rewrite auth service to automatic create tokens since it's only for development
-    - Goal: Opening http://localhost:25081/ should work. It should redirect to login and then back. Verify that tokens are used.
-    - [x] Look into the auth service to figure out tasks.
-- [x] Separate docker compose config prod and dev
-- [x] End to end testing
-    - [x] Add SMTP and IMAP server to docker compose development
-- [x] Rig for testing
-    - [x] update-imap.php
-        - [x] Add integration tests with test IMAP server
-        - [x] Split update-imap into testable things
-- [x] GUI for reading threads
-    - [x] Thread list view
-    - [x] Thread detail view
-- [x] Authorization per thread
-    - [x] Implement thread level authorization
-        - [x] User have access to thread. Multiple users can be assigned to a thread.
-    - [x] Implement public threads using property "public"
-        - [x] In GUI for thread creation
-        - [x] In GUI for thread view - toggle "public"
-    - [x] Start thread can continue an existing thread. Check that the user have access to the thread.
+- [x] End-to-end testing
+    - [x] Test email flow from SMTP to IMAP
+    - [x] Test thread creation 
+    - [x] Test thread updates
+    - [x] Test attachment handling
+- [ ] Public threads
 - [ ] Update-imap - folder creation should be done in class so that logic is the same in tests and update-imap.php
 - [ ] Setup development IMAP server
     - [x] Docker container for IMAP server
     - [x] Configuration for test environment
     - [ ] Test data setup scripts
-- [ ] End-to-end testing
-    - [x] Test email flow from SMTP to IMAP
-    - [x] Test thread creation 
-    - [ ] Test thread updates
-    - [ ] Test attachment handling
 - [ ] GUI for replying to threads
     - [ ] Reply form with rich text editor
     - [ ] Template system for common responses
