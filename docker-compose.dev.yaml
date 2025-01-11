@@ -1,5 +1,3 @@
-version: '3'
-
 networks:
   app-network:
     driver: bridge
@@ -36,7 +34,8 @@ services:
     ports:
       - "25080:80"
     volumes:
-      - ./organizer/src/username-password-smtp.php:/username-password-smtp.php
+      - ./organizer/src/username-password.php:/username-password.php
+      - ./organizer/src/username-password-override-dev.php:/username-password-override.php
       - ./roundcubemail.config.php:/var/roundcube/config/config.email-engine.inc.php
     environment:
       - ROUNDCUBEMAIL_DB_TYPE=mysql
@@ -75,6 +74,7 @@ services:
       - auth:auth
       - greenmail:greenmail
     volumes:
+      - ./organizer/src/username-password-override-dev.php:/username-password-override.php
       - ./organizer/src:/php-frontend
       - ./data/:/organizer-data
     environment:

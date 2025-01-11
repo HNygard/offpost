@@ -48,7 +48,6 @@ docker-compose -f docker-compose.dev.yaml up -d
 
 2. Access Roundcube (mail client):
 - URL: http://localhost:25080/
-- Credentials are located in `username-password-imap.php`
 
 3. For new database setup:
 - Create Roundcube identities: http://localhost:25081/update-identities.php

@@ -1,5 +1,3 @@
-version: '3'
-
 networks:
   app-network:
     driver: bridge
@@ -18,7 +16,8 @@ services:
     ports:
       - "25080:80"
     volumes:
-      - ./organizer/src/username-password-smtp.php:/username-password-smtp.php
+      - ./organizer/src/username-password.php:/username-password.php
+      - /opt/offpost/username-password-override-prod.php:/username-password-override.php
       - ./roundcubemail.config.php:/var/roundcube/config/config.email-engine.inc.php
     restart: unless-stopped
 
@@ -42,6 +41,7 @@ services:
     links:
       - mysql:mysql
     volumes:
+      - /opt/offpost/username-password-override-prod.php:/username-password-override.php
       - ./organizer/src:/php-frontend
       - ./data/:/organizer-data
     environment:

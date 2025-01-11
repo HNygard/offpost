@@ -28,7 +28,7 @@ $server = '{imap.one.com:993/imap/ssl}';
 function openConnection($folder = 'INBOX') {
     /* @var $yourEmail string */
     /* @var $yourEmailPassword string */
-    require __DIR__ . '/username-password-imap.php';
+    require __DIR__ . '/username-password.php';
 
     global $server;
     try {

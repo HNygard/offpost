@@ -1,6 +1,6 @@
 <?php
 
-require '/username-password-smtp.php';
+require '/username-password.php';
 
 $config['db_dsnw'] = 'mysql://mail:mail@mysql/roundcubemail';
 $config['db_dsnr'] = '';
