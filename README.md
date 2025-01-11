@@ -55,12 +55,14 @@ docker-compose -f docker-compose.dev.yaml up -d
 
 ### Production
 
+See [infrastructure/production/README.md](infrastructure/production/README.md) for details.
+
 For production deployment:
 ```bash
 docker-compose -f docker-compose.prod.yaml up -d
 ```
 
-Note: The auth service is only available in development. For production, implement your own authentication system.
+Note: The auth service is only available in development. For production uses auth0.
 
 ### Running Tests
 

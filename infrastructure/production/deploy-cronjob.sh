@@ -21,8 +21,8 @@ if [ "$LOCAL_HASH" != "$REMOTE_HASH" ]; then
   git pull origin main
 
   # Update Docker images and restart the containers
-  docker-compose pull
-  docker-compose up -d
+  docker compose -f docker-compose.prod.yaml pull
+  docker compose -f docker-compose.prod.yaml up -d
 
   echo "[$(date)] Deployment completed."
 fi

@@ -1,5 +1,7 @@
 # Production server
 
+Production servers are pulling updates from Github and deploying them to the server.
+
 ## Setup
 
 1. Make directories
