@@ -5,5 +5,5 @@ session_destroy();
 require __DIR__ . '/username-password.php';
 
 // Redirect to OIDC end session endpoint
-header('Location: ' . $oidc_auth_url . '/oidc/session/end');
+header('Location: ' . $oidc_end_session_endpoint);
 exit;

@@ -1,7 +1,7 @@
 #!/bin/bash
 
 # Cronjob:
-# */20 * * * * /bin/bash /opt/offpost/app/infrastructure/production/deploy-cronjob.sh >> /opt/offpost/logs/deploy-cronjob.log 2>&1 # 
+# */20 * * * * /bin/bash /opt/offpost/app/infrastructure/production/deploy-cronjob.sh >> /opt/offpost/logs/deploy-cronjob.log 2>&1
 
 # Navigate to the project directory
 cd /opt/offpost/app || exit

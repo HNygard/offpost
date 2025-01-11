@@ -17,8 +17,13 @@ if ($environment == 'development') {
     $smtpPort = '3025';  // GreenMail SMTP port
     $smtpSecure = '';    // No encryption for GreenMail on port 3025
 
-    $oidc_auth_url = 'http://localhost:25083';
-    $oidc_server_auth_url = 'http://auth:3000';  // Server-to-server URL using Docker service name
+    // Server-to-server URL using Docker service name, the others are for the browser on host.
+    $oidc_auth_url = 'http://localhost:25083/oidc/auth';
+    $oidc_token_endpoint = 'http://auth:3000/oidc/token';
+    $oidc_end_session_endpoint = 'http://localhost:25083/oidc/session/end';
+    $oidc_userinfo_endpoint = 'http://auth:3000/oidc/me';
+    $oidc_callback_url = 'http://localhost:25081/callback.php';
+
     $oidc_client_id = 'organizer';
     $oidc_client_secret = 'secret';
 }
@@ -30,8 +35,12 @@ else if ($environment == 'production') {
     $smtpPort = '587';
     $smtpSecure = 'tls';  // Use TLS for SendGrid
 
-    $oidc_auth_url = 'https://auth.offpost.no/';
-    $oidc_server_auth_url = $oidc_auth_url;
+    // Auth0 - https://auth.offpost.no/.well-known/openid-configuration
+    $oidc_auth_url = 'https://auth.offpost.no/authorize';
+    $oidc_token_endpoint = 'https://auth.offpost.no/oauth/token';
+    $oidc_end_session_endpoint = 'https://auth.offpost.no/oidc/logout';
+    $oidc_userinfo_endpoint = 'https://auth.offpost.no/userinfo';
+
     // Client id and secret is set in the override file
 }
 else {
