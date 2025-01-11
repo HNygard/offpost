@@ -1,0 +1,50 @@
+{
+    "subject": "Innsyn =?UTF-8?Q?valggjennomf=C3=B8ring=2C?= Nord-Odal kommune",
+    "timestamp": 1691964154,
+    "date": "Sun, 13 Aug 2023 22:02:34 +0000 (UTC)",
+    "attachements": [],
+    "body": "Kjære Nord-Odal kommune\r\n\r\nØnsker innsyn i valggjennomføringen deres nå i 2023.\r\n\r\n1): Vil kommunen foreta maskinell eller manuell endelig telling av valgresultatet?\r\n\r\n2): I hvilken politisk sak ble dette vedtatt?\r\n\r\n3): Ved foreløpig opptelling (manuell opptelling), blir opptellingen gjort i valgkretsene? Hvis det er opptelling i valgkretsene, hvordan overfører\r\nkommunen resultatet fra valgkretsene inn til valgstyret/valgansvarlig/EVA Admin?\r\n\r\n4): Ved foreløpig opptelling (manuell opptelling), hvordan lagrer/arkiverer kommunen resultatet fra opptellingen utenom EVA Admin? Papir? Digitalt\r\ndokument? SMS? Blir resultatet journalført?\r\n\r\n5): Har kommunen rutiner for å kontrollere resultatet av foreløpig opptelling opp mot det som er synlig på valgresultat-siden til Valgdirektoratet\r\n(valgresultat dått no), i valgprotokoll, i medier og lignende?\r\nEn slik kontroll vil f.eks. oppdage tastefeil (kommunen legger inn feil resultat i EVA Admin) samt feil i Valgdirektoratets håndtering av resultatet.\r\n\r\n6): Tilsvarende som 4) for endelig opptelling (maskinell eller manuell).\r\nHvordan lagrer kommunen resultatet fra endelig opptelling utenom i EVA Admin/EVA Skanning? Blir resultatet journalført?\r\n\r\n7): Tilsvarende som 5) for endelig opptelling (maskinell eller manuell).\r\nHar kommunen rutiner for kontroll av endelig opptelling mot resultat som blir publisert?\r\n\r\nTakk!\r\n\r\nProsjekt Åpne Valgdata - https://hnygard.github.io/valgprotokoller/\r\n\r\n--\r\nLinus F. Granås\r\n\r\n",
+    "mailHeaders": {
+        "message_id": "<2gc3C2cyrFRJcWqAwsOSWuPIyOvjOWdOdpGHkc8GEag@localhost>",
+        "toaddress": "postmottak@nord-odal.kommune.no",
+        "to": [
+            {
+                "mailbox": "postmottak",
+                "host": "nord-odal.kommune.no"
+            }
+        ],
+        "fromaddress": "Linus F. Granås <linus.f.granaas@offpost.no>",
+        "from": [
+            {
+                "personal": "Linus F. Granås",
+                "mailbox": "linus.f.granaas",
+                "host": "offpost.no"
+            }
+        ],
+        "reply_toaddress": "Linus F. Granås <linus.f.granaas@offpost.no>",
+        "reply_to": [
+            {
+                "personal": "Linus F. Granås",
+                "mailbox": "linus.f.granaas",
+                "host": "offpost.no"
+            }
+        ],
+        "senderaddress": "Linus F. Granås <linus.f.granaas@offpost.no>",
+        "sender": [
+            {
+                "personal": "Linus F. Granås",
+                "mailbox": "linus.f.granaas",
+                "host": "offpost.no"
+            }
+        ],
+        "Unseen": " ",
+        "Flagged": " ",
+        "Answered": " ",
+        "Deleted": " ",
+        "Draft": " ",
+        "Msgno": "   1",
+        "MailDate": "13-Aug-2023 22:02:36 +0000",
+        "Size": "5017",
+        "udate": 1691964156
+    }
+}

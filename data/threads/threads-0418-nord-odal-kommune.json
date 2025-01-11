@@ -1,0 +1,219 @@
+{
+    "title_prefix": "Nord-Odal kommune",
+    "entity_id": "0418-nord-odal-kommune",
+    "threads": [
+        {
+            "id": "thread_6772dad8005266.28491966",
+            "title": "Valgprotokoll 2021, Nord-Odal kommune",
+            "my_name": "Prosjekt Åpne Valgdata (0418)",
+            "my_email": "valgprotokoll_2021_0418-nord-odal-kommune@offpost.no",
+            "labels": [
+                "valgprotokoll_2021",
+                "uklassifisert-epost"
+            ],
+            "sent": true,
+            "archived": true,
+            "public": false,
+            "emails": [
+                {
+                    "timestamp_received": 1632431882,
+                    "datetime_received": "2021-09-23 23:18:02",
+                    "datetime_first_seen": "2021-09-23 23:24:25",
+                    "id": "2021-09-23_231802 - OUT",
+                    "email_type": "OUT",
+                    "status_type": "unknown",
+                    "status_text": "Uklassifisert",
+                    "ignore": false
+                },
+                {
+                    "timestamp_received": 1632432218,
+                    "datetime_received": "2021-09-23 23:23:38",
+                    "datetime_first_seen": "2021-09-23 23:24:25",
+                    "id": "2021-09-23_232338 - IN",
+                    "email_type": "IN",
+                    "status_type": "unknown",
+                    "status_text": "Uklassifisert",
+                    "ignore": false
+                },
+                {
+                    "timestamp_received": 1632916581,
+                    "datetime_received": "2021-09-29 13:56:21",
+                    "datetime_first_seen": "2021-09-29 22:57:39",
+                    "id": "2021-09-29_135621 - IN",
+                    "email_type": "IN",
+                    "status_type": "unknown",
+                    "status_text": "Uklassifisert",
+                    "ignore": false,
+                    "attachments": [
+                        {
+                            "name": "Innsyn i valgprotokoll for storting og sameting valget 2021.pdf",
+                            "filename": "Innsyn i valgprotokoll for storting og sameting valget 2021.pdf",
+                            "filetype": "pdf",
+                            "location": "2021-09-29_135621 - IN - att 1-8988dc95efbe83e87e5ac57a4b26583d.pdf",
+                            "status_type": "unknown",
+                            "status_text": "uklassifisert-dok"
+                        },
+                        {
+                            "name": "Valgstyrets møtebok 3414 2021-09-15.pdf",
+                            "filename": "Valgstyrets møtebok 3414 2021-09-15.pdf",
+                            "filetype": "pdf",
+                            "location": "2021-09-29_135621 - IN - att 2-6e65b93efc6aedbf20bd60c6417afea6.pdf",
+                            "status_type": "unknown",
+                            "status_text": "uklassifisert-dok"
+                        },
+                        {
+                            "name": "Valgprotokoll for valgstyret i Nord-Odal kommune, Hedmark valgdistrikt.pdf",
+                            "filename": "Valgprotokoll for valgstyret i Nord-Odal kommune, Hedmark valgdistrikt.pdf",
+                            "filetype": "pdf",
+                            "location": "2021-09-29_135621 - IN - att 3-1c7ec5daab65411e95b4d958a8d9f536.pdf",
+                            "status_type": "success",
+                            "status_text": "Document OK"
+                        }
+                    ]
+                },
+                {
+                    "timestamp_received": 1632945389,
+                    "datetime_received": "2021-09-29 21:56:29",
+                    "datetime_first_seen": "2021-09-29 22:57:39",
+                    "id": "2021-09-29_215629 - OUT",
+                    "email_type": "OUT",
+                    "status_type": "unknown",
+                    "status_text": "Uklassifisert",
+                    "ignore": false
+                }
+            ]
+        },
+        {
+            "id": "thread_6772dad80052a9.88378482",
+            "title": "Innsyn valggjennomføring, Nord-Odal kommune",
+            "my_name": "Linus F. Granås",
+            "my_email": "linus.f.granaas@offpost.no",
+            "labels": [
+                "valg_2023",
+                "valginnsyn_1_2023",
+                "valginnsyn_1_2023_0418",
+                "uklassifisert-epost"
+            ],
+            "sent": true,
+            "archived": false,
+            "public": false,
+            "emails": [
+                {
+                    "timestamp_received": 1691964154,
+                    "datetime_received": "2023-08-14 00:02:34",
+                    "datetime_first_seen": "2023-11-10 21:54:41",
+                    "id": "2023-08-14_000234 - OUT",
+                    "email_type": "OUT",
+                    "status_type": "unknown",
+                    "status_text": "Uklassifisert",
+                    "ignore": false
+                },
+                {
+                    "timestamp_received": 1691964725,
+                    "datetime_received": "2023-08-14 00:12:05",
+                    "datetime_first_seen": "2023-11-10 21:54:41",
+                    "id": "2023-08-14_001205 - IN",
+                    "email_type": "IN",
+                    "status_type": "unknown",
+                    "status_text": "Uklassifisert",
+                    "ignore": false
+                },
+                {
+                    "timestamp_received": 1692105480,
+                    "datetime_received": "2023-08-15 15:18:00",
+                    "datetime_first_seen": "2023-11-10 21:54:41",
+                    "id": "2023-08-15_151800 - IN",
+                    "email_type": "IN",
+                    "status_type": "unknown",
+                    "status_text": "Uklassifisert",
+                    "ignore": false,
+                    "attachments": [
+                        {
+                            "name": "Svar på innsyn om valggjennomføring, Nord-Odal kommune.pdf",
+                            "filename": "Svar på innsyn om valggjennomføring, Nord-Odal kommune.pdf",
+                            "filetype": "pdf",
+                            "location": "2023-08-15_151800 - IN - att 1-d3a55987291bfe0ed093fd0d7c81bdb8.pdf",
+                            "status_type": "unknown",
+                            "status_text": "uklassifisert-dok"
+                        }
+                    ]
+                }
+            ]
+        },
+        {
+            "id": "thread_6772dad80052e6.18491385",
+            "title": "Valgprotokoll 2023, Nord-Odal kommune",
+            "my_name": "Eivind H. Wisniewski",
+            "my_email": "eivind.wisniewski@offpost.no",
+            "labels": [
+                "valg_2023",
+                "valgprotokoll_2023",
+                "valgprotokoll_2023_0418",
+                "uklassifisert-epost"
+            ],
+            "sent": true,
+            "archived": false,
+            "public": false,
+            "emails": [
+                {
+                    "timestamp_received": 1694469683,
+                    "datetime_received": "2023-09-12 00:01:23",
+                    "datetime_first_seen": "2023-09-13 22:57:17",
+                    "id": "2023-09-12_000123 - OUT",
+                    "email_type": "OUT",
+                    "status_type": "unknown",
+                    "status_text": "Uklassifisert",
+                    "ignore": false
+                },
+                {
+                    "timestamp_received": 1694469700,
+                    "datetime_received": "2023-09-12 00:01:40",
+                    "datetime_first_seen": "2023-09-13 22:57:17",
+                    "id": "2023-09-12_000140 - IN",
+                    "email_type": "IN",
+                    "status_type": "unknown",
+                    "status_text": "Uklassifisert",
+                    "ignore": false
+                },
+                {
+                    "timestamp_received": 1694610672,
+                    "datetime_received": "2023-09-13 15:11:12",
+                    "datetime_first_seen": "2023-09-13 22:57:19",
+                    "id": "2023-09-13_151112 - IN",
+                    "email_type": "IN",
+                    "status_type": "unknown",
+                    "status_text": "Uklassifisert",
+                    "ignore": false,
+                    "attachments": [
+                        {
+                            "name": "Innsyn i valgprotokoll 2023 - Nord-Odal kommune.pdf",
+                            "filename": "Innsyn i valgprotokoll 2023 - Nord-Odal kommune.pdf",
+                            "filetype": "pdf",
+                            "location": "2023-09-13_151112 - IN - att 1-4edabbb814857a13cdb1ce83faadc312.pdf",
+                            "status_type": "unknown",
+                            "status_text": "uklassifisert-dok"
+                        },
+                        {
+                            "name": "Valgstyrets_møtebok_kommunevalg2023.pdf",
+                            "filename": "Valgstyrets_møtebok_kommunevalg2023.pdf",
+                            "filetype": "pdf",
+                            "location": "2023-09-13_151112 - IN - att 2-e7923db4fe564211128d9ba28022ac30.pdf",
+                            "status_type": "unknown",
+                            "status_text": "uklassifisert-dok"
+                        }
+                    ]
+                },
+                {
+                    "timestamp_received": 1700865309,
+                    "datetime_received": "2023-11-24 23:35:09",
+                    "datetime_first_seen": "2023-11-25 19:41:07",
+                    "id": "2023-11-24_233509 - OUT",
+                    "email_type": "OUT",
+                    "status_type": "unknown",
+                    "status_text": "Uklassifisert",
+                    "ignore": false
+                }
+            ]
+        }
+    ]
+}

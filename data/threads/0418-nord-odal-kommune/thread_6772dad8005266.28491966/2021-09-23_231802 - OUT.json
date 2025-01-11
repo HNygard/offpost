@@ -1,0 +1,50 @@
+{
+    "subject": "Valgprotokoll 2021, Nord-Odal kommune",
+    "timestamp": 1632431882,
+    "date": "Thu, 23 Sep 2021 21:18:02 +0000 (UTC)",
+    "attachements": [],
+    "body": "Kj?re Nord-Odal kommune\r\n\r\nJeg ?nsker innsyn i valgprotokoll for stortingsvalget 2021, og eventuell sametingsvalget 2021. Ofte kalt \"Valgprotokoll for valgstyret\" eller\r\n\"Valgstyrets m?tebok\". Jeg ?nsker at den er maskinlesbar, alts? ikke innskannet (slik de signerte ofte er). Dette fordi vi skal lese ut data fra\r\nden.\r\n\r\nS?ker alts? innsyn i:\r\n1. Valgprotokoll Stortingsvalget 2021 - Nord-Odal kommune\r\n2. Hvis dere har: Valgprotokoll Sametingsvalget 2021 - Nord-Odal kommune\r\n\r\n\r\nTakk!\r\n\r\nProsjekt ?pne Valgdata - https://hnygard.github.io/valgprotokoller/\r\n\r\n",
+    "mailHeaders": {
+        "message_id": "<OJ9RwvuPmhL7ZvHATHujG4waJ44zS4lnpUVbyH2gRU@localhost>",
+        "toaddress": "postmottak@nord-odal.kommune.no",
+        "to": [
+            {
+                "mailbox": "postmottak",
+                "host": "nord-odal.kommune.no"
+            }
+        ],
+        "fromaddress": "Prosjekt Åpne Valgdata <valgprotokoll_2021_0418-nord-odal-kommune@offpost.no>",
+        "from": [
+            {
+                "personal": "Prosjekt Åpne Valgdata",
+                "mailbox": "valgprotokoll_2021_0418-nord-odal-kommune",
+                "host": "offpost.no"
+            }
+        ],
+        "reply_toaddress": "Prosjekt Åpne Valgdata <valgprotokoll_2021_0418-nord-odal-kommune@offpost.no>",
+        "reply_to": [
+            {
+                "personal": "Prosjekt Åpne Valgdata",
+                "mailbox": "valgprotokoll_2021_0418-nord-odal-kommune",
+                "host": "offpost.no"
+            }
+        ],
+        "senderaddress": "Prosjekt Åpne Valgdata <valgprotokoll_2021_0418-nord-odal-kommune@offpost.no>",
+        "sender": [
+            {
+                "personal": "Prosjekt Åpne Valgdata",
+                "mailbox": "valgprotokoll_2021_0418-nord-odal-kommune",
+                "host": "offpost.no"
+            }
+        ],
+        "Unseen": " ",
+        "Flagged": " ",
+        "Answered": " ",
+        "Deleted": " ",
+        "Draft": " ",
+        "Msgno": "   1",
+        "MailDate": "23-Sep-2021 21:18:04 +0000",
+        "Size": "4062",
+        "udate": 1632431884
+    }
+}

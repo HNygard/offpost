@@ -1,0 +1,76 @@
+Return-Path: <bounces+20090218-ffbd-valgprotokoll_2021_0418-nord-odal-kommune=offpost.no@em2619.offpost.no>
+Delivered-To: innsyn@offpost.no
+Received: from mx2.pub.mailpod9-cph3.one.com ([10.27.39.12])
+	by mailstorage28.cst.mailpod9-cph3.one.com with LMTP
+	id CDKSLgzvTGEtLQAA2cVM6w
+	(envelope-from <bounces+20090218-ffbd-valgprotokoll_2021_0418-nord-odal-kommune=offpost.no@em2619.offpost.no>)
+	for <innsyn@offpost.no>; Thu, 23 Sep 2021 21:18:04 +0000
+DKIM-Signature: v=1; a=rsa-sha256; c=relaxed/relaxed;
+	d=custmx.one.com; s=20201015;
+	h=content-transfer-encoding:content-type:to:mime-version:message-id:subject:
+	 from:date:x-halone-refid:x-halone-sa:from:x-halone-sa:x-halone-refid;
+	bh=zGeNwO2LDC2K7LEqCFfbA/w1QJBLylFVb5jJlwLqfb0=;
+	b=h4wS32OypXYC8dL3qk2O1WNIu31WuKTIHS0DtpOI0m4WtU2cyZ59i7/GYYv1EQqbsQSZdTuMtaTc2
+	 q0KaQxd0lffp15FJuk2jdroBPpjmNByxCyaQxOz0lPn6Ip4MATJbnDu63I+DF7mSremmZF54Fv4O3c
+	 /bYUrdVTtFgE+nKqGEBSQwx+Ye+BYZp5PM6UfQz6/s8xzJG5CE1GFlM0W17TV+7qD3sUeelL4T6YsB
+	 vC5mQeSuKZbmPIH1QinZMGflV2DAiJvDyU3Z5Rx8aQcraQE8lcVsNQC/ifb50SzQoEgOHymGrsCD+z
+	 LxDwgN9sHSr9QViULjvRtFwVQFRfuQw==
+X-HalOne-SA: -0.2
+X-HalOne-RefID: str=0001.0A682F21.614CEF0C.001D,ss=1,re=0.000,recu=0.000,reip=0.000,cl=1,cld=1,fgs=0
+X-HalOne-ID: bc78b67d-1cb3-11ec-832e-b8599f057994
+X-Forwarded-for: valgprotokoll_2021_0418-nord-odal-kommune@offpost.no
+Received: from xtrwkksf.outbound-mail.sendgrid.net (xtrwkksf.outbound-mail.sendgrid.net [167.89.17.111])
+	by mx2.pub.mailpod9-cph3.one.com (Halon) with ESMTPS
+	id bc78b67d-1cb3-11ec-832e-b8599f057994;
+	Thu, 23 Sep 2021 21:18:04 +0000 (UTC)
+DKIM-Signature: v=1; a=rsa-sha256; c=relaxed/relaxed; d=offpost.no;
+	h=from:subject:mime-version:to:content-type:content-transfer-encoding;
+	s=s1; bh=zGeNwO2LDC2K7LEqCFfbA/w1QJBLylFVb5jJlwLqfb0=;
+	b=ElSJutvwoMgt8x8aDpgQaMWxPXtefW5pYO8mum4rIvPQQKqzBBH/Kh2QGUzdeBUEZPZx
+	dOTzsa1Hsva3ADGA0P093C9WOjf7lXe6+Nkuk2arn123ielOXskwaz8DBfZci++IRGglS7
+	GCUZocW72LrnNeCRUJgWswvVtctOLppRtvqYdyl8vbS8vKjah//GC+sgk9XvpFIXSVMeLx
+	coQ/y8z+hnB0cYM92NuJbPlSum0VVYk3Wo5dRt/k0yaVAYaOPK3gCd9hkH7b8AzIWkgcsT
+	YqDx6uyQKOEvM4/OL1C/eictLus4kb2vT8PSIOlZEvvFkgfeEaxxgg7z5yXDAX/Q==
+Received: by filterdrecv-7bf5c69d5-vrdq9 with SMTP id filterdrecv-7bf5c69d5-vrdq9-1-614CEF0A-11
+        2021-09-23 21:18:02.328093639 +0000 UTC m=+1897078.184306860
+Received: from localhost (unknown)
+	by geopod-ismtpd-1-2 (SG) with ESMTP
+	id 1NPbu4-6Tc-igv0GdgaSqg
+	Thu, 23 Sep 2021 21:18:01.838 +0000 (UTC)
+Date: Thu, 23 Sep 2021 21:18:02 +0000 (UTC)
+From: =?utf-8?q?Prosjekt_=C3=85pne_Valgdata?=
+	<valgprotokoll_2021_0418-nord-odal-kommune@offpost.no>
+Subject: Valgprotokoll 2021, Nord-Odal kommune
+Message-ID: <OJ9RwvuPmhL7ZvHATHujG4waJ44zS4lnpUVbyH2gRU@localhost>
+X-Mailer: Roundcube thread starter
+MIME-Version: 1.0
+X-SG-EID: 
+ =?us-ascii?Q?nmgONPSRDxkSUIk2e6f0iOL1ntZX1ylDvFTwAPWkTzAGR95IzLqgAsJRvtTWP2?=
+ =?us-ascii?Q?ljM4HpuKwAE=2Fpb43BHuX0WdKXUdk79CVDRjqEak?=
+ =?us-ascii?Q?miXi5klEdguvN0HyR+tvoM302fegQFYkKngYoEv?=
+ =?us-ascii?Q?aRWLIeUS+hK3Kcd+ezGSSUi=2F3Vvk+93DovfitD0?=
+ =?us-ascii?Q?DePOk3aCvEmNOV8HmLpeKtZPFj5Lo6YRQdoU8Gm?=
+ =?us-ascii?Q?FYB4PfJqSQPIIjiDzjj2sgRhfRXXhf=2FlSYsLaSq?=
+ =?us-ascii?Q?ZAqROxmQvA1cGHL4jcYMl5EDKJ91A24mIBba3EW?=
+ =?us-ascii?Q?UIaOPl05DdEHMG0k7Wfu07qnBtMdKYv9tEB9KoQ?=
+ =?us-ascii?Q?r5KHYOpChVmVWUdJiIetUOhpjn1w=3D?=
+To: postmottak@nord-odal.kommune.no
+X-Entity-ID: UxBsB/a4Yci6yxaczNDF3Q==
+Content-Type: text/plain; charset=iso-8859-1
+Content-Transfer-Encoding: 8bit
+
+Kjære Nord-Odal kommune
+
+Jeg ønsker innsyn i valgprotokoll for stortingsvalget 2021, og eventuell sametingsvalget 2021. Ofte kalt "Valgprotokoll for valgstyret" eller
+"Valgstyrets møtebok". Jeg ønsker at den er maskinlesbar, altså ikke innskannet (slik de signerte ofte er). Dette fordi vi skal lese ut data fra
+den.
+
+Søker altså innsyn i:
+1. Valgprotokoll Stortingsvalget 2021 - Nord-Odal kommune
+2. Hvis dere har: Valgprotokoll Sametingsvalget 2021 - Nord-Odal kommune
+
+
+Takk!
+
+Prosjekt Åpne Valgdata - https://hnygard.github.io/valgprotokoller/
+

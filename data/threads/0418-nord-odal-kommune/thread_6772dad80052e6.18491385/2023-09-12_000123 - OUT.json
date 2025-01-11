@@ -1,0 +1,50 @@
+{
+    "subject": "Valgprotokoll 2023, Nord-Odal kommune",
+    "timestamp": 1694469683,
+    "date": "Mon, 11 Sep 2023 22:01:23 +0000 (UTC)",
+    "attachments": [],
+    "body": "Kjære Nord-Odal kommune\r\n\r\nJeg ønsker innsyn i kommunens valgprotokoll for Kommunestyre- og fylkestingsvalget 2023. Ofte kalt \"Valgprotokoll for valgstyret\" eller \"Valgstyrets\r\nmøtebok\". Jeg ønsker at den er maskinlesbar, altså ikke innskannet (slik de signerte ofte er). Dette fordi vi skal lese ut data fra den.\r\nValgprotokollen kan hentes i EVA av valgansvarlig dersom kommunen ikke har den liggende (Offl. §9 om sammenstilling av nytt dokument ved enkle\r\nfremgangsmåter).\r\n\r\nDersom saksbehandling i valgstyret tok opp avvik i valggjennomføringen, så ønsker også kopi av relevante saksdokumenter og vedtak.\r\n\r\nTakk!\r\n\r\nProsjekt Åpne Valgdata\r\n\r\n--\r\nEivind H. Wisniewski\r\n\r\n",
+    "mailHeaders": {
+        "message_id": "<NhFiPvrTLCXEIK7bNI0bDlcbGPiSCFQBxaKhM7Vpc@localhost>",
+        "toaddress": "postmottak@nord-odal.kommune.no",
+        "to": [
+            {
+                "mailbox": "postmottak",
+                "host": "nord-odal.kommune.no"
+            }
+        ],
+        "fromaddress": "\"Eivind H. Wisniewski\" <eivind.wisniewski@offpost.no>",
+        "from": [
+            {
+                "personal": "Eivind H. Wisniewski",
+                "mailbox": "eivind.wisniewski",
+                "host": "offpost.no"
+            }
+        ],
+        "reply_toaddress": "\"Eivind H. Wisniewski\" <eivind.wisniewski@offpost.no>",
+        "reply_to": [
+            {
+                "personal": "Eivind H. Wisniewski",
+                "mailbox": "eivind.wisniewski",
+                "host": "offpost.no"
+            }
+        ],
+        "senderaddress": "\"Eivind H. Wisniewski\" <eivind.wisniewski@offpost.no>",
+        "sender": [
+            {
+                "personal": "Eivind H. Wisniewski",
+                "mailbox": "eivind.wisniewski",
+                "host": "offpost.no"
+            }
+        ],
+        "Unseen": " ",
+        "Flagged": " ",
+        "Answered": " ",
+        "Deleted": " ",
+        "Draft": " ",
+        "Msgno": "   1",
+        "MailDate": "11-Sep-2023 22:01:56 +0000",
+        "Size": "4241",
+        "udate": 1694469716
+    }
+}

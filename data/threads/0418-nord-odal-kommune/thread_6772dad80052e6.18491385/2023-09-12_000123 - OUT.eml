@@ -1,0 +1,80 @@
+Return-Path: <bounces+11606265-c367-eivind.wisniewski=offpost.no@em207.offpost.no>
+Delivered-To: innsyn@offpost.no
+Received: from mx4.cst.mailpod11-cph3.one.com ([10.27.54.14])
+	by mailstorage6.cst.mailpod11-cph3.one.com with LMTP
+	id wO3iAFSO/2SUGgAAclUnxw
+	(envelope-from <bounces+11606265-c367-eivind.wisniewski=offpost.no@em207.offpost.no>)
+	for <innsyn@offpost.no>; Mon, 11 Sep 2023 22:01:56 +0000
+DKIM-Signature: v=1; a=rsa-sha256; c=relaxed/relaxed;
+	d=custmx.one.com; s=20201015;
+	h=content-transfer-encoding:content-type:to:mime-version:message-id:subject:
+	 from:date:x-halone-refid:x-halone-sa:from:x-halone-sa:x-halone-refid;
+	bh=8Rp08Yncub0KEUgshRv3WpLUGPhvEyn7hPH/wWZ+RGc=;
+	b=KQ1P5XoddZm2aaKIdQ4cejTbWkboqZ9+QHvAIaSH5tjbH+Mf/2H+DQPYQDyiFB22vmhKKHoImW6J+
+	 0HjAw+gq2I2TiMK7J3s8dmL1gJ0pUtNVpg0vc5ST8sbilmrevjfG3l8aadC5xpuIIZMlvlhjLG/wr8
+	 rw7yRYo0XOxIcCtHAmfNYxJV1fKEEFamlsq/7UdAHd+bCx/7BKLrSg8tbdpRrx8SILc/fDXc5w6bRi
+	 KL8eP1vSETxW8KYhms8ySp2O/BOu6jPvARmBPtkGh2IAsc+5WwaLLii0EBL1gx+Nzh0oiAeae8Wa7E
+	 QdWbrBKcgndKNCThihJimPtLs9JpzJg==
+X-HalOne-SA: -0.1
+X-HalOne-RefID: 155866::1694469715-169E65CD-1AA410BD/19/7895763547
+X-Forwarded-for: eivind.wisniewski@offpost.no
+Authentication-Results: mx4.pub.mailpod11-cph3.one.com;
+	spf=pass smtp.mailfrom=em207.offpost.no smtp.remote-ip=149.72.115.133;
+	dkim=pass header.d=offpost.no header.s=s1 header.a=rsa-sha256 header.b=yiWJPqRQ;
+	dmarc=pass header.from=offpost.no;
+X-HalOne-ID: d1e4c9b8-50ee-11ee-9e0c-b07b25bf48d2
+Received: from s.wrqvtpvr.outbound-mail.sendgrid.net (s.wrqvtpvr.outbound-mail.sendgrid.net [149.72.115.133])
+	by mx4.pub.mailpod11-cph3.one.com (Halon) with ESMTPS
+	id d1e4c9b8-50ee-11ee-9e0c-b07b25bf48d2;
+	Mon, 11 Sep 2023 22:01:55 +0000 (UTC)
+DKIM-Signature: v=1; a=rsa-sha256; c=relaxed/relaxed; d=offpost.no;
+	h=from:subject:mime-version:to:content-type:content-transfer-encoding:
+	cc:content-type:from:subject:to;
+	s=s1; bh=8Rp08Yncub0KEUgshRv3WpLUGPhvEyn7hPH/wWZ+RGc=;
+	b=yiWJPqRQOFRVV0BZjx5tPqluYlxOY78+5tZzhV4CU2nu1tl5iECHcWlOBj/v7O0jIO/V
+	PsbBilL85vWlWKa9U709AZ5DA82AlcQSygIo/8NP/I9UoCYXc9qWk6pZSXrLiD7nM5/2nY
+	cfKFIabzFWMCWzqvRqTJtkxNWrGat5g0lUtQOjKGA3UVJVqioFCK8G0Qs/9ZaTgyUjDOd/
+	dxlpfJTi+UfSh7Y3ApWa2ZC2fhjDB1XwaqLcCGPDoaBDCCeJEYcrEk5UoEErUO2wdKpFt8
+	cPPJXnW/VEhByze5baZZmbRcJ+uNsirvZURy6j/u+Pc7dvQufJFas6bwywbezZuw==
+Received: by filterdrecv-d7bbbc8bf-nxr9l with SMTP id filterdrecv-d7bbbc8bf-nxr9l-1-64FF8E33-1B
+        2023-09-11 22:01:23.354238023 +0000 UTC m=+10707705.439971386
+Received: from localhost (unknown)
+	by geopod-ismtpd-1 (SG) with ESMTP
+	id Gyn_39HmTbqn8LnoVJ1VMg
+	Mon, 11 Sep 2023 22:01:23.103 +0000 (UTC)
+Date: Mon, 11 Sep 2023 22:01:23 +0000 (UTC)
+From: "Eivind H. Wisniewski" <eivind.wisniewski@offpost.no>
+Subject: Valgprotokoll 2023, Nord-Odal kommune
+Message-ID: <NhFiPvrTLCXEIK7bNI0bDlcbGPiSCFQBxaKhM7Vpc@localhost>
+X-Mailer: Roundcube thread starter
+MIME-Version: 1.0
+X-SG-EID: 
+ =?us-ascii?Q?AWI6lwctTIPCySpgN13i+vt0ksB3=2FOb7Wzy1pbYY=2F=2FUfcMZtlBLqkiLPZgQHOA?=
+ =?us-ascii?Q?vq0337LaWvGN8akWtMIf0fPASCJPTQKvNDCVwKV?=
+ =?us-ascii?Q?Pz4xvxE8scy3h8aN6CPeONfd=2F2FmYTS62kSOpsB?=
+ =?us-ascii?Q?8nmZ244guUEgdJzTE5vhM5+gGhHD1z8RHlHZ4fI?=
+ =?us-ascii?Q?qoqVwKJZSGsna=2F66cSDrNGGbjOuInARzb+kwz9N?=
+ =?us-ascii?Q?gxKfCPjefKVQZmDQb=2Ffft0tpJmg42srT+xKSlh5?=
+ =?us-ascii?Q?7jqXLRrNsn5jZEW8U0Tu=2FUZtm=2FR64+CeS++IRlW?=
+ =?us-ascii?Q?Alc=3D?=
+To: postmottak@nord-odal.kommune.no
+X-Entity-ID: I3ILCS6M9uw7cqOhPvNQvA==
+Content-Type: text/plain; charset=iso-8859-1
+Content-Transfer-Encoding: 8bit
+
+Kjære Nord-Odal kommune
+
+Jeg ønsker innsyn i kommunens valgprotokoll for Kommunestyre- og fylkestingsvalget 2023. Ofte kalt "Valgprotokoll for valgstyret" eller "Valgstyrets
+møtebok". Jeg ønsker at den er maskinlesbar, altså ikke innskannet (slik de signerte ofte er). Dette fordi vi skal lese ut data fra den.
+Valgprotokollen kan hentes i EVA av valgansvarlig dersom kommunen ikke har den liggende (Offl. §9 om sammenstilling av nytt dokument ved enkle
+fremgangsmåter).
+
+Dersom saksbehandling i valgstyret tok opp avvik i valggjennomføringen, så ønsker også kopi av relevante saksdokumenter og vedtak.
+
+Takk!
+
+Prosjekt Åpne Valgdata
+
+--
+Eivind H. Wisniewski
+
