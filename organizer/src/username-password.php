@@ -40,6 +40,7 @@ else if ($environment == 'production') {
     $oidc_token_endpoint = 'https://auth.offpost.no/oauth/token';
     $oidc_end_session_endpoint = 'https://auth.offpost.no/oidc/logout';
     $oidc_userinfo_endpoint = 'https://auth.offpost.no/userinfo';
+    $oidc_callback_url = 'https://offpost.no/callback.php';
 
     // Client id and secret is set in the override file
 }
