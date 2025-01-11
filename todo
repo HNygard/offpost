@@ -5,12 +5,22 @@ TODO for Cline.
     - [x] Test thread creation 
     - [x] Test thread updates
     - [x] Test attachment handling
-- [ ] Public threads
-- [ ] Update-imap - folder creation should be done in class so that logic is the same in tests and update-imap.php
-- [ ] Setup development IMAP server
+- [x] Setup development IMAP server
     - [x] Docker container for IMAP server
     - [x] Configuration for test environment
-    - [ ] Test data setup scripts
+    - [x] Test data setup scripts
+- [ ] Setup of production
+    - [x] Domain setup
+    - [x] Cloudflare setup
+    - [x] Rsync to server or server auto pulling from Github?
+        - Auto pull from server.
+    - [ ] Prod authentication setup
+    - [ ] Setup scripts and cron job
+    - [ ] Start server
+    - [ ] Copy over the existing data
+    - [ ] Migrate data to new format (script)
+- [ ] Public threads
+- [ ] Update-imap - folder creation should be done in class so that logic is the same in tests and update-imap.php
 - [ ] GUI for replying to threads
     - [ ] Reply form with rich text editor
     - [ ] Template system for common responses
