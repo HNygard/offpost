@@ -78,7 +78,6 @@ services:
       - ./organizer/src:/php-frontend
       - ./data/:/organizer-data
     environment:
-      - AUTH_URL=http://localhost:25083
       - ENVIRONMENT=development
       - IMAP_SERVER={greenmail:3993/imap/ssl}
       - IMAP_EMAIL=greenmail-user

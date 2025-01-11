@@ -45,6 +45,5 @@ services:
       - ./organizer/src:/php-frontend
       - ./data/:/organizer-data
     environment:
-      - AUTH_URL=https://auth.offpost.no/
       - ENVIRONMENT=production
     restart: unless-stopped
