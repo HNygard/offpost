@@ -20,7 +20,7 @@ Offpost is a PHP application running on a web server.
 - Email threads are stored as folders on the IMAP server
 - Uses MySQL for storage
 
-### Sendgrid
+### Sendgrid (Production only)
 - Used to send emails
 - Handles copying to the IMAP server
 
@@ -28,9 +28,14 @@ Offpost is a PHP application running on a web server.
 - Used to store email threads
 - Email threads are organized as folders on the server
 
-### Auth Service (Development Only)
+### Auth Service (Development only)
 - Simple authentication service for development
 - Not intended for production use
+
+### GreenMail (Development only)
+- SMTP/IMAP server for development environment
+- Provides email testing capabilities without external dependencies
+- Configured with test accounts for local development
 
 ## Development
 
@@ -68,7 +73,7 @@ cd organizer/src && ./vendor/bin/phpunit tests/
 ### Available Services
 
 - Organizer (PHP Client): http://localhost:25081/
-- PHPMyAdmin: http://localhost:25082/ (development only)
+- PHPMyAdmin: http://localhost:25082/ (Development only)
 - Test Tools: http://localhost:25081/send-test-mail.php
 
 ### Starting a New Email Thread
