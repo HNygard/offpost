@@ -43,14 +43,14 @@ $allThreads = $filteredThreads;
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Email Engine Organizer</title>
+    <title>Offpost - Email Engine Organizer</title>
     <link href="style.css" rel="stylesheet">
 </head>
 <body>
     <div class="container">
         <?php include 'header.php'; ?>
 
-        <h1>Email Engine Organizer</h1>
+        <h1>Offpost - Email Engine Organizer</h1>
         <h2>Threads</h2>
 
         <ul class="nav-links">
