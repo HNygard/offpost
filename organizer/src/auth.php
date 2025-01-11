@@ -14,7 +14,7 @@ function requireAuth() {
 
         // Redirect to auth service using frontend URL
         header('Location: ' . $oidc_auth_url . '/oidc/auth?' . http_build_query([
-            'client_id' => 'organizer',
+            'client_id' => $oidc_client_id,
             'response_type' => 'code',
             'scope' => 'openid email profile',
             'redirect_uri' => 'http://localhost:25081/callback.php',
