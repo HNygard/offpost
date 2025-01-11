@@ -170,13 +170,13 @@ class ThreadEmailSaverTest extends TestCase {
             ->method('saveAttachment')
             ->with(
                 $testEmail->uid,
-                1,
+                2,
                 $this->callback(function($att) {
                     return $att->name === 'test.pdf' && 
                            $att->filetype === 'pdf' &&
-                           strpos($att->location, 'test_email_1 - att 0-') !== false;
+                           strpos($att->location, 'test_email_1 - att 1-') !== false;
                 }),
-                $this->stringContains('test_email_1 - att 0-')
+                $this->stringContains('test_email_1 - att 1-')
             );
 
         // Call method

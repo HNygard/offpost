@@ -16,10 +16,11 @@ class ThreadFileOperationsTest extends TestCase {
         $this->testDataDir = DATA_DIR;
         $this->threadsDir = THREADS_DIR;
         
-        // Create test directories
-        if (!file_exists($this->threadsDir)) {
-            mkdir($this->threadsDir, 0777, true);
+        // Clean up and recreate test directory for each test
+        if (file_exists($this->threadsDir)) {
+            $this->removeDirectory($this->threadsDir);
         }
+        mkdir($this->threadsDir, 0777, true);
     }
     
     protected function tearDown(): void {
