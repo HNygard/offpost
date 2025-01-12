@@ -12,7 +12,10 @@ if (!isset($_SESSION)) {
         <div class="spacer"></div>
     <?php endif; ?>
     <div class="login-info">
-        Logged in as: <?= htmlspecialchars($_SESSION['user']['name'] ?? $_SESSION['user']['email'] ?? 'Unknown User') ?>
+        Logged in as:
+        <span title="<?= htmlspecialchars($_SESSION['user']['sub']) ?>">
+            <?= htmlspecialchars($_SESSION['user']['name'] ?? $_SESSION['user']['email'] ?? 'Unknown User') ?>
+        </span>
         <br>
         <a href="logout.php">Logout</a>
     </div>
