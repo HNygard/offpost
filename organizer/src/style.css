@@ -14,6 +14,17 @@ body {
     box-shadow: 0 2px 4px rgba(0,0,0,0.1);
 }
 
+.header-logo {
+    display: flex;
+    align-items: center;
+    font-weight: bold;
+}
+
+.logo {
+    height: 3em;
+    width: auto;
+}
+
 .user-info {
     display: flex;
     justify-content: space-between;

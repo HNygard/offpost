@@ -3,6 +3,11 @@ if (!isset($_SESSION)) {
     session_start();
 }
 ?>
+<div class="header-logo">
+    <img src="images/offpost-icon.png" alt="Offpost" class="logo" style="height: 3em;">
+    Offpost
+</div>
+
 <div class="user-info">
     <?php if (basename($_SERVER['PHP_SELF']) !== 'index.php'): ?>
         <div class="nav-back">
