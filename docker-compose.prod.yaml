@@ -43,7 +43,7 @@ services:
     volumes:
       - /opt/offpost/username-password-override-prod.php:/username-password-override.php
       - ./organizer/src:/php-frontend
-      - ./data/:/organizer-data
+      - /opt/offpost/data/:/organizer-data
     environment:
       - ENVIRONMENT=production
     restart: unless-stopped
