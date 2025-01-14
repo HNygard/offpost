@@ -20,6 +20,7 @@ function getThreads() {
                 foreach ($thread as $key => $value) {
                     $threadObj->$key = $value;
                 }
+                $threadObj->sentComment = isset($thread->sentComment) ? $thread->sentComment : null; // Initialize sentComment
                 $thread = $threadObj;
             }
         }
@@ -46,6 +47,7 @@ if (!function_exists('getThreadsForEntity')) {
                 foreach ($thread as $key => $value) {
                     $threadObj->$key = $value;
                 }
+                $threadObj->sentComment = isset($thread->sentComment) ? $thread->sentComment : null; // Initialize sentComment
                 $thread = $threadObj;
             }
         }

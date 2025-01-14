@@ -124,4 +124,80 @@ class ThreadFileOperationsTest extends TestCase {
         
         getThreadFile($entityId, $threadId, $attachmentName);
     }
+
+    public function testSentCommentInitializationInGetThreads() {
+        // Create a thread file with sentComment
+        $thread = new Thread();
+        $thread->title = 'Test Thread';
+        $thread->sentComment = 'Test Comment';
+        $threads = new Threads();
+        $threads->threads = [$thread];
+        file_put_contents(
+            joinPaths($this->threadsDir, 'threads-test.json'),
+            json_encode($threads)
+        );
+
+        $result = getThreads();
+        $this->assertCount(1, $result);
+        $this->assertArrayHasKey(realpath(joinPaths($this->threadsDir, 'threads-test.json')), $result);
+        $this->assertEquals('Test Comment', $result[realpath(joinPaths($this->threadsDir, 'threads-test.json'))]->threads[0]->sentComment);
+    }
+
+    public function testSentCommentInitializationInGetThreadsForEntity() {
+        // Create a thread file with sentComment
+        $thread = new Thread();
+        $thread->title = 'Test Thread';
+        $thread->sentComment = 'Test Comment';
+        $threads = new Threads();
+        $threads->entity_id = 'test-entity';
+        $threads->threads = [$thread];
+        file_put_contents(
+            joinPaths($this->threadsDir, 'threads-test-entity.json'),
+            json_encode($threads)
+        );
+
+        $result = getThreadsForEntity('test-entity');
+        $this->assertNotNull($result);
+        $this->assertEquals('Test Comment', $result->threads[0]->sentComment);
+    }
+
+    public function testCreateThread() {
+        $entityId = 'test-entity';
+        $entityTitlePrefix = 'Test Prefix';
+        $thread = new Thread();
+        $thread->title = 'Test Thread';
+        $thread->sentComment = 'Test Comment';
+
+        $createdThread = createThread($entityId, $entityTitlePrefix, $thread);
+
+        $this->assertEquals('Test Thread', $createdThread->title);
+        $this->assertEquals('Test Comment', $createdThread->sentComment);
+
+        $savedThreads = getThreadsForEntity($entityId);
+        $this->assertNotNull($savedThreads);
+        $this->assertEquals('Test Prefix', $savedThreads->title_prefix);
+        $this->assertCount(1, $savedThreads->threads);
+        $this->assertEquals('Test Thread', $savedThreads->threads[0]->title);
+        $this->assertEquals('Test Comment', $savedThreads->threads[0]->sentComment);
+    }
+
+    public function testSaveEntityThreads() {
+        $entityId = 'test-entity';
+        $threads = new Threads();
+        $threads->entity_id = $entityId;
+        $threads->title_prefix = 'Test Prefix';
+        $thread = new Thread();
+        $thread->title = 'Test Thread';
+        $thread->sentComment = 'Test Comment';
+        $threads->threads = [$thread];
+
+        saveEntityThreads($entityId, $threads);
+
+        $savedThreads = getThreadsForEntity($entityId);
+        $this->assertNotNull($savedThreads);
+        $this->assertEquals('Test Prefix', $savedThreads->title_prefix);
+        $this->assertCount(1, $savedThreads->threads);
+        $this->assertEquals('Test Thread', $savedThreads->threads[0]->title);
+        $this->assertEquals('Test Comment', $savedThreads->threads[0]->sentComment);
+    }
 }
