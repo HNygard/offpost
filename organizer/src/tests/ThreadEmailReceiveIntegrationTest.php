@@ -148,6 +148,7 @@ class ThreadEmailReceiveIntegrationTest extends TestCase {
     }
 
     /**
+     * @group integration
      * This test checks what happens when we receive emails in our system from a public entity.
      */
     public function testReceiveEmail() {
