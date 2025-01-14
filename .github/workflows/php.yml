@@ -26,7 +26,7 @@ jobs:
         php-version: ${{ matrix.php-versions }}
 
     - name: Install dependencies
-      run: composer install
+      run: cd organizer/src && composer install
 
     - name: Run tests
-      run: vendor/bin/phpunit
+      run: cd organizer/src && vendor/bin/phpunit
