@@ -11,6 +11,7 @@ class Thread {
     var $sent;
     var $archived;
     var $public = false;
+    var $sentComment; // Added property
 
     /* @var ThreadEmail[] $emails */
     var $emails;
