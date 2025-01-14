@@ -147,6 +147,9 @@ class ThreadEmailSendingIntegrationTest extends TestCase {
         return null;
     }
 
+    /**
+     * @group integration
+     */
     public function testStartThread() {
         // Create unique test data
         $uniqueId = uniqid();
