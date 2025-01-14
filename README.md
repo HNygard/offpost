@@ -1,8 +1,10 @@
 # Offpost
 
-Offpost (previously "email-engine" internally) is a service for sending emails to public entities.
+Offpost - Offentlig post - er en tjeneste for å sende e-post til offentlige myndigheter.
 
-From 06.12.2024, this project have been written by AI tools.
+Tjenesten baserer seg på at man lager en forespørsel til en myndighet. Denne får en unik profil med tilfeldig navn og epost. Eposten brukes for å sende e-post og å motta svar. De tilfeldige navnene baserer seg på Motorvognregisteret, så det er ekte navn men kombinasjonen av fornavn og etternavn er sannsnyligvis unik siden navene ikke er vektet.
+
+Offpost was internally known as "email-engine". From 06.12.2024, this project have been written by AI tools.
 
 ## Architecture
 
