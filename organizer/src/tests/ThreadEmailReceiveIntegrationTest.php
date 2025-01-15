@@ -341,6 +341,7 @@ class ThreadEmailReceiveIntegrationTest extends TestCase {
             "sent": false,
             "archived": false,
             "public": false,
+            "sentComment": null,
             "emails": [{
                 "timestamp_received": ' . $email_time . ',
                 "datetime_received": "2021-01-01 12:00:00",
