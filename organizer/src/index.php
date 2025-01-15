@@ -43,7 +43,7 @@ $allThreads = $filteredThreads;
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Offpost</title>
+    <title>Hello</title>
     <link rel="icon" type="image/png" href="images/offpost-favicon.png">
     <link href="style.css" rel="stylesheet">
 </head>
@@ -51,7 +51,7 @@ $allThreads = $filteredThreads;
     <div class="container">
         <?php include 'header.php'; ?>
 
-        <h1>Offpost - Email Engine Organizer</h1>
+        <h1>Hello</h1>
         <h2>Threads</h2>
 
         <ul class="nav-links">

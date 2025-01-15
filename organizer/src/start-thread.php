@@ -63,7 +63,7 @@ if (!isset($_POST['entity_id'])) {
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Start Email Thread - Email Engine Organizer</title>
+    <title>Hello</title>
     <link href="style.css" rel="stylesheet">
     <style>
         .form-group {
