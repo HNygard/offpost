@@ -20,6 +20,23 @@ Main capabilities, but not limited to:
 - When making changes, avoid unnecessary modifications that would complicate code review (e.g. formatting, variable renaming, etc.)
 - After completing work, commit changes with detailed messages explaining what and why. If the "why" is unclear, ask for clarification.
 - If commit reason is unclear, ask for clarification
-- When viewing git diffs, use --no-pager parameter
+- When viewing git diffs, use git --no-pager diff
 - Update relevant documentation in /docs when modifying features
 - Keep README.md in sync with new capabilities
+
+# Security
+
+## Sensitive Files
+
+DO NOT read or modify:
+
+-   .env files
+-   \*_/config/secrets._
+-   \*_/_.pem
+-   Any file containing API keys, tokens, or credentials
+
+## Security Practices
+
+-   Never commit sensitive files
+-   Use environment variables for secrets
+-   Keep credentials out of logs and output
