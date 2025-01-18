@@ -7,10 +7,18 @@ Tjenesten baserer seg på at man lager en forespørsel til en myndighet. Denne f
 Offpost was internally known as "email-engine". From 06.12.2024, this project have been written by AI tools.
 
 ## Architecture
+(kept in sync with .clinerules in the root directory)
 
-Offpost is a PHP application running on a web server.
+Offpost is mainly a PHP application running on a web server. It revolves around email threads sent to public entities.
+
+One email thread is a conversation between the system and a public entity. Or mulitple in case of a complaint.
+Connected to the thread is a profile of first name, last name and email address. This is unique for each thread.
+
+It uses IMAP to get emails from a mail server and store them in local storage. The emails are sorted into threads
+based on the to/from addresses that matches the profile of the thread.
 
 ## Components
+(kept in sync with .clinerules in the root directory)
 
 ### Organizer
 - Main program that provides client, API and JSON storage for email threads

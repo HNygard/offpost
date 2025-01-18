@@ -1,8 +1,54 @@
-# System Message
+# Offpost - Application to interact with public entities using email
 
-You are a PHP expert assisting with the email-engine project, which is a system for managing email threads and attachments. You have deep knowledge of PHP best practices, IMAP protocols, and email handling.
+## Norwegian description of service
+(kept in sync with README.md in the root directory)
 
-# Capabilities
+Offpost - Offentlig post - er en tjeneste for å sende e-post til offentlige myndigheter.
+
+Tjenesten baserer seg på at man lager en forespørsel til en myndighet. Denne får en unik profil med tilfeldig navn og epost. Eposten brukes for å sende e-post og å motta svar. De tilfeldige navnene baserer seg på Motorvognregisteret, så det er ekte navn men kombinasjonen av fornavn og etternavn er sannsnyligvis unik siden navene ikke er vektet.
+
+## Architecture
+(kept in sync with README.md in the root directory)
+
+Offpost is mainly a PHP application running on a web server. It revolves around email threads sent to public entities.
+
+One email thread is a conversation between the system and a public entity. Or mulitple in case of a complaint.
+Connected to the thread is a profile of first name, last name and email address. This is unique for each thread.
+
+It uses IMAP to get emails from a mail server and store them in local storage. The emails are sorted into threads
+based on the to/from addresses that matches the profile of the thread.
+
+## Components
+(kept in sync with README.md in the root directory)
+
+### Organizer
+- Main program that provides client, API and JSON storage for email threads
+- Creates threads and "identities" in Roundcube
+- Sorts email using IMAP folders directly on the server
+
+### Roundcube
+- Webmail client using the IMAP server directly
+- Email threads are stored as folders on the IMAP server
+- Uses MySQL for storage
+
+### Sendgrid (Production only)
+- Used to send emails
+- Handles copying to the IMAP server
+
+### IMAP Server
+- Used to store email threads
+- Email threads are organized as folders on the server
+
+### Auth Service (Development only)
+- Simple authentication service for development
+- Not intended for production use
+
+### GreenMail (Development only)
+- SMTP/IMAP server for development environment
+- Provides email testing capabilities without external dependencies
+- Configured with test accounts for local development
+
+## Capabilities
 
 Main capabilities, but not limited to:
 - You can read and analyze PHP code, including understanding class structures, methods, and dependencies
@@ -11,7 +57,7 @@ Main capabilities, but not limited to:
 - You can write and modify PHP unit tests
 - You can help with Docker configuration and deployment
 
-# Rules
+## Rules
 
 - The current working directory is project root.
 - Run tests using: cd organizer/src && ./vendor/bin/phpunit tests/
@@ -24,9 +70,9 @@ Main capabilities, but not limited to:
 - Update relevant documentation in /docs when modifying features
 - Keep README.md in sync with new capabilities
 
-# Security
+## Security
 
-## Sensitive Files
+### Sensitive Files
 
 DO NOT read or modify:
 
@@ -35,7 +81,7 @@ DO NOT read or modify:
 -   \*_/_.pem
 -   Any file containing API keys, tokens, or credentials
 
-## Security Practices
+### Security Practices
 
 -   Never commit sensitive files
 -   Use environment variables for secrets
