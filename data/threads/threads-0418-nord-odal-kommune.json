@@ -14,6 +14,7 @@
             "sent": true,
             "archived": true,
             "public": false,
+            "sentComment": null,
             "emails": [
                 {
                     "timestamp_received": 1632431882,
@@ -97,6 +98,7 @@
             "sent": true,
             "archived": false,
             "public": false,
+            "sentComment": null,
             "emails": [
                 {
                     "timestamp_received": 1691964154,
@@ -104,9 +106,11 @@
                     "datetime_first_seen": "2023-11-10 21:54:41",
                     "id": "2023-08-14_000234 - OUT",
                     "email_type": "OUT",
-                    "status_type": "unknown",
-                    "status_text": "Uklassifisert",
-                    "ignore": false
+                    "status_type": "info",
+                    "status_text": "Initiell henvendelse",
+                    "ignore": false,
+                    "auto_classification": "algo",
+                    "answer": ""
                 },
                 {
                     "timestamp_received": 1691964725,
@@ -116,7 +120,8 @@
                     "email_type": "IN",
                     "status_type": "unknown",
                     "status_text": "Uklassifisert",
-                    "ignore": false
+                    "ignore": false,
+                    "answer": ""
                 },
                 {
                     "timestamp_received": 1692105480,
@@ -136,7 +141,8 @@
                             "status_type": "unknown",
                             "status_text": "uklassifisert-dok"
                         }
-                    ]
+                    ],
+                    "answer": ""
                 }
             ]
         },
@@ -154,6 +160,7 @@
             "sent": true,
             "archived": false,
             "public": false,
+            "sentComment": null,
             "emails": [
                 {
                     "timestamp_received": 1694469683,
