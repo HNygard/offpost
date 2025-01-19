@@ -14,8 +14,9 @@ class ThreadEmailClassifier {
             return $thread;
         }
 
-        // Only check first email
-        if ($thread->emails[0]->email_type === 'OUT') {
+        // Only check first email if it's outbound and status is unknown
+        if ($thread->emails[0]->email_type === 'OUT' && 
+            $thread->emails[0]->status_type === 'unknown') {
             $thread->emails[0]->status_type = 'info';
             $thread->emails[0]->status_text = 'Initiell henvendelse';
             $thread->emails[0]->auto_classification = 'algo';

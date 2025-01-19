@@ -113,6 +113,27 @@ class ThreadEmailClassifierTest extends TestCase {
         $this->assertEquals('Initiell henvendelse', $result->status_text);
     }
 
+    public function testDoNotClassifyEmailWithExistingStatus() {
+        // Create test thread with first outbound email having existing status
+        $thread = (object)[
+            'emails' => [
+                (object)[
+                    'email_type' => 'OUT',
+                    'status_type' => 'success',
+                    'status_text' => 'Existing Status'
+                ]
+            ]
+        ];
+
+        // Classify emails
+        $result = $this->classifier->classifyEmails($thread);
+
+        // Verify email status was not changed
+        $this->assertEquals('success', $result->emails[0]->status_type);
+        $this->assertEquals('Existing Status', $result->emails[0]->status_text);
+        $this->assertObjectNotHasProperty('auto_classification', $result->emails[0]);
+    }
+
     public function testRemoveAutoClassificationOnUnclassifiedEmail() {
         // Create test email without auto classification
         $email = (object)[
