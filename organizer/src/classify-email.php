@@ -2,6 +2,7 @@
 
 require_once __DIR__ . '/auth.php';
 require_once __DIR__ . '/class/Threads.php';
+require_once __DIR__ . '/class/ThreadEmailClassifier.php';
 
 // Require authentication
 requireAuth();
@@ -21,13 +22,32 @@ foreach ($threads->threads as $thread1) {
     }
 }
 
+// Run automatic classification if thread is found
+if ($thread !== null) {
+    $classifier = new ThreadEmailClassifier();
+    $thread = $classifier->classifyEmails($thread);
+}
+
 if (isset($_POST['submit'])) {
     $anyUnknown = false;
+    $classifier = new ThreadEmailClassifier();
     foreach ($thread->emails as $email) {
         $emailId = str_replace(' ', '_', str_replace('.', '_', $email->id));
-        $email->ignore = isset($_POST[$emailId . '-ignore']) && $_POST[$emailId . '-ignore'] == 'true';
-        $email->status_text = $_POST[$emailId . '-status_text'];
-        $email->status_type = $_POST[$emailId . '-status_type'];
+        $newIgnore = isset($_POST[$emailId . '-ignore']) && $_POST[$emailId . '-ignore'] == 'true';
+        $newStatusText = $_POST[$emailId . '-status_text'];
+        $newStatusType = $_POST[$emailId . '-status_type'];
+        
+        // Check if status was actually changed
+        if ($email->status_type !== $newStatusType || 
+            $email->status_text !== $newStatusText || 
+            $email->ignore !== $newIgnore) {
+            // Remove auto classification since status was manually changed
+            $email = $classifier->removeAutoClassification($email);
+        }
+        
+        $email->ignore = $newIgnore;
+        $email->status_text = $newStatusText;
+        $email->status_type = $newStatusType;
         $email->answer = $_POST[$emailId . '-answer'];
         if (isset($email->attachments)) {
             foreach ($email->attachments as $att) {
