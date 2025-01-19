@@ -125,10 +125,10 @@ function secondsToHumanReadable($seconds) {
 <!DOCTYPE html>
 <html>
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Classify Email - Email Engine Organizer</title>
-    <link href="style.css" rel="stylesheet">
+    <?php 
+    $pageTitle = 'Classify Email - Email Engine Organizer';
+    include 'head.php';
+    ?>
     <style>
         .form-group {
             margin-bottom: 15px;

@@ -42,11 +42,10 @@ $allThreads = $filteredThreads;
 <!DOCTYPE html>
 <html>
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Offpost</title>
-    <link rel="icon" type="image/png" href="images/offpost-favicon.png">
-    <link href="style.css" rel="stylesheet">
+    <?php 
+    $pageTitle = 'Offpost';
+    include 'head.php';
+    ?>
 </head>
 <body>
     <div class="container">

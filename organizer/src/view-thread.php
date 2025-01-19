@@ -114,10 +114,10 @@ if ($thread->isUserOwner($userId)) {
 <!DOCTYPE html>
 <html>
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>View Thread - <?= htmlescape($thread->title) ?></title>
-    <link href="style.css" rel="stylesheet">
+    <?php 
+    $pageTitle = 'View Thread - ' . htmlescape($thread->title);
+    include 'head.php';
+    ?>
 </head>
 <body>
     <div class="container">
