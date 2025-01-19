@@ -37,4 +37,30 @@ class ThreadEmailClassifier {
         }
         return $email;
     }
+
+    /**
+     * Gets a human-readable label for the classification type
+     * 
+     * @param object $email The email object containing auto_classification
+     * @return string The classification label
+     */
+    public static function getClassificationLabel($email) {
+        if ($email->status_type === 'unknown') {
+            return null;
+        }
+
+        if (!isset($email->auto_classification)) {
+            return 'Manuel';
+        }
+
+        if ($email->auto_classification === 'algo') {
+            return '<a href="https://github.com/HNygard/offpost/blob/main/organizer/src/class/ThreadEmailClassifier.php">Code</a>';
+        }
+
+        if ($email->auto_classification === 'prompt') {
+            return 'AI';
+        }
+
+        return 'Manuel';
+    }
 }

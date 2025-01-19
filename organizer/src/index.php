@@ -3,6 +3,7 @@ require_once __DIR__ . '/auth.php';
 require_once __DIR__ . '/class/Threads.php';
 require_once __DIR__ . '/class/ThreadAuthorization.php';
 require_once __DIR__ . '/class/ThreadLabelFilter.php';
+require_once __DIR__ . '/class/ThreadEmailClassifier.php';
 
 // Require authentication
 requireAuth();
@@ -140,6 +141,15 @@ $allThreads = $filteredThreads;
                                     <?= $email->datetime_received ?>:
                                     <?= $email->email_type ?> -
                                     <span class="<?= $label_type ?>"><?= $email->status_text ?></span>
+                                    <?php
+                                    if (ThreadEmailClassifier::getClassificationLabel($email) !== null) {
+                                        ?>
+                                        <span style="font-size: 0.8em"><br>
+                                        [Classified by <?= ThreadEmailClassifier::getClassificationLabel($email) ?>]
+                                        </span>
+                                        <?php
+                                    }
+                                    ?>
                                     <br>
                                     <i><?= htmlescape(isset($email->description) ? $email->description : '') ?></i>
                                     <?php

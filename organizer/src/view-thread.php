@@ -1,6 +1,7 @@
 <?php
 require_once __DIR__ . '/auth.php';
 require_once __DIR__ . '/class/Threads.php';
+require_once __DIR__ . '/class/ThreadEmailClassifier.php';
 
 // Require authentication
 requireAuth();
@@ -203,6 +204,15 @@ if ($thread->isUserOwner($userId)) {
                         <span class="datetime"><?= htmlescape($email->datetime_received) ?></span>
                         <span class="email-type"><?= htmlescape($email->email_type) ?></span>
                         <span class="<?= $label_type ?>"><?= htmlescape($email->status_text) ?></span>
+                        <?php
+                        if (ThreadEmailClassifier::getClassificationLabel($email) !== null) {
+                            ?>
+                            <span style="font-size: 0.8em">
+                            [Classified by <?= ThreadEmailClassifier::getClassificationLabel($email) ?>]
+                            </span>
+                            <?php
+                        }
+                        ?>
                     </div>
 
                     <?php if (isset($email->description) && $email->description): ?>
