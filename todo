@@ -14,9 +14,9 @@ TODO for Cline.
     - [x] Cloudflare setup
     - [x] Rsync to server or server auto pulling from Github?
         - Auto pull from server.
-    - [ ] Prod authentication setup
-    - [ ] Setup scripts and cron job
-    - [ ] Start server
+    - [x] Prod authentication setup
+    - [x] Setup scripts and cron job
+    - [x] Start server
     - [ ] Copy over the existing data
     - [ ] Migrate data to new format (script)
 - [ ] Public threads
