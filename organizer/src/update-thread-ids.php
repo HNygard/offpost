@@ -9,14 +9,21 @@ echo "\n";
 
 // Parse command line options
 $longopts = [
-    "execute",     // no value
-    "user:",       // requires value
+    "set-ids",      // no value
+    "add-users",    // no value
+    "move-folders", // no value
+    "user:",        // requires value
 ];
 
 // Need to tell getopt to look at all arguments, not just those after script name
 $options = getopt("", $longopts, $optind);
-$dryRun = !isset($options['execute']);
+$setIds = isset($options['set-ids']);
+$addUsers = isset($options['add-users']);
+$moveFolders = isset($options['move-folders']);
 $userId = $options['user'] ?? null;
+
+// If no operation flags are set, we're in dry run mode
+$dryRun = !($setIds || $addUsers || $moveFolders);
 
 // Debug parsed options
 echo "Parsed options:\n";
@@ -24,15 +31,20 @@ var_export($options);
 echo "\n\n";
 
 // Debug final values
-echo "Dry run: " . ($dryRun ? "yes" : "no") . "\n";
+echo "Operations to perform:\n";
+echo "Set IDs: " . ($setIds ? "yes" : "no") . "\n";
+echo "Add Users: " . ($addUsers ? "yes" : "no") . "\n";
+echo "Move Folders: " . ($moveFolders ? "yes" : "no") . "\n";
 echo "User ID: " . ($userId ?? "not set") . "\n\n";
 
 if ($argc < 2) {
-    echo "Usage: php update-thread-ids.php [--execute] [--user=USER_ID] <threads_directory>\n";
-    echo "Example: php update-thread-ids.php --user=123 /path/to/data/threads\n";
+    echo "Usage: php update-thread-ids.php [--set-ids] [--add-users] [--move-folders] [--user=USER_ID] <threads_directory>\n";
+    echo "Example: php update-thread-ids.php --set-ids --add-users --user=123 /path/to/data/threads\n";
     echo "Options:\n";
-    echo "  --execute         Actually perform the changes (default: dry run)\n";
-    echo "  --user=USER_ID    Set up user access for migrated threads\n";
+    echo "  --set-ids         Generate and set new thread IDs where missing\n";
+    echo "  --add-users       Set up user access for threads\n";
+    echo "  --move-folders    Move thread data to new locations\n";
+    echo "  --user=USER_ID    User ID to grant access (required with --add-users)\n";
     exit(1);
 }
 
@@ -51,7 +63,7 @@ if (!is_dir($threadsDir)) {
 
 if ($dryRun) {
     echo "[DRY RUN] Changes will be simulated, not actually performed\n";
-    echo "[DRY RUN] Use --execute flag to perform actual changes\n\n";
+    echo "[DRY RUN] Use --set-ids, --add-users, and/or --move-folders flags to perform specific operations\n\n";
 }
 
 // Override THREADS_DIR constant for this script
@@ -107,9 +119,14 @@ function moveThreadData($entityId, $oldThreadId, $newThreadId, $dryRun) {
     echo "Moved data from $oldPath to $newPath\n";
 }
 
-function updateThreadIds($dryRun, $userId = null) {
+function updateThreadIds($dryRun, $setIds, $addUsers, $moveFolders, $userId = null) {
     $threads = getThreads();
     $updated = false;
+
+    if ($addUsers && !$userId) {
+        echo "Error: --user parameter is required when using --add-users\n";
+        exit(1);
+    }
 
     foreach ($threads as $file => $threadsData) {
         $needsSaving = false;
@@ -124,7 +141,7 @@ function updateThreadIds($dryRun, $userId = null) {
             $oldId = getThreadId($thread); // Get old ID if it exists
             
             // Check if we need to generate a new ID
-            if (!isset($thread->id)) {
+            if ($setIds && !isset($thread->id)) {
                 echo "Found thread without ID: " . $thread->title . "\n";
                 $thread->id = generateThreadId();
                 $needsSaving = true;
@@ -133,10 +150,12 @@ function updateThreadIds($dryRun, $userId = null) {
             }
             
             // Move data from old to new location if needed
-            moveThreadData($entityId, $oldId, $thread->id, $dryRun);
+            if ($moveFolders) {
+                moveThreadData($entityId, $oldId, $thread->id, $dryRun);
+            }
                 
-            // Set up user access if user ID provided
-            if ($userId) {
+            // Set up user access if requested
+            if ($addUsers && $userId) {
                 if ($dryRun) {
                     echo "[DRY RUN] Would grant access to user $userId for thread: " . $thread->title . "\n";
                 } else {
@@ -146,30 +165,37 @@ function updateThreadIds($dryRun, $userId = null) {
             }
         }
 
-            if ($needsSaving) {
-                if ($dryRun) {
-                    echo "[DRY RUN] Would save updated threads for entity: " . $entityId . "\n";
-                } else {
-                    saveEntityThreads($entityId, $threadsData);
-                    echo "Saved updated threads for entity: " . $entityId . "\n";
-                }
+        if ($needsSaving) {
+            if ($dryRun) {
+                echo "[DRY RUN] Would save updated threads for entity: " . $entityId . "\n";
+            } else {
+                saveEntityThreads($entityId, $threadsData);
+                echo "Saved updated threads for entity: " . $entityId . "\n";
             }
+        }
     }
 
-    if (!$updated) {
+    if ($setIds && !$updated) {
         echo "All threads already have IDs. No updates needed.\n";
     }
 }
 
 // Run the update
-echo "Starting thread ID update and data migration in: $threadsDir\n";
+echo "Starting thread operations in: $threadsDir\n";
+if ($dryRun) {
+    echo "[DRY RUN] No operations specified. Will simulate all operations.\n";
+    $setIds = $addUsers = $moveFolders = true;
+}
+
 if ($userId) {
     echo "Will set up access for user: $userId\n";
 }
-updateThreadIds($dryRun, $userId);
+
+updateThreadIds($dryRun, $setIds, $addUsers, $moveFolders, $userId);
+
 if ($dryRun) {
     echo "\n[DRY RUN] Completed simulation of changes. No actual changes were made.\n";
-    echo "[DRY RUN] Use --execute flag to perform these changes.\n";
+    echo "[DRY RUN] Use --set-ids, --add-users, and/or --move-folders to perform specific operations.\n";
 } else {
-    echo "\nThread ID update and data migration complete.\n";
+    echo "\nThread operations complete.\n";
 }
