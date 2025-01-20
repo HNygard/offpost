@@ -4,14 +4,16 @@ if (!isset($_SESSION)) {
 }
 ?>
 <div class="header-logo">
-    <img src="images/offpost-icon.png" alt="Offpost" class="logo" style="height: 3em;">
+    <img src="/images/offpost-icon.png" alt="Offpost" class="logo" style="height: 3em;">
     Offpost
 </div>
 
 <div class="user-info">
-    <?php if (basename($_SERVER['PHP_SELF']) !== 'index.php'): ?>
+    <?php 
+    $path = parse_url($_SERVER['REQUEST_URI'], PHP_URL_PATH);
+    if ($path !== '/'): ?>
         <div class="nav-back">
-            <a href="./">← Back to threads</a>
+            <a href="/">← Back to threads</a>
         </div>
     <?php else: ?>
         <div class="spacer"></div>
@@ -22,6 +24,6 @@ if (!isset($_SESSION)) {
             <?= htmlspecialchars($_SESSION['user']['name'] ?? $_SESSION['user']['email'] ?? 'Unknown User') ?>
         </span>
         <br>
-        <a href="logout.php">Logout</a>
+        <a href="/logout">Logout</a>
     </div>
 </div>

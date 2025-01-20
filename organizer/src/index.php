@@ -55,9 +55,9 @@ $allThreads = $filteredThreads;
         <h2>Threads</h2>
 
         <ul class="nav-links">
-            <li><a href="start-thread.php">Start new thread</a></li>
-            <li><a href="update-imap.php?update-only-before=<?= date('Y-m-d H:i:s') ?>">Update email threads (folders) to IMAP</a></li>
-            <li><a href="update-identities.php">Update identities into Roundcube</a></li>
+            <li><a href="/thread-start">Start new thread</a></li>
+            <li><a href="/update-imap?update-only-before=<?= date('Y-m-d H:i:s') ?>">Update email threads (folders) to IMAP</a></li>
+            <li><a href="/update-identities">Update identities into Roundcube</a></li>
             <li><a href="?archived">Show archived</a></li>
         </ul>
 
@@ -68,7 +68,7 @@ $allThreads = $filteredThreads;
         Filtered on label: <?= htmlspecialchars($_GET['label_filter'], ENT_QUOTES) ?>
         <ul class="nav-links">
             <li><a href="/">Back to all threads</a></li>
-            <li><a href="api.php?label=<?=urlencode($_GET['label_filter'])?>">View API response for label</a></li>
+            <li><a href="/api/threads?label=<?=urlencode($_GET['label_filter'])?>">View API response for label</a></li>
         </ul>
         
         <?php
@@ -101,16 +101,16 @@ $allThreads = $filteredThreads;
                                 &lt;<?= $thread->my_email ?>&gt;
                             </span><br>
                             <div class="action-links">
-                                <a href="view-thread.php?entityId=<?=
+                                <a href="/thread-view?entityId=<?=
                                     htmlescape($threads->entity_id)?>&threadId=<?=
                                     htmlescape($thread->id)?>">View thread</a>
-                                <a href="classify-email.php?entityId=<?=
+                                <a href="/thread-classify?entityId=<?=
                                     htmlescape($threads->entity_id)?>&threadId=<?=
                                     htmlescape($thread->id)?>">Classify</a>
-                                <a href="thread__send-email.php?entityId=<?=
+                                <a href="/thread-send-email?entityId=<?=
                                     htmlescape($threads->entity_id)?>&threadId=<?=
                                     htmlescape($thread->id)?>">Send email</a>
-                                <a href="setSuccessForThreadAndDocument.php?entityId=<?=
+                                <a href="/setSuccessForThreadAndDocument?entityId=<?=
                                     htmlescape($threads->entity_id)?>&threadId=<?=
                                     htmlescape($thread->id)?>">Archive thread</a>
                             </div>

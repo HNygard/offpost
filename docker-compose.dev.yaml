@@ -101,4 +101,4 @@ services:
       - OIDC_ISSUER_URL=http://localhost:25083
       - OIDC_CLIENT_ID=organizer
       - OIDC_CLIENT_SECRET=secret
-      - OIDC_REDIRECT_URI=http://localhost:25081/callback.php
+      - OIDC_REDIRECT_URI=http://localhost:25081/callback

@@ -104,7 +104,7 @@ const configuration = {
     client_id: 'organizer',
     client_secret: 'secret',
     grant_types: ['authorization_code'],
-    redirect_uris: ['http://localhost:25081/callback.php'],
+    redirect_uris: ['http://localhost:25081/callback'],
     response_types: ['code'],
   }],
   pkce: {

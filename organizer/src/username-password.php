@@ -22,7 +22,7 @@ if ($environment == 'development') {
     $oidc_token_endpoint = 'http://auth:3000/oidc/token';
     $oidc_end_session_endpoint = 'http://localhost:25083/oidc/session/end';
     $oidc_userinfo_endpoint = 'http://auth:3000/oidc/me';
-    $oidc_callback_url = 'http://localhost:25081/callback.php';
+    $oidc_callback_url = 'http://localhost:25081/callback';
 
     $oidc_client_id = 'organizer';
     $oidc_client_secret = 'secret';
@@ -40,7 +40,7 @@ else if ($environment == 'production') {
     $oidc_token_endpoint = 'https://auth.offpost.no/oauth/token';
     $oidc_end_session_endpoint = 'https://auth.offpost.no/oidc/logout';
     $oidc_userinfo_endpoint = 'https://auth.offpost.no/userinfo';
-    $oidc_callback_url = 'https://offpost.no/callback.php';
+    $oidc_callback_url = 'https://offpost.no/callback';
 
     // Client id and secret is set in the override file
 }

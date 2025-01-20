@@ -33,7 +33,7 @@ if (isset($_POST['toggle_public_to']) && isset($_POST['thread_id'])) {
     }
     
     // Redirect to remove POST data
-    header("Location: view-thread.php?threadId=" . urlencode($threadId) . "&entityId=" . urlencode($entityId));
+    header("Location: /thread-view?threadId=" . urlencode($threadId) . "&entityId=" . urlencode($entityId));
     exit;
 }
 
@@ -54,7 +54,7 @@ if (isset($_POST['add_user']) && $_POST['user_id'] && $_POST['thread_id']) {
         saveEntityThreads($entityId, $threadEntity);
     }
     
-    header("Location: view-thread.php?threadId=" . urlencode($threadId) . "&entityId=" . urlencode($entityId));
+    header("Location: /thread-view?threadId=" . urlencode($threadId) . "&entityId=" . urlencode($entityId));
     exit;
 }
 
@@ -74,7 +74,7 @@ if (isset($_POST['remove_user']) && $_POST['user_id'] && $_POST['thread_id']) {
         saveEntityThreads($entityId, $threadEntity);
     }
     
-    header("Location: view-thread.php?threadId=" . urlencode($threadId) . "&entityId=" . urlencode($entityId));
+    header("Location: /thread-view?threadId=" . urlencode($threadId) . "&entityId=" . urlencode($entityId));
     exit;
 }
 
@@ -143,9 +143,9 @@ if ($thread->isUserOwner($userId)) {
             </div>
 
             <div class="action-links">
-                <a href="classify-email.php?entityId=<?= htmlescape($entityId) ?>&threadId=<?= htmlescape($threadId) ?>">Classify</a>
-                <a href="thread__send-email.php?entityId=<?= htmlescape($entityId) ?>&threadId=<?= htmlescape($threadId) ?>">Send email</a>
-                <a href="setSuccessForThreadAndDocument.php?entityId=<?= htmlescape($entityId) ?>&threadId=<?= htmlescape($threadId) ?>">Archive thread</a>
+                <a href="/thread-classify?entityId=<?= htmlescape($entityId) ?>&threadId=<?= htmlescape($threadId) ?>">Classify</a>
+                <a href="/thread-send-email?entityId=<?= htmlescape($entityId) ?>&threadId=<?= htmlescape($threadId) ?>">Send email</a>
+                <a href="/setSuccessForThreadAndDocument?entityId=<?= htmlescape($entityId) ?>&threadId=<?= htmlescape($threadId) ?>">Archive thread</a>
             </div>
 
             <?php if ($thread->isUserOwner($userId)): ?>
@@ -223,7 +223,7 @@ if ($thread->isUserOwner($userId)) {
 
                     <?php if (isset($email->id)): ?>
                         <div class="email-links">
-                            <a href="file.php?entityId=<?= htmlescape($entityId) ?>&threadId=<?= htmlescape($threadId) ?>&body=<?= htmlescape($email->id) ?>">View email</a> (text)
+                            <a href="/file?entityId=<?= htmlescape($entityId) ?>&threadId=<?= htmlescape($threadId) ?>&body=<?= htmlescape($email->id) ?>">View email</a> (text)
                         </div>
                     <?php endif; ?>
 
@@ -238,7 +238,7 @@ if ($thread->isUserOwner($userId)) {
                                     <span class="<?= $label_type ?>"><?= htmlescape($att->status_text) ?></span>
                                     <?= htmlescape($att->filetype) ?> - 
                                     <?php if (isset($att->location)): ?>
-                                        <a href="file.php?entityId=<?= htmlescape($entityId) ?>&threadId=<?= htmlescape($threadId) ?>&attachment=<?= urlencode($att->location) ?>"><?= htmlescape($att->name) ?></a>
+                                        <a href="/file?entityId=<?= htmlescape($entityId) ?>&threadId=<?= htmlescape($threadId) ?>&attachment=<?= urlencode($att->location) ?>"><?= htmlescape($att->name) ?></a>
                                     <?php else: ?>
                                         <?= htmlescape($att->name) ?>
                                     <?php endif; ?>
