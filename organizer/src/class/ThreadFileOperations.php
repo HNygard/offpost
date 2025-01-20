@@ -20,6 +20,10 @@ function getThreads() {
                 foreach ($thread as $key => $value) {
                     $threadObj->$key = $value;
                 }
+
+                if (!isset($thread->id)) {
+                    unset($threadObj->id);
+                }
                 $threadObj->sentComment = isset($thread->sentComment) ? $thread->sentComment : null; // Initialize sentComment
                 $thread = $threadObj;
             }
