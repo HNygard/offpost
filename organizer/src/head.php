@@ -1,6 +1,6 @@
 <?php
 if (!isset($pageTitle)) {
-    $pageTitle = 'Offpost';
+    $pageTitle = 'hello';
 }
 ?>
 <meta charset="UTF-8">

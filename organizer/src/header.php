@@ -4,8 +4,8 @@ if (!isset($_SESSION)) {
 }
 ?>
 <div class="header-logo">
-    <img src="/images/offpost-icon.png" alt="Offpost" class="logo" style="height: 3em;">
-    Offpost
+    <img src="/images/offpost-icon.png" alt="hello" class="logo" style="height: 3em;">
+    hello
 </div>
 
 <div class="user-info">
