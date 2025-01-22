@@ -43,7 +43,7 @@ $allThreads = $filteredThreads;
 <html>
 <head>
     <?php 
-    $pageTitle = 'Offpost';
+    $pageTitle = 'hello';
     include 'head.php';
     ?>
 </head>
@@ -51,7 +51,7 @@ $allThreads = $filteredThreads;
     <div class="container">
         <?php include 'header.php'; ?>
 
-        <h1>Offpost - Email Engine Organizer</h1>
+        <h1>hello</h1>
         <h2>Threads</h2>
 
         <ul class="nav-links">
