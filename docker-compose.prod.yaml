@@ -6,6 +6,9 @@ networks:
         - subnet: 172.30.0.0/16
           gateway: 172.30.0.1
 
+volumes:
+  postgres_data:
+
 services:
   roundcube:
     image: roundcube/roundcubemail:1.4.x-apache
@@ -17,7 +20,7 @@ services:
       - "25080:80"
     volumes:
       - ./organizer/src/username-password.php:/username-password.php
-      - /opt/offpost/username-password-override-prod.php:/username-password-override.php
+      - /opt/offpost/secrets/username-password-override-prod.php:/username-password-override.php
       - ./roundcubemail.config.php:/var/roundcube/config/config.email-engine.inc.php
     restart: unless-stopped
 
@@ -32,18 +35,40 @@ services:
       MYSQL_PASSWORD: mail
     restart: unless-stopped
 
+  postgres:
+    image: postgres:15
+    networks:
+      - app-network
+    environment:
+      POSTGRES_DB: offpost
+      POSTGRES_USER: offpost
+      POSTGRES_PASSWORD_FILE: /run/secrets/postgres_password
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+      - /opt/offpost/secrets/postgres_password:/run/secrets/postgres_password:ro
+    restart: unless-stopped
+
   organizer:
     build: ./organizer
     networks:
       - app-network
     ports:
       - "25081:80"
+    depends_on:
+      - postgres
     links:
+      - postgres:postgres
       - mysql:mysql
     volumes:
-      - /opt/offpost/username-password-override-prod.php:/username-password-override.php
+      - /opt/offpost/secrets/username-password-override-prod.php:/username-password-override.php
       - ./organizer/src:/php-frontend
       - /opt/offpost/data/:/organizer-data
+      - /opt/offpost/secrets/postgres_password:/run/secrets/postgres_password:ro
     environment:
       - ENVIRONMENT=production
+      - DB_HOST=postgres
+      - DB_PORT=5432
+      - DB_NAME=offpost
+      - DB_USER=offpost
+      - DB_PASSWORD_FILE=/run/secrets/postgres_password
     restart: unless-stopped

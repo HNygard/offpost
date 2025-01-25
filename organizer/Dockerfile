@@ -1,9 +1,11 @@
 FROM php:8.2-apache
 
-RUN apt-get update && apt-get install -y libcurl4-gnutls-dev
+RUN apt-get update && apt-get install -y \
+    libcurl4-gnutls-dev \
+    libpq-dev
 
 RUN docker-php-ext-install curl
-RUN docker-php-ext-install pdo pdo_mysql mysqli
+RUN docker-php-ext-install pdo pdo_mysql mysqli pdo_pgsql
 
 RUN apt-get update && apt-get install -y libc-client-dev libkrb5-dev && rm -r /var/lib/apt/lists/*
 RUN docker-php-ext-configure imap --with-kerberos --with-imap-ssl \
@@ -20,7 +22,11 @@ RUN chown -R www-data:www-data /var/run/apache2 /var/lock/apache2 /var/log/apach
 COPY localhost.conf /etc/apache2/conf-enabled/localhost.conf
 COPY phpdev.ini /usr/local/etc/php/conf.d/phpdev.ini
 COPY docker-entrypoint.sh /usr/local/bin/
+RUN mkdir -p /opt/offpost/migrations
+COPY src/migrations /opt/offpost/migrations
 
-RUN chmod +x /usr/local/bin/docker-entrypoint.sh
+RUN chmod +x /usr/local/bin/docker-entrypoint.sh \
+    && chmod +x /opt/offpost/migrations/migrate.php \
+    && chown -R www-data:www-data /opt/offpost/migrations
 
 ENTRYPOINT ["/usr/local/bin/docker-entrypoint.sh"]

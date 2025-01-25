@@ -6,6 +6,9 @@ networks:
         - subnet: 172.30.0.0/16
           gateway: 172.30.0.1
 
+volumes:
+  postgres_data:
+
 services:
   greenmail:
     image: greenmail/standalone:1.6.12
@@ -54,6 +57,20 @@ services:
       MYSQL_USER: mail
       MYSQL_PASSWORD: mail
 
+  postgres:
+    image: postgres:15
+    networks:
+      - app-network
+    environment:
+      POSTGRES_DB: offpost
+      POSTGRES_USER: offpost
+      POSTGRES_PASSWORD_FILE: /run/secrets/postgres_password
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+      - ./secrets/postgres_password:/run/secrets/postgres_password:ro
+    ports:
+      - "25432:5432"
+
   phpmyadmin:
     image: phpmyadmin/phpmyadmin
     networks:
@@ -69,7 +86,10 @@ services:
       - app-network
     ports:
       - "25081:80"
+    depends_on:
+      - postgres
     links:
+      - postgres:postgres
       - mysql:mysql
       - auth:auth
       - greenmail:greenmail
@@ -77,11 +97,17 @@ services:
       - ./organizer/src/username-password-override-dev.php:/username-password-override.php
       - ./organizer/src:/php-frontend
       - ./data/:/organizer-data
+      - ./secrets/postgres_password:/run/secrets/postgres_password:ro
     environment:
       - ENVIRONMENT=development
       - IMAP_SERVER={greenmail:3993/imap/ssl}
       - IMAP_EMAIL=greenmail-user
       - IMAP_PASSWORD=EzUVrHxLVrF2
+      - DB_HOST=postgres
+      - DB_PORT=5432
+      - DB_NAME=offpost
+      - DB_USER=offpost
+      - DB_PASSWORD_FILE=/run/secrets/postgres_password
 
   auth:
     build:
