@@ -26,7 +26,7 @@ done
 
 # Run database migrations
 echo "Running database migrations..."
-php /opt/offpost/migrations/migrate.php
+php /php-frontend/migrations/migrate.php
 
 # Apache gets grumpy about PID files pre-existing
 rm -f /var/run/apache2/apache2.pid

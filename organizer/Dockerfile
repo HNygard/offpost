@@ -23,10 +23,6 @@ COPY localhost.conf /etc/apache2/conf-enabled/localhost.conf
 COPY phpdev.ini /usr/local/etc/php/conf.d/phpdev.ini
 COPY docker-entrypoint.sh /usr/local/bin/
 RUN mkdir -p /opt/offpost/migrations
-COPY src/migrations /opt/offpost/migrations
-
-RUN chmod +x /usr/local/bin/docker-entrypoint.sh \
-    && chmod +x /opt/offpost/migrations/migrate.php \
-    && chown -R www-data:www-data /opt/offpost/migrations
+RUN chmod +x /usr/local/bin/docker-entrypoint.sh
 
 ENTRYPOINT ["/usr/local/bin/docker-entrypoint.sh"]

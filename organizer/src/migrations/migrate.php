@@ -35,7 +35,7 @@ try {
     $executed = array_flip($executed);
 
     // Get all SQL files from migrations directory
-    $sqlFiles = glob('/opt/offpost/migrations/sql/*.sql');
+    $sqlFiles = glob(__DIR__ . '/sql/*.sql');
     sort($sqlFiles); // Ensure files are processed in order
 
     echo "\nFound migration scripts:\n";
