@@ -19,7 +19,23 @@ TODO for Cline.
     - [x] Start server
     - [x] Copy over the existing data
     - [x] Migrate data to new format (script)
-- [ ] Public threads
+
+Goal: make production usable
+
+- [ ] Move from file storage to database
+    - [ ] Docker compose for database
+    - [ ] Setup for migration scripts
+    - [ ] Code up new data model using database
+    - [ ] Migrate data
+        - [ ] Make script for migrating data
+        - [ ] Make tool for testing the migrated data
+        - [ ] Run migration in test environment
+        - [ ] Run migration in production
+
+- [ ] Views available for public
+    - [ ] Public threads visible to non authenticated users
+    - [ ] Front page with information
+
 - [ ] Update-imap - folder creation should be done in class so that logic is the same in tests and update-imap.php
 - [ ] GUI for replying to threads
     - [ ] Reply form with rich text editor
