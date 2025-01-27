@@ -20,8 +20,16 @@ if [ "$LOCAL_HASH" != "$REMOTE_HASH" ]; then
   # Pull the latest changes
   git pull origin main
 
-  # Update Docker images and restart the containers
+  # Build organizer image locally (it has its own Dockerfile)
+  echo "[$(date)] Building organizer image..."
+  docker compose -f docker-compose.prod.yaml build organizer
+
+  # Pull other images from registry
+  echo "[$(date)] Pulling other images..."
   docker compose -f docker-compose.prod.yaml pull
+
+  # Restart all services
+  echo "[$(date)] Restarting services..."
   docker compose -f docker-compose.prod.yaml up -d
 
   echo "[$(date)] Deployment completed."
