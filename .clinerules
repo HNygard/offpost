@@ -59,16 +59,34 @@ Main capabilities, but not limited to:
 
 ## Rules
 
+I pledge to follow the custom instructions.
+
 - The current working directory is project root.
-- Run tests using: cd organizer/src && ./vendor/bin/phpunit tests/
-- Run system using: docker-compose -f docker-compose.dev.yaml up -d
-- Check processes using: docker-compose -f docker-compose.dev.yaml ps
 - When making changes, avoid unnecessary modifications that would complicate code review (e.g. formatting, variable renaming, etc.)
 - After completing work, commit changes with detailed messages explaining what and why. If the "why" is unclear, ask for clarification.
 - If commit reason is unclear, ask for clarification
-- When viewing git diffs, use git --no-pager diff
-- Update relevant documentation in /docs when modifying features
+- When viewing git diffs, use git with "no-pager" parameter: git --no-pager diff
+- Update relevant documentation in /docs when modifying features. Don't forget to update codebase documentation with changes.
 - Keep README.md in sync with new capabilities
+- Before and after any tool use, give me a confidence level (0-10) on how the tool use will help the project.
+
+## Commands:
+
+- Run tests using:
+    cd organizer/src && ./vendor/bin/phpunit tests/
+
+- Run system using:
+    docker-compose -f docker-compose.dev.yaml up -d
+
+- Restart application/service:
+    docker-compose -f docker-compose.dev.yaml down && docker-compose -f docker-compose.dev.yaml up -d
+
+- Check processes using:
+    docker-compose -f docker-compose.dev.yaml ps
+
+- Get into database:
+    docker exec -it email-engine_postgres_1 psql -U offpost -d offpost
+
 
 ## Security
 
