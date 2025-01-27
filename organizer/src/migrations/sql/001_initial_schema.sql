@@ -1,62 +1,63 @@
 -- Create threads table
 CREATE TABLE threads (
-    id SERIAL PRIMARY KEY,
-    external_id UUID NOT NULL,
-    municipality_id VARCHAR(255) NOT NULL,
-    profile_first_name VARCHAR(255) NOT NULL,
-    profile_last_name VARCHAR(255) NOT NULL,
-    profile_email VARCHAR(255) NOT NULL,
+    id UUID PRIMARY KEY,
+    entity_id VARCHAR(255) NOT NULL,
+    title TEXT,
+    my_name VARCHAR(255) NOT NULL,
+    my_email VARCHAR(255) NOT NULL,
+    labels TEXT[],
+    sent BOOLEAN DEFAULT FALSE,
+    archived BOOLEAN DEFAULT FALSE,
+    public BOOLEAN DEFAULT FALSE,
+    sent_comment TEXT,
     created_at TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP,
     updated_at TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP
 );
 
-CREATE UNIQUE INDEX threads_external_id_idx ON threads(external_id);
-CREATE INDEX threads_municipality_id_idx ON threads(municipality_id);
-CREATE UNIQUE INDEX threads_profile_email_idx ON threads(profile_email);
+CREATE UNIQUE INDEX threads_my_email_idx ON threads(my_email);
+CREATE INDEX threads_entity_id_idx ON threads(entity_id);
+CREATE INDEX threads_archived_idx ON threads(archived);
+CREATE INDEX threads_sent_idx ON threads(sent);
+CREATE INDEX threads_labels_idx ON threads USING GIN(labels);
 
 -- Create emails table
-CREATE TABLE emails (
+CREATE TABLE thread_emails (
     id SERIAL PRIMARY KEY,
-    thread_id INTEGER NOT NULL REFERENCES threads(id) ON DELETE CASCADE,
-    direction VARCHAR(3) NOT NULL CHECK (direction IN ('IN', 'OUT')),
-    subject TEXT NOT NULL,
-    from_email VARCHAR(255) NOT NULL,
-    to_email VARCHAR(255) NOT NULL,
-    received_date TIMESTAMPTZ NOT NULL,
+    thread_id UUID NOT NULL REFERENCES threads(id) ON DELETE CASCADE,
+    timestamp_received TIMESTAMPTZ NOT NULL,
+    datetime_received TIMESTAMPTZ,
+    ignore BOOLEAN DEFAULT FALSE,
+    email_type VARCHAR(50),
+    status_type VARCHAR(50),
+    status_text TEXT,
+    description TEXT,
+    answer TEXT,
     content TEXT NOT NULL,
-    raw_content TEXT NOT NULL,
     created_at TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP
 );
 
-CREATE INDEX emails_thread_id_idx ON emails(thread_id);
-CREATE INDEX emails_direction_idx ON emails(direction);
-CREATE INDEX emails_received_date_idx ON emails(received_date);
+CREATE INDEX thread_emails_thread_id_idx ON thread_emails(thread_id);
+CREATE INDEX thread_emails_timestamp_received_idx ON thread_emails(timestamp_received);
+CREATE INDEX thread_emails_email_type_idx ON thread_emails(email_type);
+CREATE INDEX thread_emails_status_type_idx ON thread_emails(status_type);
+CREATE INDEX thread_emails_ignore_idx ON thread_emails(ignore);
 
--- Create attachments table
-CREATE TABLE attachments (
+-- Create email attachments table
+CREATE TABLE thread_email_attachments (
     id SERIAL PRIMARY KEY,
-    email_id INTEGER NOT NULL REFERENCES emails(id) ON DELETE CASCADE,
+    email_id INTEGER NOT NULL REFERENCES thread_emails(id) ON DELETE CASCADE,
+    name VARCHAR(255) NOT NULL,
     filename VARCHAR(255) NOT NULL,
-    mime_type VARCHAR(255) NOT NULL,
-    size INTEGER NOT NULL,
-    content BYTEA NOT NULL,
+    filetype VARCHAR(255) NOT NULL,
+    location TEXT NOT NULL,
+    status_type VARCHAR(50),
+    status_text TEXT,
     created_at TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP
 );
 
-CREATE INDEX attachments_email_id_idx ON attachments(email_id);
-
--- Create thread metadata table
-CREATE TABLE thread_metadata (
-    id SERIAL PRIMARY KEY,
-    thread_id INTEGER NOT NULL REFERENCES threads(id) ON DELETE CASCADE,
-    key VARCHAR(255) NOT NULL,
-    value TEXT NOT NULL,
-    created_at TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP,
-    updated_at TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP
-);
-
-CREATE INDEX thread_metadata_thread_id_idx ON thread_metadata(thread_id);
-CREATE INDEX thread_metadata_key_idx ON thread_metadata(key);
+CREATE INDEX thread_email_attachments_email_id_idx ON thread_email_attachments(email_id);
+CREATE INDEX thread_email_attachments_filetype_idx ON thread_email_attachments(filetype);
+CREATE INDEX thread_email_attachments_status_type_idx ON thread_email_attachments(status_type);
 
 -- Create function to update updated_at timestamp
 CREATE OR REPLACE FUNCTION update_updated_at_column()
@@ -67,13 +68,8 @@ BEGIN
 END;
 $$ language 'plpgsql';
 
--- Create triggers for updated_at columns
+-- Create trigger for updated_at column
 CREATE TRIGGER update_threads_updated_at
     BEFORE UPDATE ON threads
-    FOR EACH ROW
-    EXECUTE FUNCTION update_updated_at_column();
-
-CREATE TRIGGER update_thread_metadata_updated_at
-    BEFORE UPDATE ON thread_metadata
     FOR EACH ROW
     EXECUTE FUNCTION update_updated_at_column();
