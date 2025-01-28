@@ -30,7 +30,7 @@ Goal: make production usable
     - [ ] Code up new data model using database
     - [ ] Migrate data
         - [ ] Make script for migrating data
-            docker exec email-engine_postgres_1 psql -U offpost -d offpost -c "TRUNCATE TABLE thread_metadata, attachments, emails, threads CASCADE;"
+            docker exec email-engine_postgres_1 psql -U offpost -d offpost -c "TRUNCATE TABLE thread_email_attachments, thread_emails, threads CASCADE;"
             docker exec email-engine_organizer_1 php /php-frontend/migrations/migrate-data.php
         - [ ] Make tool for testing the migrated data (should compare Thread from file and from DB)
             docker exec email-engine_organizer_1 php /php-frontend/migrations/verify-migration.php
