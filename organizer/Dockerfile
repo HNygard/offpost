@@ -25,4 +25,7 @@ COPY docker-entrypoint.sh /usr/local/bin/
 RUN mkdir -p /opt/offpost/migrations
 RUN chmod +x /usr/local/bin/docker-entrypoint.sh
 
+# Copy SQL migrations, just to trigger recreation of container on deploy
+COPY src/migrations/sql/ /opt/offpost/migrations/
+
 ENTRYPOINT ["/usr/local/bin/docker-entrypoint.sh"]
