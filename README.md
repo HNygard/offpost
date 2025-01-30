@@ -113,3 +113,7 @@ http://localhost:25081/start-thread.php?my_email=asmund.visnes%40offpost.no&my_n
    - Update thread details:
      - Set sent = true
      - Update status_type and status_text
+
+### OpenAI API Integration
+
+The system now integrates with the OpenAI API to summarise email responses as they are received. This is handled by the `OpenAISummarizer` class located in `organizer/src/class/OpenAISummarizer.php`. The `ImapEmailProcessor` class has been updated to call `OpenAISummarizer` for summarising email responses. Unit tests for `OpenAISummarizer` are available in `organizer/src/tests/OpenAISummarizerTest.php`.

@@ -2,14 +2,18 @@
 
 namespace Imap;
 
+use OpenAI\OpenAISummarizer;
+
 class ImapEmailProcessor {
     private ImapConnection $connection;
     private string $cacheFile;
     private ?object $cache = null;
+    private OpenAISummarizer $summarizer;
 
-    public function __construct(ImapConnection $connection, string $cacheFile = '/organizer-data/cache-threads.json') {
+    public function __construct(ImapConnection $connection, string $cacheFile = '/organizer-data/cache-threads.json', OpenAISummarizer $summarizer) {
         $this->connection = $connection;
         $this->cacheFile = $cacheFile;
+        $this->summarizer = $summarizer;
         $this->loadCache();
     }
 
@@ -137,7 +141,7 @@ class ImapEmailProcessor {
         }
 
         $email->mailHeaders = $headers;
-        
+
         return $email;
     }
 
