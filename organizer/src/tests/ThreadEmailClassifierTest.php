@@ -4,13 +4,19 @@ use PHPUnit\Framework\TestCase;
 
 require_once(__DIR__ . '/bootstrap.php');
 require_once(__DIR__ . '/../class/ThreadEmailClassifier.php');
+require_once(__DIR__ . '/../class/OpenAISummarizer.php');
+require_once(__DIR__ . '/../class/ThreadEmailSummarizer.php');
 
 class ThreadEmailClassifierTest extends TestCase {
     private $classifier;
+    private $mockSummarizer;
+    private $emailSummarizer;
 
     protected function setUp(): void {
         parent::setUp();
         $this->classifier = new ThreadEmailClassifier();
+        $this->mockSummarizer = $this->createMock(OpenAISummarizer::class);
+        $this->emailSummarizer = new ThreadEmailSummarizer('test-api-key', $this->mockSummarizer);
     }
 
     public function testClassifyFirstEmailWhenOutbound() {
@@ -147,5 +153,27 @@ class ThreadEmailClassifierTest extends TestCase {
 
         // Verify email remains unchanged
         $this->assertEquals($email, $result);
+    }
+
+    public function testProcessEmailsWithSummarizer() {
+        $email1 = (object) ['body' => 'This is the first test email body.'];
+        $email2 = (object) ['body' => 'This is the second test email body.'];
+        $emails = [$email1, $email2];
+
+        $this->mockSummarizer->expects($this->exactly(2))
+            ->method('summarizeEmail')
+            ->withConsecutive(
+                [$this->equalTo($email1->body)],
+                [$this->equalTo($email2->body)]
+            )
+            ->willReturnOnConsecutiveCalls(
+                'Summary of first email.',
+                'Summary of second email.'
+            );
+
+        $this->emailSummarizer->processEmails($emails);
+
+        $this->assertEquals('Summary of first email.', $email1->summary);
+        $this->assertEquals('Summary of second email.', $email2->summary);
     }
 }

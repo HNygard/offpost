@@ -4,10 +4,12 @@ use PHPUnit\Framework\TestCase;
 use Imap\ImapEmailProcessor;
 use Imap\ImapConnection;
 use Imap\ImapWrapper;
+use OpenAI\OpenAISummarizer;
 
 require_once __DIR__ . '/../class/Imap/ImapWrapper.php';
 require_once __DIR__ . '/../class/Imap/ImapConnection.php';
 require_once __DIR__ . '/../class/Imap/ImapEmailProcessor.php';
+require_once __DIR__ . '/../class/OpenAISummarizer.php';
 
 class ImapEmailProcessorTest extends TestCase {
     private $mockWrapper;
@@ -17,9 +19,11 @@ class ImapEmailProcessorTest extends TestCase {
     private $testServer = '{imap.test.com:993/imap/ssl}';
     private $testEmail = 'test@test.com';
     private $testPassword = 'password123';
+    private $mockSummarizer;
 
     protected function setUp(): void {
         $this->mockWrapper = $this->createMock(ImapWrapper::class);
+        $this->mockSummarizer = $this->createMock(OpenAISummarizer::class);
         $this->connection = new ImapConnection(
             $this->testServer,
             $this->testEmail,
@@ -32,7 +36,7 @@ class ImapEmailProcessorTest extends TestCase {
         $this->tempCacheFile = sys_get_temp_dir() . '/test-cache-' . uniqid() . '.json';
         
         // Initialize processor
-        $this->processor = new ImapEmailProcessor($this->connection, $this->tempCacheFile);
+        $this->processor = new ImapEmailProcessor($this->connection, $this->tempCacheFile, $this->mockSummarizer);
 
         // Setup default mock behavior for connection closing
         $this->mockWrapper->method('close')->willReturn(true);
