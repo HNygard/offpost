@@ -3,13 +3,17 @@
 use PHPUnit\Framework\TestCase;
 
 require_once __DIR__ . '/../class/OpenAIClient.php';
+require_once __DIR__ . '/../class/CurlWrapper.php';
 
 class OpenAIClientTest extends TestCase {
     private $apiKey = 'test-api-key';
     private $client;
+    private $mockCurlWrapper;
 
     protected function setUp(): void {
+        $this->mockCurlWrapper = $this->createMock(CurlWrapper::class);
         $this->client = new OpenAIClient($this->apiKey);
+        $this->client->setCurlWrapper($this->mockCurlWrapper);
     }
 
     public function testSendRequestSuccess() {
@@ -24,11 +28,8 @@ class OpenAIClientTest extends TestCase {
             ]
         ];
 
-        $mockCurl = $this->createMock(CurlHandle::class);
-        $mockCurl->method('exec')->willReturn(json_encode($mockResponse));
-        $mockCurl->method('errno')->willReturn(0);
-
-        $this->client->setCurlHandle($mockCurl);
+        $this->mockCurlWrapper->method('execute')->willReturn(json_encode($mockResponse));
+        $this->mockCurlWrapper->method('getErrno')->willReturn(0);
 
         $response = $this->client->sendRequest($data);
         $this->assertEquals($mockResponse, $response);
@@ -40,12 +41,9 @@ class OpenAIClientTest extends TestCase {
             'max_tokens' => 5,
         ];
 
-        $mockCurl = $this->createMock(CurlHandle::class);
-        $mockCurl->method('exec')->willReturn(false);
-        $mockCurl->method('errno')->willReturn(1);
-        $mockCurl->method('error')->willReturn('Test error');
-
-        $this->client->setCurlHandle($mockCurl);
+        $this->mockCurlWrapper->method('execute')->willReturn(false);
+        $this->mockCurlWrapper->method('getErrno')->willReturn(1);
+        $this->mockCurlWrapper->method('getError')->willReturn('Test error');
 
         $this->expectException(Exception::class);
         $this->expectExceptionMessage('Request Error: Test error');
@@ -66,11 +64,8 @@ class OpenAIClientTest extends TestCase {
             ]
         ];
 
-        $mockCurl = $this->createMock(CurlHandle::class);
-        $mockCurl->method('exec')->willReturn(json_encode($mockResponse));
-        $mockCurl->method('errno')->willReturn(0);
-
-        $this->client->setCurlHandle($mockCurl);
+        $this->mockCurlWrapper->method('execute')->willReturn(json_encode($mockResponse));
+        $this->mockCurlWrapper->method('getErrno')->willReturn(0);
 
         $summary = $this->client->summarizeEmail($emailContent);
         $this->assertEquals('Test summary', $summary);
@@ -87,11 +82,8 @@ class OpenAIClientTest extends TestCase {
             'choices' => []
         ];
 
-        $mockCurl = $this->createMock(CurlHandle::class);
-        $mockCurl->method('exec')->willReturn(json_encode($mockResponse));
-        $mockCurl->method('errno')->willReturn(0);
-
-        $this->client->setCurlHandle($mockCurl);
+        $this->mockCurlWrapper->method('execute')->willReturn(json_encode($mockResponse));
+        $this->mockCurlWrapper->method('getErrno')->willReturn(0);
 
         $this->expectException(Exception::class);
         $this->expectExceptionMessage('Failed to summarize email');
