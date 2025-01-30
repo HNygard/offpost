@@ -9,6 +9,10 @@ class ThreadEmailSummarizer {
         $this->openAIClient = new OpenAIClient($apiKey);
     }
 
+    public function setOpenAIClient($openAIClient) {
+        $this->openAIClient = $openAIClient;
+    }
+
     public function summarize($emailContent) {
         return $this->openAIClient->summarizeEmail($emailContent);
     }

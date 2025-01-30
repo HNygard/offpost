@@ -3,27 +3,33 @@
 class OpenAIClient {
     private $apiKey;
     private $apiUrl = 'https://api.openai.com/v1/engines/davinci-codex/completions';
+    private $curlWrapper;
 
     public function __construct($apiKey) {
         $this->apiKey = $apiKey;
+        $this->curlWrapper = new CurlWrapper();
+    }
+
+    public function setCurlWrapper($curlWrapper) {
+        $this->curlWrapper = $curlWrapper;
     }
 
     public function sendRequest($data) {
-        $ch = curl_init($this->apiUrl);
-        curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
-        curl_setopt($ch, CURLOPT_HTTPHEADER, [
+        $this->curlWrapper->init($this->apiUrl);
+        $this->curlWrapper->setOption(CURLOPT_RETURNTRANSFER, true);
+        $this->curlWrapper->setOption(CURLOPT_HTTPHEADER, [
             'Content-Type: application/json',
             'Authorization: Bearer ' . $this->apiKey,
         ]);
-        curl_setopt($ch, CURLOPT_POST, true);
-        curl_setopt($ch, CURLOPT_POSTFIELDS, json_encode($data));
+        $this->curlWrapper->setOption(CURLOPT_POST, true);
+        $this->curlWrapper->setOption(CURLOPT_POSTFIELDS, json_encode($data));
 
-        $response = curl_exec($ch);
-        if (curl_errno($ch)) {
-            throw new Exception('Request Error: ' . curl_error($ch));
+        $response = $this->curlWrapper->execute();
+        if ($this->curlWrapper->getErrno()) {
+            throw new Exception('Request Error: ' . $this->curlWrapper->getError());
         }
 
-        curl_close($ch);
+        $this->curlWrapper->close();
         return json_decode($response, true);
     }
 
