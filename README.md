@@ -113,3 +113,44 @@ http://localhost:25081/start-thread.php?my_email=asmund.visnes%40offpost.no&my_n
    - Update thread details:
      - Set sent = true
      - Update status_type and status_text
+
+## OpenAI API Integration
+
+### Overview
+
+The system now includes integration with the OpenAI API for summarizing email responses. This feature helps in quickly understanding the content of received emails by providing concise summaries.
+
+### Configuration
+
+To configure the OpenAI API integration, follow these steps:
+
+1. Obtain an API key from OpenAI.
+2. Set the API key as an environment variable in your system:
+   ```bash
+   export OPENAI_API_KEY=your_api_key_here
+   ```
+
+### Usage
+
+The `ThreadEmailSummarizer` class uses the `OpenAIClient` to summarize email responses. Here is an example of how to use it:
+
+```php
+require_once 'class/ThreadEmailSummarizer.php';
+
+$apiKey = getenv('OPENAI_API_KEY');
+$summarizer = new ThreadEmailSummarizer($apiKey);
+
+$emailContent = "Your email content here";
+$summary = $summarizer->summarize($emailContent);
+
+echo "Summary: " . $summary;
+```
+
+### Running Tests for OpenAI Integration
+
+To run the tests related to the OpenAI API integration, use the following command:
+
+```bash
+cd organizer/src && ./vendor/bin/phpunit tests/OpenAIClientTest.php
+cd organizer/src && ./vendor/bin/phpunit tests/ThreadEmailSummarizerTest.php
+```

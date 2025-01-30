@@ -1,0 +1,5 @@
+{
+  "tasks": {
+    "build": "cd organizer/src && composer install"
+  }
+}
