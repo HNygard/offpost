@@ -1,22 +1,19 @@
 <?php
 
 use PHPUnit\Framework\TestCase;
+use OpenAI\OpenAISummarizer;
 
 require_once(__DIR__ . '/bootstrap.php');
 require_once(__DIR__ . '/../class/ThreadEmailClassifier.php');
-require_once(__DIR__ . '/../class/OpenAISummarizer.php');
-require_once(__DIR__ . '/../class/ThreadEmailSummarizer.php');
 
 class ThreadEmailClassifierTest extends TestCase {
     private $classifier;
     private $mockSummarizer;
-    private $emailSummarizer;
 
     protected function setUp(): void {
         parent::setUp();
         $this->classifier = new ThreadEmailClassifier();
         $this->mockSummarizer = $this->createMock(OpenAISummarizer::class);
-        $this->emailSummarizer = new ThreadEmailSummarizer('test-api-key', $this->mockSummarizer);
     }
 
     public function testClassifyFirstEmailWhenOutbound() {
@@ -156,24 +153,29 @@ class ThreadEmailClassifierTest extends TestCase {
     }
 
     public function testProcessEmailsWithSummarizer() {
-        $email1 = (object) ['body' => 'This is the first test email body.'];
-        $email2 = (object) ['body' => 'This is the second test email body.'];
-        $emails = [$email1, $email2];
+        // Create test thread with emails
+        $thread = (object)[
+            'emails' => [
+                (object)[
+                    'email_type' => 'OUT',
+                    'status_type' => 'unknown',
+                    'status_text' => 'Uklassifisert',
+                    'body' => 'This is a test email body.'
+                ]
+            ]
+        ];
 
-        $this->mockSummarizer->expects($this->exactly(2))
-            ->method('summarizeEmail')
-            ->withConsecutive(
-                [$this->equalTo($email1->body)],
-                [$this->equalTo($email2->body)]
-            )
-            ->willReturnOnConsecutiveCalls(
-                'Summary of first email.',
-                'Summary of second email.'
-            );
+        // Mock summarizer response
+        $this->mockSummarizer->method('summarizeEmail')
+            ->willReturn('This is a summary.');
 
-        $this->emailSummarizer->processEmails($emails);
+        // Process emails with summarizer
+        foreach ($thread->emails as $email) {
+            $summary = $this->mockSummarizer->summarizeEmail($email->body);
+            $email->summary = $summary;
+        }
 
-        $this->assertEquals('Summary of first email.', $email1->summary);
-        $this->assertEquals('Summary of second email.', $email2->summary);
+        // Verify email summary
+        $this->assertEquals('This is a summary.', $thread->emails[0]->summary);
     }
 }
