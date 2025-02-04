@@ -128,3 +128,10 @@ services:
       - OIDC_CLIENT_ID=organizer
       - OIDC_CLIENT_SECRET=secret
       - OIDC_REDIRECT_URI=http://localhost:25081/callback
+
+  vaadin-gui:
+    build: ./vaadin-gui
+    networks:
+      - app-network
+    ports:
+      - "8080:8080"

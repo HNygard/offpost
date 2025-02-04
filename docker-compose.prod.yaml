@@ -72,3 +72,11 @@ services:
       - DB_USER=offpost
       - DB_PASSWORD_FILE=/run/secrets/postgres_password
     restart: unless-stopped
+
+  vaadin-gui:
+    build: ./vaadin-gui
+    networks:
+      - app-network
+    ports:
+      - "8080:8080"
+    restart: unless-stopped
