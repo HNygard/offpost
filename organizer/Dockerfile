@@ -5,7 +5,13 @@ RUN apt-get update && apt-get install -y \
     libpq-dev
 
 RUN docker-php-ext-install curl
-RUN docker-php-ext-install pdo pdo_mysql mysqli pdo_pgsql
+RUN docker-php-ext-install pdo
+
+# Install MySQL PDO for talking to Roundcube database
+RUN docker-php-ext-install pdo_mysql mysqli
+
+# Install Postgres PDO for internal database
+RUN docker-php-ext-install pdo_pgsql pgsql
 
 RUN apt-get update && apt-get install -y libc-client-dev libkrb5-dev && rm -r /var/lib/apt/lists/*
 RUN docker-php-ext-configure imap --with-kerberos --with-imap-ssl \
