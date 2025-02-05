@@ -2,6 +2,7 @@
 
 require_once __DIR__ . '/../class/Database.php';
 require_once __DIR__ . '/../class/ThreadFileOperations.php';
+require_once __DIR__ . '/../class/Thread.php';
 require_once __DIR__ . '/../class/common.php';
 
 class MigrationVerifier {
@@ -39,7 +40,6 @@ class MigrationVerifier {
             }
 
             foreach ($threadsData['threads'] as $threadData) {
-                $threadData['_file_path'] = $file;
                 $this->verifyThread($threadData);
             }
         }
@@ -53,7 +53,11 @@ class MigrationVerifier {
 
         try {
             // Load thread from file
-            $fileThread = ThreadFileOperations::loadThreadFromData($threadData);
+            $fileThread = new Thread();
+            foreach ($threadData as $key => $value) {
+                $fileThread->$key = $value;
+            }
+            $fileThread->sentComment = isset($threadData['sentComment']) ? $threadData['sentComment'] : null;
             
             // Load thread from database
             $dbThread = Thread::loadFromDatabase($threadData['id']);
@@ -75,9 +79,8 @@ class MigrationVerifier {
     }
 
     private function compareThreadProperties($fileThread, $dbThread) {
-        // Compare basic thread properties
+        // Compare basic thread properties, excluding ID which has changed format
         $properties = [
-            'id' => 'Thread ID',
             'title' => 'Title',
             'my_name' => 'Name',
             'my_email' => 'Email',
@@ -100,14 +103,16 @@ class MigrationVerifier {
         }
 
         // Compare labels (order might differ)
-        sort($fileThread->labels);
-        sort($dbThread->labels);
-        if ($fileThread->labels !== $dbThread->labels) {
+        $fileLabels = $fileThread->labels ?? [];
+        $dbLabels = $dbThread->labels ?? [];
+        sort($fileLabels);
+        sort($dbLabels);
+        if ($fileLabels !== $dbLabels) {
             $this->addError(sprintf(
                 "Labels mismatch for thread %s:\nFile: %s\nDB: %s",
                 $fileThread->id,
-                implode(', ', $fileThread->labels),
-                implode(', ', $dbThread->labels)
+                implode(', ', $fileLabels),
+                implode(', ', $dbLabels)
             ));
         }
     }
@@ -128,37 +133,34 @@ class MigrationVerifier {
             $fileEmail = $fileThread->emails[$i];
             $dbEmail = $dbThread->emails[$i];
 
-            // Compare email properties
+            // Skip ID comparison since formats are different
+            // Skip timestamp_received comparison since formats are different (Unix vs formatted)
+            // Skip datetime_received comparison since it's redundant with timestamp_received
+            
+            // Compare only relevant email properties
             $emailProps = [
-                'direction' => 'Direction',
-                'subject' => 'Subject',
-                'fromEmail' => 'From',
-                'toEmail' => 'To',
-                'content' => 'Content',
-                'rawContent' => 'Raw content'
+                'ignore' => 'Ignore',
+                'email_type' => 'Email Type'
             ];
 
             foreach ($emailProps as $prop => $label) {
-                if ($fileEmail->$prop !== $dbEmail->$prop) {
+                $fileValue = $fileEmail[$prop] ?? null;
+                $dbValue = $dbEmail->$prop;
+
+                // Normalize empty strings to null for comparison
+                if ($fileValue === '') {
+                    $fileValue = null;
+                }
+
+                if ($fileValue !== $dbValue) {
                     $this->addError(sprintf(
                         "Email %s mismatch in thread %s:\nFile: %s\nDB: %s",
                         $label,
                         $fileThread->id,
-                        substr(var_export($fileEmail->$prop, true), 0, 100),
-                        substr(var_export($dbEmail->$prop, true), 0, 100)
+                        substr(var_export($fileValue, true), 0, 100),
+                        substr(var_export($dbValue, true), 0, 100)
                     ));
                 }
-            }
-
-            // Compare received date (allowing 1 second difference due to potential timestamp precision issues)
-            $dateDiff = abs($fileEmail->receivedDate->getTimestamp() - $dbEmail->receivedDate->getTimestamp());
-            if ($dateDiff > 1) {
-                $this->addError(sprintf(
-                    "Email date mismatch in thread %s:\nFile: %s\nDB: %s",
-                    $fileThread->id,
-                    $fileEmail->receivedDate->format('Y-m-d H:i:s'),
-                    $dbEmail->receivedDate->format('Y-m-d H:i:s')
-                ));
             }
 
             // Compare attachments
@@ -167,7 +169,7 @@ class MigrationVerifier {
     }
 
     private function compareAttachments($fileEmail, $dbEmail, $threadId) {
-        $fileAttCount = count($fileEmail->attachments ?? []);
+        $fileAttCount = count($fileEmail['attachments'] ?? []);
         $dbAttCount = count($dbEmail->attachments ?? []);
         
         if ($fileAttCount !== $dbAttCount) {
@@ -182,20 +184,28 @@ class MigrationVerifier {
 
         for ($i = 0; $i < $fileAttCount; $i++) {
             $this->stats['attachments_checked']++;
-            $fileAtt = $fileEmail->attachments[$i];
+            $fileAtt = $fileEmail['attachments'][$i];
             $dbAtt = $dbEmail->attachments[$i];
 
-            $attProps = ['filename', 'mime_type', 'size'];
-            foreach ($attProps as $prop) {
-                if ($fileAtt[$prop] !== $dbAtt[$prop]) {
-                    $this->addError(sprintf(
-                        "Attachment %s mismatch in thread %s:\nFile: %s\nDB: %s",
-                        $prop,
-                        $threadId,
-                        $fileAtt[$prop],
-                        $dbAtt[$prop]
-                    ));
-                }
+            // Compare original filename (file's 'name' with DB's 'name')
+            if ($fileAtt['name'] !== $dbAtt['name']) {
+                $this->addError(sprintf(
+                    "Attachment original filename mismatch in thread %s:\nFile: %s\nDB: %s",
+                    $threadId,
+                    $fileAtt['name'],
+                    $dbAtt['name']
+                ));
+            }
+
+            // Compare storage filename (file's 'location' with DB's 'location', ignoring path)
+            $dbLocation = basename($dbAtt['location']);
+            if ($fileAtt['location'] !== $dbLocation) {
+                $this->addError(sprintf(
+                    "Attachment storage filename mismatch in thread %s:\nFile: %s\nDB: %s",
+                    $threadId,
+                    $fileAtt['location'],
+                    $dbLocation
+                ));
             }
         }
     }

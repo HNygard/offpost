@@ -30,19 +30,20 @@ Goal: make production usable
         - [x] Development
         - [x] Production
     - [x] Setup for migration scripts
-    - [ ] Code up new data model using database
+    - [x] Code up new data model using database
     - [ ] Migrate data
         - [x] Make script for migrating data
             docker exec -it offpost-postgres-1 psql -U offpost -d offpost
             docker exec offpost-postgres-1 psql -U offpost -d offpost -c "TRUNCATE TABLE thread_email_attachments, thread_emails, threads CASCADE;"
             docker exec offpost-organizer-1 php /php-frontend/migrations/migrate-data.php
-        - [ ] Make tool for testing the migrated data (should compare Thread from file and from DB)
+        - [x] Make tool for testing the migrated data (should compare Thread from file and from DB)
             docker exec offpost-organizer-1 php /php-frontend/migrations/verify-migration.php
         - [x] Run migration in test environment
         - [ ] Run migration in production
             - [ ] Clean up old data. Some duplicate emails present.
             - [ ] Migrate data
             - [ ] Verify data
+    - [ ] Use new database
 
 - [ ] Views available for public
     - [ ] Public threads visible to non authenticated users

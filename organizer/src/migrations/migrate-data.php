@@ -50,11 +50,13 @@ class DataMigrator {
         echo "-- Thread data: " . json_encode($threadData, JSON_PRETTY_PRINT) . "\n";
         
         // Convert labels from metadata if exists
-        $labels = '{}'; // Default empty array in PostgreSQL
+        $labels = null; // Default to NULL for no labels
         if (isset($threadData['labels']) && is_array($threadData['labels'])) {
-            $labels = '{' . implode(',', array_map(function($label) {
-                return $label;
-            }, $threadData['labels'])) . '}';
+            // Format labels as PostgreSQL array string with proper quoting and spacing
+            $escapedLabels = array_map(function($label) {
+                return '"' . str_replace('"', '""', trim($label)) . '"';
+            }, $threadData['labels']);
+            $labels = sprintf('{%s}', implode(', ', $escapedLabels));
         }
 
         // Generate a random UUID
@@ -178,16 +180,17 @@ class DataMigrator {
         $filename = basename($attachmentPath);
         
         $sql = "INSERT INTO thread_email_attachments (email_id, name, filename, filetype, location, 
-                status_type, status_text) VALUES (?, ?, ?, ?, ?, ?, ?)";
+                status_type, status_text, size) VALUES (?, ?, ?, ?, ?, ?, ?, ?)";
         
         $params = [
             $emailId,
-            $attachment['original_name'] ?? $filename,
+            $attachment['name'] ?? $filename,
             $filename,
-            $attachment['mime_type'] ?? 'application/octet-stream',
+            $attachment['filetype'] ?? 'application/octet-stream',
             $attachmentPath,
             $attachment['status_type'] ?? null,
-            $attachment['status_text'] ?? null
+            $attachment['status_text'] ?? null,
+            filesize($attachmentPath)
         ];
 
         Database::execute($sql, $params);
