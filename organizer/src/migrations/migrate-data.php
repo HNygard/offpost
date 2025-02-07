@@ -7,11 +7,20 @@ class DataMigrator {
         'emails' => 0,
         'attachments' => 0
     ];
+    private int $threadCount = 0;
+    private array $migratedThreads = [];
+    private string $trackingFile;
 
     public function migrate(): void {
         $threadsDir = '/organizer-data/threads/';
+        $this->trackingFile = $threadsDir . 'db-migration.json';
+        
+        // Load previously migrated threads
+        if (file_exists($this->trackingFile)) {
+            $this->migratedThreads = json_decode(file_get_contents($this->trackingFile), true) ?: [];
+        }
+        
         $jsonFiles = glob($threadsDir . 'threads-*.json');
-
         Database::beginTransaction();
         try {
             foreach ($jsonFiles as $jsonFile) {
@@ -46,7 +55,19 @@ class DataMigrator {
     }
 
     private function migrateThread(array $threadData, string $entityId): void {
+        // Skip if already migrated
+        if (in_array($threadData['id'], $this->migratedThreads)) {
+            echo "-- Skipping already migrated thread: {$threadData['id']}\n";
+            return;
+        }
+
+        // Check if we've reached 50 threads
+        if ($this->threadCount >= 50) {
+            throw new RuntimeException("Reached 50 threads limit");
+        }
+
         echo "-- Processing thread: {$threadData['id']}\n";
+        $this->threadCount++;
         echo "-- Thread data: " . json_encode($threadData, JSON_PRETTY_PRINT) . "\n";
         
         // Convert labels from metadata if exists
@@ -89,6 +110,10 @@ class DataMigrator {
         echo "-- SQL params: " . json_encode($params, JSON_PRETTY_PRINT) . "\n";
         Database::execute($sql, $params);
         $this->stats['threads']++;
+        
+        // Track this thread as migrated
+        $this->migratedThreads[] = $threadData['id'];
+        file_put_contents($this->trackingFile, json_encode($this->migratedThreads, JSON_PRETTY_PRINT));
 
         // Migrate emails
         $threadDir = "/organizer-data/threads/{$entityId}/{$threadData['id']}";
