@@ -27,6 +27,8 @@ class DataMigrator {
                 $this->migrateThreadsFile($jsonFile);
             }
             Database::commit();
+            // Update tracking file after successful commit
+            file_put_contents($this->trackingFile, json_encode($this->migratedThreads, JSON_PRETTY_PRINT));
             $this->printStats();
         } catch (Exception $e) {
             Database::rollBack();
@@ -65,6 +67,8 @@ class DataMigrator {
         if ($this->threadCount >= 50) {
             echo "Reached 50 threads limit - committing and exiting\n";
             Database::commit();
+            // Update tracking file after successful commit
+            file_put_contents($this->trackingFile, json_encode($this->migratedThreads, JSON_PRETTY_PRINT));
             $this->printStats();
             exit(0);
         }
@@ -114,9 +118,8 @@ class DataMigrator {
         Database::execute($sql, $params);
         $this->stats['threads']++;
         
-        // Track this thread as migrated
+        // Add to migrated threads array (will be written to tracking file after commit)
         $this->migratedThreads[] = $threadData['id'];
-        file_put_contents($this->trackingFile, json_encode($this->migratedThreads, JSON_PRETTY_PRINT));
 
         // Migrate emails
         $threadDir = "/organizer-data/threads/{$entityId}/{$threadData['id']}";
