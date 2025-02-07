@@ -63,7 +63,10 @@ class DataMigrator {
 
         // Check if we've reached 50 threads
         if ($this->threadCount >= 50) {
-            throw new RuntimeException("Reached 50 threads limit");
+            echo "Reached 50 threads limit - committing and exiting\n";
+            Database::commit();
+            $this->printStats();
+            exit(0);
         }
 
         echo "-- Processing thread: {$threadData['id']}\n";
