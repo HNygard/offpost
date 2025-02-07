@@ -13,12 +13,19 @@ class MigrationVerifier {
         'threads_checked' => 0,
         'emails_checked' => 0,
         'attachments_checked' => 0,
-        'errors_found' => 0
+        'errors_found' => 0,
+        'threads_skipped' => 0,
+        'threads_limited' => 0
     ];
 
-    public function __construct() {
+    private $skip;
+    private $limit;
+
+    public function __construct($skip = 0, $limit = null) {
         $this->db = new Database();
         $this->threadsDir = THREADS_DIR;
+        $this->skip = max(0, (int)$skip);
+        $this->limit = $limit !== null ? max(1, (int)$limit) : null;
     }
 
     public function verify() {
@@ -39,8 +46,21 @@ class MigrationVerifier {
                 continue;
             }
 
+            $threadCount = 0;
             foreach ($threadsData['threads'] as $threadData) {
+                if ($threadCount < $this->skip) {
+                    $this->stats['threads_skipped']++;
+                    $threadCount++;
+                    continue;
+                }
+                
+                if ($this->limit !== null && ($threadCount - $this->skip) >= $this->limit) {
+                    $this->stats['threads_limited']++;
+                    break;
+                }
+
                 $this->verifyThread($threadData);
+                $threadCount++;
             }
         }
 
@@ -225,6 +245,8 @@ class MigrationVerifier {
     private function printReport() {
         echo "\n=== Migration Verification Report ===\n";
         echo "Threads checked: " . $this->stats['threads_checked'] . "\n";
+        echo "Threads skipped: " . $this->stats['threads_skipped'] . "\n";
+        echo "Threads limited: " . $this->stats['threads_limited'] . "\n";
         echo "Emails checked: " . $this->stats['emails_checked'] . "\n";
         echo "Attachments checked: " . $this->stats['attachments_checked'] . "\n";
         echo "Errors found: " . $this->stats['errors_found'] . "\n";
@@ -240,6 +262,18 @@ class MigrationVerifier {
     }
 }
 
+// Parse command line arguments
+$skip = isset($argv[1]) ? (int)$argv[1] : 0;
+$limit = isset($argv[2]) ? (int)$argv[2] : null;
+
 // Run verification
-$verifier = new MigrationVerifier();
+$verifier = new MigrationVerifier($skip, $limit);
 $verifier->verify();
+
+// Print usage if no arguments provided
+if (!isset($argv[1]) && !isset($argv[2])) {
+    echo "\nUsage: php verify-migration.php [skip] [limit]\n";
+    echo "  skip: Number of threads to skip (default: 0)\n";
+    echo "  limit: Maximum number of threads to process (default: all)\n";
+    echo "\nExample: php verify-migration.php 100 50  # Skip 100 threads and process next 50\n";
+}
