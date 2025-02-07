@@ -10,6 +10,11 @@ class DataMigrator {
     private int $threadCount = 0;
     private array $migratedThreads = [];
     private string $trackingFile;
+    private int $threadLimit;
+
+    public function __construct(int $threadLimit = 50) {
+        $this->threadLimit = $threadLimit;
+    }
 
     public function migrate(): void {
         $threadsDir = '/organizer-data/threads/';
@@ -63,9 +68,9 @@ class DataMigrator {
             return;
         }
 
-        // Check if we've reached 50 threads
-        if ($this->threadCount >= 50) {
-            echo "Reached 50 threads limit - committing and exiting\n";
+        // Check if we've reached thread limit
+        if ($this->threadCount >= $this->threadLimit) {
+            echo "Reached thread limit of {$this->threadLimit} - committing and exiting\n";
             Database::commit();
             // Update tracking file after successful commit
             file_put_contents($this->trackingFile, json_encode($this->migratedThreads, JSON_PRETTY_PRINT));
@@ -236,6 +241,9 @@ class DataMigrator {
     }
 }
 
+// Get thread limit from command line argument, default to 50 if not specified
+$threadLimit = isset($argv[1]) ? (int)$argv[1] : 50;
+
 // Run migration
-$migrator = new DataMigrator();
+$migrator = new DataMigrator($threadLimit);
 $migrator->migrate();
