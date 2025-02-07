@@ -85,7 +85,7 @@ I pledge to follow the custom instructions.
     docker-compose -f docker-compose.dev.yaml ps
 
 - Get into database:
-    docker exec -it email-engine_postgres_1 psql -U offpost -d offpost
+    docker exec -it offpost_postgres_1 psql -U offpost -d offpost
 
 
 ## Security
