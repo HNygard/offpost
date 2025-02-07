@@ -17,6 +17,9 @@ class DataMigrator {
     }
 
     public function migrate(): void {
+        echo "\nStarting migration with thread limit: {$this->threadLimit}\n";
+        echo "----------------------------------------\n\n";
+        
         $threadsDir = '/organizer-data/threads/';
         $this->trackingFile = $threadsDir . 'db-migration.json';
         
@@ -243,6 +246,8 @@ class DataMigrator {
 
 // Get thread limit from command line argument, default to 50 if not specified
 $threadLimit = isset($argv[1]) ? (int)$argv[1] : 50;
+echo "Command line argument for thread limit: " . (isset($argv[1]) ? $argv[1] : "not set (using default)") . "\n";
+echo "Using thread limit: $threadLimit\n\n";
 
 // Run migration
 $migrator = new DataMigrator($threadLimit);
