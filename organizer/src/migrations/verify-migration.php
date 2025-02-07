@@ -118,6 +118,12 @@ class MigrationVerifier {
     }
 
     private function compareEmails($fileThread, $dbThread) {
+        if ($fileThread->emails == null) {
+            $fileThread->emails = [];
+        }
+        if ($dbThread->emails == null) {
+            $dbThread->emails = [];
+        }
         if (count($fileThread->emails) !== count($dbThread->emails)) {
             $this->addError(sprintf(
                 "Email count mismatch for thread %s: File has %d, DB has %d",
