@@ -124,7 +124,9 @@ class MigrationVerifier {
         foreach ($properties as $prop => $label) {
             if ($fileThread->$prop !== $dbThread->$prop) {
                 $this->addError(sprintf(
-                    "Mismatch in %s for thread %s:\nFile: %s\nDB: %s",
+                    "Mismatch in %s for thread %s:\n"
+                    . "File ... : %s\n"
+                    . "DB ..... : %s",
                     $label,
                     $fileThread->id,
                     var_export($fileThread->$prop, true),
@@ -140,7 +142,9 @@ class MigrationVerifier {
         sort($dbLabels);
         if ($fileLabels !== $dbLabels) {
             $this->addError(sprintf(
-                "Labels mismatch for thread %s:\nFile: %s\nDB: %s",
+                "Labels mismatch for thread %s:\n"
+                ."File ... : %s\n"
+                ."DB ..... : %s",
                 $fileThread->id,
                 implode(', ', $fileLabels),
                 implode(', ', $dbLabels)
@@ -191,7 +195,9 @@ class MigrationVerifier {
 
                 if ($fileValue !== $dbValue) {
                     $this->addError(sprintf(
-                        "Email %s mismatch in thread %s:\nFile: %s\nDB: %s",
+                        "Email %s mismatch in thread %s:\n"
+                        . "File ... : %s\n"
+                        . "DB ..... : %s",
                         $label,
                         $fileThread->id,
                         substr(var_export($fileValue, true), 0, 100),
@@ -227,7 +233,9 @@ class MigrationVerifier {
             // Compare original filename (file's 'name' with DB's 'name')
             if ($fileAtt['name'] !== $dbAtt['name']) {
                 $this->addError(sprintf(
-                    "Attachment original filename mismatch in thread %s:\nFile: %s\nDB: %s",
+                    "Attachment original filename mismatch in thread %s:\n"
+                    . "File ... : %s\n"
+                    . "DB ..... : %s",
                     $threadId,
                     $fileAtt['name'],
                     $dbAtt['name']
@@ -238,7 +246,9 @@ class MigrationVerifier {
             $dbLocation = basename($dbAtt['location']);
             if ($fileAtt['location'] !== $dbLocation) {
                 $this->addError(sprintf(
-                    "Attachment storage filename mismatch in thread %s:\nFile: %s\nDB: %s",
+                    "Attachment storage filename mismatch in thread %s:\n"
+                    . "File ... : %s\n"
+                    . "DB ..... : %s",
                     $threadId,
                     $fileAtt['location'],
                     $dbLocation
