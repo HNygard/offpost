@@ -35,8 +35,14 @@ class MigrationVerifier {
         echo "Limit: " . ($this->limit !== null ? $this->limit . " threads" : "No limit") . "\n\n";
 
         $files = glob($this->threadsDir . '/threads-*.json');
+        $totalThreadCount = 0;
+        $shouldContinue = true;
         
         foreach ($files as $file) {
+            if (!$shouldContinue) {
+                break;
+            }
+            
             echo "\nVerifying file: " . basename($file) . "\n";
             
             $jsonContent = file_get_contents($file);
@@ -51,21 +57,21 @@ class MigrationVerifier {
                 continue;
             }
 
-            $threadCount = 0;
             foreach ($threadsData['threads'] as $threadData) {
-                if ($threadCount < $this->skip) {
+                if ($totalThreadCount < $this->skip) {
                     $this->stats['threads_skipped']++;
-                    $threadCount++;
+                    $totalThreadCount++;
                     continue;
                 }
                 
-                if ($this->limit !== null && ($threadCount - $this->skip) >= $this->limit) {
+                if ($this->limit !== null && ($totalThreadCount - $this->skip) >= $this->limit) {
                     $this->stats['threads_limited']++;
+                    $shouldContinue = false;
                     break;
                 }
 
                 $this->verifyThread($threadData);
-                $threadCount++;
+                $totalThreadCount++;
             }
         }
 
