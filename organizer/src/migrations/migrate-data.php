@@ -131,75 +131,55 @@ class DataMigrator {
 
         // Migrate emails
         $threadDir = "/organizer-data/threads/{$entityId}/{$threadData['id']}";
-        if (is_dir($threadDir)) {
-            $this->migrateEmails($uuid, $threadDir);
+        if (is_dir($threadDir) && isset($threadData['emails'])) {
+            $this->migrateEmails($uuid, $threadDir, $threadData['emails']);
         }
     }
 
-    private function migrateEmails(string $threadId, string $threadDir): void {
-        echo "--- Processing emails in directory: $threadDir\n";
-        $files = glob($threadDir . '/*.eml');
-        foreach ($files as $emlFile) {
-            // Extract email data from filename
-            $filename = basename($emlFile);
-            preg_match('/(\d{4}-\d{2}-\d{2}_\d{6}) - (IN|OUT)/', $filename, $matches);
-            
-            if (count($matches) < 3) {
-                echo "Warning: Could not parse filename format: $filename\n";
+    private function migrateEmails(string $threadId, string $threadDir, array $threadEmails): void {
+        echo "--- Processing emails from thread data\n";
+        foreach ($threadEmails as $emailData) {
+            echo "---- Processing email: {$emailData['id']}\n";
+
+            // Read email content from .eml file
+            $emlFile = $threadDir . '/' . $emailData['id'] . '.eml';
+            if (!file_exists($emlFile)) {
+                echo "Warning: Email file not found: $emlFile\n";
                 continue;
             }
 
-            $direction = $matches[2];
-            $dateStr = $matches[1];
-            $date = DateTime::createFromFormat('Y-m-d_His', $dateStr);
-            
-            if (!$date) {
-                echo "Warning: Could not parse date from filename: $dateStr\n";
-                continue;
-            }
-
-            // Try to get additional metadata from json if it exists
-            $jsonFile = str_replace('.eml', '.json', $emlFile);
-            $emailData = [];
-            if (file_exists($jsonFile)) {
-                $emailData = json_decode(file_get_contents($jsonFile), true) ?: [];
-            }
-
-            // Read email content
+            // Read and clean email content
             $emailContent = file_get_contents($emlFile);
-            
-            // Convert to UTF-8 if needed
             $encoding = mb_detect_encoding($emailContent, ['UTF-8', 'ISO-8859-1', 'ASCII']);
             if ($encoding !== 'UTF-8') {
                 $emailContent = mb_convert_encoding($emailContent, 'UTF-8', $encoding);
             }
-            
-            // Clean invalid UTF-8 sequences
             $emailContent = iconv('UTF-8', 'UTF-8//IGNORE', $emailContent);
 
             echo "---- Processing email file: $emlFile\n";
 
-            // Insert email
+            // Insert email using data from thread JSON
             $sql = "INSERT INTO thread_emails (thread_id, timestamp_received, datetime_received, 
-                    email_type, status_type, status_text, description, answer, content) 
-                    VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?) RETURNING id";
+                    email_type, status_type, status_text, description, answer, content, ignore) 
+                    VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?) RETURNING id";
             
             $params = [
                 $threadId,
-                $date->format('Y-m-d H:i:s'),
-                $date->format('Y-m-d H:i:s'),
-                $direction, // Use IN/OUT as email_type
+                date('Y-m-d H:i:s', $emailData['timestamp_received']),
+                $emailData['datetime_received'],
+                $emailData['email_type'],
                 $emailData['status_type'] ?? null,
                 $emailData['status_text'] ?? null,
                 $emailData['description'] ?? null,
                 $emailData['answer'] ?? null,
-                $emailContent
+                $emailContent,
+                isset($emailData['ignore']) ? ($emailData['ignore'] ? 't' : 'f') : 'f'
             ];
 
             $emailId = Database::queryValue($sql, $params);
             $this->stats['emails']++;
 
-            // Migrate attachments
+            // Migrate attachments if present
             if (isset($emailData['attachments']) && is_array($emailData['attachments'])) {
                 foreach ($emailData['attachments'] as $attachment) {
                     $this->migrateAttachment($emailId, $threadDir, $attachment);
