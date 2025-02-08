@@ -119,7 +119,7 @@ class DataMigrator {
             isset($threadData['sent']) && $threadData['sent'] ? 't' : 'f',
             isset($threadData['archived']) && $threadData['archived'] ? 't' : 'f',
             isset($threadData['public']) && $threadData['public'] ? 't' : 'f',
-            $threadData['sent_comment'] ?? null
+            $threadData['sentComment'] ?? null
         ];
 
         echo "-- SQL params: " . json_encode($params, JSON_PRETTY_PRINT) . "\n";
