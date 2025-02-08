@@ -160,6 +160,9 @@ class MigrationVerifier {
         usort($fileEmails, function($a, $b) {
             return $a['id'] <=> $b['id'];
         });
+        usort($dbEmails, function($a, $b) {
+            return $a['id_old'] <=> $b['id_old'];
+        });
 
         if (count($fileEmails) !== count($dbEmails)) {
             $this->addError(sprintf(
