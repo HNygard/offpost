@@ -212,8 +212,11 @@ class MigrationVerifier {
     }
 
     private function compareAttachments($fileEmail, $dbEmail, $threadId) {
-        $fileAttCount = count($fileEmail['attachments'] ?? []);
-        $dbAttCount = count($dbEmail->attachments ?? []);
+        $fileAttachments = $fileEmail['attachments'] ?? [];
+        $dbAttachments = $dbEmail->attachments ?? [];
+        
+        $fileAttCount = count($fileAttachments);
+        $dbAttCount = count($dbAttachments);
         
         if ($fileAttCount !== $dbAttCount) {
             $this->addError(sprintf(
@@ -225,10 +228,20 @@ class MigrationVerifier {
             return;
         }
 
+        // Sort attachments by location to ensure consistent comparison
+        usort($fileAttachments, function($a, $b) {
+            return strcmp($a['location'], $b['location']);
+        });
+        usort($dbAttachments, function($a, $b) {
+            $aLocation = basename($a['location']);
+            $bLocation = basename($b['location']);
+            return strcmp($aLocation, $bLocation);
+        });
+
         for ($i = 0; $i < $fileAttCount; $i++) {
             $this->stats['attachments_checked']++;
-            $fileAtt = $fileEmail['attachments'][$i];
-            $dbAtt = $dbEmail->attachments[$i];
+            $fileAtt = $fileAttachments[$i];
+            $dbAtt = $dbAttachments[$i];
 
             // Compare original filename (file's 'name' with DB's 'name')
             if ($fileAtt['name'] !== $dbAtt['name']) {
