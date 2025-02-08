@@ -29,6 +29,11 @@ class MigrationVerifier {
     }
 
     public function verify() {
+        // Output settings
+        echo "\n=== Verification Settings ===\n";
+        echo "Skip: " . $this->skip . " threads\n";
+        echo "Limit: " . ($this->limit !== null ? $this->limit . " threads" : "No limit") . "\n\n";
+
         $files = glob($this->threadsDir . '/threads-*.json');
         
         foreach ($files as $file) {
