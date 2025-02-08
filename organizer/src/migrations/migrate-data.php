@@ -159,12 +159,13 @@ class DataMigrator {
             echo "---- Processing email file: $emlFile\n";
 
             // Insert email using data from thread JSON
-            $sql = "INSERT INTO thread_emails (thread_id, timestamp_received, datetime_received, 
+            $sql = "INSERT INTO thread_emails (thread_id, id_old, timestamp_received, datetime_received, 
                     email_type, status_type, status_text, description, answer, content, ignore) 
-                    VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?) RETURNING id";
+                    VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?) RETURNING id";
             
             $params = [
                 $threadId,
+                $emailData['id'],
                 date('Y-m-d H:i:s', $emailData['timestamp_received']),
                 $emailData['datetime_received'],
                 $emailData['email_type'],
