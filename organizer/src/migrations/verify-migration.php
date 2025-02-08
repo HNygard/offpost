@@ -153,13 +153,15 @@ class MigrationVerifier {
     }
 
     private function compareEmails($fileThread, $dbThread) {
-        if ($fileThread->emails == null) {
-            $fileThread->emails = [];
-        }
-        if ($dbThread->emails == null) {
-            $dbThread->emails = [];
-        }
-        if (count($fileThread->emails) !== count($dbThread->emails)) {
+        $fileEmails = $fileThread->emails ?? [];
+        $dbEmails = $dbThread->emails ?? [];
+
+        // Sort emails by timestamp_received to ensure consistent comparison
+        usort($fileEmails, function($a, $b) {
+            return $a['id'] <=> $b['id'];
+        });
+
+        if (count($fileEmails) !== count($dbEmails)) {
             $this->addError(sprintf(
                 "Email count mismatch for thread %s: File has %d, DB has %d",
                 $fileThread->id,
@@ -169,10 +171,10 @@ class MigrationVerifier {
             return;
         }
 
-        for ($i = 0; $i < count($fileThread->emails); $i++) {
+        for ($i = 0; $i < count($fileEmails); $i++) {
             $this->stats['emails_checked']++;
-            $fileEmail = $fileThread->emails[$i];
-            $dbEmail = $dbThread->emails[$i];
+            $fileEmail = $fileEmails[$i];
+            $dbEmail = $dbEmails[$i];
 
             // Skip ID comparison since formats are different
             // Skip timestamp_received comparison since formats are different (Unix vs formatted)
