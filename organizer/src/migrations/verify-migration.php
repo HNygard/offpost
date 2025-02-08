@@ -158,7 +158,7 @@ class MigrationVerifier {
 
         // Sort emails by timestamp_received to ensure consistent comparison
         usort($fileEmails, function($a, $b) {
-            return $a['id_old'] <=> $b['id_old'];
+            return $a['id'] <=> $b['id'];
         });
 
         if (count($fileEmails) !== count($dbEmails)) {

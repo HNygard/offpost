@@ -83,7 +83,7 @@ class Thread {
 
         // Load emails
         $emails = Database::query(
-            "SELECT * FROM thread_emails WHERE thread_id = ? ORDER BY timestamp_received",
+            "SELECT * FROM thread_emails WHERE thread_id = ? ORDER BY id_old, timestamp_received",
             [$data['id']] // Use the UUID from the threads table
         );
 
@@ -92,6 +92,7 @@ class Thread {
             $email = new ThreadEmail();
             $email->timestamp_received = $emailData['timestamp_received'];
             $email->id = $emailData['id'];
+            $email->id_old = $emailData['id_old'];
             $email->datetime_received = $emailData['datetime_received'] ? new DateTime($emailData['datetime_received']) : null;
             $email->ignore = (bool)$emailData['ignore'];
             $email->email_type = $emailData['email_type'];
