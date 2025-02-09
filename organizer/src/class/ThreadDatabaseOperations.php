@@ -44,7 +44,7 @@ class ThreadDatabaseOperations {
         
         // Get all threads for this entity
         $threadRows = $this->db->query(
-            "SELECT * FROM threads WHERE entity_id = ? ORDER BY id",
+            "SELECT id, id_old, title, my_name, my_email, sent, archived, labels, sent_comment FROM threads WHERE entity_id = ? ORDER BY id",
             [$entityId]
         );
         
@@ -62,7 +62,7 @@ class ThreadDatabaseOperations {
             
             // Get emails for this thread
             $emails = $this->db->query(
-                "SELECT * FROM thread_emails WHERE thread_id = ? ORDER BY datetime_received",
+                "SELECT datetime_received, email_type, status_type, status_text, description, ignore FROM thread_emails WHERE thread_id = ? ORDER BY datetime_received",
                 [$thread->id]
             );
             
@@ -78,7 +78,7 @@ class ThreadDatabaseOperations {
                 
                 // Get attachments for this email
                 $attachments = $this->db->query(
-                    "SELECT * FROM thread_email_attachments WHERE email_id = ?",
+                    "SELECT name, filtype, status_type, status_text FROM thread_email_attachments WHERE email_id = ?",
                     [$email['id']]
                 );
                 
