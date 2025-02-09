@@ -3,6 +3,15 @@
 // Set test environment flag
 define('PHPUNIT_RUNNING', true);
 
+// Set up test database configuration for development environment
+putenv('DB_HOST=127.0.0.1');
+putenv('DB_PORT=25432');
+putenv('DB_NAME=offpost');
+putenv('DB_USER=offpost');
+
+// Use the actual postgres password file
+putenv('DB_PASSWORD_FILE=' . __DIR__ . '/../../../secrets/postgres_password');
+
 // Define test directories
 define('DATA_DIR', '/tmp/organizer-test-data');
 define('THREADS_DIR', '/tmp/organizer-test-data/threads');

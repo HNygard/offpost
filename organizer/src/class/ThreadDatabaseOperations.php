@@ -3,6 +3,7 @@
 require_once __DIR__ . '/common.php';
 require_once __DIR__ . '/Thread.php';
 require_once __DIR__ . '/Database.php';
+require_once __DIR__ . '/Threads.php';
 
 class ThreadDatabaseOperations {
     private $db;
@@ -57,7 +58,22 @@ class ThreadDatabaseOperations {
             $thread->my_email = $row['my_email'];
             $thread->sent = (bool)$row['sent'];
             $thread->archived = (bool)$row['archived'];
-            $thread->labels = json_decode($row['labels'], true) ?? [];
+            // Parse PostgreSQL array format
+            if ($row['labels'] !== null) {
+                $labelsStr = trim($row['labels'], '{}');
+                if ($labelsStr) {
+                    // Split by comma, but not within quotes
+                    $labels = preg_split('/,\s*(?=(?:[^"]*"[^"]*")*[^"]*$)/', $labelsStr);
+                    // Remove quotes and unescape double quotes
+                    $thread->labels = array_map(function($label) {
+                        return str_replace('""', '"', trim($label, '"'));
+                    }, $labels);
+                } else {
+                    $thread->labels = [];
+                }
+            } else {
+                $thread->labels = [];
+            }
             $thread->sentComment = $row['sent_comment'];
             
             // Get emails for this thread
@@ -103,46 +119,52 @@ class ThreadDatabaseOperations {
         return $threads;
     }
 
-    public function createThread($entityId, $entityTitlePrefix, Thread $thread) {
-        $existingThreads = $this->getThreadsForEntity($entityId);
-        if ($existingThreads === null) {
-            // Insert new entity thread
-            $this->db->execute(
-                "INSERT INTO threads (entity_id, title_prefix, title, my_name, my_email, sent, archived, labels, sent_comment) 
-                VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)",
-                [
-                    $entityId,
-                    $entityTitlePrefix,
-                    $thread->title,
-                    $thread->my_name,
-                    $thread->my_email,
-                    $thread->sent ? 1 : 0,
-                    $thread->archived ? 1 : 0,
-                    json_encode($thread->labels),
-                    $thread->sentComment
-                ]
-            );
-        } else {
-            // Insert additional thread for existing entity
-            $this->db->execute(
-                "INSERT INTO threads (entity_id, title_prefix, title, my_name, my_email, sent, archived, labels, sent_comment) 
-                VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)",
-                [
-                    $entityId,
-                    $existingThreads->title_prefix,
-                    $thread->title,
-                    $thread->my_name,
-                    $thread->my_email,
-                    $thread->sent ? 1 : 0,
-                    $thread->archived ? 1 : 0,
-                    json_encode($thread->labels),
-                    $thread->sentComment
-                ]
-            );
+    private function formatLabelsForPostgres(?array $labels): ?string {
+        if ($labels === null || empty($labels)) {
+            return null;
         }
         
-        // Get the inserted thread's ID
-        $thread->id = $this->db->lastInsertId();
+        // Format labels as PostgreSQL array string with proper quoting and spacing
+        $escapedLabels = array_map(function($label) {
+            return '"' . str_replace('"', '""', trim($label)) . '"';
+        }, $labels);
+        
+        return sprintf('{%s}', implode(', ', $escapedLabels));
+    }
+
+    private function generateUuid(): string {
+        return sprintf('%04x%04x-%04x-%04x-%04x-%04x%04x%04x',
+            mt_rand(0, 0xffff), mt_rand(0, 0xffff),
+            mt_rand(0, 0xffff),
+            mt_rand(0, 0x0fff) | 0x4000,
+            mt_rand(0, 0x3fff) | 0x8000,
+            mt_rand(0, 0xffff), mt_rand(0, 0xffff), mt_rand(0, 0xffff)
+        );
+    }
+
+    public function createThread($entityId, $entityTitlePrefix, Thread $thread) {
+        // Generate UUID for new thread
+        $uuid = $this->generateUuid();
+        
+        $this->db->execute(
+            "INSERT INTO threads (id, id_old, entity_id, title, my_name, my_email, sent, archived, labels, sent_comment) 
+            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)",
+            [
+                $uuid,
+                $thread->id_old ?? null, // Use existing id_old if set, otherwise null
+                $entityId,
+                $thread->title,
+                $thread->my_name,
+                $thread->my_email,
+                $thread->sent ? 't' : 'f',
+                $thread->archived ? 't' : 'f',
+                $this->formatLabelsForPostgres($thread->labels),
+                $thread->sentComment
+            ]
+        );
+        
+        // Set the UUID as the thread's ID
+        $thread->id = $uuid;
         return $thread;
     }
 }
