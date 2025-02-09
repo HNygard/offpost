@@ -78,7 +78,7 @@ class ThreadDatabaseOperations {
                 
                 // Get attachments for this email
                 $attachments = $this->db->query(
-                    "SELECT name, filtype, status_type, status_text FROM thread_email_attachments WHERE email_id = ?",
+                    "SELECT id, name, filtype, status_type, status_text FROM thread_email_attachments WHERE email_id = ?",
                     [$email['id']]
                 );
                 
