@@ -79,7 +79,7 @@ class PHPMailerService implements IEmailService {
     }
 }
 
-function sendThreadEmail($thread, $emailTo, $emailSubject, $emailBody, $entityId, $threads, IEmailService $emailService = null) {
+function sendThreadEmail($thread, $emailTo, $emailSubject, $emailBody, $entityId, $threads, IEmailService $emailService = null, ThreadFileOperations $fileOps = null) {
     if ($emailService === null) {
         require_once __DIR__ . '/../username-password.php';
         $emailService = new PHPMailerService(
@@ -102,7 +102,10 @@ function sendThreadEmail($thread, $emailTo, $emailSubject, $emailBody, $entityId
 
     if ($success) {
         $thread->sent = true;
-        saveEntityThreads($entityId, $threads);
+        if ($fileOps === null) {
+            $fileOps = new ThreadFileOperations();
+        }
+        $fileOps->saveEntityThreads($entityId, $threads);
     }
 
     return [

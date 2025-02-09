@@ -4,7 +4,7 @@ require_once __DIR__ . '/ThreadAuthorization.php';
 require_once __DIR__ . '/Database.php';
 require_once __DIR__ . '/ThreadEmail.php';
 
-class Thread {
+class Thread implements JsonSerializable {
     var $id;
     var $id_old;
     var $title;
@@ -52,6 +52,16 @@ class Thread {
      */
     public function isUserOwner($user_id) {
         return ThreadAuthorizationManager::isThreadOwner($this->id, $user_id);
+    }
+
+    /**
+     * Specify data which should be serialized to JSON
+     */
+    public function jsonSerialize(): mixed {
+        $data = get_object_vars($this);
+        // Remove id_old from serialization
+        unset($data['id_old']);
+        return $data;
     }
 
     /**

@@ -15,3 +15,41 @@ if (!file_exists(THREADS_DIR)) {
 if (!file_exists(THREAD_AUTH_DIR)) {
     mkdir(THREAD_AUTH_DIR, 0777, true);
 }
+
+// Include required files
+require_once __DIR__ . '/../class/Thread.php';
+require_once __DIR__ . '/../class/ThreadStorageManager.php';
+require_once __DIR__ . '/../class/ThreadFileOperations.php';
+
+/**
+ * Helper function to create a thread for testing
+ * @param string $entityId The entity ID to create the thread under
+ * @param string $titlePrefix The title prefix for the thread
+ * @param Thread $thread The thread object to store
+ * @return Thread The created thread
+ */
+function createThread($entityId, $titlePrefix, $thread) {
+    // Store the thread
+    $storageManager = ThreadStorageManager::getInstance();
+    return $storageManager->createThread($entityId, $titlePrefix, $thread);
+}
+
+/**
+ * Helper function to save entity threads
+ * @param string $entityId The entity ID
+ * @param Threads $entityThreads The threads object to save
+ */
+function saveEntityThreads($entityId, $entityThreads) {
+    $fileOps = new ThreadFileOperations();
+    $fileOps->saveEntityThreads($entityId, $entityThreads);
+}
+
+/**
+ * Helper function to get threads for an entity
+ * @param string $entityId The entity ID
+ * @return Threads|null The threads object or null if not found
+ */
+function getThreadsForEntity($entityId) {
+    $fileOps = new ThreadFileOperations();
+    return $fileOps->getThreadsForEntity($entityId);
+}

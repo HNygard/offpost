@@ -2,6 +2,7 @@
 
 require_once __DIR__ . '/common.php';
 require_once __DIR__ . '/Thread.php';
+require_once __DIR__ . '/ThreadStorageManager.php';
 
 if (!defined('THREAD_AUTH_DIR')) {
     define('THREAD_AUTH_DIR', joinPaths(THREADS_DIR, 'authorizations'));

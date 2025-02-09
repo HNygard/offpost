@@ -43,6 +43,7 @@ class MockEmailService implements IEmailService {
 class ThreadsTest extends TestCase {
     private $testDataDir;
     private $threadsDir;
+    private $fileOps;
 
     protected function setUp(): void {
         parent::setUp();
@@ -53,6 +54,7 @@ class ThreadsTest extends TestCase {
         if (!file_exists($this->threadsDir)) {
             mkdir($this->threadsDir, 0777, true);
         }
+        $this->fileOps = new ThreadFileOperations();
     }
 
     protected function tearDown(): void {
@@ -87,10 +89,10 @@ class ThreadsTest extends TestCase {
         $threads->threads = [];
 
         // Act
-        saveEntityThreads($entityId, $threads);
+        $this->fileOps->saveEntityThreads($entityId, $threads);
 
         // Assert
-        $savedThreads = getThreadsForEntity($entityId);
+        $savedThreads = $this->fileOps->getThreadsForEntity($entityId);
         $this->assertNotNull($savedThreads);
         $this->assertEquals($entityId, $savedThreads->entity_id);
         $this->assertEquals('Test', $savedThreads->title_prefix);
@@ -111,10 +113,10 @@ class ThreadsTest extends TestCase {
         $thread->emails = [];
 
         // Act
-        $result = createThread($entityId, $titlePrefix, $thread);
+        $result = $this->fileOps->createThread($entityId, $titlePrefix, $thread);
 
         // Assert
-        $savedThreads = getThreadsForEntity($entityId);
+        $savedThreads = $this->fileOps->getThreadsForEntity($entityId);
         $this->assertNotNull($savedThreads);
         $this->assertEquals($entityId, $savedThreads->entity_id);
         $this->assertEquals($titlePrefix, $savedThreads->title_prefix);
@@ -138,7 +140,7 @@ class ThreadsTest extends TestCase {
         $existingThread->archived = false;
         $existingThread->emails = [];
         
-        createThread($entityId, $titlePrefix, $existingThread);
+        $this->fileOps->createThread($entityId, $titlePrefix, $existingThread);
 
         // Create new thread to add
         $newThread = new Thread();
@@ -151,10 +153,10 @@ class ThreadsTest extends TestCase {
         $newThread->emails = [];
 
         // Act
-        $result = createThread($entityId, $titlePrefix, $newThread);
+        $result = $this->fileOps->createThread($entityId, $titlePrefix, $newThread);
 
         // Assert
-        $savedThreads = getThreadsForEntity($entityId);
+        $savedThreads = $this->fileOps->getThreadsForEntity($entityId);
         $this->assertNotNull($savedThreads);
         $this->assertEquals($entityId, $savedThreads->entity_id);
         $this->assertEquals($titlePrefix, $savedThreads->title_prefix);

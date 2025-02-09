@@ -17,6 +17,10 @@ class ThreadAuthorizationTest extends PHPUnit\Framework\TestCase {
         $this->testThread->my_name = 'Test User';
         $this->testThread->my_email = 'test@example.com';
         
+        // Store the thread using ThreadStorageManager
+        $storageManager = ThreadStorageManager::getInstance();
+        $storageManager->createThread('test_entity', 'Test', $this->testThread);
+        
         // Clean any existing test files
         $this->cleanDirectory(THREAD_AUTH_DIR);
     }

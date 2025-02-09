@@ -4,13 +4,16 @@ require_once __DIR__ . '/bootstrap.php';
 require_once __DIR__ . '/../class/ThreadAuthorization.php';
 require_once __DIR__ . '/../class/Thread.php';
 require_once __DIR__ . '/../class/Threads.php';
+require_once __DIR__ . '/../class/ThreadFileOperations.php';
 
 class ThreadAuthorizationIntegrationTest extends PHPUnit\Framework\TestCase {
     private $entityId = 'test_entity';
     private $userId = 'test_user';
     private $otherUserId = 'other_user';
+    private $fileOps;
     protected function setUp(): void {
         parent::setUp();
+        $this->fileOps = new ThreadFileOperations();
         
         // Clean any existing test files
         $this->cleanDirectory(THREADS_DIR);
@@ -51,7 +54,7 @@ class ThreadAuthorizationIntegrationTest extends PHPUnit\Framework\TestCase {
         $thread->public = false;
         
         // Save thread
-        $savedThread = createThread($this->entityId, 'Test Entity', $thread);
+        $savedThread = $this->fileOps->createThread($this->entityId, 'Test Entity', $thread);
         
         // Set creator as owner
         $savedThread->addUser($this->userId, true);
@@ -73,7 +76,7 @@ class ThreadAuthorizationIntegrationTest extends PHPUnit\Framework\TestCase {
         $thread->public = true;
         
         // Save thread
-        $savedThread = createThread($this->entityId, 'Test Entity', $thread);
+        $savedThread = $this->fileOps->createThread($this->entityId, 'Test Entity', $thread);
         
         // Set creator as owner
         $savedThread->addUser($this->userId, true);
@@ -95,12 +98,12 @@ class ThreadAuthorizationIntegrationTest extends PHPUnit\Framework\TestCase {
         $thread->my_email = 'test@example.com';
         
         // Save thread and add users
-        $savedThread = createThread($this->entityId, 'Test Entity', $thread);
+        $savedThread = $this->fileOps->createThread($this->entityId, 'Test Entity', $thread);
         $savedThread->addUser($this->userId, true);
         $savedThread->addUser($this->otherUserId);
         
         // Reload threads
-        $threads = getThreadsForEntity($this->entityId);
+        $threads = $this->fileOps->getThreadsForEntity($this->entityId);
         $reloadedThread = null;
         foreach ($threads->threads as $t) {
             if ($t->id === $savedThread->id) {
@@ -127,7 +130,7 @@ class ThreadAuthorizationIntegrationTest extends PHPUnit\Framework\TestCase {
         $thread->public = false;
         
         // Save thread and add owner
-        $savedThread = createThread($this->entityId, 'Test Entity', $thread);
+        $savedThread = $this->fileOps->createThread($this->entityId, 'Test Entity', $thread);
         $savedThread->addUser($this->userId, true);
         
         // Initially other user can't access
@@ -142,10 +145,10 @@ class ThreadAuthorizationIntegrationTest extends PHPUnit\Framework\TestCase {
         $threads->title_prefix = 'Test Entity';
         $threads->threads = array($savedThread);
         
-        saveEntityThreads($this->entityId, $threads);
+        $this->fileOps->saveEntityThreads($this->entityId, $threads);
         
         // Reload and verify public access
-        $reloadedThreads = getThreadsForEntity($this->entityId);
+        $reloadedThreads = $this->fileOps->getThreadsForEntity($this->entityId);
         $reloadedThread = null;
         foreach ($reloadedThreads->threads as $t) {
             if ($t->id === $savedThread->id) {

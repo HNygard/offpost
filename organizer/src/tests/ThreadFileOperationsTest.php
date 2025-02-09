@@ -10,6 +10,7 @@ require_once(__DIR__ . '/../class/Threads.php');
 class ThreadFileOperationsTest extends TestCase {
     private $testDataDir;
     private $threadsDir;
+    private $fileOps;
     
     protected function setUp(): void {
         parent::setUp();
@@ -21,6 +22,7 @@ class ThreadFileOperationsTest extends TestCase {
             $this->removeDirectory($this->threadsDir);
         }
         mkdir($this->threadsDir, 0777, true);
+        $this->fileOps = new ThreadFileOperations();
     }
     
     protected function tearDown(): void {
@@ -48,7 +50,7 @@ class ThreadFileOperationsTest extends TestCase {
 
     public function testGetThreadsEmptyDirectory() {
         // Test empty directory case
-        $threads = getThreads();
+        $threads = $this->fileOps->getThreads();
         $this->assertIsArray($threads);
         $this->assertEmpty($threads);
     }
@@ -67,7 +69,7 @@ class ThreadFileOperationsTest extends TestCase {
             json_encode($threads)
         );
         
-        $result = getThreads();
+        $result = $this->fileOps->getThreads();
         $this->assertCount(1, $result);
         $this->assertArrayHasKey(realpath(joinPaths($this->threadsDir, 'threads-test.json')), $result);
         $this->assertEquals('Test Thread', $result[realpath(joinPaths($this->threadsDir, 'threads-test.json'))]->threads[0]->title);
@@ -75,7 +77,7 @@ class ThreadFileOperationsTest extends TestCase {
 
     public function testGetThreadsForEntity() {
         // Test non-existent entity
-        $result = getThreadsForEntity('non-existent');
+        $result = $this->fileOps->getThreadsForEntity('non-existent');
         $this->assertNull($result);
         
         // Test existing entity
@@ -90,7 +92,7 @@ class ThreadFileOperationsTest extends TestCase {
             json_encode($threads)
         );
         
-        $result = getThreadsForEntity('test-entity');
+        $result = $this->fileOps->getThreadsForEntity('test-entity');
         $this->assertNotNull($result);
         $this->assertEquals('test-entity', $result->entity_id);
         $this->assertEquals('Test Thread', $result->threads[0]->title);
@@ -110,7 +112,7 @@ class ThreadFileOperationsTest extends TestCase {
         
         file_put_contents(joinPaths($threadDir, $attachmentName), $content);
         
-        $result = getThreadFile($entityId, $threadId, $attachmentName);
+        $result = $this->fileOps->getThreadFile($entityId, $threadId, $attachmentName);
         $this->assertEquals($content, $result);
     }
 
@@ -122,7 +124,7 @@ class ThreadFileOperationsTest extends TestCase {
         $threadId = 'non-existent-thread';
         $attachmentName = 'non-existent.txt';
         
-        getThreadFile($entityId, $threadId, $attachmentName);
+        $this->fileOps->getThreadFile($entityId, $threadId, $attachmentName);
     }
 
     public function testSentCommentInitializationInGetThreads() {
@@ -137,7 +139,7 @@ class ThreadFileOperationsTest extends TestCase {
             json_encode($threads)
         );
 
-        $result = getThreads();
+        $result = $this->fileOps->getThreads();
         $this->assertCount(1, $result);
         $this->assertArrayHasKey(realpath(joinPaths($this->threadsDir, 'threads-test.json')), $result);
         $this->assertEquals('Test Comment', $result[realpath(joinPaths($this->threadsDir, 'threads-test.json'))]->threads[0]->sentComment);
@@ -156,7 +158,7 @@ class ThreadFileOperationsTest extends TestCase {
             json_encode($threads)
         );
 
-        $result = getThreadsForEntity('test-entity');
+        $result = $this->fileOps->getThreadsForEntity('test-entity');
         $this->assertNotNull($result);
         $this->assertEquals('Test Comment', $result->threads[0]->sentComment);
     }
@@ -168,12 +170,12 @@ class ThreadFileOperationsTest extends TestCase {
         $thread->title = 'Test Thread';
         $thread->sentComment = 'Test Comment';
 
-        $createdThread = createThread($entityId, $entityTitlePrefix, $thread);
+        $createdThread = $this->fileOps->createThread($entityId, $entityTitlePrefix, $thread);
 
         $this->assertEquals('Test Thread', $createdThread->title);
         $this->assertEquals('Test Comment', $createdThread->sentComment);
 
-        $savedThreads = getThreadsForEntity($entityId);
+        $savedThreads = $this->fileOps->getThreadsForEntity($entityId);
         $this->assertNotNull($savedThreads);
         $this->assertEquals('Test Prefix', $savedThreads->title_prefix);
         $this->assertCount(1, $savedThreads->threads);
@@ -191,9 +193,9 @@ class ThreadFileOperationsTest extends TestCase {
         $thread->sentComment = 'Test Comment';
         $threads->threads = [$thread];
 
-        saveEntityThreads($entityId, $threads);
+        $this->fileOps->saveEntityThreads($entityId, $threads);
 
-        $savedThreads = getThreadsForEntity($entityId);
+        $savedThreads = $this->fileOps->getThreadsForEntity($entityId);
         $this->assertNotNull($savedThreads);
         $this->assertEquals('Test Prefix', $savedThreads->title_prefix);
         $this->assertCount(1, $savedThreads->threads);

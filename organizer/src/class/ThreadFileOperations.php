@@ -4,7 +4,7 @@ require_once __DIR__ . '/common.php';
 require_once __DIR__ . '/Thread.php';
 
 class ThreadFileOperations {
-    function getThreads() {
+    public function getThreads() {
         $files = getFilesInDirectoryNoRecursive(THREADS_DIR);
         $threads = array();
         /* @var Threads[] $threads */
@@ -37,14 +37,11 @@ class ThreadFileOperations {
         }
         return $threads;
     }
-}
-
-if (!function_exists('getThreadsForEntity')) {
     /**
      * @param String $entityID
      * @return Threads
      */
-    function getThreadsForEntity($entityID) {
+    public function getThreadsForEntity($entityID) {
         $path = joinPaths(THREADS_DIR, 'threads-' . $entityID . '.json');
         if (!file_exists($path)) {
             return null;
@@ -64,28 +61,21 @@ if (!function_exists('getThreadsForEntity')) {
         }
         return $threads;
     }
-}
-
-function getThreadFile($entityId, $thread, $attachement) {
-    $threadId = is_string($thread) ? $thread : $thread->id;
-    return file_get_contents(joinPaths(THREADS_DIR, $entityId, $threadId, $attachement));
-}
-
-if (!function_exists('saveEntityThreads')) {
+    public function getThreadFile($entityId, $thread, $attachement) {
+        $threadId = is_string($thread) ? $thread : $thread->id;
+        return file_get_contents(joinPaths(THREADS_DIR, $entityId, $threadId, $attachement));
+    }
     /**
      * @param $entityId
      * @param Threads $entity_threads
      */
-    function saveEntityThreads($entityId, $entity_threads) {
+    public function saveEntityThreads($entityId, $entity_threads) {
         $path = joinPaths(THREADS_DIR, 'threads-' . $entityId . '.json');
         logDebug('Writing to [' . $path . '].');
         file_put_contents($path, json_encode($entity_threads, JSON_PRETTY_PRINT ^ JSON_UNESCAPED_UNICODE ^ JSON_UNESCAPED_SLASHES));
     }
-}
-
-if (!function_exists('createThread')) {
-    function createThread($entityId, $entityTitlePrefix, Thread $thread) {
-        $existingThreads = getThreadsForEntity($entityId);
+    public function createThread($entityId, $entityTitlePrefix, Thread $thread) {
+        $existingThreads = $this->getThreadsForEntity($entityId);
         if ($existingThreads == null) {
             $existingThreads = new Threads();
             $existingThreads->entity_id = $entityId;
