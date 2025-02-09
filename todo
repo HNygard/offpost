@@ -45,7 +45,11 @@ Goal: make production usable
             - [x] Clean up old data. Some duplicate emails present.
             - [x] Migrate data
             - [x] Verify data
+    - [ ] Migrated authorizations to database
     - [ ] Use new database
+        - [x] Make frontpage use new database model. Make it switchable between file and db so that the resulting HTML can be compared.
+        - [ ] Test in prod
+        - [ ] Diff prod file vs db
 
 - [ ] Views available for public
     - [ ] Public threads visible to non authenticated users

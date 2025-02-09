@@ -5,3 +5,4 @@ data/*
 # But don't ignore the data directory itself and threads directory
 !data/
 !data/threads/
+data/threads/db-migration.json

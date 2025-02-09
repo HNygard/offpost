@@ -74,7 +74,8 @@ class ThreadAuthorizationManager {
             return true;
         }
         
-        $auths = self::loadAuthorizationsForThread($thread_id);
+        $thread_id2 = isset($thread->id_old) ? $thread->id_old : $thread->id;
+        $auths = self::loadAuthorizationsForThread($thread_id2);
         foreach ($auths as $auth) {
             if ($auth->getUserId() === $user_id) {
                 return true;
@@ -167,8 +168,12 @@ class ThreadAuthorizationManager {
     }
 
     private static function getThread($thread_id) {
+
+        // Get ThreadStorageManager instance and enable database storage
+        $storageManager = ThreadStorageManager::getInstance();
+
         // Find thread in all entity thread files
-        $allThreads = getThreads();
+        $allThreads = $storageManager->getThreads();
         foreach ($allThreads as $entityThreads) {
             foreach ($entityThreads->threads as $thread) {
                 if ($thread->id === $thread_id) {

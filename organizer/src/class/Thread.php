@@ -6,6 +6,7 @@ require_once __DIR__ . '/ThreadEmail.php';
 
 class Thread {
     var $id;
+    var $id_old;
     var $title;
     var $my_name;
     var $my_email;

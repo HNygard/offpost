@@ -2,6 +2,7 @@
 require_once __DIR__ . '/auth.php';
 require_once __DIR__ . '/class/Threads.php';
 require_once __DIR__ . '/class/ThreadEmailClassifier.php';
+require_once __DIR__ . '/class/ThreadStorageManager.php';
 
 // Require authentication
 requireAuth();
@@ -13,6 +14,30 @@ $userId = $_SESSION['user']['sub']; // OpenID Connect subject identifier
 
 if (!$threadId || !$entityId) {
     die('Thread ID and Entity ID are required');
+}
+
+$storageManager = ThreadStorageManager::getInstance();
+$allThreads = $storageManager->getThreads();
+
+$thread = null;
+$threadEntity = null;
+
+// Find the specific thread
+/* @var Threads[] $threads */
+foreach ($allThreads as $file => $threads) {
+    if ($threads->entity_id === $entityId) {
+        foreach ($threads->threads as $t) {
+            if ($t->id === $threadId) {
+                $thread = $t;
+                $threadEntity = $threads;
+                break 2;
+            }
+        }
+    }
+}
+
+if (!$thread) {
+    die('Thread not found');
 }
 
 // Handle public toggle
@@ -76,28 +101,6 @@ if (isset($_POST['remove_user']) && $_POST['user_id'] && $_POST['thread_id']) {
     
     header("Location: /thread-view?threadId=" . urlencode($threadId) . "&entityId=" . urlencode($entityId));
     exit;
-}
-
-/* @var Threads[] $threads */
-$allThreads = getThreads();
-$thread = null;
-$threadEntity = null;
-
-// Find the specific thread
-foreach ($allThreads as $file => $threads) {
-    if ($threads->entity_id === $entityId) {
-        foreach ($threads->threads as $t) {
-            if ($t->id === $threadId) {
-                $thread = $t;
-                $threadEntity = $threads;
-                break 2;
-            }
-        }
-    }
-}
-
-if (!$thread) {
-    die('Thread not found');
 }
 
 // Check authorization

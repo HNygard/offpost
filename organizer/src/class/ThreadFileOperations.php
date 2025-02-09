@@ -3,33 +3,40 @@
 require_once __DIR__ . '/common.php';
 require_once __DIR__ . '/Thread.php';
 
-function getThreads() {
-    $files = getFilesInDirectoryNoRecursive(THREADS_DIR);
-    $threads = array();
-    /* @var Threads[] $threads */
-    foreach($files as $file) {
-        if (basename($file) === '.gitignore') {
-            continue;
-        }
+class ThreadFileOperations {
+    function getThreads() {
+        $files = getFilesInDirectoryNoRecursive(THREADS_DIR);
+        $threads = array();
+        /* @var Threads[] $threads */
+        foreach($files as $file) {
+            if (basename($file) === '.gitignore') {
+                continue;
+            }
 
-        $threads[$file] = json_decode(file_get_contents($file), false, 512, JSON_THROW_ON_ERROR);
-        // Convert threads array to Thread objects
-        if (isset($threads[$file]->threads)) {
-            foreach ($threads[$file]->threads as &$thread) {
-                $threadObj = new Thread();
-                foreach ($thread as $key => $value) {
-                    $threadObj->$key = $value;
-                }
+            // Ignore db-migration.json
+            if (basename($file) === 'db-migration.json') {
+                continue;
+            }
 
-                if (!isset($thread->id)) {
-                    unset($threadObj->id);
+            $threads[$file] = json_decode(file_get_contents($file), false, 512, JSON_THROW_ON_ERROR);
+            // Convert threads array to Thread objects
+            if (isset($threads[$file]->threads)) {
+                foreach ($threads[$file]->threads as &$thread) {
+                    $threadObj = new Thread();
+                    foreach ($thread as $key => $value) {
+                        $threadObj->$key = $value;
+                    }
+
+                    if (!isset($thread->id)) {
+                        unset($threadObj->id);
+                    }
+                    $threadObj->sentComment = isset($thread->sentComment) ? $thread->sentComment : null; // Initialize sentComment
+                    $thread = $threadObj;
                 }
-                $threadObj->sentComment = isset($thread->sentComment) ? $thread->sentComment : null; // Initialize sentComment
-                $thread = $threadObj;
             }
         }
+        return $threads;
     }
-    return $threads;
 }
 
 if (!function_exists('getThreadsForEntity')) {

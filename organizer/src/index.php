@@ -1,15 +1,22 @@
 <?php
 require_once __DIR__ . '/auth.php';
+require_once __DIR__ . '/class/ThreadUtils.php';
+require_once __DIR__ . '/class/ThreadEmailService.php';
 require_once __DIR__ . '/class/Threads.php';
 require_once __DIR__ . '/class/ThreadAuthorization.php';
 require_once __DIR__ . '/class/ThreadLabelFilter.php';
 require_once __DIR__ . '/class/ThreadEmailClassifier.php';
+require_once __DIR__ . '/class/Database.php';
+require_once __DIR__ . '/class/ThreadFileOperations.php';
+require_once __DIR__ . '/class/ThreadStorageManager.php';
 
 // Require authentication
 requireAuth();
 
+$storageManager = ThreadStorageManager::getInstance();
+
 /* @var Threads[] $threads */
-$allThreads = getThreads();
+$allThreads = $storageManager->getThreads();
 $userId = $_SESSION['user']['sub']; // OpenID Connect subject identifier
 
 // Filter threads based on user access
