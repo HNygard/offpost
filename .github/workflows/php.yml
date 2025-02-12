@@ -28,5 +28,33 @@ jobs:
     - name: Install dependencies
       run: cd organizer/src && composer install
 
+    - name: Start Docker compose (organizer, postgres, greenmail)
+      run: docker compose -f docker-compose.dev.yaml up -d greenmail postgres organizer
+
+    - name: Wait for PostgreSQL to be ready
+      run: |
+        echo "Waiting for PostgreSQL to be ready..."
+        for i in {1..30}; do
+          if docker exec $(docker ps -q -f name=postgres) pg_isready -U offpost; then
+            echo "PostgreSQL is ready!"
+            break
+          fi
+          echo "Retrying in 1 second..."
+          sleep 1
+        done
+
+    - name: Wait for migrations
+      run: |
+        timeout=60
+        until docker exec offpost-organizer-1 php /php-frontend/migrations/migrate.php || [ $timeout -eq 0 ]; do
+          echo "Waiting for migrations to complete..."
+          sleep 5
+          ((timeout-=5))
+        done
+        if [ $timeout -eq 0 ]; then
+          echo "Migration verification timed out"
+          exit 1
+        fi
+
     - name: Run tests
       run: cd organizer/src && vendor/bin/phpunit --exclude-group integration tests
