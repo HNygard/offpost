@@ -2,11 +2,7 @@
 
 require_once __DIR__ . '/common.php';
 require_once __DIR__ . '/Thread.php';
-require_once __DIR__ . '/ThreadStorageManager.php';
-
-if (!defined('THREAD_AUTH_DIR')) {
-    define('THREAD_AUTH_DIR', joinPaths(THREADS_DIR, 'authorizations'));
-}
+require_once __DIR__ . '/Database.php';
 
 class ThreadAuthorization implements JsonSerializable {
     private $thread_id;
@@ -48,140 +44,102 @@ class ThreadAuthorization implements JsonSerializable {
 }
 
 class ThreadAuthorizationManager {
+    private static $db = null;
+
+    private static function getDb() {
+        if (self::$db === null) {
+            self::$db = new Database();
+        }
+        return self::$db;
+    }
+
     public static function addUserToThread($thread_id, $user_id, $is_owner = false) {
-        $auth = new ThreadAuthorization($thread_id, $user_id, $is_owner);
-        self::saveAuthorization($auth);
-        return $auth;
+        $db = self::getDb();
+        
+        // Use upsert to handle existing authorizations
+        $db->execute(
+            "INSERT INTO thread_authorizations (thread_id, user_id, is_owner) 
+             VALUES (?, ?, ?) 
+             ON CONFLICT (thread_id, user_id) 
+             DO UPDATE SET is_owner = EXCLUDED.is_owner",
+            [$thread_id, $user_id, $is_owner ? 't' : 'f']
+        );
+        
+        return new ThreadAuthorization($thread_id, $user_id, $is_owner);
     }
 
     public static function removeUserFromThread($thread_id, $user_id) {
-        self::deleteAuthorization($thread_id, $user_id);
+        $db = self::getDb();
+        $db->execute(
+            "DELETE FROM thread_authorizations WHERE thread_id = ? AND user_id = ?",
+            [$thread_id, $user_id]
+        );
     }
 
     public static function getThreadUsers($thread_id) {
-        return self::loadAuthorizationsForThread($thread_id);
+        $db = self::getDb();
+        $rows = $db->query(
+            "SELECT thread_id, user_id, is_owner, created_at 
+             FROM thread_authorizations 
+             WHERE thread_id = ?",
+            [$thread_id]
+        );
+        
+        return array_map(function($row) {
+            return new ThreadAuthorization(
+                $row['thread_id'],
+                $row['user_id'],
+                (bool)$row['is_owner']
+            );
+        }, $rows);
     }
 
     public static function getUserThreads($user_id) {
-        $allAuths = self::loadAllAuthorizations();
-        return array_filter($allAuths, function($auth) use ($user_id) {
-            return $auth->getUserId() === $user_id;
-        });
+        $db = self::getDb();
+        $rows = $db->query(
+            "SELECT thread_id, user_id, is_owner, created_at 
+             FROM thread_authorizations 
+             WHERE user_id = ?",
+            [$user_id]
+        );
+        
+        return array_map(function($row) {
+            return new ThreadAuthorization(
+                $row['thread_id'],
+                $row['user_id'],
+                (bool)$row['is_owner']
+            );
+        }, $rows);
     }
 
     public static function canUserAccessThread($thread_id, $user_id) {
-        $thread = self::getThread($thread_id);
-        if ($thread && $thread->public) {
-            return true;
-        }
+        $db = self::getDb();
         
-        $thread_id2 = isset($thread->id_old) ? $thread->id_old : $thread->id;
-        $auths = self::loadAuthorizationsForThread($thread_id2);
-        foreach ($auths as $auth) {
-            if ($auth->getUserId() === $user_id) {
-                return true;
-            }
-        }
-        return false;
+        // Check if thread is public or user has authorization
+        $result = $db->queryOne(
+            "SELECT EXISTS (
+                SELECT 1 FROM threads t
+                LEFT JOIN thread_authorizations ta 
+                    ON t.id = ta.thread_id AND ta.user_id = ?
+                WHERE t.id = ? AND (t.public = true OR ta.thread_id IS NOT NULL)
+            ) as has_access",
+            [$user_id, $thread_id]
+        );
+        
+        return (bool)$result['has_access'];
     }
 
     public static function isThreadOwner($thread_id, $user_id) {
-        $auths = self::loadAuthorizationsForThread($thread_id);
-        foreach ($auths as $auth) {
-            if ($auth->getUserId() === $user_id && $auth->isOwner()) {
-                return true;
-            }
-        }
-        return false;
-    }
-
-    private static function getAuthPath($thread_id) {
-        if (!file_exists(THREAD_AUTH_DIR)) {
-            mkdir(THREAD_AUTH_DIR, 0777, true);
-        }
-        return joinPaths(THREAD_AUTH_DIR, $thread_id . '_auth.json');
-    }
-
-    private static function saveAuthorization(ThreadAuthorization $auth) {
-        $path = self::getAuthPath($auth->getThreadId());
-        $auths = self::loadAuthorizationsForThread($auth->getThreadId());
+        $db = self::getDb();
         
-        // Remove existing auth for this user if exists
-        $auths = array_filter($auths, function($existing) use ($auth) {
-            return $existing->getUserId() !== $auth->getUserId();
-        });
+        $result = $db->queryOne(
+            "SELECT EXISTS (
+                SELECT 1 FROM thread_authorizations
+                WHERE thread_id = ? AND user_id = ? AND is_owner = true
+            ) as is_owner",
+            [$thread_id, $user_id]
+        );
         
-        // Add new auth
-        $auths[] = $auth;
-        
-        // Save to file
-        file_put_contents($path, json_encode($auths, JSON_PRETTY_PRINT));
-    }
-
-    private static function deleteAuthorization($thread_id, $user_id) {
-        $path = self::getAuthPath($thread_id);
-        if (!file_exists($path)) {
-            return;
-        }
-
-        $auths = self::loadAuthorizationsForThread($thread_id);
-        $auths = array_filter($auths, function($auth) use ($user_id) {
-            return $auth->getUserId() !== $user_id;
-        });
-
-        file_put_contents($path, json_encode($auths, JSON_PRETTY_PRINT));
-    }
-
-    private static function loadAuthorizationsForThread($thread_id) {
-        $path = self::getAuthPath($thread_id);
-        if (!file_exists($path)) {
-            return array();
-        }
-
-        $data = json_decode(file_get_contents($path), true);
-        return array_map(function($item) {
-            return new ThreadAuthorization(
-                $item['thread_id'],
-                $item['user_id'],
-                $item['is_owner']
-            );
-        }, $data);
-    }
-
-    private static function loadAllAuthorizations() {
-        if (!file_exists(THREAD_AUTH_DIR)) {
-            return array();
-        }
-
-        $files = glob(joinPaths(THREAD_AUTH_DIR, '*_auth.json'));
-        $allAuths = array();
-        foreach ($files as $file) {
-            $data = json_decode(file_get_contents($file), true);
-            foreach ($data as $item) {
-                $allAuths[] = new ThreadAuthorization(
-                    $item['thread_id'],
-                    $item['user_id'],
-                    $item['is_owner']
-                );
-            }
-        }
-        return $allAuths;
-    }
-
-    private static function getThread($thread_id) {
-
-        // Get ThreadStorageManager instance and enable database storage
-        $storageManager = ThreadStorageManager::getInstance();
-
-        // Find thread in all entity thread files
-        $allThreads = $storageManager->getThreads();
-        foreach ($allThreads as $entityThreads) {
-            foreach ($entityThreads->threads as $thread) {
-                if ($thread->id === $thread_id) {
-                    return $thread;
-                }
-            }
-        }
-        return null;
+        return (bool)$result['is_owner'];
     }
 }

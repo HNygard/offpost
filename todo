@@ -45,11 +45,35 @@ Goal: make production usable
             - [x] Clean up old data. Some duplicate emails present.
             - [x] Migrate data
             - [x] Verify data
-    - [ ] Migrated authorizations to database
+    - [ ] Migrated authorizations to database
     - [ ] Use new database
         - [x] Make frontpage use new database model. Make it switchable between file and db so that the resulting HTML can be compared.
         - [ ] Test in prod
         - [ ] Diff prod file vs db
+    - [x] Authorization in db
+        - [x] Script to grant acccess to all threads
+            - [x] Make script
+            - [x] Auto run in dev
+            - [ ] In prod docker-compose -f docker-compose.prod.yaml exec organizer php /var/www/html/grant-thread-access.php user-id-here
+        - [x] Use authorization in db
+    - [ ] Optimize database queries
+        - [x] Replace N+1 queries with single optimized query
+            - [x] Create single query using JOINs for threads emails and attachments
+            - [ ] Add indexes for commonly queried fields
+                - threads.entity_id
+                - threads.archived
+                - thread_emails.thread_id
+                - thread_email_attachments.email_id
+        - [x] Move authorization check into main query
+            - [x] Modify ThreadAuthorization to work with JOIN query
+            - [x] Remove authorization loop from index.php
+    - [ ] Implement caching system
+        - [ ] Add caching layer for thread data
+            - [ ] Setup cache with appropriate TTL
+            - [ ] Cache invalidation on thread updates
+        - [ ] Cache authorization results
+            - [ ] Store user thread access permissions
+            - [ ] Invalidate on permission changes
 
 - [ ] Views available for public
     - [ ] Public threads visible to non authenticated users

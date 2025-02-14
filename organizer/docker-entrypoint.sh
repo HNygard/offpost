@@ -28,6 +28,12 @@ done
 echo "Running database migrations..."
 php /php-frontend/migrations/migrate.php
 
+# In development, grant access to dev-user-id
+if [ "$ENVIRONMENT" = "development" ]; then
+    echo "Development environment detected. Granting thread access to dev-user-id..."
+    php /php-frontend/grant-thread-access.php dev-user-id
+fi
+
 # Apache gets grumpy about PID files pre-existing
 rm -f /var/run/apache2/apache2.pid
 

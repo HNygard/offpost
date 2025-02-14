@@ -12,15 +12,138 @@ class ThreadDatabaseOperations {
         $this->db = new Database();
     }
 
-    public function getThreads() {
+    public function getThreads($userId = null) {
         $threads = array();
         
-        // Get all unique entity_ids
-        $entityIds = $this->db->query("SELECT DISTINCT entity_id FROM threads ORDER BY entity_id");
+        // Get all threads with emails and attachments in a single query
+        $query = "
+            WITH thread_data AS (
+                SELECT 
+                    t.entity_id,
+                    t.id as thread_id,
+                    t.id_old,
+                    t.title,
+                    t.my_name,
+                    t.my_email,
+                    t.sent,
+                    t.archived,
+                    t.labels,
+                    t.sent_comment,
+                    t.public,
+                    e.id as email_id,
+                    e.datetime_received,
+                    e.email_type,
+                    e.status_type as email_status_type,
+                    e.status_text as email_status_text,
+                    e.description,
+                    e.ignore,
+                    a.name as attachment_name,
+                    a.filetype as attachment_filetype,
+                    a.status_type as attachment_status_type,
+                    a.status_text as attachment_status_text,
+                    CASE 
+                        WHEN t.public THEN true
+                        WHEN ta.thread_id IS NOT NULL THEN true
+                        ELSE false
+                    END as has_access
+                FROM threads t
+                LEFT JOIN thread_emails e ON t.id = e.thread_id
+                LEFT JOIN thread_email_attachments a ON e.id = a.email_id
+                LEFT JOIN thread_authorizations ta ON t.id = ta.thread_id AND ta.user_id = ?
+                WHERE (t.public = true OR ta.thread_id IS NOT NULL)
+                ORDER BY t.entity_id, t.id, e.datetime_received, a.id
+            )
+            SELECT * FROM thread_data";
         
-        foreach ($entityIds as $row) {
-            $entityId = $row['entity_id'];
-            $threads["threads-$entityId.json"] = $this->getThreadsForEntity($entityId);
+        $rows = $this->db->query($query, [$userId]);
+        
+        $currentEntityId = null;
+        $currentThreadId = null;
+        $currentEmailId = null;
+        $currentThreads = null;
+        $currentThread = null;
+        $currentEmail = null;
+        
+        foreach ($rows as $row) {
+            // New entity
+            if ($currentEntityId !== $row['entity_id']) {
+                if ($currentThreads !== null) {
+                    $threads["threads-$currentEntityId.json"] = $currentThreads;
+                }
+                
+                $currentThreads = new Threads();
+                $currentThreads->entity_id = $row['entity_id'];
+                $currentThreads->threads = array();
+                $currentEntityId = $row['entity_id'];
+            }
+            
+            // New thread
+            if ($currentThreadId !== $row['thread_id']) {
+                $currentThread = new Thread();
+                $currentThread->id = $row['thread_id'];
+                $currentThread->id_old = $row['id_old'];
+                $currentThread->title = $row['title'];
+                $currentThread->my_name = $row['my_name'];
+                $currentThread->my_email = $row['my_email'];
+                $currentThread->sent = (bool)$row['sent'];
+                $currentThread->archived = (bool)$row['archived'];
+                
+                // Parse PostgreSQL array format
+                if ($row['labels'] !== null) {
+                    $labelsStr = trim($row['labels'], '{}');
+                    if ($labelsStr) {
+                        $labels = preg_split('/,\s*(?=(?:[^"]*"[^"]*")*[^"]*$)/', $labelsStr);
+                        $currentThread->labels = array_map(function($label) {
+                            return str_replace('""', '"', trim($label, '"'));
+                        }, $labels);
+                    } else {
+                        $currentThread->labels = [];
+                    }
+                } else {
+                    $currentThread->labels = [];
+                }
+                
+                $currentThread->sentComment = $row['sent_comment'];
+                $currentThread->emails = array();
+                
+                $currentThreads->threads[] = $currentThread;
+                $currentThreadId = $row['thread_id'];
+            }
+            
+            // Skip if no email data
+            if ($row['email_id'] === null) {
+                continue;
+            }
+            
+            // New email
+            if ($currentEmailId !== $row['email_id']) {
+                $currentEmail = new stdClass();
+                $currentEmail->datetime_received = $row['datetime_received'];
+                $currentEmail->email_type = $row['email_type'];
+                $currentEmail->status_type = $row['email_status_type'];
+                $currentEmail->status_text = $row['email_status_text'];
+                $currentEmail->description = $row['description'];
+                $currentEmail->ignore = (bool)$row['ignore'];
+                $currentEmail->attachments = array();
+                
+                $currentThread->emails[] = $currentEmail;
+                $currentEmailId = $row['email_id'];
+            }
+            
+            // Add attachment if exists
+            if ($row['attachment_name'] !== null) {
+                $attObj = new stdClass();
+                $attObj->name = $row['attachment_name'];
+                $attObj->filetype = $row['attachment_filetype'];
+                $attObj->status_type = $row['attachment_status_type'];
+                $attObj->status_text = $row['attachment_status_text'];
+                $currentEmail->attachments[] = $attObj;
+            }
+        }
+        
+        // Add last entity's threads
+        if ($currentEntityId !== null) {
+            $threads["threads-$currentEntityId.json"] = $currentThreads;
         }
         
         return $threads;
@@ -28,92 +151,111 @@ class ThreadDatabaseOperations {
 
     public function getThreadsForEntity($entityId) {
         $threads = new Threads();
-        
-        // Get entity info
-        $entityInfo = $this->db->queryOne(
-            "SELECT entity_id FROM threads WHERE entity_id = ? LIMIT 1",
-            [$entityId]
-        );
-        
-        if (!$entityInfo) {
-            return null;
-        }
-        
-        //$threads->title_prefix = $entityInfo['title_prefix'];
-        $threads->entity_id = $entityInfo['entity_id'];
+        $threads->entity_id = $entityId;
         $threads->threads = array();
         
-        // Get all threads for this entity
-        $threadRows = $this->db->query(
-            "SELECT id, id_old, title, my_name, my_email, sent, archived, labels, sent_comment FROM threads WHERE entity_id = ? ORDER BY id",
-            [$entityId]
-        );
+        // Get all threads for this entity using the same optimized query
+        $query = "
+            WITH thread_data AS (
+                SELECT 
+                    t.id as thread_id,
+                    t.id_old,
+                    t.title,
+                    t.my_name,
+                    t.my_email,
+                    t.sent,
+                    t.archived,
+                    t.labels,
+                    t.sent_comment,
+                    e.id as email_id,
+                    e.datetime_received,
+                    e.email_type,
+                    e.status_type as email_status_type,
+                    e.status_text as email_status_text,
+                    e.description,
+                    e.ignore,
+                    a.name as attachment_name,
+                    a.filetype as attachment_filetype,
+                    a.status_type as attachment_status_type,
+                    a.status_text as attachment_status_text
+                FROM threads t
+                LEFT JOIN thread_emails e ON t.id = e.thread_id
+                LEFT JOIN thread_email_attachments a ON e.id = a.email_id
+                WHERE t.entity_id = ?
+                ORDER BY t.id, e.datetime_received, a.id
+            )
+            SELECT * FROM thread_data";
         
-        foreach ($threadRows as $row) {
-            $thread = new Thread();
-            $thread->id = $row['id'];
-            $thread->id_old = $row['id_old'];
-            $thread->title = $row['title'];
-            $thread->my_name = $row['my_name'];
-            $thread->my_email = $row['my_email'];
-            $thread->sent = (bool)$row['sent'];
-            $thread->archived = (bool)$row['archived'];
-            // Parse PostgreSQL array format
-            if ($row['labels'] !== null) {
-                $labelsStr = trim($row['labels'], '{}');
-                if ($labelsStr) {
-                    // Split by comma, but not within quotes
-                    $labels = preg_split('/,\s*(?=(?:[^"]*"[^"]*")*[^"]*$)/', $labelsStr);
-                    // Remove quotes and unescape double quotes
-                    $thread->labels = array_map(function($label) {
-                        return str_replace('""', '"', trim($label, '"'));
-                    }, $labels);
-                } else {
-                    $thread->labels = [];
-                }
-            } else {
-                $thread->labels = [];
-            }
-            $thread->sentComment = $row['sent_comment'];
-            
-            // Get emails for this thread
-            $emails = $this->db->query(
-                "SELECT id, datetime_received, email_type, status_type, status_text, description, ignore FROM thread_emails WHERE thread_id = ? ORDER BY datetime_received",
-                [$thread->id]
-            );
-            
-            $thread->emails = array();
-            foreach ($emails as $email) {
-                $emailObj = new stdClass();
-                $emailObj->datetime_received = $email['datetime_received'];
-                $emailObj->email_type = $email['email_type'];
-                $emailObj->status_type = $email['status_type'];
-                $emailObj->status_text = $email['status_text'];
-                $emailObj->description = $email['description'];
-                $emailObj->ignore = (bool)$email['ignore'];
+        $rows = $this->db->query($query, [$entityId]);
+        
+        $currentThreadId = null;
+        $currentEmailId = null;
+        $currentThread = null;
+        $currentEmail = null;
+        
+        foreach ($rows as $row) {
+            // New thread
+            if ($currentThreadId !== $row['thread_id']) {
+                $currentThread = new Thread();
+                $currentThread->id = $row['thread_id'];
+                $currentThread->id_old = $row['id_old'];
+                $currentThread->title = $row['title'];
+                $currentThread->my_name = $row['my_name'];
+                $currentThread->my_email = $row['my_email'];
+                $currentThread->sent = (bool)$row['sent'];
+                $currentThread->archived = (bool)$row['archived'];
                 
-                // Get attachments for this email
-                $attachments = $this->db->query(
-                    "SELECT name, filetype, status_type, status_text FROM thread_email_attachments WHERE email_id = ?",
-                    [$email['id']]
-                );
-                
-                if ($attachments) {
-                    $emailObj->attachments = array();
-                    foreach ($attachments as $att) {
-                        $attObj = new stdClass();
-                        $attObj->name = $att['name'];
-                        $attObj->filetype = $att['filetype'];
-                        $attObj->status_type = $att['status_type'];
-                        $attObj->status_text = $att['status_text'];
-                        $emailObj->attachments[] = $attObj;
+                // Parse PostgreSQL array format
+                if ($row['labels'] !== null) {
+                    $labelsStr = trim($row['labels'], '{}');
+                    if ($labelsStr) {
+                        $labels = preg_split('/,\s*(?=(?:[^"]*"[^"]*")*[^"]*$)/', $labelsStr);
+                        $currentThread->labels = array_map(function($label) {
+                            return str_replace('""', '"', trim($label, '"'));
+                        }, $labels);
+                    } else {
+                        $currentThread->labels = [];
                     }
+                } else {
+                    $currentThread->labels = [];
                 }
                 
-                $thread->emails[] = $emailObj;
+                $currentThread->sentComment = $row['sent_comment'];
+                $currentThread->emails = array();
+                
+                $threads->threads[] = $currentThread;
+                $currentThreadId = $row['thread_id'];
             }
             
-            $threads->threads[] = $thread;
+            // Skip if no email data
+            if ($row['email_id'] === null) {
+                continue;
+            }
+            
+            // New email
+            if ($currentEmailId !== $row['email_id']) {
+                $currentEmail = new stdClass();
+                $currentEmail->datetime_received = $row['datetime_received'];
+                $currentEmail->email_type = $row['email_type'];
+                $currentEmail->status_type = $row['email_status_type'];
+                $currentEmail->status_text = $row['email_status_text'];
+                $currentEmail->description = $row['description'];
+                $currentEmail->ignore = (bool)$row['ignore'];
+                $currentEmail->attachments = array();
+                
+                $currentThread->emails[] = $currentEmail;
+                $currentEmailId = $row['email_id'];
+            }
+            
+            // Add attachment if exists
+            if ($row['attachment_name'] !== null) {
+                $attObj = new stdClass();
+                $attObj->name = $row['attachment_name'];
+                $attObj->filetype = $row['attachment_filetype'];
+                $attObj->status_type = $row['attachment_status_type'];
+                $attObj->status_text = $row['attachment_status_text'];
+                $currentEmail->attachments[] = $attObj;
+            }
         }
         
         return $threads;

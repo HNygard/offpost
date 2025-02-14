@@ -14,12 +14,12 @@ require_once __DIR__ . '/class/ThreadStorageManager.php';
 requireAuth();
 
 $storageManager = ThreadStorageManager::getInstance();
-
-/* @var Threads[] $threads */
-$allThreads = $storageManager->getThreads();
 $userId = $_SESSION['user']['sub']; // OpenID Connect subject identifier
 
-// Filter threads based on user access
+// Get threads with authorization check built into query
+$allThreads = $storageManager->getThreads($userId);
+
+// Filter archived and labeled threads
 $filteredThreads = [];
 foreach ($allThreads as $file => $threads) {
     $filteredThreads[$file] = clone $threads;
@@ -30,16 +30,15 @@ foreach ($allThreads as $file => $threads) {
     }
 
     foreach ($threads->threads as $thread) {
-        if($thread->archived && !isset($_GET['archived'])) {
+        if ($thread->archived && !isset($_GET['archived'])) {
             continue;
         }
 
         if (isset($_GET['label_filter']) && !ThreadLabelFilter::matches($thread, $_GET['label_filter'])) {
             continue;
         }
-        if (ThreadAuthorizationManager::canUserAccessThread($thread->id, $userId)) {
-            $filteredThreads[$file]->threads[] = $thread;
-        }
+        
+        $filteredThreads[$file]->threads[] = $thread;
     }
 }
 

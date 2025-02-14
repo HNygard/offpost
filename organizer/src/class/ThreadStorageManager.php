@@ -12,8 +12,8 @@ class ThreadStorageManager {
     private function __construct() {
         $this->fileOps = new ThreadFileOperations();
         $this->dbOps = new ThreadDatabaseOperations();
-        // Default to file storage unless explicitly set to use database
-        $this->useDatabase = false;
+        // Default to database storage for optimized queries
+        $this->useDatabase = true;
     }
     
     public static function getInstance() {
@@ -23,8 +23,8 @@ class ThreadStorageManager {
         return self::$instance;
     }
     
-    public function getThreads() {
-        return $this->useDatabase ? $this->dbOps->getThreads() : $this->fileOps->getThreads();
+    public function getThreads($userId = null) {
+        return $this->useDatabase ? $this->dbOps->getThreads($userId) : $this->fileOps->getThreads($userId);
     }
     
     public function getThreadsForEntity($entityId) {
