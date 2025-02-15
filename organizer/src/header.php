@@ -4,8 +4,10 @@ if (!isset($_SESSION)) {
 }
 ?>
 <div class="header-logo">
-    <img src="/images/offpost-icon.png" alt="Offpost" class="logo" style="height: 3em;">
-    Offpost
+    <a href="/" style="text-decoration: none; color: inherit; display: flex; align-items: center;">
+        <img src="/images/offpost-icon.png" alt="Offpost" class="logo" style="height: 3em;">
+        Offpost
+    </a>
 </div>
 
 <div class="user-info">

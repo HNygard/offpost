@@ -73,7 +73,11 @@ $allThreads = $filteredThreads;
             <li><a href="/thread-start">Start new thread</a></li>
             <li><a href="/update-imap?update-only-before=<?= date('Y-m-d H:i:s') ?>">Update email threads (folders) to IMAP</a></li>
             <li><a href="/update-identities">Update identities into Roundcube</a></li>
-            <li><a href="?archived">Show archived</a></li>
+            <li><?php if (isset($_GET['archived'])): ?>
+                <a href="/">Show only active</a>
+            <?php else: ?>
+                <a href="?archived">Show archived</a>
+            <?php endif; ?></li>
         </ul>
 
         <?php
