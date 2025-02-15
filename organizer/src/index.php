@@ -58,7 +58,16 @@ $allThreads = $filteredThreads;
         <?php include 'header.php'; ?>
 
         <h1>Offpost - Email Engine Organizer</h1>
-        <h2>Threads</h2>
+        <?php
+        // Count total threads
+        $totalThreads = 0;
+        foreach ($allThreads as $file => $threads) {
+            if (isset($threads->threads)) {
+                $totalThreads += count($threads->threads);
+            }
+        }
+        ?>
+        <h2>Threads (<?= $totalThreads ?>)</h2>
 
         <ul class="nav-links">
             <li><a href="/thread-start">Start new thread</a></li>
@@ -68,7 +77,6 @@ $allThreads = $filteredThreads;
         </ul>
 
         <?php
-
             if (isset($_GET['label_filter']) && count($allThreads) > 0) {
                 ?>
         Filtered on label: <?= htmlspecialchars($_GET['label_filter'], ENT_QUOTES) ?>
