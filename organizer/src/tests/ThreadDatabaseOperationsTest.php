@@ -106,6 +106,34 @@ class ThreadDatabaseOperationsTest extends PHPUnit\Framework\TestCase {
         $this->assertEquals('Test attachment status', $attachment->status_text);
     }
 
+    public function testGetThreadsWithAuth0UserId() {
+        // Create a test thread
+        $thread = new Thread();
+        $thread->title = "Test Thread";
+        $thread->my_name = "Test User";
+        $thread->my_email = "test@example.com";
+        $thread->public = false;
+        
+        $createdThread = $this->threadDbOps->createThread('test_entity', 'Test', $thread);
+        
+        // Add authorization for Auth0 user
+        $auth0UserId = 'auth0|1234abc1234abc1234abc123';
+        Database::execute(
+            "INSERT INTO thread_authorizations (thread_id, user_id) VALUES (?, ?)",
+            [$createdThread->id, $auth0UserId]
+        );
+        
+        // Get threads for Auth0 user
+        $threads = $this->threadDbOps->getThreads($auth0UserId);
+        
+        // Verify
+        $this->assertNotEmpty($threads, "Should retrieve threads for Auth0 user");
+        $this->assertArrayHasKey("threads-test_entity.json", $threads, "Should have threads for test entity");
+        $retrievedThreads = $threads["threads-test_entity.json"]->threads;
+        $this->assertCount(1, $retrievedThreads, "Should have one thread");
+        $this->assertEquals($createdThread->id, $retrievedThreads[0]->id, "Should retrieve the correct thread");
+    }
+
     public function testGetThreadsReturnsAllEntities() {
         // Create threads for multiple entities
         $thread1 = new Thread();

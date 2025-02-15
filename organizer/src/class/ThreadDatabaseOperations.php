@@ -17,7 +17,10 @@ class ThreadDatabaseOperations {
         
         // Get all threads with emails and attachments in a single query
         $query = "
-            WITH thread_data AS (
+            WITH user_check AS (
+                SELECT ? AS user_id
+            ),
+            thread_data AS (
                 SELECT 
                     t.entity_id,
                     t.id as thread_id,
@@ -49,13 +52,13 @@ class ThreadDatabaseOperations {
                 FROM threads t
                 LEFT JOIN thread_emails e ON t.id = e.thread_id
                 LEFT JOIN thread_email_attachments a ON e.id = a.email_id
-                LEFT JOIN thread_authorizations ta ON t.id = ta.thread_id AND ta.user_id = ?
-                WHERE (?::integer IS NULL) OR (t.public = true OR ta.thread_id IS NOT NULL)
+                LEFT JOIN thread_authorizations ta ON t.id = ta.thread_id AND ta.user_id = (SELECT user_id FROM user_check)
+                WHERE (SELECT user_id FROM user_check) IS NULL OR t.public = true OR ta.thread_id IS NOT NULL
                 ORDER BY t.entity_id, t.id, e.datetime_received, a.id
             )
             SELECT * FROM thread_data";
         
-        $rows = $this->db->query($query, [$userId, $userId]);
+        $rows = $this->db->query($query, [$userId]);
         
         $currentEntityId = null;
         $currentThreadId = null;
