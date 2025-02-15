@@ -54,7 +54,7 @@ class ThreadDatabaseOperations {
                 LEFT JOIN thread_email_attachments a ON e.id = a.email_id
                 LEFT JOIN thread_authorizations ta ON t.id = ta.thread_id AND ta.user_id = (SELECT user_id FROM user_check)
                 WHERE (SELECT user_id FROM user_check) IS NULL OR t.public = true OR ta.thread_id IS NOT NULL
-                ORDER BY t.entity_id, t.id, e.datetime_received, a.id
+                ORDER BY t.entity_id, t.created_at, e.datetime_received, a.id
             )
             SELECT * FROM thread_data";
         
@@ -187,7 +187,7 @@ class ThreadDatabaseOperations {
                 LEFT JOIN thread_emails e ON t.id = e.thread_id
                 LEFT JOIN thread_email_attachments a ON e.id = a.email_id
                 WHERE t.entity_id = ?
-                ORDER BY t.id, e.datetime_received, a.id
+                ORDER BY t.created_at, e.datetime_received, a.id
             )
             SELECT * FROM thread_data";
         
