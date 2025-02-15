@@ -28,9 +28,12 @@ done
 echo "Running database migrations..."
 php /php-frontend/migrations/migrate.php
 
-# In development, grant access to dev-user-id
+# In development, create example data and grant access
 if [ "$ENVIRONMENT" = "development" ]; then
-    echo "Development environment detected. Granting thread access to dev-user-id..."
+    echo "Development environment detected. Creating development data..."
+    php /php-frontend/migrations/create-dev-data.php
+    
+    echo "Granting thread access to dev-user-id..."
     php /php-frontend/grant-thread-access.php dev-user-id
 fi
 
