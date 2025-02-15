@@ -31,7 +31,7 @@ Goal: make production usable
         - [x] Production
     - [x] Setup for migration scripts
     - [x] Code up new data model using database
-    - [ ] Migrate data
+    - [x] Migrate data
         - [x] Make script for migrating data
             docker exec -it offpost-postgres-1 psql -U offpost -d offpost
             docker exec offpost_postgres_1 psql -U offpost -d offpost -c "TRUNCATE TABLE thread_email_attachments, thread_emails, threads CASCADE;"
@@ -45,7 +45,7 @@ Goal: make production usable
             - [x] Clean up old data. Some duplicate emails present.
             - [x] Migrate data
             - [x] Verify data
-    - [ ] Migrated authorizations to database
+    - [x] Migrated authorizations to database
     - [ ] Use new database
         - [x] Make frontpage use new database model. Make it switchable between file and db so that the resulting HTML can be compared.
         - [ ] Test in prod
@@ -54,7 +54,7 @@ Goal: make production usable
         - [x] Script to grant acccess to all threads
             - [x] Make script
             - [x] Auto run in dev
-            - [ ] In prod docker-compose -f docker-compose.prod.yaml exec organizer php /var/www/html/grant-thread-access.php user-id-here
+            - [x] In prod docker-compose -f docker-compose.prod.yaml exec organizer php /php-frontend/grant-thread-access.php auth0|6782c7513eaab1d8116502cb
         - [x] Use authorization in db
     - [ ] Optimize database queries
         - [x] Replace N+1 queries with single optimized query
@@ -67,13 +67,13 @@ Goal: make production usable
         - [x] Move authorization check into main query
             - [x] Modify ThreadAuthorization to work with JOIN query
             - [x] Remove authorization loop from index.php
-    - [ ] Implement caching system
-        - [ ] Add caching layer for thread data
-            - [ ] Setup cache with appropriate TTL
-            - [ ] Cache invalidation on thread updates
-        - [ ] Cache authorization results
-            - [ ] Store user thread access permissions
-            - [ ] Invalidate on permission changes
+    - [-] Implement caching system
+        - [-] Add caching layer for thread data
+            - [-] Setup cache with appropriate TTL
+            - [-] Cache invalidation on thread updates
+        - [-] Cache authorization results
+            - [-] Store user thread access permissions
+            - [-] Invalidate on permission changes
 
 - [ ] Views available for public
     - [ ] Public threads visible to non authenticated users
