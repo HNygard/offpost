@@ -97,9 +97,11 @@ class ThreadAuthorizationManager {
     public static function getUserThreads($user_id) {
         $db = self::getDb();
         $rows = $db->query(
-            "SELECT thread_id, user_id, is_owner, created_at 
-             FROM thread_authorizations 
-             WHERE user_id = ?",
+            "SELECT ta.thread_id, ta.user_id, ta.is_owner, ta.created_at 
+             FROM thread_authorizations ta
+             JOIN threads t ON t.id = ta.thread_id
+             WHERE ta.user_id = ?
+             AND t.archived = false",
             [$user_id]
         );
         

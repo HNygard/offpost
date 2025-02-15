@@ -3,26 +3,37 @@
 require_once __DIR__ . '/bootstrap.php';
 require_once __DIR__ . '/../class/ThreadAuthorization.php';
 require_once __DIR__ . '/../class/Thread.php';
+require_once __DIR__ . '/../class/ThreadStorageManager.php';
 
 class ThreadAuthorizationTest extends PHPUnit\Framework\TestCase {
     private $testThread;
     private $testUserId = 'test_user';
     private $otherUserId = 'other_user';
+    private $storageManager;
+
     protected function setUp(): void {
         parent::setUp();
         
-        // Create test thread
-        $this->testThread = new Thread();
-        $this->testThread->title = 'Test Thread';
-        $this->testThread->my_name = 'Test User';
-        $this->testThread->my_email = 'test@example.com';
-        
-        // Store the thread using ThreadStorageManager
-        $storageManager = ThreadStorageManager::getInstance();
-        $storageManager->createThread('test_entity', 'Test', $this->testThread);
+        // Clean database tables
+        $db = new Database();
+        $db->execute("DELETE FROM thread_authorizations");
+        $db->execute("DELETE FROM thread_email_attachments");
+        $db->execute("DELETE FROM thread_emails");
+        $db->execute("DELETE FROM threads");
         
         // Clean any existing test files
         $this->cleanDirectory(THREAD_AUTH_DIR);
+        
+        $this->storageManager = ThreadStorageManager::getInstance();
+        
+        // Create test thread with unique email
+        $this->testThread = new Thread();
+        $this->testThread->title = 'Test Thread';
+        $this->testThread->my_name = 'Test User';
+        $this->testThread->my_email = 'test' . uniqid() . '@example.com';
+        
+        // Store the thread using ThreadStorageManager
+        $this->storageManager->createThread('test_entity', 'Test', $this->testThread);
     }
 
     protected function tearDown(): void {
@@ -124,6 +135,11 @@ class ThreadAuthorizationTest extends PHPUnit\Framework\TestCase {
         // Create another test thread
         $anotherThread = new Thread();
         $anotherThread->title = 'Another Test Thread';
+        $anotherThread->my_name = 'Test User';
+        $anotherThread->my_email = 'test' . uniqid() . '@example.com';
+        
+        // Store the second thread
+        $this->storageManager->createThread('test_entity', 'Test', $anotherThread);
         
         // Add user to both threads
         $this->testThread->addUser($this->testUserId);

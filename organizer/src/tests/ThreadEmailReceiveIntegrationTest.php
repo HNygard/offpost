@@ -159,7 +159,7 @@ class ThreadEmailReceiveIntegrationTest extends TestCase {
         $thread = new Thread();
         $thread->title = 'Test Thread - ' . $uniqueId;
         $thread->my_name = 'Test User';
-        $thread->my_email = 'test@example.com';
+        $thread->my_email = 'test' . $uniqueId . '@example.com';
         $thread->labels = [];
         $thread->sent = false;
         $thread->archived = false;
@@ -300,7 +300,7 @@ class ThreadEmailReceiveIntegrationTest extends TestCase {
         // Verify required headers
         $this->assertStringContainsString('Return-Path:', $savedEmail, 'Email should have Return-Path header');
         $this->assertStringContainsString('From: sender@example.com', $savedEmail, 'Email should have From header');
-        $this->assertStringContainsString('To: test@example.com', $savedEmail, 'Email should have To header');
+        $this->assertStringContainsString('To: test' . $uniqueId . '@example.com', $savedEmail, 'Email should have To header');
         $this->assertStringContainsString('Subject: ' . $subject, $savedEmail, 'Email should have Subject header');
         $this->assertStringContainsString('Message-ID:', $savedEmail, 'Email should have Message-ID header');
         $this->assertStringContainsString('MIME-Version: 1.0', $savedEmail, 'Email should have MIME-Version header');
@@ -336,7 +336,7 @@ class ThreadEmailReceiveIntegrationTest extends TestCase {
             "id": "' . $threadId . '",
             "title": "Test Thread - ' . $uniqueId . '",
             "my_name": "Test User",
-            "my_email": "test@example.com",
+            "my_email": "test' . $uniqueId . '@example.com",
             "labels": ["uklassifisert-epost"],
             "sent": false,
             "archived": false,

@@ -36,4 +36,10 @@ class ThreadStorageManager {
             $this->dbOps->createThread($entityId, $entityTitlePrefix, $thread) : 
             $this->fileOps->createThread($entityId, $entityTitlePrefix, $thread);
     }
+
+    public function updateThread(Thread $thread) {
+        return $this->useDatabase ?
+            $this->dbOps->updateThread($thread) :
+            $this->fileOps->updateThread($thread);
+    }
 }

@@ -50,12 +50,12 @@ class ThreadDatabaseOperations {
                 LEFT JOIN thread_emails e ON t.id = e.thread_id
                 LEFT JOIN thread_email_attachments a ON e.id = a.email_id
                 LEFT JOIN thread_authorizations ta ON t.id = ta.thread_id AND ta.user_id = ?
-                WHERE (t.public = true OR ta.thread_id IS NOT NULL)
+                WHERE (?::integer IS NULL) OR (t.public = true OR ta.thread_id IS NOT NULL)
                 ORDER BY t.entity_id, t.id, e.datetime_received, a.id
             )
             SELECT * FROM thread_data";
         
-        $rows = $this->db->query($query, [$userId]);
+        $rows = $this->db->query($query, [$userId, $userId]);
         
         $currentEntityId = null;
         $currentThreadId = null;
@@ -87,6 +87,7 @@ class ThreadDatabaseOperations {
                 $currentThread->my_email = $row['my_email'];
                 $currentThread->sent = (bool)$row['sent'];
                 $currentThread->archived = (bool)$row['archived'];
+                $currentThread->public = (bool)$row['public'];
                 
                 // Parse PostgreSQL array format
                 if ($row['labels'] !== null) {
@@ -167,6 +168,7 @@ class ThreadDatabaseOperations {
                     t.archived,
                     t.labels,
                     t.sent_comment,
+                    t.public,
                     e.id as email_id,
                     e.datetime_received,
                     e.email_type,
@@ -204,6 +206,7 @@ class ThreadDatabaseOperations {
                 $currentThread->my_email = $row['my_email'];
                 $currentThread->sent = (bool)$row['sent'];
                 $currentThread->archived = (bool)$row['archived'];
+                $currentThread->public = (bool)$row['public'];
                 
                 // Parse PostgreSQL array format
                 if ($row['labels'] !== null) {
@@ -284,13 +287,34 @@ class ThreadDatabaseOperations {
         );
     }
 
+    public function updateThread(Thread $thread) {
+        $this->db->execute(
+            "UPDATE threads 
+             SET title = ?, my_name = ?, my_email = ?, sent = ?, archived = ?, 
+                 labels = ?, sent_comment = ?, public = ?
+             WHERE id = ?",
+            [
+                $thread->title,
+                $thread->my_name,
+                $thread->my_email,
+                $thread->sent ? 't' : 'f',
+                $thread->archived ? 't' : 'f',
+                $this->formatLabelsForPostgres($thread->labels),
+                $thread->sentComment,
+                $thread->public ? 't' : 'f',
+                $thread->id
+            ]
+        );
+        return $thread;
+    }
+
     public function createThread($entityId, $entityTitlePrefix, Thread $thread) {
         // Generate UUID for new thread
         $uuid = $this->generateUuid();
         
         $this->db->execute(
-            "INSERT INTO threads (id, id_old, entity_id, title, my_name, my_email, sent, archived, labels, sent_comment) 
-            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)",
+            "INSERT INTO threads (id, id_old, entity_id, title, my_name, my_email, sent, archived, labels, sent_comment, public) 
+            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)",
             [
                 $uuid,
                 $thread->id_old ?? null, // Use existing id_old if set, otherwise null
@@ -301,7 +325,8 @@ class ThreadDatabaseOperations {
                 $thread->sent ? 't' : 'f',
                 $thread->archived ? 't' : 'f',
                 $this->formatLabelsForPostgres($thread->labels),
-                $thread->sentComment
+                $thread->sentComment,
+                $thread->public ? 't' : 'f'
             ]
         );
         
