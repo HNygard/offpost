@@ -58,6 +58,16 @@ $allThreads = $filteredThreads;
         <?php include 'header.php'; ?>
 
         <h1>Offpost - Email Engine Organizer</h1>
+
+
+        <div style="font-size: 0.7em;">
+            <h3 style="display: inline;">Old tools:</h3>
+            <ul class="nav-links" style="display: inline;">
+                <li><a href="/update-imap?update-only-before=<?= date('Y-m-d H:i:s') ?>">Update email threads (folders) to IMAP</a></li>
+                <li><a href="/update-identities">Update identities into Roundcube</a></li>
+            </ul>
+        </div>
+
         <?php
         // Count total threads
         $totalThreads = 0;
@@ -71,8 +81,6 @@ $allThreads = $filteredThreads;
 
         <ul class="nav-links">
             <li><a href="/thread-start">Start new thread</a></li>
-            <li><a href="/update-imap?update-only-before=<?= date('Y-m-d H:i:s') ?>">Update email threads (folders) to IMAP</a></li>
-            <li><a href="/update-identities">Update identities into Roundcube</a></li>
             <li><?php if (isset($_GET['archived'])): ?>
                 <a href="/">Show only active</a>
             <?php else: ?>
