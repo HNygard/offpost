@@ -55,7 +55,7 @@ if (isset($_POST['toggle_public_to']) && isset($_POST['thread_id'])) {
     
     if ($toggleThread && $toggleThread->isUserOwner($userId)) {
         $toggleThread->public = $_POST['toggle_public_to'] === '1';
-        saveEntityThreads($entityId, $threadEntity);
+        $storageManager->updateThread($toggleThread, $userId);
     }
     
     // Redirect to remove POST data
@@ -77,7 +77,7 @@ if (isset($_POST['add_user']) && $_POST['user_id'] && $_POST['thread_id']) {
     
     if ($authThread && $authThread->isUserOwner($userId)) {
         $authThread->addUser($_POST['user_id']);
-        saveEntityThreads($entityId, $threadEntity);
+        $storageManager->updateThread($authThread, $userId);
     }
     
     header("Location: /thread-view?threadId=" . urlencode($threadId) . "&entityId=" . urlencode($entityId));
@@ -97,7 +97,7 @@ if (isset($_POST['remove_user']) && $_POST['user_id'] && $_POST['thread_id']) {
     
     if ($authThread && $authThread->isUserOwner($userId)) {
         $authThread->removeUser($_POST['user_id']);
-        saveEntityThreads($entityId, $threadEntity);
+        $storageManager->updateThread($authThread, $userId);
     }
     
     header("Location: /thread-view?threadId=" . urlencode($threadId) . "&entityId=" . urlencode($entityId));
