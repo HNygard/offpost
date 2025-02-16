@@ -73,13 +73,13 @@ I pledge to follow the custom instructions.
 ## Commands:
 
 - Run tests using:
-    cd organizer/src && ./vendor/bin/phpunit tests/
+    ./organizer/src/vendor/bin/phpunit organizer/src/tests/
 
 - Run system using:
     docker-compose -f docker-compose.dev.yaml up -d
 
 - Rebuild docker images:
-    docker-compose -f docker-compose.dev.yaml up --build -d
+    docker-compose -f docker-compose.dev.yaml down && docker-compose -f docker-compose.dev.yaml up --build -d
 
 - Restart application/service:
     docker-compose -f docker-compose.dev.yaml down && docker-compose -f docker-compose.dev.yaml up -d
