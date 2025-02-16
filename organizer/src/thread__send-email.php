@@ -2,13 +2,14 @@
 
 require_once __DIR__ . '/auth.php';
 require_once __DIR__ . '/class/Threads.php';
+require_once __DIR__ . '/class/ThreadStorageManager.php';
 
 // Require authentication
 requireAuth();
 
 $entityId = $_GET['entityId'];
 $threadId = $_GET['threadId'];
-$threads = getThreadsForEntity($entityId);
+$threads = ThreadStorageManager::getInstance()->getThreadsForEntity($entityId);
 
 $thread = null;
 foreach ($threads->threads as $thread1) {
@@ -68,8 +69,7 @@ $signDelim = mt_rand(0, 10) > 5 ? '---' : '--';
     <textarea name="email-body" style="width: 500px; height: 300px;">
 <?=$starterMessage . "\n"?>
 -
-
---
+<?= $signDelim . "\n" ?>
 <?=htmlescape($thread->my_name)?></textarea><br>
     <br>
     <input type="submit" value="Save" name="submit">
