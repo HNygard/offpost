@@ -91,11 +91,14 @@ class ThreadDatabaseOperationsTest extends PHPUnit\Framework\TestCase {
         $history = new ThreadHistory();
         $historyEntries = $history->getHistoryForThread($thread->id);
         
-        $this->assertCount(3, $historyEntries, "Should have three history entries");
+        $this->assertCount(5, $historyEntries, "Should have five history entries. History: " . json_encode($historyEntries));
         
-        $this->assertEquals('created', $historyEntries[0]['action']);
-        $this->assertEquals('edited', $historyEntries[1]['action']);
-        $this->assertEquals('archived', $historyEntries[2]['action']);
+        // Entries are in reverse chronological order
+        $this->assertEquals('created', $historyEntries[0]['action'], "First action should be thread creation");
+        $this->assertEquals('edited', $historyEntries[1]['action'], "Second action should be thread edit");
+        $this->assertEquals('unsent', $historyEntries[2]['action'], "Third action should be initial unsent state");
+        $this->assertEquals('archived', $historyEntries[3]['action'], "Fourth action should be archiving");
+        $this->assertEquals('unsent', $historyEntries[4]['action'], "Fifth action should be unsent after archive");
         
         // Verify edit details
         $editDetails = json_decode($historyEntries[1]['details'], true);
@@ -179,6 +182,72 @@ class ThreadDatabaseOperationsTest extends PHPUnit\Framework\TestCase {
         $retrievedThreads = $threads["threads-test_entity.json"]->threads;
         $this->assertCount(1, $retrievedThreads, "Should have one thread");
         $this->assertEquals($createdThread->id, $retrievedThreads[0]->id, "Should retrieve the correct thread");
+    }
+
+    public function testUpdateThreadPublicStatus() {
+        // Create initial thread (private by default)
+        $thread = new Thread();
+        $thread->title = "Test Thread";
+        $thread->my_name = "Test User";
+        $thread->my_email = "test@example.com";
+        $thread->public = false;
+
+        $createdThread = $this->threadDbOps->createThread('test_entity', 'Test', $thread, 'test-user');
+
+        // Load current thread state
+        $thread = Thread::loadFromDatabase($createdThread->id);
+
+        // Make thread public (keeping other properties unchanged)
+        $thread->public = true;
+        $this->threadDbOps->updateThread($thread, 'test-user');
+
+        // Make thread private again (keeping other properties unchanged)
+        $thread->public = false;
+        $this->threadDbOps->updateThread($thread, 'test-user');
+
+        // Verify history entries
+        $history = new ThreadHistory();
+        $historyEntries = $history->getHistoryForThread($thread->id);
+
+        $this->assertCount(3, $historyEntries, "Should have three history entries");
+
+        // Entries are returned in reverse chronological order
+        $this->assertEquals('created', $historyEntries[0]['action'], "First action should be thread creation");
+        $this->assertEquals('made_public', $historyEntries[1]['action'], "Second action should be making thread public");
+        $this->assertEquals('made_private', $historyEntries[2]['action'], "Third action should be making thread private");
+    }
+
+    public function testUpdateThreadSentStatus() {
+        // Create initial thread (not sent by default)
+        $thread = new Thread();
+        $thread->title = "Test Thread";
+        $thread->my_name = "Test User";
+        $thread->my_email = "test@example.com";
+        $thread->sent = false;
+
+        $createdThread = $this->threadDbOps->createThread('test_entity', 'Test', $thread, 'test-user');
+
+        // Load current thread state
+        $thread = Thread::loadFromDatabase($createdThread->id);
+
+        // Mark thread as sent
+        $thread->sent = true;
+        $this->threadDbOps->updateThread($thread, 'test-user');
+
+        // Mark thread as not sent
+        $thread->sent = false;
+        $this->threadDbOps->updateThread($thread, 'test-user');
+
+        // Verify history entries
+        $history = new ThreadHistory();
+        $historyEntries = $history->getHistoryForThread($thread->id);
+
+        $this->assertCount(3, $historyEntries, "Should have three history entries");
+
+        // Entries are returned in reverse chronological order
+        $this->assertEquals('created', $historyEntries[0]['action'], "First action should be thread creation");
+        $this->assertEquals('sent', $historyEntries[1]['action'], "Second action should be marking as sent");
+        $this->assertEquals('unsent', $historyEntries[2]['action'], "Third action should be marking as not sent");
     }
 
     public function testGetThreadsReturnsAllEntities() {

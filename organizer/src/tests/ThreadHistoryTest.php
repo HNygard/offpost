@@ -95,6 +95,30 @@ class ThreadHistoryTest extends PHPUnit\Framework\TestCase {
             $this->history->formatActionForDisplay('unarchived', null)
         );
 
+        // Test made public action
+        $this->assertEquals(
+            'Made thread public',
+            $this->history->formatActionForDisplay('made_public', null)
+        );
+
+        // Test made private action
+        $this->assertEquals(
+            'Made thread private',
+            $this->history->formatActionForDisplay('made_private', null)
+        );
+
+        // Test sent action
+        $this->assertEquals(
+            'Marked thread as sent',
+            $this->history->formatActionForDisplay('sent', null)
+        );
+
+        // Test unsent action
+        $this->assertEquals(
+            'Marked thread as not sent',
+            $this->history->formatActionForDisplay('unsent', null)
+        );
+
         // Test unknown action
         $this->assertEquals(
             'Unknown action',

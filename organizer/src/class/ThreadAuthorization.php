@@ -45,6 +45,7 @@ class ThreadAuthorization implements JsonSerializable {
 
 class ThreadAuthorizationManager {
     private static $db = null;
+    private static $history = null;
 
     private static function getDb() {
         if (self::$db === null) {
@@ -53,8 +54,26 @@ class ThreadAuthorizationManager {
         return self::$db;
     }
 
-    public static function addUserToThread($thread_id, $user_id, $is_owner = false) {
+    private static function getHistory() {
+        if (self::$history === null) {
+            self::$history = new ThreadHistory();
+        }
+        return self::$history;
+    }
+
+    public static function addUserToThread($thread_id, $user_id, $is_owner = false, $acting_user_id = null) {
         $db = self::getDb();
+        $history = self::getHistory();
+        
+        // Verify thread exists first
+        $thread = $db->queryOne(
+            "SELECT id FROM threads WHERE id = ?",
+            [$thread_id]
+        );
+        
+        if (!$thread) {
+            throw new Exception("Cannot add user to non-existent thread");
+        }
         
         // Use upsert to handle existing authorizations
         $db->execute(
@@ -65,14 +84,32 @@ class ThreadAuthorizationManager {
             [$thread_id, $user_id, $is_owner ? 't' : 'f']
         );
         
+        // Log the action
+        $history->logAction(
+            $thread_id,
+            'user_added',
+            $acting_user_id ?? $user_id,
+            ['user_id' => $user_id, 'is_owner' => $is_owner]
+        );
+        
         return new ThreadAuthorization($thread_id, $user_id, $is_owner);
     }
 
-    public static function removeUserFromThread($thread_id, $user_id) {
+    public static function removeUserFromThread($thread_id, $user_id, $acting_user_id = null) {
         $db = self::getDb();
+        $history = self::getHistory();
+        
         $db->execute(
             "DELETE FROM thread_authorizations WHERE thread_id = ? AND user_id = ?",
             [$thread_id, $user_id]
+        );
+
+        // Log the action
+        $history->logAction(
+            $thread_id,
+            'user_removed',
+            $acting_user_id ?? $user_id,
+            ['user_id' => $user_id]
         );
     }
 

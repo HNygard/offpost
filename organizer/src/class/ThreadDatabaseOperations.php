@@ -315,17 +315,35 @@ class ThreadDatabaseOperations {
         // Log changes
         if ($currentThread) {
             $details = [];
+            // Check for changes that require detailed logging
             if ($currentThread->title !== $thread->title) {
                 $details['title'] = $thread->title;
             }
             if ($currentThread->labels !== $thread->labels) {
                 $details['labels'] = $thread->labels;
             }
+            if ($currentThread->my_name !== $thread->my_name) {
+                $details['my_name'] = $thread->my_name;
+            }
+            if ($currentThread->my_email !== $thread->my_email) {
+                $details['my_email'] = $thread->my_email;
+            }
+            if ($currentThread->sentComment !== $thread->sentComment) {
+                $details['sent_comment'] = $thread->sentComment;
+            }
             if (!empty($details)) {
                 $this->history->logAction($thread->id, 'edited', $userId, $details);
             }
+
+            // Check for status changes
             if ($currentThread->archived !== $thread->archived) {
                 $this->history->logAction($thread->id, $thread->archived ? 'archived' : 'unarchived', $userId);
+            }
+            if ($currentThread->public !== $thread->public) {
+                $this->history->logAction($thread->id, $thread->public ? 'made_public' : 'made_private', $userId);
+            }
+            if ($currentThread->sent !== $thread->sent) {
+                $this->history->logAction($thread->id, $thread->sent ? 'sent' : 'unsent', $userId);
             }
         }
         

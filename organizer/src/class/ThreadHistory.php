@@ -33,6 +33,21 @@ class ThreadHistory {
                 return 'Archived thread';
             case 'unarchived':
                 return 'Unarchived thread';
+            case 'made_public':
+                return 'Made thread public';
+            case 'made_private':
+                return 'Made thread private';
+            case 'sent':
+                return 'Marked thread as sent';
+            case 'unsent':
+                return 'Marked thread as not sent';
+            case 'user_added':
+                $details = json_decode($details, true);
+                return 'Added user: ' . ($details['user_id'] ?? 'Unknown user') .
+                       ($details['is_owner'] ? ' as owner' : ' as viewer');
+            case 'user_removed':
+                $details = json_decode($details, true);
+                return 'Removed user: ' . ($details['user_id'] ?? 'Unknown user');
             default:
                 return 'Unknown action';
         }

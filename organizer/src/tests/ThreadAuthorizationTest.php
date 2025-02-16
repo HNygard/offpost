@@ -4,6 +4,7 @@ require_once __DIR__ . '/bootstrap.php';
 require_once __DIR__ . '/../class/ThreadAuthorization.php';
 require_once __DIR__ . '/../class/Thread.php';
 require_once __DIR__ . '/../class/ThreadStorageManager.php';
+require_once __DIR__ . '/../class/ThreadHistory.php';
 
 class ThreadAuthorizationTest extends PHPUnit\Framework\TestCase {
     private $testThread;
@@ -34,7 +35,7 @@ class ThreadAuthorizationTest extends PHPUnit\Framework\TestCase {
         $this->testThread->my_email = 'test' . uniqid() . '@example.com';
         
         // Store the thread using ThreadStorageManager
-        $this->storageManager->createThread('test_entity', 'Test', $this->testThread);
+        $this->storageManager->createThread('test_entity', 'Test', $this->testThread, $this->testUserId);
     }
 
     protected function tearDown(): void {
@@ -169,5 +170,41 @@ class ThreadAuthorizationTest extends PHPUnit\Framework\TestCase {
         $user = reset($users);
         $this->assertEquals($this->testUserId, $user->getUserId());
         $this->assertTrue($user->isOwner());
+    }
+
+    public function testUserAuthorizationHistory() {
+        // Add user and verify history
+        $this->testThread->addUser($this->testUserId, true);
+        
+        // Get history entries
+        $history = new ThreadHistory();
+        $historyEntries = $history->getHistoryForThread($this->testThread->id);
+        
+        // Should have two entries (thread creation and user addition)
+        $this->assertCount(2, $historyEntries, "Should have two history entries");
+        // Entries are returned in reverse chronological order (newest first)
+        $this->assertEquals('user_added', $historyEntries[0]['action'], "First action should be user addition");
+        $this->assertEquals('created', $historyEntries[1]['action'], "Second action should be thread creation");
+        
+        $details = json_decode($historyEntries[0]['details'], true);
+        $this->assertEquals($this->testUserId, $details['user_id']);
+        $this->assertTrue($details['is_owner']);
+
+        // Remove user and verify history
+        $this->testThread->removeUser($this->testUserId);
+        
+        // Get updated history entries
+        $historyEntries = $history->getHistoryForThread($this->testThread->id);
+        
+        // Should now have three entries (creation, add, and remove)
+        $this->assertCount(3, $historyEntries, "Should have three history entries");
+        
+        // Entries are returned in reverse chronological order (newest first)
+        $this->assertEquals('user_removed', $historyEntries[0]['action'], "First action should be user removal");
+        $this->assertEquals('user_added', $historyEntries[1]['action'], "Second action should be user addition");
+        $this->assertEquals('created', $historyEntries[2]['action'], "Third action should be thread creation");
+        
+        $removeDetails = json_decode($historyEntries[0]['details'], true);
+        $this->assertEquals($this->testUserId, $removeDetails['user_id']);
     }
 }
