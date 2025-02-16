@@ -79,13 +79,23 @@ I pledge to follow the custom instructions.
     docker-compose -f docker-compose.dev.yaml up -d
 
 - If migrations was added:
-    TODO: find command to only run migrations
+    See "restart" command below
+
+- Complete reset of database (including recreating test data):
+    docker-compose -f docker-compose.dev.yaml rm -s -f -v postgres organizer
+    docker volume rm offpost_postgres_data_development
+    docker-compose -f docker-compose.dev.yaml up -d
+    sleep 5  # Wait for migrations to complete
+    docker-compose  -f docker-compose.dev.yaml logs organizer | grep "\\[migrate\\]"
 
 - Rebuild docker images:
     docker-compose -f docker-compose.dev.yaml down && docker-compose -f docker-compose.dev.yaml up --build -d
 
 - Restart application/service:
     docker-compose -f docker-compose.dev.yaml down && docker-compose -f docker-compose.dev.yaml up -d
+
+- Logs from organizer (the main container):
+    docker-compose  -f docker-compose.dev.yaml logs organizer
 
 - Check processes using:
     docker-compose -f docker-compose.dev.yaml ps

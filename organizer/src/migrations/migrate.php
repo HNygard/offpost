@@ -1,5 +1,7 @@
 <?php
 
+echo "[migrate] Starting - " . date('Y-m-d H:i:s') . "\n";
+
 function getPasswordFromFile($file) {
     if (!file_exists($file)) {
         throw new RuntimeException("Password file not found: $file");
@@ -38,16 +40,16 @@ try {
     $sqlFiles = glob(__DIR__ . '/sql/*.sql');
     sort($sqlFiles); // Ensure files are processed in order
 
-    echo "\nFound migration scripts:\n";
+    echo "[migrate] \nFound migration scripts:\n";
     foreach ($sqlFiles as $file) {
         $filename = basename($file);
         if (isset($executed[$filename])) {
-            echo "- $filename (already executed)\n";
+            echo "[migrate] - $filename (already executed)\n";
         } else {
-            echo "- $filename (pending)\n";
+            echo "[migrate] - $filename (pending)\n";
         }
     }
-    echo "\n";
+    echo "[migrate] \n";
 
     // Begin transaction
     $pdo->beginTransaction();
@@ -58,11 +60,11 @@ try {
             
             // Skip if already executed
             if (isset($executed[$filename])) {
-                echo "Skipping $filename (already executed)\n";
+                echo "[migrate] Skipping $filename (already executed)\n";
                 continue;
             }
 
-            echo "Executing $filename...\n";
+            echo "[migrate] Executing $filename...\n";
             
             // Read and execute SQL file
             $sql = file_get_contents($file);
@@ -72,12 +74,12 @@ try {
             $stmt = $pdo->prepare("INSERT INTO migrations (filename) VALUES (?)");
             $stmt->execute([$filename]);
             
-            echo "Completed $filename\n";
+            echo "[migrate] Completed $filename\n";
         }
 
         // Commit transaction
         $pdo->commit();
-        echo "All migrations completed successfully\n";
+        echo "[migrate] All migrations completed successfully\n";
 
     } catch (Exception $e) {
         // Rollback transaction on error
@@ -86,6 +88,6 @@ try {
     }
 
 } catch (Exception $e) {
-    echo "Error: " . $e->getMessage() . "\n";
+    echo "[migrate] Error: " . $e->getMessage() . "\n";
     exit(1);
 }
