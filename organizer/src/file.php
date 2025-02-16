@@ -3,6 +3,7 @@
 require_once __DIR__ . '/auth.php';
 require 'vendor/autoload.php';
 require_once __DIR__ . '/class/ThreadStorageManager.php';
+require_once __DIR__ . '/class/ThreadAuthorization.php';
 
 // Require authentication
 requireAuth();
@@ -11,8 +12,17 @@ use Laminas\Mail\Storage\Message;
 
 require_once __DIR__ . '/class/Threads.php';
 
+if (!isset($_GET['entityId']) || !isset($_GET['threadId'])) {
+    throw new Exception("Missing required parameters: entityId and threadId", 400);
+}
+
 $entityId = $_GET['entityId'];
 $threadId = $_GET['threadId'];
+
+if (!is_uuid($threadId)) {
+    throw new Exception("Invalid threadId parameter", 400);
+}
+
 $threads = ThreadStorageManager::getInstance()->getThreadsForEntity($entityId);
 
 $thread = null;
@@ -20,6 +30,14 @@ foreach ($threads->threads as $thread1) {
     if ($thread1->id == $threadId) {
         $thread = $thread1;
     }
+}
+
+if (!$thread) {
+    throw new Exception("Thread not found: threadId={$threadId}, entityId={$entityId}", 404);
+}
+
+if (!ThreadAuthorizationManager::canUserAccessThread($threadId, $_SESSION['user']['sub'])) {
+    throw new Exception("Unauthorized access to thread: {$threadId}", 403);
 }
 
 foreach ($thread->emails as $email) {
@@ -102,9 +120,6 @@ foreach ($thread->emails as $email) {
     }
 }
 
-if (!$thread) {
-    throw new Exception("Thread not found: threadId={$threadId}, entityId={$entityId}", 404);
-}
 
 // If we got here, neither body nor attachment was found
 throw new Exception("Requested content not found in thread: threadId={$threadId}, entityId={$entityId}", 404);

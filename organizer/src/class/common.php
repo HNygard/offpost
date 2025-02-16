@@ -83,3 +83,11 @@ if (!function_exists('logDebug')) {
         . $message . chr(10);
     }
 }
+
+function is_uuid($string) {
+    if (!is_string($string)) {
+        return false;
+    }
+
+    return preg_match('/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/', $string) === 1;
+}
