@@ -3,6 +3,7 @@
 require_once __DIR__ . '/auth.php';
 require_once __DIR__ . '/class/Threads.php';
 require_once __DIR__ . '/class/ThreadEmailClassifier.php';
+require_once __DIR__ . '/class/ThreadStorageManager.php';
 
 // Require authentication
 requireAuth();
@@ -13,7 +14,7 @@ function logDebug($message) {
 
 $entityId = $_GET['entityId'];
 $threadId = $_GET['threadId'];
-$threads = getThreadsForEntity($entityId);
+$threads = ThreadStorageManager::getInstance()->getThreadsForEntity($entityId);
 
 $thread = null;
 foreach ($threads->threads as $thread1) {
@@ -271,7 +272,7 @@ function secondsToHumanReadable($seconds) {
                                 <input type="checkbox"
                                        value="true"
                                        name="<?= $emailId . '-ignore' ?>"
-                                    <?= $email->ignore ? ' checked="checked"' : '' ?>> Ignore
+                                   <?= $email->ignore ? ' checked="checked"' : '' ?>> Ignore
                             </label>
                         </div>
 
