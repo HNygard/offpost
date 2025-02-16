@@ -132,6 +132,12 @@ span.label {
     display: inline-block;
     margin: 0 8px 4px 0;
     font-size: 0.9em;
+    cursor: pointer;
+    transition: transform 0.1s ease;
+}
+
+span.label:hover {
+    transform: translateY(-1px);
 }
 
 span.label a {
@@ -142,6 +148,28 @@ span.label a {
     color: inherit;
     text-decoration: none;
     display: inline-block;
+    position: relative;
+}
+
+span.label a::after {
+    content: '';
+    position: absolute;
+    bottom: -1px;
+    left: 4px;
+    right: 4px;
+    height: 2px;
+    background: rgba(0,0,0,0.1);
+    border-radius: 1px;
+    opacity: 0;
+    transition: opacity 0.2s ease;
+}
+
+span.label:hover a::after {
+    opacity: 1;
+}
+
+span.label a:active {
+    transform: translateY(1px);
 }
 
 span.label.label_ok a {
@@ -182,6 +210,61 @@ span.label.label_disabled a {
 }
 
 /* Thread View Styles */
+#label-summary {
+    margin: 20px 0;
+    padding: 15px;
+    background-color: #f8f9fa;
+    border-radius: 6px;
+    border: 1px solid #dee2e6;
+}
+
+#label-summary h3 {
+    margin: 0 0 10px 0;
+    color: #34495e;
+    font-size: 1.1em;
+}
+
+#label-summary .label a {
+    background-color: #7a9be6;
+    box-shadow: 0 1px 2px rgba(0,0,0,0.1);
+}
+
+#label-summary .label:hover a {
+    background-color: #6389db;
+    box-shadow: 0 2px 4px rgba(0,0,0,0.15);
+}
+
+#label-summary .label a::before {
+    content: '🏷️';
+    margin-right: 4px;
+    font-size: 0.9em;
+    opacity: 0.7;
+}
+
+#current-filter {
+    margin: 10px 0;
+    padding: 10px;
+    background-color: #e9ecef;
+    border-radius: 4px;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+}
+
+#current-filter button {
+    background: #dc3545;
+    color: white;
+    border: none;
+    padding: 4px 8px;
+    border-radius: 4px;
+    cursor: pointer;
+    font-size: 0.9em;
+}
+
+#current-filter button:hover {
+    background: #c82333;
+}
+
 .thread-details {
     background-color: #f8f9fa;
     padding: 15px;

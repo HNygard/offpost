@@ -52,6 +52,7 @@ $allThreads = $filteredThreads;
     $pageTitle = 'Offpost';
     include 'head.php';
     ?>
+    <script src="/js/threadLabels.js"></script>
 </head>
 <body>
     <div class="container">
@@ -106,6 +107,10 @@ $allThreads = $filteredThreads;
         <?php
             }
         ?>
+
+        <hr>
+        <div id="label-summary"></div>
+        <div id="current-filter"></div>
 
         <table>
             <tr>
