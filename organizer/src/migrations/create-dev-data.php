@@ -22,8 +22,8 @@ echo "Creating development data...\n";
 
 // Source and destination paths
 $sourceEntityId = "0418-nord-odal-kommune";
-$sourceThreadsFile = THREADS_DIR . "/threads-{$sourceEntityId}.json";
-$sourceThreadsDir = THREADS_DIR . "/threads/{$sourceEntityId}";
+$sourceThreadsFile = "/organizer-data/threads/threads-{$sourceEntityId}.json";
+$sourceThreadsDir = "/organizer-data/threads/{$sourceEntityId}";
 
 // Create destination directories if they don't exist
 if (!file_exists(THREADS_DIR)) {
@@ -37,10 +37,13 @@ $threadOps = new ThreadDatabaseOperations();
 // Process each thread
 foreach ($threadsData['threads'] as $threadData) {
     try {
-        createThreadTestData($threadsData, $threadData, $sourceEntityId);
+        $uuid = createThreadTestData($threadsData, $threadData, $sourceEntityId);
     }
     catch (Exception $e) {
         echo "Error creating thread: " . $e->getMessage() . "\n";
+        echo $e->getTraceAsString() . "\n";
+        echo "Error creating thread: " . $e->getMessage() . "\n";
+
     }
 }
 function createThreadTestData($threadsData, $threadData, $sourceEntityId) {
@@ -48,7 +51,7 @@ function createThreadTestData($threadsData, $threadData, $sourceEntityId) {
 
     // Create thread in database
     $thread = new Thread();
-    $thread->id = $threadData['id'];
+    $thread->id_old = $threadData['id']; // Store original ID as id_old
     $thread->title = $threadData['title'];
     $thread->my_name = $threadData['my_name'];
     $thread->my_email = $threadData['my_email'];
@@ -63,30 +66,29 @@ function createThreadTestData($threadsData, $threadData, $sourceEntityId) {
     // Process emails
     foreach ($threadData['emails'] as $emailData) {
         $email = new ThreadEmail();
-        $email->timestamp_received = $emailData['timestamp_received'];
-        $email->datetime_received = new DateTime($emailData['datetime_received']);
+        $email->timestamp_received = date('Y-m-d H:i:s', $emailData['timestamp_received']);
+        $email->datetime_received = $emailData['datetime_received'];
         $email->ignore = $emailData['ignore'];
         $email->email_type = $emailData['email_type'];
         $email->status_type = $emailData['status_type'];
         $email->status_text = $emailData['status_text'];
         $email->id = $emailData['id'];
 
-        // Insert email into database
-        $emailId = generateUuid();
-        Database::execute(
-            "INSERT INTO thread_emails (id, thread_id, timestamp_received, datetime_received, ignore, email_type, status_type, status_text) 
-             VALUES (?, ?, ?, ?, ?, ?, ?, ?)",
-            [
-                $emailId,
-                $thread->id,
-                $email->timestamp_received,
-                $email->datetime_received->format('Y-m-d H:i:s'),
-                $email->ignore ? 't' : 'f',
-                $email->email_type,
-                $email->status_type,
-                $email->status_text
-            ]
-        );
+        // Insert email into database with original ID stored in id_old
+        $sql = "INSERT INTO thread_emails (thread_id, id_old, timestamp_received, datetime_received, ignore, email_type, status_type, status_text, content) 
+                VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?) RETURNING id";
+        
+        $emailId = Database::queryValue($sql, [
+            $thread->id,
+            $email->id,
+            $email->timestamp_received,
+            $email->datetime_received,
+            $email->ignore ? 't' : 'f',
+            $email->email_type,
+            $email->status_type,
+            $email->status_text,
+            'content not imported'
+        ]);
 
         // Process attachments if any
         if (isset($emailData['attachments'])) {
@@ -110,31 +112,8 @@ function createThreadTestData($threadsData, $threadData, $sourceEntityId) {
 
     // Grant access to dev-user-id
     $thread->addUser('dev-user-id', true);
-}
 
-// Copy thread files
-$destEntityDir = joinPaths(THREADS_DIR, $sourceEntityId);
-if (!file_exists($destEntityDir)) {
-    mkdir($destEntityDir, 0777, true);
-}
-
-// Copy threads JSON file
-copy($sourceThreadsFile, joinPaths(THREADS_DIR, "threads-{$sourceEntityId}.json"));
-
-// Copy all thread files
-foreach ($threadsData['threads'] as $threadData) {
-    $threadId = $threadData['id'];
-    $sourceThreadDir = joinPaths($sourceThreadsDir, $threadId);
-    $destThreadDir = joinPaths($destEntityDir, $threadId);
-    
-    if (!file_exists($destThreadDir)) {
-        mkdir($destThreadDir, 0777, true);
-    }
-
-    // Copy all files in thread directory
-    foreach (glob("{$sourceThreadDir}/*") as $file) {
-        copy($file, joinPaths($destThreadDir, basename($file)));
-    }
+    return $thread->id; // Return UUID for mapping
 }
 
 echo "Development data created successfully.\n";
