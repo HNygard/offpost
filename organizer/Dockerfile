@@ -34,14 +34,16 @@ COPY --from=composer:latest /usr/bin/composer /usr/bin/composer
 # Set up application directory
 WORKDIR /php-frontend
 
-# Copy composer files first
-COPY src/composer.json src/composer.lock ./
+# Copy application files with correct ownership
+COPY --chown=www-data:www-data src/ ./
 
-# Install dependencies
+# Create vendor directory with correct permissions
+RUN mkdir -p vendor && chown -R www-data:www-data .
+
+# Install dependencies as www-data user
+USER www-data
 RUN composer install --no-dev --no-interaction --no-progress --optimize-autoloader
-
-# Copy application files (vendor is excluded via .dockerignore)
-COPY src/ ./
+USER root
 
 COPY localhost.conf /etc/apache2/conf-enabled/localhost.conf
 COPY phpdev.ini /usr/local/etc/php/conf.d/phpdev.ini

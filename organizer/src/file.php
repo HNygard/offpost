@@ -1,7 +1,7 @@
 <?php
 
 require_once __DIR__ . '/auth.php';
-require 'vendor/autoload.php';
+require_once __DIR__ . '/vendor/autoload.php';
 require_once __DIR__ . '/class/ThreadStorageManager.php';
 require_once __DIR__ . '/class/ThreadAuthorization.php';
 
