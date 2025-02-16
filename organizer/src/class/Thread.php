@@ -79,8 +79,8 @@ class Thread implements JsonSerializable {
      */
     public static function loadFromDatabase($id) {
         $data = Database::queryOne(
-            "SELECT * FROM threads WHERE id_old = ?",
-            [$id]
+            "SELECT * FROM threads WHERE id_old = ? OR id = ?",
+            [$id, $id]
         );
 
         if (!$data) {

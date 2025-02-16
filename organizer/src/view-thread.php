@@ -3,6 +3,7 @@ require_once __DIR__ . '/auth.php';
 require_once __DIR__ . '/class/Threads.php';
 require_once __DIR__ . '/class/ThreadEmailClassifier.php';
 require_once __DIR__ . '/class/ThreadStorageManager.php';
+require_once __DIR__ . '/class/ThreadHistory.php';
 
 // Require authentication
 requireAuth();
@@ -113,6 +114,10 @@ $authorizedUsers = array();
 if ($thread->isUserOwner($userId)) {
     $authorizedUsers = ThreadAuthorizationManager::getThreadUsers($thread->id);
 }
+
+// Get thread history
+$history = new ThreadHistory();
+$historyEntries = $history->getHistoryForThread($thread->id);
 ?>
 <!DOCTYPE html>
 <html>
@@ -190,6 +195,23 @@ if ($thread->isUserOwner($userId)) {
                         </form>
                     </div>
                 </div>
+            <?php endif; ?>
+        </div>
+
+        <h2>Thread History</h2>
+        <div class="thread-history">
+            <?php if (empty($historyEntries)): ?>
+                <p>No history available</p>
+            <?php else: ?>
+                <?php foreach ($historyEntries as $entry): 
+                    $formattedEntry = $history->formatHistoryEntry($entry);
+                ?>
+                    <div class="history-item">
+                        <span class="history-action"><?= htmlescape($formattedEntry['action']) ?></span>
+                        <span class="history-user">by <?= htmlescape($formattedEntry['user']) ?></span>
+                        <span class="history-date"><?= htmlescape($formattedEntry['date']) ?></span>
+                    </div>
+                <?php endforeach; ?>
             <?php endif; ?>
         </div>
 

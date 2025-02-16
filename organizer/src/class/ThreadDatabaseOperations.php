@@ -4,12 +4,13 @@ require_once __DIR__ . '/common.php';
 require_once __DIR__ . '/Thread.php';
 require_once __DIR__ . '/Database.php';
 require_once __DIR__ . '/Threads.php';
+require_once __DIR__ . '/ThreadHistory.php';
 
 class ThreadDatabaseOperations {
-    private $db;
+    private $history;
 
     public function __construct() {
-        $this->db = new Database();
+        $this->history = new ThreadHistory();
     }
 
     public function getThreads($userId = null) {
@@ -58,7 +59,7 @@ class ThreadDatabaseOperations {
             )
             SELECT * FROM thread_data";
         
-        $rows = $this->db->query($query, [$userId]);
+        $rows = Database::query($query, [$userId]);
         
         $currentEntityId = null;
         $currentThreadId = null;
@@ -191,7 +192,7 @@ class ThreadDatabaseOperations {
             )
             SELECT * FROM thread_data";
         
-        $rows = $this->db->query($query, [$entityId]);
+        $rows = Database::query($query, [$entityId]);
         
         $currentThreadId = null;
         $currentEmailId = null;
@@ -290,8 +291,11 @@ class ThreadDatabaseOperations {
         );
     }
 
-    public function updateThread(Thread $thread) {
-        $this->db->execute(
+    public function updateThread(Thread $thread, $userId) {
+        // Get current thread state to detect changes
+        $currentThread = Thread::loadFromDatabase($thread->id);
+        
+        Database::execute(
             "UPDATE threads 
              SET title = ?, my_name = ?, my_email = ?, sent = ?, archived = ?, 
                  labels = ?, sent_comment = ?, public = ?
@@ -308,14 +312,31 @@ class ThreadDatabaseOperations {
                 $thread->id
             ]
         );
+        // Log changes
+        if ($currentThread) {
+            $details = [];
+            if ($currentThread->title !== $thread->title) {
+                $details['title'] = $thread->title;
+            }
+            if ($currentThread->labels !== $thread->labels) {
+                $details['labels'] = $thread->labels;
+            }
+            if (!empty($details)) {
+                $this->history->logAction($thread->id, 'edited', $userId, $details);
+            }
+            if ($currentThread->archived !== $thread->archived) {
+                $this->history->logAction($thread->id, $thread->archived ? 'archived' : 'unarchived', $userId);
+            }
+        }
+        
         return $thread;
     }
 
-    public function createThread($entityId, $entityTitlePrefix, Thread $thread) {
+    public function createThread($entityId, $entityTitlePrefix, Thread $thread, $userId) {
         // Generate UUID for new thread
         $uuid = $this->generateUuid();
         
-        $this->db->execute(
+        Database::execute(
             "INSERT INTO threads (id, id_old, entity_id, title, my_name, my_email, sent, archived, labels, sent_comment, public) 
             VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)",
             [
@@ -335,6 +356,10 @@ class ThreadDatabaseOperations {
         
         // Set the UUID as the thread's ID
         $thread->id = $uuid;
+        
+        // Log thread creation
+        $this->history->logAction($uuid, 'created', $userId);
+        
         return $thread;
     }
 }

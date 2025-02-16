@@ -16,6 +16,7 @@ class ThreadAuthorizationTest extends PHPUnit\Framework\TestCase {
         
         // Clean database tables
         $db = new Database();
+        $db->execute("DELETE FROM thread_history");
         $db->execute("DELETE FROM thread_authorizations");
         $db->execute("DELETE FROM thread_email_attachments");
         $db->execute("DELETE FROM thread_emails");

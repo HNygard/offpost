@@ -31,15 +31,15 @@ class ThreadStorageManager {
         return $this->useDatabase ? $this->dbOps->getThreadsForEntity($entityId) : $this->fileOps->getThreadsForEntity($entityId);
     }
     
-    public function createThread($entityId, $entityTitlePrefix, Thread $thread) {
+    public function createThread($entityId, $entityTitlePrefix, Thread $thread, $userId = 'system') {
         return $this->useDatabase ? 
-            $this->dbOps->createThread($entityId, $entityTitlePrefix, $thread) : 
-            $this->fileOps->createThread($entityId, $entityTitlePrefix, $thread);
+            $this->dbOps->createThread($entityId, $entityTitlePrefix, $thread, $userId) : 
+            $this->fileOps->createThread($entityId, $entityTitlePrefix, $thread, $userId);
     }
 
-    public function updateThread(Thread $thread) {
+    public function updateThread(Thread $thread, $userId = 'system') {
         return $this->useDatabase ?
-            $this->dbOps->updateThread($thread) :
-            $this->fileOps->updateThread($thread);
+            $this->dbOps->updateThread($thread, $userId) :
+            $this->fileOps->updateThread($thread, $userId);
     }
 }

@@ -70,7 +70,7 @@ function getFilesInDirectoryNoRecursive($dir) {
 }
 
 function htmlescape($html) {
-    return htmlentities($html, ENT_QUOTES);
+    return $html === null ? '' : htmlentities($html, ENT_QUOTES);
 }
 
 if (!function_exists('logDebug')) {

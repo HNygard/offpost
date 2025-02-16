@@ -17,6 +17,7 @@ class ThreadDatabaseOperationsTest extends PHPUnit\Framework\TestCase {
         Database::beginTransaction();
         
         // Clean up any existing test data
+        Database::execute("DELETE FROM thread_history WHERE thread_id IN (SELECT id FROM threads WHERE entity_id = 'test_entity')");
         Database::execute("DELETE FROM thread_email_attachments WHERE email_id IN (SELECT id FROM thread_emails WHERE thread_id IN (SELECT id FROM threads WHERE entity_id = 'test_entity'))");
         Database::execute("DELETE FROM thread_emails WHERE thread_id IN (SELECT id FROM threads WHERE entity_id = 'test_entity')");
         Database::execute("DELETE FROM threads WHERE entity_id = 'test_entity'");
@@ -40,7 +41,7 @@ class ThreadDatabaseOperationsTest extends PHPUnit\Framework\TestCase {
         $thread->labels = ["test"];
         $thread->sentComment = "Test comment";
 
-        $createdThread = $this->threadDbOps->createThread('test_entity', 'Test', $thread);
+        $createdThread = $this->threadDbOps->createThread('test_entity', 'Test', $thread, 'test-user');
         $this->assertNotNull($createdThread->id, "Thread should have an ID after creation");
 
         // Retrieve and verify
@@ -56,6 +57,52 @@ class ThreadDatabaseOperationsTest extends PHPUnit\Framework\TestCase {
         $this->assertEquals($thread->archived, $retrievedThread->archived);
         $this->assertEquals($thread->labels, $retrievedThread->labels);
         $this->assertEquals($thread->sentComment, $retrievedThread->sentComment);
+
+        // Verify history was created
+        $history = new ThreadHistory();
+        $historyEntries = $history->getHistoryForThread($createdThread->id);
+        $this->assertCount(1, $historyEntries, "Should have one history entry");
+        $this->assertEquals('created', $historyEntries[0]['action']);
+        $this->assertEquals('test-user', $historyEntries[0]['user_id']);
+    }
+
+    public function testUpdateThreadHistory() {
+        // Create initial thread
+        $thread = new Thread();
+        $thread->title = "Initial Title";
+        $thread->my_name = "Test User";
+        $thread->my_email = "test@example.com";
+        $thread->labels = ["initial"];
+        $thread->archived = false;
+        
+        $createdThread = $this->threadDbOps->createThread('test_entity', 'Test', $thread, 'test-user');
+        
+        // Update thread title and labels
+        $thread->id = $createdThread->id;
+        $thread->title = "Updated Title";
+        $thread->labels = ["initial", "new-label"];
+        $this->threadDbOps->updateThread($thread, 'test-user');
+        
+        // Archive thread
+        $thread->archived = true;
+        $this->threadDbOps->updateThread($thread, 'test-user');
+        
+        // Verify history entries
+        $history = new ThreadHistory();
+        $historyEntries = $history->getHistoryForThread($thread->id);
+        
+        $this->assertCount(3, $historyEntries, "Should have three history entries");
+        
+        $this->assertEquals('created', $historyEntries[0]['action']);
+        $this->assertEquals('edited', $historyEntries[1]['action']);
+        $this->assertEquals('archived', $historyEntries[2]['action']);
+        
+        // Verify edit details
+        $editDetails = json_decode($historyEntries[1]['details'], true);
+        $this->assertArrayHasKey('title', $editDetails);
+        $this->assertEquals('Updated Title', $editDetails['title']);
+        $this->assertArrayHasKey('labels', $editDetails);
+        $this->assertEquals(['initial', 'new-label'], $editDetails['labels']);
     }
 
     public function testThreadWithEmailAndAttachments() {
@@ -65,7 +112,7 @@ class ThreadDatabaseOperationsTest extends PHPUnit\Framework\TestCase {
         $thread->my_name = "Test User";
         $thread->my_email = "test@example.com";
         
-        $createdThread = $this->threadDbOps->createThread('test_entity', 'Test', $thread);
+        $createdThread = $this->threadDbOps->createThread('test_entity', 'Test', $thread, 'test-user');
         
         // Add an email to the thread
         $now = new DateTime();
@@ -114,7 +161,7 @@ class ThreadDatabaseOperationsTest extends PHPUnit\Framework\TestCase {
         $thread->my_email = "test@example.com";
         $thread->public = false;
         
-        $createdThread = $this->threadDbOps->createThread('test_entity', 'Test', $thread);
+        $createdThread = $this->threadDbOps->createThread('test_entity', 'Test', $thread, 'test-user');
         
         // Add authorization for Auth0 user
         $auth0UserId = 'auth0|1234abc1234abc1234abc123';
@@ -146,13 +193,14 @@ class ThreadDatabaseOperationsTest extends PHPUnit\Framework\TestCase {
         $thread2->my_name = "Test User 2";
         $thread2->my_email = "test2@example.com";
         
-        $this->threadDbOps->createThread('test_entity_1', 'Test1', $thread1);
-        $this->threadDbOps->createThread('test_entity_2', 'Test2', $thread2);
+        $this->threadDbOps->createThread('test_entity_1', 'Test1', $thread1, 'test-user');
+        $this->threadDbOps->createThread('test_entity_2', 'Test2', $thread2, 'test-user');
         
         // Get all threads
         $allThreads = $this->threadDbOps->getThreads();
         
-        // Clean up additional test entities
+        // Clean up additional test entities in correct order
+        Database::execute("DELETE FROM thread_history WHERE thread_id IN (SELECT id FROM threads WHERE entity_id IN ('test_entity_1', 'test_entity_2'))");
         Database::execute("DELETE FROM threads WHERE entity_id IN ('test_entity_1', 'test_entity_2')");
         
         // Verify

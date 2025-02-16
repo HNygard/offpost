@@ -74,7 +74,7 @@ class ThreadFileOperations {
         logDebug('Writing to [' . $path . '].');
         file_put_contents($path, json_encode($entity_threads, JSON_PRETTY_PRINT ^ JSON_UNESCAPED_UNICODE ^ JSON_UNESCAPED_SLASHES));
     }
-    public function createThread($entityId, $entityTitlePrefix, Thread $thread) {
+    public function createThread($entityId, $entityTitlePrefix, Thread $thread, $userId = 'system') {
         $existingThreads = $this->getThreadsForEntity($entityId);
         if ($existingThreads == null) {
             $existingThreads = new Threads();
@@ -88,5 +88,9 @@ class ThreadFileOperations {
         file_put_contents($path, json_encode($existingThreads, JSON_PRETTY_PRINT ^ JSON_UNESCAPED_UNICODE ^ JSON_UNESCAPED_SLASHES));
 
         return $thread;
+    }
+
+    public function updateThread(Thread $thread, $userId = 'system') {
+        throw new Exception('Not supported.');
     }
 }
