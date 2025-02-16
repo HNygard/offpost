@@ -1,8 +1,11 @@
 FROM php:8.2-apache
 
+# Install system dependencies
 RUN apt-get update && apt-get install -y \
     libcurl4-gnutls-dev \
-    libpq-dev
+    libpq-dev \
+    git \
+    unzip
 
 RUN docker-php-ext-install curl
 RUN docker-php-ext-install pdo
@@ -25,6 +28,21 @@ RUN usermod -u 1000 www-data && groupmod -g 1000 www-data
 # Configure Apache to run workers as www-data
 RUN chown -R www-data:www-data /var/run/apache2 /var/lock/apache2 /var/log/apache2
 
+# Install Composer
+COPY --from=composer:latest /usr/bin/composer /usr/bin/composer
+
+# Set up application directory
+WORKDIR /php-frontend
+
+# Copy composer files first
+COPY src/composer.json src/composer.lock ./
+
+# Install dependencies
+RUN composer install --no-dev --no-interaction --no-progress --optimize-autoloader
+
+# Copy application files (vendor is excluded via .dockerignore)
+COPY src/ ./
+
 COPY localhost.conf /etc/apache2/conf-enabled/localhost.conf
 COPY phpdev.ini /usr/local/etc/php/conf.d/phpdev.ini
 COPY docker-entrypoint.sh /usr/local/bin/
@@ -33,5 +51,8 @@ RUN chmod +x /usr/local/bin/docker-entrypoint.sh
 
 # Copy SQL migrations, just to trigger recreation of container on deploy
 COPY src/migrations/sql/ /opt/offpost/migrations/
+
+# Ensure correct permissions
+RUN chown -R www-data:www-data /php-frontend
 
 ENTRYPOINT ["/usr/local/bin/docker-entrypoint.sh"]
