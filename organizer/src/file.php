@@ -24,7 +24,7 @@ foreach ($threads->threads as $thread1) {
 
 foreach ($thread->emails as $email) {
     if (isset($_GET['body']) && $_GET['body'] == $email->id) {
-        $eml = ThreadStorageManager::getInstance()->getThreadFile($entityId, $thread, $email->id . '.eml');
+        $eml = ThreadStorageManager::getInstance()->getThreadFile($entityId, $thread, $email->id_old . '.eml'); 
         $message = new Message(['raw' => $eml]);
 
         switch ($message->getHeaders()->getEncoding()) {
@@ -41,7 +41,7 @@ foreach ($thread->emails as $email) {
 
         $message = new Message(['raw' => $eml]);
 
-        $email_content = json_decode(ThreadStorageManager::getInstance()->getThreadFile($entityId, $thread, $email->id . '.json'));
+        $email_content = json_decode(ThreadStorageManager::getInstance()->getThreadFile($entityId, $thread, $email->id_old . '.json'));
         echo '<h1 id="email-subject">Subject: ' . htmlescape($message->getHeader('subject')->getFieldValue()) . '</h1>' . chr(10);
         echo '<b>Date: ' . $email_content->date . '</b><br>' . chr(10);
         //echo '<b>Sender: ' . $email_content->senderAddress . '</b><br>'.chr(10);

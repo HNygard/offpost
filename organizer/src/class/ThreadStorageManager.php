@@ -42,4 +42,10 @@ class ThreadStorageManager {
             $this->dbOps->updateThread($thread, $userId) :
             $this->fileOps->updateThread($thread, $userId);
     }
+
+    public function getThreadFile($entityId, Thread $thread, $attachment) {
+        // Always use file operations for getting files, regardless of storage setting
+        // since files are always stored in the filesystem
+        return $this->fileOps->getThreadFile($entityId, $thread, $attachment);
+    }
 }

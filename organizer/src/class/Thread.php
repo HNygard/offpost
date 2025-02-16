@@ -89,6 +89,7 @@ class Thread implements JsonSerializable {
 
         $thread = new Thread();
         $thread->id = $data['id'];
+        $thread->id_old = $data['id_old'];
         $thread->title = $data['title'];
         $thread->my_name = $data['my_name'];
         $thread->my_email = $data['my_email'];

@@ -261,7 +261,7 @@ function secondsToHumanReadable($seconds) {
                         <div class="form-group">
                             <input type="button"
                                    class="btn btn-open"
-                                   data-url="<?= '/file.php?entityId=' . urlencode($threads->entity_id)
+                                   data-url="<?= '/file?entityId=' . urlencode($threads->entity_id)
                                    . '&threadId=' . urlencode($thread->id)
                                    . '&body=' . urlencode($email->id) ?>"
                                    onclick="document.getElementById('viewer-iframe').src = this.getAttribute('data-url');" value="Open">
@@ -333,7 +333,7 @@ function secondsToHumanReadable($seconds) {
                                         </div>
                                         <input type="button"
                                                class="btn btn-open"
-                                               data-url="<?= '/file.php?entityId=' . urlencode($threads->entity_id)
+                                               data-url="<?= '/file?entityId=' . urlencode($threads->entity_id)
                                                . '&threadId=' . urlencode($thread->id)
                                                . '&attachment=' . urlencode($att->location) ?>"
                                                onclick="document.getElementById('viewer-iframe').src = this.getAttribute('data-url');" value="Open">

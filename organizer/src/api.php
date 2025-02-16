@@ -30,7 +30,7 @@ foreach ($allThreads as $entityFile => $entityThreads) {
             $thread->entity_id = $entityThreads->entity_id;
 
             foreach($thread->emails as $emails) {
-                    $emails->link = 'http://localhost:25081/file.php?entityId=' . urlencode($entityThreads->entity_id)
+                    $emails->link = 'http://localhost:25081/file?entityId=' . urlencode($entityThreads->entity_id)
                         . '&threadId='. urlencode($thread->id)
                         . '&body=' . urlencode($emails->id);
 
@@ -43,10 +43,10 @@ foreach ($allThreads as $entityFile => $entityThreads) {
                         continue;
                     }
                     foreach($emails->attachments as $att) {
-                        $att->link = 'http://localhost:25081/file.php?entityId=' . urlencode($entityThreads->entity_id)
+                        $att->link = 'http://localhost:25081/file?entityId=' . urlencode($entityThreads->entity_id)
                             . '&threadId='. urlencode($thread->id)
                             . '&attachment=' . urlencode($att->location);
-                        $att->linkText = 'http://localhost:25081/file.php?entityId=' . urlencode($entityThreads->entity_id)
+                        $att->linkText = 'http://localhost:25081/file?entityId=' . urlencode($entityThreads->entity_id)
                             . '&threadId='. urlencode($thread->id)
                             . '&attachment=' . urlencode($att->location)
                             . '&text=true';

@@ -35,6 +35,7 @@ class ThreadDatabaseOperations {
                     t.sent_comment,
                     t.public,
                     e.id as email_id,
+                    e.id_old as email_id_old,
                     e.datetime_received,
                     e.email_type,
                     e.status_type as email_status_type,
@@ -45,6 +46,7 @@ class ThreadDatabaseOperations {
                     a.filetype as attachment_filetype,
                     a.status_type as attachment_status_type,
                     a.status_text as attachment_status_text,
+                    a.location as attachment_location,
                     CASE 
                         WHEN t.public THEN true
                         WHEN ta.thread_id IS NOT NULL THEN true
@@ -124,6 +126,7 @@ class ThreadDatabaseOperations {
             if ($currentEmailId !== $row['email_id']) {
                 $currentEmail = new stdClass();
                 $currentEmail->id = $row['email_id'];
+                $currentEmail->id_old = $row['email_id_old'];
                 $currentEmail->datetime_received = $row['datetime_received'];
                 $currentEmail->email_type = $row['email_type'];
                 $currentEmail->status_type = $row['email_status_type'];
@@ -143,7 +146,7 @@ class ThreadDatabaseOperations {
                 $attObj->filetype = $row['attachment_filetype'];
                 $attObj->status_type = $row['attachment_status_type'];
                 $attObj->status_text = $row['attachment_status_text'];
-                $attObj->location = $row['attachment_name']; // Using name as location since that's what's used in the file path
+                $attObj->location = $row['attachment_location'];
                 $currentEmail->attachments[] = $attObj;
             }
         }
@@ -176,6 +179,7 @@ class ThreadDatabaseOperations {
                     t.sent_comment,
                     t.public,
                     e.id as email_id,
+                    e.id_old as email_id_old,
                     e.datetime_received,
                     e.email_type,
                     e.status_type as email_status_type,
@@ -185,7 +189,8 @@ class ThreadDatabaseOperations {
                     a.name as attachment_name,
                     a.filetype as attachment_filetype,
                     a.status_type as attachment_status_type,
-                    a.status_text as attachment_status_text
+                    a.status_text as attachment_status_text,
+                    a.location as attachment_location
                 FROM threads t
                 LEFT JOIN thread_emails e ON t.id = e.thread_id
                 LEFT JOIN thread_email_attachments a ON e.id = a.email_id
@@ -245,6 +250,7 @@ class ThreadDatabaseOperations {
             if ($currentEmailId !== $row['email_id']) {
                 $currentEmail = new stdClass();
                 $currentEmail->id = $row['email_id'];
+                $currentEmail->id_old = $row['email_id_old'];
                 $currentEmail->datetime_received = $row['datetime_received'];
                 $currentEmail->email_type = $row['email_type'];
                 $currentEmail->status_type = $row['email_status_type'];
@@ -264,7 +270,7 @@ class ThreadDatabaseOperations {
                 $attObj->filetype = $row['attachment_filetype'];
                 $attObj->status_type = $row['attachment_status_type'];
                 $attObj->status_text = $row['attachment_status_text'];
-                $attObj->location = $row['attachment_name']; // Using name as location since that's what's used in the file path
+                $attObj->location = $row['attachment_location'];
                 $currentEmail->attachments[] = $attObj;
             }
         }

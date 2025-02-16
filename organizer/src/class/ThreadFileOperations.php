@@ -61,9 +61,36 @@ class ThreadFileOperations {
         }
         return $threads;
     }
+    /**
+     * Get a thread file (email or attachment)
+     * @param string $entityId The entity ID
+     * @param Thread|string $thread The thread object or thread ID
+     * @param string $attachement The attachment filename
+     * @return string The file contents
+     * @throws Exception If the file or directory doesn't exist
+     */
     public function getThreadFile($entityId, $thread, $attachement) {
+        // Handle both Thread objects and string IDs
         $threadId = is_string($thread) ? $thread : $thread->id;
-        return file_get_contents(joinPaths(THREADS_DIR, $entityId, $threadId, $attachement));
+        $threadIdOld = is_string($thread) ? $thread : ($thread->id_old ?? $thread->id);
+        
+        $path = joinPaths(THREADS_DIR, $entityId, $threadId, $attachement);
+        
+        if (!file_exists(dirname($path))) {
+            // Try with id_old if the primary directory doesn't exist
+            $path2 = joinPaths(THREADS_DIR, $entityId, $threadIdOld, $attachement);
+            if (!file_exists(dirname($path2))) {
+                throw new Exception("Thread directory does not exist: " . dirname($path) . "\n" .
+                    "And not with id_old either: " . dirname($path2));
+            }
+            $path = $path2;
+        }
+        
+        if (!file_exists($path)) {
+            throw new Exception("Thread file not found: " . $path);
+        }
+        
+        return file_get_contents($path);
     }
     /**
      * @param $entityId
