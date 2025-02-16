@@ -120,3 +120,21 @@ DO NOT read or modify:
 -   Never commit sensitive files
 -   Use environment variables for secrets
 -   Keep credentials out of logs and output
+
+
+## Testing
+
+Tests should be run after changes are made.
+
+Rules:
+- Assert message:
+    - Give context to the assertion. But don't add messages telling the same as is asserted.
+    - Asserting a size of array should always output the array in the error message. Use json_encode(..., JSON_PRETTY_PRINT).
+- Structure tests as the following:
+```php
+// :: Setup
+
+// :: Act
+
+// :: Assert
+```

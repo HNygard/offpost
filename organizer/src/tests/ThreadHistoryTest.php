@@ -30,38 +30,57 @@ class ThreadHistoryTest extends PHPUnit\Framework\TestCase {
     }
 
     public function testLogAction() {
-        $result = $this->history->logAction($this->testThreadId, 'created', $this->testUserId);
-        $this->assertEquals(1, $result);
+        // :: Setup
+        $action = 'created';
+
+        // :: Act
+        $result = $this->history->logAction($this->testThreadId, $action, $this->testUserId);
+
+        // :: Assert
+        $this->assertEquals(1, $result, 'Log action should return 1 on successful insert');
 
         $history = $this->history->getHistoryForThread($this->testThreadId);
-        $this->assertCount(1, $history);
-        $this->assertEquals('created', $history[0]['action']);
-        $this->assertEquals($this->testUserId, $history[0]['user_id']);
+        $this->assertCount(1, $history, 'History array: ' . json_encode($history, JSON_PRETTY_PRINT));
+        $this->assertEquals($action, $history[0]['action'], 'Action should match what was logged');
+        $this->assertEquals($this->testUserId, $history[0]['user_id'], 'User ID should match what was logged');
     }
 
     public function testLogActionWithDetails() {
+        // :: Setup
         $details = ['title' => 'New Title'];
-        $result = $this->history->logAction($this->testThreadId, 'edited', $this->testUserId, $details);
-        $this->assertEquals(1, $result);
+        $action = 'edited';
+
+        // :: Act
+        $result = $this->history->logAction($this->testThreadId, $action, $this->testUserId, $details);
+
+        // :: Assert
+        $this->assertEquals(1, $result, 'Log action should return 1 on successful insert');
 
         $history = $this->history->getHistoryForThread($this->testThreadId);
-        $this->assertCount(1, $history);
-        $this->assertEquals('edited', $history[0]['action']);
-        $this->assertEquals($this->testUserId, $history[0]['user_id']);
-        $this->assertJsonStringEqualsJsonString(json_encode($details), $history[0]['details']);
+        $this->assertCount(1, $history, 'History array: ' . json_encode($history, JSON_PRETTY_PRINT));
+        $this->assertEquals($action, $history[0]['action'], 'Action should match what was logged');
+        $this->assertEquals($this->testUserId, $history[0]['user_id'], 'User ID should match what was logged');
+        $this->assertJsonStringEqualsJsonString(
+            json_encode($details),
+            $history[0]['details'],
+            'Details should be stored as JSON and match original data'
+        );
     }
 
     public function testGetHistoryForThread() {
-        // Create multiple history entries
+        // :: Setup
         $this->history->logAction($this->testThreadId, 'created', $this->testUserId);
         $this->history->logAction($this->testThreadId, 'edited', $this->testUserId, ['title' => 'Updated Title']);
 
+        // :: Act
         $result = $this->history->getHistoryForThread($this->testThreadId);
-        $this->assertCount(2, $result);
-        $this->assertEquals('created', $result[0]['action'], "Second entry should be created");
-        $this->assertEquals('edited', $result[1]['action'], "First entry should be edited");
-        $this->assertEquals($this->testUserId, $result[0]['user_id']);
-        $this->assertEquals($this->testUserId, $result[1]['user_id']);
+
+        // :: Assert
+        $this->assertCount(2, $result, 'History entries: ' . json_encode($result, JSON_PRETTY_PRINT));
+        $this->assertEquals('created', $result[0]['action'], 'First entry should be created action');
+        $this->assertEquals('edited', $result[1]['action'], 'Second entry should be edited action');
+        $this->assertEquals($this->testUserId, $result[0]['user_id'], 'User ID should be consistent across entries');
+        $this->assertEquals($this->testUserId, $result[1]['user_id'], 'User ID should be consistent across entries');
     }
 
     public function testFormatActionForDisplay() {
