@@ -123,6 +123,7 @@ class ThreadDatabaseOperations {
             // New email
             if ($currentEmailId !== $row['email_id']) {
                 $currentEmail = new stdClass();
+                $currentEmail->id = $row['email_id'];
                 $currentEmail->datetime_received = $row['datetime_received'];
                 $currentEmail->email_type = $row['email_type'];
                 $currentEmail->status_type = $row['email_status_type'];
@@ -142,6 +143,7 @@ class ThreadDatabaseOperations {
                 $attObj->filetype = $row['attachment_filetype'];
                 $attObj->status_type = $row['attachment_status_type'];
                 $attObj->status_text = $row['attachment_status_text'];
+                $attObj->location = $row['attachment_name']; // Using name as location since that's what's used in the file path
                 $currentEmail->attachments[] = $attObj;
             }
         }
@@ -242,6 +244,7 @@ class ThreadDatabaseOperations {
             // New email
             if ($currentEmailId !== $row['email_id']) {
                 $currentEmail = new stdClass();
+                $currentEmail->id = $row['email_id'];
                 $currentEmail->datetime_received = $row['datetime_received'];
                 $currentEmail->email_type = $row['email_type'];
                 $currentEmail->status_type = $row['email_status_type'];
@@ -261,6 +264,7 @@ class ThreadDatabaseOperations {
                 $attObj->filetype = $row['attachment_filetype'];
                 $attObj->status_type = $row['attachment_status_type'];
                 $attObj->status_text = $row['attachment_status_text'];
+                $attObj->location = $row['attachment_name']; // Using name as location since that's what's used in the file path
                 $currentEmail->attachments[] = $attObj;
             }
         }
