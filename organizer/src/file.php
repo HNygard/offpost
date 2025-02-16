@@ -2,6 +2,7 @@
 
 require_once __DIR__ . '/auth.php';
 require 'vendor/autoload.php';
+require_once __DIR__ . '/class/ThreadStorageManager.php';
 
 // Require authentication
 requireAuth();
@@ -12,7 +13,7 @@ require_once __DIR__ . '/class/Threads.php';
 
 $entityId = $_GET['entityId'];
 $threadId = $_GET['threadId'];
-$threads = getThreadsForEntity($entityId);
+$threads = ThreadStorageManager::getInstance()->getThreadsForEntity($entityId);
 
 $thread = null;
 foreach ($threads->threads as $thread1) {
@@ -23,7 +24,7 @@ foreach ($threads->threads as $thread1) {
 
 foreach ($thread->emails as $email) {
     if (isset($_GET['body']) && $_GET['body'] == $email->id) {
-        $eml = getThreadFile($entityId, $thread, $email->id . '.eml');
+        $eml = ThreadStorageManager::getInstance()->getThreadFile($entityId, $thread, $email->id . '.eml');
         $message = new Message(['raw' => $eml]);
 
         switch ($message->getHeaders()->getEncoding()) {
@@ -40,7 +41,7 @@ foreach ($thread->emails as $email) {
 
         $message = new Message(['raw' => $eml]);
 
-        $email_content = json_decode(getThreadFile($entityId, $thread, $email->id . '.json'));
+        $email_content = json_decode(ThreadStorageManager::getInstance()->getThreadFile($entityId, $thread, $email->id . '.json'));
         echo '<h1 id="email-subject">Subject: ' . htmlescape($message->getHeader('subject')->getFieldValue()) . '</h1>' . chr(10);
         echo '<b>Date: ' . $email_content->date . '</b><br>' . chr(10);
         //echo '<b>Sender: ' . $email_content->senderAddress . '</b><br>'.chr(10);
@@ -94,14 +95,16 @@ foreach ($thread->emails as $email) {
                 if ($att->filetype == 'pdf') {
                     header("Content-type:application/pdf");
                 }
-                echo getThreadFile($entityId, $thread, $att->location);
+                echo ThreadStorageManager::getInstance()->getThreadFile($entityId, $thread, $att->location);
                 exit;
             }
         }
     }
 }
 
-echo $threads->entity_id . '<br>';
-echo $thread->title . '<br>';
+if (!$thread) {
+    throw new Exception("Thread not found: threadId={$threadId}, entityId={$entityId}", 404);
+}
 
-throw new Exception('404 Not found.');
+// If we got here, neither body nor attachment was found
+throw new Exception("Requested content not found in thread: threadId={$threadId}, entityId={$entityId}", 404);
