@@ -224,17 +224,45 @@ span.label.label_disabled a {
     font-size: 1.1em;
 }
 
-#label-summary .label a {
-    background-color: #7a9be6;
-    box-shadow: 0 1px 2px rgba(0,0,0,0.1);
+#label-summary .label {
+    background-color: #94b1ef;
+    border: 1px solid #3f4b65;
+    padding: 4px 10px;
+    margin-right: 8px;
+    border-radius: 4px;
+    cursor: pointer;
+    color: inherit;
+    text-decoration: none;
+    display: inline-block;
+    position: relative;
 }
 
-#label-summary .label:hover a {
-    background-color: #6389db;
-    box-shadow: 0 2px 4px rgba(0,0,0,0.15);
+#label-summary .label:hover {
+    transform: translateY(-1px);
 }
 
-#label-summary .label a::before {
+#label-summary .label:hover::after {
+    opacity: 1;
+}
+
+#label-summary .label::after {
+    content: '';
+    position: absolute;
+    bottom: -1px;
+    left: 4px;
+    right: 4px;
+    height: 2px;
+    background: rgba(0,0,0,0.1);
+    border-radius: 1px;
+    opacity: 0;
+    transition: opacity 0.2s ease;
+}
+
+#label-summary .label:active {
+    transform: translateY(1px);
+}
+
+#label-summary .label::before {
     content: '🏷️';
     margin-right: 4px;
     font-size: 0.9em;
