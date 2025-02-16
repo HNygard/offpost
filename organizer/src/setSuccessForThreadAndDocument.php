@@ -2,6 +2,7 @@
 
 require_once __DIR__ . '/auth.php';
 require_once __DIR__ . '/class/Threads.php';
+require_once __DIR__ . '/class/ThreadStorageManager.php';
 
 // Require authentication
 requireAuth();
@@ -17,7 +18,9 @@ function logDebug($text) {
 
 $entityId = $_GET['entityId'];
 $threadId = $_GET['threadId'];
-$threads = getThreadsForEntity($entityId);
+
+$storageManager = ThreadStorageManager::getInstance();
+$threads = $storageManager->getThreadsForEntity($entityId);
 
 $thread = null;
 foreach ($threads->threads as $thread1) {
