@@ -39,6 +39,9 @@ switch ($path) {
     case '/file':
         require __DIR__ . '/../file.php';
         break;
+    case '/archive-threads-by-label':
+        require __DIR__ . '/../archive-threads-by-label.php';
+        break;
     default:
         http_response_code(404);
         echo "404 Not Found";

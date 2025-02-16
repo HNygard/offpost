@@ -95,6 +95,12 @@ $allThreads = $filteredThreads;
         <ul class="nav-links">
             <li><a href="/">Back to all threads</a></li>
             <li><a href="/api/threads?label=<?=urlencode($_GET['label_filter'])?>">View API response for label</a></li>
+            <li>
+                <form action="/archive-threads-by-label" method="post" style="display: inline;">
+                    <input type="hidden" name="label" value="<?= htmlspecialchars($_GET['label_filter'], ENT_QUOTES) ?>">
+                    <button type="submit" onclick="return confirm('Are you sure you want to archive all threads with this label?')">Archive all threads with this label</button>
+                </form>
+            </li>
         </ul>
         
         <?php
