@@ -78,6 +78,9 @@ I pledge to follow the custom instructions.
 - Run system using:
     docker-compose -f docker-compose.dev.yaml up -d
 
+- Rebuild docker images:
+    docker-compose -f docker-compose.dev.yaml up --build -d
+
 - Restart application/service:
     docker-compose -f docker-compose.dev.yaml down && docker-compose -f docker-compose.dev.yaml up -d
 
