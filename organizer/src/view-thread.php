@@ -153,7 +153,9 @@ $historyEntries = $history->getHistoryForThread($thread->id);
             <div class="action-links">
                 <a href="/thread-classify?entityId=<?= htmlescape($entityId) ?>&threadId=<?= htmlescape($threadId) ?>">Classify</a>
                 <a href="/thread-send-email?entityId=<?= htmlescape($entityId) ?>&threadId=<?= htmlescape($threadId) ?>">Send email</a>
-                <a href="/setSuccessForThreadAndDocument?entityId=<?= htmlescape($entityId) ?>&threadId=<?= htmlescape($threadId) ?>">Archive thread</a>
+                <a href="/toggle-thread-archive?entityId=<?= htmlescape($entityId) ?>&threadId=<?= htmlescape($threadId) ?>&archive=<?= $thread->archived ? '0' : '1' ?>">
+                    <?= $thread->archived ? 'Unarchive thread' : 'Archive thread' ?>
+                </a>
             </div>
 
             <?php if ($thread->isUserOwner($userId)): ?>

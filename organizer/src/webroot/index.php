@@ -27,8 +27,8 @@ switch ($path) {
     case '/update-identities':
         require __DIR__ . '/../update-identities.php';
         break;
-    case '/setSuccessForThreadAndDocument':
-        require __DIR__ . '/../setSuccessForThreadAndDocument.php';
+    case '/toggle-thread-archive':
+        require __DIR__ . '/../toggle-thread-archive.php';
         break;
     case '/callback':
         require __DIR__ . '/../callback.php';
