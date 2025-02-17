@@ -7,4 +7,17 @@ class ThreadEmailAttachment {
     var $location;
     var $status_type;
     var $status_text;
+
+    public function getIconClass() {
+        switch ($this->filetype) {
+            case 'image/jpeg':
+            case 'image/png':
+            case 'image/gif':
+                return 'icon-image';
+            case 'application/pdf':
+                return 'icon-pdf';
+            default:
+                return '';
+        }
+    }
 }
