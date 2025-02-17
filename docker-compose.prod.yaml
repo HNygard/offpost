@@ -62,6 +62,7 @@ services:
     volumes:
       - /opt/offpost/secrets/username-password-override-prod.php:/username-password-override.php
       - ./organizer/src:/php-frontend
+      - /php-frontend/vendor
       - /opt/offpost/data/:/organizer-data
       - /opt/offpost/secrets/postgres_password:/run/secrets/postgres_password:ro
     environment:

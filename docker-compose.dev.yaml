@@ -96,6 +96,7 @@ services:
     volumes:
       - ./organizer/src/username-password-override-dev.php:/username-password-override.php
       - ./organizer/src:/php-frontend
+      - /php-frontend/vendor
       - ./data/:/organizer-data
       - ./secrets/postgres_password:/run/secrets/postgres_password:ro
     environment:
