@@ -110,10 +110,11 @@ foreach ($thread->emails as $email) {
     if (isset($_GET['attachment'])) {
         foreach ($email->attachments as $att) {
             if ($att->location == $_GET['attachment']) {
+                $body = ThreadStorageManager::getInstance()->getThreadFile($entityId, $thread, $att->location);
                 if ($att->filetype == 'pdf') {
                     header("Content-type:application/pdf");
                 }
-                echo ThreadStorageManager::getInstance()->getThreadFile($entityId, $thread, $att->location);
+                echo $body;
                 exit;
             }
         }
