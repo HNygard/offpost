@@ -110,7 +110,15 @@ foreach ($thread->emails as $email) {
     if (isset($_GET['attachment'])) {
         foreach ($email->attachments as $att) {
             if ($att->location == $_GET['attachment']) {
-                $body = ThreadStorageManager::getInstance()->getThreadFile($entityId, $thread, $att->location);
+                if (str_contains('/', $att->location)) {
+                    // Strip last part of location to get the filename
+                    $filename = substr($att->location, strrpos($att->location, '/') + 1);
+                }
+                else {
+                    // New format of location
+                    $filename = $att->location;
+                }
+                $body = ThreadStorageManager::getInstance()->getThreadFile($entityId, $thread, $filename);
                 if ($att->filetype == 'pdf') {
                     header("Content-type:application/pdf");
                 }

@@ -5,6 +5,8 @@ require_once __DIR__ . '/Thread.php';
 require_once __DIR__ . '/Database.php';
 require_once __DIR__ . '/Threads.php';
 require_once __DIR__ . '/ThreadHistory.php';
+require_once __DIR__ . '/ThreadEmail.php';
+require_once __DIR__ . '/ThreadEmailAttachment.php';
 
 class ThreadDatabaseOperations {
     private $history;
@@ -43,6 +45,7 @@ class ThreadDatabaseOperations {
                     e.description,
                     e.ignore,
                     a.name as attachment_name,
+                    a.filename as attachment_filename,
                     a.filetype as attachment_filetype,
                     a.status_type as attachment_status_type,
                     a.status_text as attachment_status_text,
@@ -124,7 +127,7 @@ class ThreadDatabaseOperations {
             
             // New email
             if ($currentEmailId !== $row['email_id']) {
-                $currentEmail = new stdClass();
+                $currentEmail = new ThreadEmail();
                 $currentEmail->id = $row['email_id'];
                 $currentEmail->id_old = $row['email_id_old'];
                 $currentEmail->datetime_received = $row['datetime_received'];
@@ -141,8 +144,9 @@ class ThreadDatabaseOperations {
             
             // Add attachment if exists
             if ($row['attachment_name'] !== null) {
-                $attObj = new stdClass();
+                $attObj = new ThreadEmailAttachment();
                 $attObj->name = $row['attachment_name'];
+                $attObj->filename = $row['attachment_filename'];
                 $attObj->filetype = $row['attachment_filetype'];
                 $attObj->status_type = $row['attachment_status_type'];
                 $attObj->status_text = $row['attachment_status_text'];
@@ -187,6 +191,7 @@ class ThreadDatabaseOperations {
                     e.description,
                     e.ignore,
                     a.name as attachment_name,
+                    a.filename as attachment_filename,
                     a.filetype as attachment_filetype,
                     a.status_type as attachment_status_type,
                     a.status_text as attachment_status_text,
@@ -248,7 +253,7 @@ class ThreadDatabaseOperations {
             
             // New email
             if ($currentEmailId !== $row['email_id']) {
-                $currentEmail = new stdClass();
+                $currentEmail = new ThreadEmail();
                 $currentEmail->id = $row['email_id'];
                 $currentEmail->id_old = $row['email_id_old'];
                 $currentEmail->datetime_received = $row['datetime_received'];
@@ -265,8 +270,9 @@ class ThreadDatabaseOperations {
             
             // Add attachment if exists
             if ($row['attachment_name'] !== null) {
-                $attObj = new stdClass();
+                $attObj = new ThreadEmailAttachment();
                 $attObj->name = $row['attachment_name'];
+                $attObj->filename = $row['attachment_filename'];
                 $attObj->filetype = $row['attachment_filetype'];
                 $attObj->status_type = $row['attachment_status_type'];
                 $attObj->status_text = $row['attachment_status_text'];
