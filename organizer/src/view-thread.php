@@ -118,6 +118,20 @@ if ($thread->isUserOwner($userId)) {
 // Get thread history
 $history = new ThreadHistory();
 $historyEntries = $history->getHistoryForThread($thread->id);
+
+// Function to get icon class based on file type
+function getIconClass($filetype) {
+    switch ($filetype) {
+        case 'image/jpeg':
+        case 'image/png':
+        case 'image/gif':
+            return 'icon-image';
+        case 'application/pdf':
+            return 'icon-pdf';
+        default:
+            return '';
+    }
+}
 ?>
 <!DOCTYPE html>
 <html>
@@ -260,13 +274,22 @@ $historyEntries = $history->getHistoryForThread($thread->id);
                             <div class="attachments-list">
                                 <?php foreach ($email->attachments as $att):
                                     $label_type = getLabelType('attachement', $att->status_type);
+                                    $iconClass = getIconClass($att->filetype);
                                 ?>
                                 <div class="attachment-item">
                                     <span class="<?= $label_type ?>"><?= htmlescape($att->status_text) ?></span>
                                     <?= htmlescape($att->filetype) ?> - 
                                     <?php if (isset($att->location)): ?>
-                                        <a href="/file?entityId=<?= htmlescape($entityId) ?>&threadId=<?= htmlescape($threadId) ?>&attachment=<?= urlencode($att->location) ?>"><?= htmlescape($att->name) ?></a>
+                                        <a href="/file?entityId=<?= htmlescape($entityId) ?>&threadId=<?= htmlescape($threadId) ?>&attachment=<?= urlencode($att->location) ?>">
+                                            <?php if ($iconClass): ?>
+                                                <i class="<?= $iconClass ?>"></i>
+                                            <?php endif; ?>
+                                            <?= htmlescape($att->name) ?>
+                                        </a>
                                     <?php else: ?>
+                                        <?php if ($iconClass): ?>
+                                            <i class="<?= $iconClass ?>"></i>
+                                        <?php endif; ?>
                                         <?= htmlescape($att->name) ?>
                                     <?php endif; ?>
                                 </div>
