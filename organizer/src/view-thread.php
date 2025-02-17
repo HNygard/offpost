@@ -204,10 +204,10 @@ function getIconClass($filetype) {
                         <?php endforeach; ?>
 
                         <!-- Add User Form -->
-                        <form method="POST" class="add-user-form">
+                        <form method="POST" class="add-user-form responsive-form">
                             <input type="hidden" name="thread_id" value="<?= htmlescape($thread->id) ?>">
-                            <input type="text" name="user_id" placeholder="User ID" required>
-                            <button type="submit" name="add_user" value="1" class="button">Add User</button>
+                            <input type="text" name="user_id" placeholder="User ID" required class="responsive-input">
+                            <button type="submit" name="add_user" value="1" class="button responsive-button">Add User</button>
                         </form>
                     </div>
                 </div>
