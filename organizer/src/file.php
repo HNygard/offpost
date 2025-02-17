@@ -110,7 +110,7 @@ foreach ($thread->emails as $email) {
     if (isset($_GET['attachment'])) {
         foreach ($email->attachments as $att) {
             if ($att->location == $_GET['attachment']) {
-                if (str_contains('/', $att->location)) {
+                if (str_contains($att->location, '/')) {
                     // Strip last part of location to get the filename
                     $filename = substr($att->location, strrpos($att->location, '/') + 1);
                 }
