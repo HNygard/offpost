@@ -6,3 +6,4 @@ data/*
 !data/
 !data/threads/
 data/threads/db-migration.json
+!data/sql-scripts
