@@ -18,6 +18,17 @@ class ThreadEmailSaverTest extends TestCase {
     protected function setUp(): void {
         parent::setUp();
         
+        // Start database transaction
+        Database::beginTransaction();
+        
+        // Clean database tables
+        $db = new Database();
+        $db->execute("DELETE FROM thread_email_history");
+        $db->execute("DELETE FROM thread_history");
+        $db->execute("DELETE FROM thread_authorizations");
+        $db->execute("DELETE FROM thread_email_attachments");
+        $db->execute("DELETE FROM threads");
+        
         // Create temp directory for test files
         $this->tempDir = sys_get_temp_dir() . '/thread_email_saver_test_' . uniqid();
         mkdir($this->tempDir);
@@ -36,6 +47,9 @@ class ThreadEmailSaverTest extends TestCase {
     }
 
     protected function tearDown(): void {
+        // Roll back database transaction
+        Database::rollBack();
+        
         // Clean up temp directory
         if (file_exists($this->tempDir)) {
             $this->removeDirectory($this->tempDir);
@@ -63,9 +77,17 @@ class ThreadEmailSaverTest extends TestCase {
         // Create test data
         $folderJson = $this->tempDir . '/test_thread';
         $thread = (object)[
+            'id' => '550e8400-e29b-41d4-a716-446655440000',
             'my_email' => 'test@example.com',
             'labels' => []
         ];
+
+        // Create thread in database
+        $db = new Database();
+        $db->execute(
+            "INSERT INTO threads (id, entity_id, title, my_name, my_email, sent) VALUES (?, ?, ?, ?, ?, ?)",
+            [$thread->id, 'test-entity', 'Test Thread', 'Test User', $thread->my_email, 'f']
+        );
         $folder = 'INBOX.Test';
 
         // Create test email
@@ -123,9 +145,17 @@ class ThreadEmailSaverTest extends TestCase {
         // Create test data
         $folderJson = $this->tempDir . '/test_thread';
         $thread = (object)[
+            'id' => '550e8400-e29b-41d4-a716-446655440001',
             'my_email' => 'test@example.com',
             'labels' => []
         ];
+
+        // Create thread in database
+        $db = new Database();
+        $db->execute(
+            "INSERT INTO threads (id, entity_id, title, my_name, my_email, sent) VALUES (?, ?, ?, ?, ?, ?)",
+            [$thread->id, 'test-entity', 'Test Thread', 'Test User', $thread->my_email, 'f']
+        );
         $folder = 'INBOX.Test';
 
         // Create test email with attachment

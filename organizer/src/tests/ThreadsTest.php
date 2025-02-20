@@ -50,6 +50,15 @@ class ThreadsTest extends TestCase {
         $this->testDataDir = DATA_DIR;
         $this->threadsDir = THREADS_DIR;
         
+        // Clean database tables
+        $db = new Database();
+        $db->execute("DELETE FROM thread_email_history");
+        $db->execute("DELETE FROM thread_history");
+        $db->execute("DELETE FROM thread_authorizations");
+        $db->execute("DELETE FROM thread_email_attachments");
+        $db->execute("DELETE FROM thread_emails");
+        $db->execute("DELETE FROM threads");
+        
         // Create test directories
         if (!file_exists($this->threadsDir)) {
             mkdir($this->threadsDir, 0777, true);
@@ -169,9 +178,17 @@ class ThreadsTest extends TestCase {
     public function testSendThreadEmail() {
         // Arrange
         $thread = new stdClass();
+        $thread->id = '550e8400-e29b-41d4-a716-446655440000';
         $thread->my_email = 'test@example.com';
         $thread->my_name = 'Test User';
         $thread->sent = false;
+
+        // Create thread in database
+        $db = new Database();
+        $db->execute(
+            "INSERT INTO threads (id, entity_id, title, my_name, my_email, sent) VALUES (?, ?, ?, ?, ?, ?)",
+            [$thread->id, 'test-entity', 'Test Thread', $thread->my_name, $thread->my_email, 'f']
+        );
 
         $emailService = new MockEmailService(true);
 
@@ -200,9 +217,17 @@ class ThreadsTest extends TestCase {
     public function testSendThreadEmailFailure() {
         // Arrange
         $thread = new stdClass();
+        $thread->id = '550e8400-e29b-41d4-a716-446655440001';
         $thread->my_email = 'test@example.com';
         $thread->my_name = 'Test User';
         $thread->sent = false;
+
+        // Create thread in database
+        $db = new Database();
+        $db->execute(
+            "INSERT INTO threads (id, entity_id, title, my_name, my_email, sent) VALUES (?, ?, ?, ?, ?, ?)",
+            [$thread->id, 'test-entity', 'Test Thread', $thread->my_name, $thread->my_email, 'f']
+        );
 
         $emailService = new MockEmailService(false);
 

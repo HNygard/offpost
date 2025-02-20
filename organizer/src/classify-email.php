@@ -4,6 +4,9 @@ require_once __DIR__ . '/auth.php';
 require_once __DIR__ . '/class/Threads.php';
 require_once __DIR__ . '/class/ThreadEmailClassifier.php';
 require_once __DIR__ . '/class/ThreadStorageManager.php';
+require_once __DIR__ . '/class/ThreadEmailHistory.php';
+
+$emailHistory = new ThreadEmailHistory();
 
 // Require authentication
 requireAuth();
@@ -27,6 +30,22 @@ foreach ($threads->threads as $thread1) {
 if ($thread !== null) {
     $classifier = new ThreadEmailClassifier();
     $thread = $classifier->classifyEmails($thread);
+    
+    // Log auto-classification for each email
+    foreach ($thread->emails as $email) {
+        if (isset($email->auto_classified) && $email->auto_classified) {
+            $emailHistory->logAction(
+                $thread->id,
+                $email->id,
+                'auto_classified',
+                null,
+                [
+                    'status_type' => $email->status_type,
+                    'status_text' => $email->status_text
+                ]
+            );
+        }
+    }
 }
 
 if (isset($_POST['submit'])) {
@@ -44,6 +63,29 @@ if (isset($_POST['submit'])) {
             $email->ignore !== $newIgnore) {
             // Remove auto classification since status was manually changed
             $email = $classifier->removeAutoClassification($email);
+            
+            // Log classification change
+            $emailHistory->logAction(
+                $thread->id,
+                $email->id,
+                'classified',
+                $_SESSION['user_id'],
+                [
+                    'status_type' => $newStatusType,
+                    'status_text' => $newStatusText
+                ]
+            );
+            
+            // Log ignore status change if it changed
+            if ($email->ignore !== $newIgnore) {
+                $emailHistory->logAction(
+                    $thread->id,
+                    $email->id,
+                    'ignored',
+                    $_SESSION['user_id'],
+                    ['ignored' => $newIgnore]
+                );
+            }
         }
         
         $email->ignore = $newIgnore;

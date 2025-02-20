@@ -1,5 +1,6 @@
 <?php
 
+require_once __DIR__ . '/ThreadEmailHistory.php';
 require_once __DIR__ . '/Imap/ImapWrapper.php';
 require_once __DIR__ . '/Imap/ImapConnection.php';
 require_once __DIR__ . '/Imap/ImapEmailProcessor.php';
@@ -13,12 +14,14 @@ class ThreadEmailSaver {
     private \Imap\ImapConnection $connection;
     private \Imap\ImapEmailProcessor $emailProcessor;
     private \Imap\ImapAttachmentHandler $attachmentHandler;
+    private ThreadEmailHistory $emailHistory;
 
     public function __construct(
         \Imap\ImapConnection $connection,
         \Imap\ImapEmailProcessor $emailProcessor,
         \Imap\ImapAttachmentHandler $attachmentHandler
     ) {
+        $this->emailHistory = new ThreadEmailHistory();
         $this->connection = $connection;
         $this->emailProcessor = $emailProcessor;
         $this->attachmentHandler = $attachmentHandler;
@@ -141,6 +144,14 @@ class ThreadEmailSaver {
                         $thread->labels[] = 'uklassifisert-epost';
                     }
                     
+                    // Log email received in history
+                    $this->emailHistory->logAction(
+                        $thread->id,
+                        $newEmail->id,
+                        'received',
+                        'system'
+                    );
+
                     $savedEmails[] = $filename;
                 }
             }
