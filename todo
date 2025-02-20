@@ -19,15 +19,30 @@ TODO for Cline.
     - [x] Start server
     - [x] Copy over the existing data
     - [x] Migrate data to new format (script)
-[x] Apache webroot is not being used. The webroot/index.php is not used. Instead the organizer/src/index.php is used.
-[x] Database driver missing from docker image. Not installed or missing rebuild??
+- [x] Apache webroot is not being used. The webroot/index.php is not used. Instead the organizer/src/index.php is used.
+- [x] Database driver missing from docker image. Not installed or missing rebuild??
+- [x] Is access to thread checked in file.php?
 
 
 Goal: make production usable
 
 
-- [ ] Clean up old threads
+- [ ] Add history table including who did what
+    - [ ] Special users for "system". Must point to some usage. Then handled in display.
+    - [x] History table for emails
+        Example actions
+        - [x] Email received
+        - [x] Email classified by user (include status type, status text, answer)
+        - [x] Email classified by prompt (auto classification)
+        - [x] Email sent
+        - [X] Email ignored
+- [ ] Old threads
+    - [x] Remove extra labels
+    - [ ] Open some labels to public
+    - [ ] Clean up old threads by archiving them
+- [ ] Check if we have index in database, if not add
 - [ ] Update-imap - Run on schedule
+- [ ] Email - Switch ID to UUID
 
 - [ ] Common list of entities
 
@@ -44,6 +59,23 @@ Goal: make production usable
     - Reply to thread
     - Enable notiication for replies
     - Automatic follow up
+
+- [ ] Something to automatically test that the GUIs work
+    - [ ] End-to-end testing framework
+        - Selenium
+        - Cypress
+        - Playwright
+        - Puppeteer
+        - etc.
+    - Maybe just do some requests from PHP?
+        - Get a token
+        - Access all pages
+        - Get some data from DB to get thread ids
+        - Assert: 200 OK on all requests
+        - Need to run as github action
+        - Need to be very quick
+
+
 
 TODO - medium term:
 - [ ] Automatic follow up
