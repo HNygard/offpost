@@ -1,8 +1,5 @@
 <?php
 
-// Set test environment flag
-define('PHPUNIT_RUNNING', true);
-
 // Set up error reporting for tests
 error_reporting(E_ALL);
 ini_set('display_errors', 1);
@@ -13,19 +10,6 @@ putenv('DB_HOST=127.0.0.1');
 putenv('DB_PORT=25432');
 putenv('DB_NAME=offpost');
 putenv('DB_USER=offpost');
-
-// Define test directories
-define('DATA_DIR', '/tmp/organizer-test-data');
-define('THREADS_DIR', '/tmp/organizer-test-data/threads');
-define('THREAD_AUTH_DIR', '/tmp/organizer-test-data/threads/authorizations');
-
-// Create test directories if they don't exist
-if (!file_exists(THREADS_DIR)) {
-    mkdir(THREADS_DIR, 0777, true);
-}
-if (!file_exists(THREAD_AUTH_DIR)) {
-    mkdir(THREAD_AUTH_DIR, 0777, true);
-}
 
 // Load Database class first to set test environment
 require_once __DIR__ . '/../class/Database.php';

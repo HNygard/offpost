@@ -61,9 +61,15 @@ Goal: make production usable
     - Automatic follow up
 
 - [ ] Automatic testing of rendering av PHP pages by using PHPUnit tests that sends basic requests to the backend.
-    - [ ] Start with one test and start a framework for making tests
+    - [x] Start with one test and start a framework for making tests
+    - [x] Add e2e-tests to github actions run
+    - [x] Add e2e-tests to .clinerules
+    - [ ] Stucture e2e-tests
+        - [ ] Refactor to use a common class for setup
+        - [ ] Refactor to one test file per page
+        - [ ] Test that all pages are accessible
 
-    
+
  Something to automatically test that the GUIs work
     - [ ] End-to-end testing framework
         - Selenium

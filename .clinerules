@@ -72,8 +72,14 @@ I pledge to follow the custom instructions.
 
 ## Commands:
 
-- Run tests using:
+- Run unit tests using:
     ./organizer/src/vendor/bin/phpunit organizer/src/tests/
+
+- Run e2e tests using:
+    ./organizer/src/vendor/bin/phpunit organizer/src/e2e-tests/
+
+- Run all tests (unit + e2e) using:
+    ./organizer/src/vendor/bin/phpunit organizer/src/tests/ organizer/src/e2e-tests/
 
 - Run system using:
     docker-compose -f docker-compose.dev.yaml up -d
