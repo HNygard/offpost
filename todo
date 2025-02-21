@@ -60,7 +60,11 @@ Goal: make production usable
     - Enable notiication for replies
     - Automatic follow up
 
-- [ ] Something to automatically test that the GUIs work
+- [ ] Automatic testing of rendering av PHP pages by using PHPUnit tests that sends basic requests to the backend.
+    - [ ] Start with one test and start a framework for making tests
+
+    
+ Something to automatically test that the GUIs work
     - [ ] End-to-end testing framework
         - Selenium
         - Cypress
