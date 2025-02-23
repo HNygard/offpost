@@ -81,7 +81,7 @@ class PHPMailerService implements IEmailService {
     }
 }
 
-function sendThreadEmail($thread, $emailTo, $emailSubject, $emailBody, $entityId, $threads, IEmailService $emailService = null, ThreadFileOperations $fileOps = null, ThreadHistory $history = null) {
+function sendThreadEmail($thread, $emailTo, $emailSubject, $emailBody, $entityId, $threads, IEmailService $emailService = null, ThreadFileOperations $fileOps = null, ThreadHistory $history = null, $userId = null) {
     if ($emailService === null) {
         require_once __DIR__ . '/../username-password.php';
         $emailService = new PHPMailerService(
@@ -117,7 +117,7 @@ function sendThreadEmail($thread, $emailTo, $emailSubject, $emailBody, $entityId
             $history->logAction(
                 $thread->id,
                 'sent',
-                isset($_SESSION['user_id']) ? $_SESSION['user_id'] : null,
+                $userId ?? (isset($_SESSION['user_id']) ? $_SESSION['user_id'] : 'system'),
                 ['to' => $emailTo]
             );
     }
