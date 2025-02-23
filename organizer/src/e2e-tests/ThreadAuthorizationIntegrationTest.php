@@ -1,6 +1,6 @@
 <?php
 
-require_once __DIR__ . '/bootstrap.php';
+require_once __DIR__ . '/../tests/bootstrap.php';
 require_once __DIR__ . '/../class/ThreadAuthorization.php';
 require_once __DIR__ . '/../class/Thread.php';
 require_once __DIR__ . '/../class/Threads.php';

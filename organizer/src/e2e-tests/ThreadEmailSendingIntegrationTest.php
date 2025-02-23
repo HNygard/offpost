@@ -17,7 +17,7 @@ use Imap\ImapFolderManager;
 use Imap\ImapEmailProcessor;
 use Imap\ImapAttachmentHandler;
 
-require_once(__DIR__ . '/bootstrap.php');
+require_once(__DIR__ . '/../tests/bootstrap.php');
 require_once(__DIR__ . '/../class/common.php');
 require_once(__DIR__ . '/../class/ThreadEmailService.php');
 require_once(__DIR__ . '/../class/Threads.php');
