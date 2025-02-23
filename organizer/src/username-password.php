@@ -5,7 +5,12 @@ $yourEmail = "greenmail-user";
 $yourEmailPassword = "EzUVrHxLVrF2";
 
 
-require '/username-password-override.php';
+if (defined('PHPUNIT_RUNNING')) {
+    $environment = 'development';
+}
+else {
+    require '/username-password-override.php';
+}
 
 if ($environment == 'development') {
     $imapServer = '{greenmail:3993/imap/ssl}';

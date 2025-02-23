@@ -1,7 +1,13 @@
 <?php
 
+// Set up error reporting for tests
+error_reporting(E_ALL);
+ini_set('display_errors', true);
+ini_set('display_startup_errors', true);
+
 // Set test environment flag
 define('PHPUNIT_RUNNING', true);
+$environment = 'development';
 
 // Set up test database configuration for development environment
 putenv('DB_HOST=127.0.0.1');
