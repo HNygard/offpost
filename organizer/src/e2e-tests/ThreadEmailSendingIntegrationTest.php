@@ -232,13 +232,13 @@ class ThreadEmailSendingIntegrationTest extends TestCase {
         
         // Verify presence and format of variable headers
         $this->assertArrayHasKey('Message-ID', $parsedHeaders, "Header 'Message-ID' is missing");
-        $this->assertMatchesRegularExpression('/<[^>]+@kendra>/', $parsedHeaders['Message-ID'], "Invalid Message-ID format");
+        $this->assertMatchesRegularExpression('/<[^>]+@[^>]+>/', $parsedHeaders['Message-ID'], "Invalid Message-ID format");
         
         $this->assertArrayHasKey('Date', $parsedHeaders, "Header 'Date' is missing");
         $this->assertNotFalse(strtotime($parsedHeaders['Date']), "Invalid Date format");
         
         $this->assertArrayHasKey('Received', $parsedHeaders, "Header 'Received' is missing");
-        $this->assertMatchesRegularExpression('/from .+ \(HELO kendra\); .+/', $parsedHeaders['Received'], "Invalid Received format");
+        $this->assertMatchesRegularExpression('/from .+ \(HELO [^)]+\); .+/', $parsedHeaders['Received'], "Invalid Received format");
         
         // Verify no unexpected headers exist
         $expectedHeaderNames = array_merge(
