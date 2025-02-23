@@ -191,6 +191,14 @@ class ThreadsTest extends TestCase {
         );
 
         $emailService = new MockEmailService(true);
+        
+        // Create mock history with test user
+        $mockHistory = new class extends ThreadHistory {
+            public function logAction($threadId, $action, $userId, $details = null) {
+                // Always use test user id for consistency
+                return parent::logAction($threadId, $action, 'test-user', $details);
+            }
+        };
 
         // Act
         $result = sendThreadEmail(
@@ -200,7 +208,9 @@ class ThreadsTest extends TestCase {
             'Test Body',
             'entity1',
             new Threads(),
-            $emailService
+            $emailService,
+            null,
+            new $mockHistory()
         );
 
         // Assert
@@ -230,6 +240,14 @@ class ThreadsTest extends TestCase {
         );
 
         $emailService = new MockEmailService(false);
+        
+        // Create mock history with test user
+        $mockHistory = new class extends ThreadHistory {
+            public function logAction($threadId, $action, $userId, $details = null) {
+                // Always use test user id for consistency
+                return parent::logAction($threadId, $action, 'test-user', $details);
+            }
+        };
 
         // Act
         $result = sendThreadEmail(
@@ -239,7 +257,9 @@ class ThreadsTest extends TestCase {
             'Test Body',
             'entity1',
             new Threads(),
-            $emailService
+            $emailService,
+            null,
+            new $mockHistory()
         );
 
         // Assert
