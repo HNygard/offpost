@@ -1,5 +1,6 @@
 <?php
 
+require_once __DIR__ . '/../class/common.php';
 require_once __DIR__ . '/../error.php';
 
 $path = parse_url($_SERVER['REQUEST_URI'], PHP_URL_PATH);
