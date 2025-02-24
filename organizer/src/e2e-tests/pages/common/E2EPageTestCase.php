@@ -7,7 +7,7 @@ class E2EPageTestCase extends TestCase {
 
     private static $session_cookies = array();
 
-    protected function renderPage($path, $user = 'dev-user-id', $method = 'GET', $expected_status = '200 OK') {
+    protected function renderPage($path, $user = 'dev-user-id', $method = 'GET', $expected_status = '200 OK', $post_data = null) {
         $url = 'http://localhost:25081' . $path;
         if ($user !== null) {
             if (!isset(self::$session_cookies[$user])) {
@@ -15,9 +15,9 @@ class E2EPageTestCase extends TestCase {
                 self::$session_cookies[$user] = $session_cookie;
             }
             $session_cookie = self::$session_cookies[$user];
-            $response = $this->curl($url, $method, $session_cookie);
+            $response = $this->curl($url, $method, $session_cookie, post_data: $post_data);
         } else {
-            $response = $this->curl($url, $method);
+            $response = $this->curl($url, $method, post_data: $post_data);
         }
 
         if ($expected_status != null) {
@@ -55,7 +55,7 @@ class E2EPageTestCase extends TestCase {
         return $response->cookies[0];
     }
 
-    private function curl($url, $method = 'GET', $session_cookie = null, $headers = array()) {
+    private function curl($url, $method = 'GET', $session_cookie = null, $headers = array(), $post_data = null) {
         //echo date('Y-m-d H:i:s') . " - $method $url      $session_cookie\n";
 
         $ch = curl_init();
@@ -71,6 +71,12 @@ class E2EPageTestCase extends TestCase {
 
         if (!empty($headers)) {
             curl_setopt($ch, CURLOPT_HTTPHEADER, $headers);
+        }
+
+        // Add POST data if method is POST
+        if ($method === 'POST') {
+            curl_setopt($ch, CURLOPT_POST, 1);
+            curl_setopt($ch, CURLOPT_POSTFIELDS, http_build_query($post_data));
         }
 
         if (str_contains($url, 'test-authenticate')) {

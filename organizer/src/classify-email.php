@@ -5,6 +5,7 @@ require_once __DIR__ . '/class/Threads.php';
 require_once __DIR__ . '/class/ThreadEmailClassifier.php';
 require_once __DIR__ . '/class/ThreadStorageManager.php';
 require_once __DIR__ . '/class/ThreadEmailHistory.php';
+require_once __DIR__ . '/class/ThreadAuthorization.php';
 
 $emailHistory = new ThreadEmailHistory();
 
@@ -15,8 +16,24 @@ function logDebug($message) {
     echo $message . '<br>' . chr(10);
 }
 
+// Check required parameters
+if (!isset($_GET['entityId']) || !isset($_GET['threadId']) || !isset($_GET['emailId'])) {
+    http_response_code(400);
+    header('Content-Type: text/plain');
+    die("Missing required parameters: entityId, threadId, and emailId are required");
+}
+
 $entityId = $_GET['entityId'];
 $threadId = $_GET['threadId'];
+$emailId = $_GET['emailId'];
+
+// Validate threadId format
+if (!is_uuid($threadId)) {
+    http_response_code(400);
+    header('Content-Type: text/plain');
+    die("Invalid threadId parameter");
+}
+
 $threads = ThreadStorageManager::getInstance()->getThreadsForEntity($entityId);
 
 $thread = null;
@@ -24,6 +41,35 @@ foreach ($threads->threads as $thread1) {
     if ($thread1->id == $threadId) {
         $thread = $thread1;
     }
+}
+
+// Check if thread exists
+if (!$thread) {
+    http_response_code(404);
+    header('Content-Type: text/plain');
+    die("Thread not found: threadId={$threadId}, entityId=" . htmlescape($entityId));
+}
+
+// Check authorization
+if (!ThreadAuthorizationManager::canUserAccessThread($threadId, $_SESSION['user']['sub'])) {
+    http_response_code(403);
+    header('Content-Type: text/plain');
+    die("Unauthorized access to thread: {$threadId}");
+}
+
+// Check if email exists in thread
+$emailFound = false;
+foreach ($thread->emails as $email) {
+    if ($email->id == $emailId) {
+        $emailFound = true;
+        break;
+    }
+}
+
+if (!$emailFound) {
+    http_response_code(404);
+    header('Content-Type: text/plain');
+    die("Email not found in thread: emailId={$emailId}, threadId={$threadId}");
 }
 
 // Run automatic classification if thread is found
@@ -69,7 +115,7 @@ if (isset($_POST['submit'])) {
                 $thread->id,
                 $email->id,
                 'classified',
-                $_SESSION['user_id'],
+                $_SESSION['user']['sub'],
                 [
                     'status_type' => $newStatusType,
                     'status_text' => $newStatusText
@@ -82,7 +128,7 @@ if (isset($_POST['submit'])) {
                     $thread->id,
                     $email->id,
                     'ignored',
-                    $_SESSION['user_id'],
+                    $_SESSION['user']['sub'],
                     ['ignored' => $newIgnore]
                 );
             }
@@ -113,9 +159,11 @@ if (isset($_POST['submit'])) {
         }
         $thread->labels = $labels;
     }
-    saveEntityThreads($entityId, $threads);
+    // Use ThreadStorageManager to save the threads
+    ThreadStorageManager::getInstance()->updateThread($thread);
 
-    echo 'OK.';
+    // Redirect back to thread view
+    header('Location: /thread-view?entityId=' . urlencode($entityId) . '&threadId=' . urlencode($threadId));
     exit;
 }
 

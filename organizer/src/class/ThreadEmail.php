@@ -11,6 +11,7 @@ class ThreadEmail {
     var $status_text;
     var $description;
     var $answer;
+    var $auto_classification;
     /* @var $attachments ThreadEmailAttachment[] */
     var $attachments;
 }
