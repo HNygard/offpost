@@ -124,7 +124,7 @@ $allThreads = $filteredThreads;
 
                 foreach ($threads->threads as $thread) {
                     ?>
-                    <tr>
+                    <tr id="thread-<?= $thread->id ?>">
                         <?php /* Entity name / id */ ?>
                         <td>
                             <b><?= htmlescape($threads->title_prefix) ?></b><br>
