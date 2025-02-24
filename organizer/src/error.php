@@ -1,8 +1,19 @@
 <?php
 
 function displayErrorPage($error) {
+    ob_end_clean();
+
     $statusCode = $error instanceof Exception ? ($error->getCode() ?: 500) : 500;
     http_response_code($statusCode);
+
+    // User agent for less output
+    if (isset($_SERVER['HTTP_USER_AGENT']) && str_starts_with($_SERVER['HTTP_USER_AGENT'], 'Offpost E2E Test')) {
+        echo 'Error during rendering of page ' . htmlescape($_SERVER['REQUEST_URI']) . "\n\n"
+            . htmlescape($error->getMessage()
+            . "\n\nStack trace:\n"
+            . htmlescape($error->getTraceAsString()));
+        exit;
+    }
     
     echo '<html><head><title>Error - Offpost</title>';
     echo '<style>
@@ -74,9 +85,9 @@ function displayErrorPage($error) {
     echo '<div class="error-details">';
     echo '<button class="copy-button">Copy error</button>';
     echo '<pre contenteditable="true">'
-        . htmlspecialchars($error->getMessage()
+        . htmlescape($error->getMessage()
         . "\n\nStack trace:\n"
-        . $error->getTraceAsString())
+        . htmlescape($error->getTraceAsString()))
         . '</pre>';
     echo '</div>';
     echo '</div></body></html>';

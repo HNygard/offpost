@@ -5,7 +5,7 @@ class E2EPageTestCase extends TestCase {
 
     private static $session_cookies = array();
 
-    protected function renderPage($path, $user = 'dev-user-id', $method = 'GET') {
+    protected function renderPage($path, $user = 'dev-user-id', $method = 'GET', $expected_status = '200 OK') {
         $url = 'http://localhost:25081' . $path;
         if ($user !== null) {
             if (!isset(self::$session_cookies[$user])) {
@@ -17,6 +17,23 @@ class E2EPageTestCase extends TestCase {
         } else {
             $response = $this->curl($url, $method);
         }
+
+        if ($expected_status != null) {
+            try {
+                $this->assertEquals('HTTP/1.1 ' . $expected_status, trim(explode("\n", $response->headers, 2)[0]));
+            }
+            catch (Exception $e) {
+                echo "\n\n";
+                echo 'Failed asserting status code: ' . $expected_status . "\n";
+                echo "\n";
+                echo "Full response:\n";
+                echo preg_replace('/^/m', '    ', $response->body ) . "\n";
+                echo "--- End of full response\n\n";
+                throw $e;
+            }
+        }
+
+
         return $response;
     }
 
@@ -48,6 +65,7 @@ class E2EPageTestCase extends TestCase {
         if ($session_cookie !== null) {
             $headers[] = 'Cookie: ' . $session_cookie;
         }
+        $headers[] = 'User-Agent: Offpost E2E Test';
 
         if (!empty($headers)) {
             curl_setopt($ch, CURLOPT_HTTPHEADER, $headers);
