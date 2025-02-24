@@ -12,6 +12,7 @@ require_once __DIR__ . '/class/ThreadFolderManager.php';
 require_once __DIR__ . '/class/ThreadEmailMover.php';
 require_once __DIR__ . '/class/ThreadEmailSaver.php';
 require_once __DIR__ . '/class/Threads.php';
+require_once __DIR__ . '/class/ThreadStorageManager.php';
 
 use Imap\ImapConnection;
 use Imap\ImapFolderManager;
@@ -39,7 +40,7 @@ try {
     $threadEmailSaver = new ThreadEmailSaver($connection, $emailProcessor, $attachmentHandler);
     
     // Get threads
-    $threads = getThreads();
+    $threads = ThreadStorageManager::getInstance()->getThreads();
     
     // Initialize and create folders
     $connection->logDebug('---- CREATING FOLDERS ----');
@@ -130,6 +131,8 @@ try {
     }
     
 } catch(Exception $e) {
-    echo "Error: " . $e->getMessage() . "\n";
+    echo "\n\n";
+    echo "Error updating imap:\n";
+    echo $e->getMessage() . "\n";
     echo $e->getTraceAsString();
 }

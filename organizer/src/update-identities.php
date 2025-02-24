@@ -2,6 +2,7 @@
 
 require_once __DIR__ . '/auth.php';
 require_once __DIR__ . '/class/Identity.php';
+require_once __DIR__ . '/class/ThreadStorageManager.php';
 
 // Require authentication
 requireAuth();
@@ -15,7 +16,7 @@ $repo = new IdentityRepository($connection);
 $identities = $repo->getIdentities();
 
 
-$allThreads = getThreads();
+$allThreads = ThreadStorageManager::getInstance()->getThreads();
 foreach ($allThreads as $threads) {
     foreach ($threads->threads as $thread) {
         $id_found = false;
