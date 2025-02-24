@@ -13,14 +13,18 @@ use Laminas\Mail\Storage\Message;
 require_once __DIR__ . '/class/Threads.php';
 
 if (!isset($_GET['entityId']) || !isset($_GET['threadId'])) {
-    throw new Exception("Missing required parameters: entityId and threadId", 400);
+    http_response_code(400);
+    header('Content-Type: text/plain');
+    die("Missing required parameters: entityId and threadId");
 }
 
 $entityId = $_GET['entityId'];
 $threadId = $_GET['threadId'];
 
 if (!is_uuid($threadId)) {
-    throw new Exception("Invalid threadId parameter", 400);
+    http_response_code(400);
+    header('Content-Type: text/plain');
+    die("Invalid threadId parameter");
 }
 
 $threads = ThreadStorageManager::getInstance()->getThreadsForEntity($entityId);
@@ -33,11 +37,15 @@ foreach ($threads->threads as $thread1) {
 }
 
 if (!$thread) {
-    throw new Exception("Thread not found: threadId={$threadId}, entityId={$entityId}", 404);
+    http_response_code(404);
+    header('Content-Type: text/plain');
+    die("Thread not found: threadId={$threadId}, entityId=" . htmlescape($entityId) ."");
 }
 
 if (!ThreadAuthorizationManager::canUserAccessThread($threadId, $_SESSION['user']['sub'])) {
-    throw new Exception("Unauthorized access to thread: {$threadId}", 403);
+    http_response_code(403);
+    header('Content-Type: text/plain');
+    throw new Exception("Unauthorized access to thread: {$threadId}");
 }
 
 foreach ($thread->emails as $email) {
