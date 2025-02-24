@@ -1,5 +1,7 @@
 <?php
 
+require_once __DIR__ . '/../../../tests/bootstrap.php';
+
 use PHPUnit\Framework\TestCase;
 class E2EPageTestCase extends TestCase {
 

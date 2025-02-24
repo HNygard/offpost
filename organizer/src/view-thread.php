@@ -14,6 +14,8 @@ $entityId = isset($_GET['entityId']) ? $_GET['entityId'] : null;
 $userId = $_SESSION['user']['sub']; // OpenID Connect subject identifier
 
 if (!$threadId || !$entityId) {
+    http_response_code(400);
+    header('Content-Type: text/plain');
     die('Thread ID and Entity ID are required');
 }
 
