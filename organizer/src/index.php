@@ -127,15 +127,15 @@ $allThreads = $filteredThreads;
                     <tr>
                         <?php /* Entity name / id */ ?>
                         <td>
-                            <b><?= $threads->title_prefix ?></b><br>
+                            <b><?= htmlescape($threads->title_prefix) ?></b><br>
                             <span style="font-size: 0.8em;"><?= $threads->entity_id ?></span>
                         </td>
                         <?php /* Title / My name <email> */ ?>
                         <td>
-                            <b><?= $thread->title ?></b><br>
+                            <b><?= htmlescape($thread->title) ?></b><br>
                             <span style="font-size: 0.8em;">
-                                <b><?= $thread->my_name ?></b>
-                                &lt;<?= $thread->my_email ?>&gt;
+                                <b><?= htmlescape($thread->my_name) ?></b>
+                                &lt;<?= htmlescape($thread->my_email) ?>&gt;
                             </span><br>
                             <div class="action-links">
                                 <a href="/thread-view?entityId=<?=
