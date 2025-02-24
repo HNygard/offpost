@@ -117,7 +117,7 @@ function sendThreadEmail($thread, $emailTo, $emailSubject, $emailBody, $entityId
             $history->logAction(
                 $thread->id,
                 'sent',
-                $userId ?? (isset($_SESSION['user_id']) ? $_SESSION['user_id'] : 'system'),
+                $userId ?? (isset($_SESSION['user']['sub']) ? $_SESSION['user']['sub'] : 'system'),
                 ['to' => $emailTo]
             );
     }
