@@ -35,7 +35,7 @@ class ThreadDatabaseOperationsTest extends PHPUnit\Framework\TestCase {
         $thread = new Thread();
         $thread->title = "Test Thread";
         $thread->my_name = "Test User";
-        $thread->my_email = "test@example.com";
+        $thread->my_email = "test" . mt_rand(0, 100) . time() ."@example.com";
         $thread->sent = false;
         $thread->archived = false;
         $thread->labels = ["test"];
@@ -71,7 +71,7 @@ class ThreadDatabaseOperationsTest extends PHPUnit\Framework\TestCase {
         $thread = new Thread();
         $thread->title = "Initial Title";
         $thread->my_name = "Test User";
-        $thread->my_email = "test@example.com";
+        $thread->my_email = "test" . mt_rand(0, 100) . time() ."@example.com";
         $thread->labels = ["initial"];
         $thread->archived = false;
         
@@ -113,7 +113,7 @@ class ThreadDatabaseOperationsTest extends PHPUnit\Framework\TestCase {
         $thread = new Thread();
         $thread->title = "Test Thread with Attachments";
         $thread->my_name = "Test User";
-        $thread->my_email = "test@example.com";
+        $thread->my_email = "test" . mt_rand(0, 100) . time() ."@example.com";
         
         $createdThread = $this->threadDbOps->createThread('test_entity', 'Test', $thread, 'test-user');
         
@@ -161,7 +161,7 @@ class ThreadDatabaseOperationsTest extends PHPUnit\Framework\TestCase {
         $thread = new Thread();
         $thread->title = "Test Thread";
         $thread->my_name = "Test User";
-        $thread->my_email = "test@example.com";
+        $thread->my_email = "test" . mt_rand(0, 100) . time() ."@example.com";
         $thread->public = false;
         
         $createdThread = $this->threadDbOps->createThread('test_entity', 'Test', $thread, 'test-user');
@@ -189,7 +189,7 @@ class ThreadDatabaseOperationsTest extends PHPUnit\Framework\TestCase {
         $thread = new Thread();
         $thread->title = "Test Thread";
         $thread->my_name = "Test User";
-        $thread->my_email = "test@example.com";
+        $thread->my_email = "test" . mt_rand(0, 100) . time() ."@example.com";
         $thread->public = false;
 
         $createdThread = $this->threadDbOps->createThread('test_entity', 'Test', $thread, 'test-user');
@@ -222,7 +222,7 @@ class ThreadDatabaseOperationsTest extends PHPUnit\Framework\TestCase {
         $thread = new Thread();
         $thread->title = "Test Thread";
         $thread->my_name = "Test User";
-        $thread->my_email = "test@example.com";
+        $thread->my_email = "test" . mt_rand(0, 100) . time() ."@example.com";
         $thread->sent = false;
 
         $createdThread = $this->threadDbOps->createThread('test_entity', 'Test', $thread, 'test-user');

@@ -115,7 +115,7 @@ class ThreadsTest extends TestCase {
         $thread = new Thread();
         $thread->title = 'Test Thread';
         $thread->my_name = 'Test User';
-        $thread->my_email = 'test@example.com';
+        $thread->my_email = "test" . mt_rand(0, 100) . time() ."@example.com";
         $thread->labels = [];
         $thread->sent = false;
         $thread->archived = false;
@@ -144,6 +144,7 @@ class ThreadsTest extends TestCase {
         $existingThread->title = 'Existing Thread';
         $existingThread->my_name = 'Test User';
         $existingThread->my_email = 'test@example.com';
+        $existingThread->my_email = "test" . mt_rand(0, 100) . time() ."@example.com";
         $existingThread->labels = [];
         $existingThread->sent = true;
         $existingThread->archived = false;
@@ -155,7 +156,7 @@ class ThreadsTest extends TestCase {
         $newThread = new Thread();
         $newThread->title = 'New Thread';
         $newThread->my_name = 'Test User';
-        $newThread->my_email = 'test@example.com';
+        $newThread->my_email = "test" . mt_rand(0, 100) . time() ."@example.com";
         $newThread->labels = [];
         $newThread->sent = false;
         $newThread->archived = false;
@@ -179,7 +180,7 @@ class ThreadsTest extends TestCase {
         // Arrange
         $thread = new stdClass();
         $thread->id = '550e8400-e29b-41d4-a716-446655440000';
-        $thread->my_email = 'test@example.com';
+        $thread->my_email = "test" . mt_rand(0, 100) . time() ."@example.com";
         $thread->my_name = 'Test User';
         $thread->sent = false;
 
@@ -215,7 +216,7 @@ class ThreadsTest extends TestCase {
 
         // Assert
         $this->assertTrue($result['success']);
-        $this->assertEquals('test@example.com', $emailService->lastEmailData['from']);
+        $this->assertEquals($thread->my_email, $emailService->lastEmailData['from']);
         $this->assertEquals('Test User', $emailService->lastEmailData['fromName']);
         $this->assertEquals('recipient@example.com', $emailService->lastEmailData['to']);
         $this->assertEquals('Test Subject', $emailService->lastEmailData['subject']);
@@ -228,7 +229,7 @@ class ThreadsTest extends TestCase {
         // Arrange
         $thread = new stdClass();
         $thread->id = '550e8400-e29b-41d4-a716-446655440001';
-        $thread->my_email = 'test@example.com';
+        $thread->my_email = "test" . mt_rand(0, 100) . time() ."@example.com";
         $thread->my_name = 'Test User';
         $thread->sent = false;
 

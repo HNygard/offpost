@@ -18,7 +18,7 @@ class ThreadHistoryTest extends PHPUnit\Framework\TestCase {
         // Create a test thread
         Database::execute(
             "INSERT INTO threads (id, entity_id, title, my_name, my_email, sent, archived, labels, sent_comment, public) 
-            VALUES (?, 'test-entity', 'Test Thread', 'Test User', 'test@example.com', false, false, NULL, NULL, false)",
+            VALUES (?, 'test-entity', 'Test Thread', 'Test User', 'test" . mt_rand(0, 100) . time() ."@example.com', false, false, NULL, NULL, false)",
             [$this->testThreadId]
         );
 
