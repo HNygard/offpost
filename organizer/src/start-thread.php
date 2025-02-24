@@ -3,6 +3,7 @@
 require_once __DIR__ . '/auth.php';
 require_once __DIR__ . '/class/Thread.php';
 require_once __DIR__ . '/class/ThreadAuthorization.php';
+require_once __DIR__ . '/class/ThreadStorageManager.php';
 
 // Require authentication
 requireAuth();
@@ -21,7 +22,7 @@ if (isset($_POST['thread_id']) && !empty($_POST['thread_id'])) {
 }
 $thread = null;
 if ($threadId != null) {
-    $threads = getThreadsForEntity($entityId);
+    $threads = ThreadStorageManager::getInstance()->getThreadsForEntity($entityId);
 
     foreach ($threads->threads as $thread1) {
         if ($thread1->id == $threadId) {
@@ -199,14 +200,14 @@ if ($thread == null) {
     foreach ($labels as $label) {
         $thread->labels[] = trim($label);
     }
-    $newThread = createThread($_POST['entity_id'], $_POST['entity_title_prefix'], $thread);
+    $newThread = ThreadStorageManager::getInstance()->createThread($_POST['entity_id'], $_POST['entity_title_prefix'], $thread, $_SESSION['user']['sub']);
     $threadId = $newThread->id;
 
     // Set creator as owner using OpenID Connect subject identifier
     $userId = $_SESSION['user']['sub']; // From OpenID Connect session
     $newThread->addUser($userId, true);
 
-    $threads = getThreadsForEntity($_POST['entity_id']);
+    $threads = ThreadStorageManager::getInstance()->getThreadsForEntity($_POST['entity_id']);
 
     $thread = null;
     foreach ($threads->threads as $thread1) {
