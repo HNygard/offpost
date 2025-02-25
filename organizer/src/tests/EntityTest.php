@@ -17,20 +17,20 @@ class EntityTest extends PHPUnit\Framework\TestCase {
 
         // Create a temporary test JSON file
         $this->testJsonPath = tempnam(sys_get_temp_dir(), 'entity_test_');
-        $this->testEntities = [
-            'test-entity-1' => [
-                'name' => 'Test Entity 1',
-                'email' => 'test1@example.com',
-                'type' => 'test',
-                'org_num' => '123456789'
-            ],
-            'test-entity-2' => [
-                'name' => 'Test Entity 2',
-                'email' => 'test2@example.com',
-                'type' => 'test',
-                'org_num' => '987654321'
-            ]
-        ];
+        $this->testEntities = json_decode('{
+            "test-entity-1": {
+                "name": "Test Entity 1",
+                "email": "test1@example.com",
+                "type": "test",
+                "org_num": "123456789"
+            },
+            "test-entity-2": {
+                "name": "Test Entity 2",
+                "email": "test2@example.com",
+                "type": "test",
+                "org_num": "987654321"
+            }
+        }');
         file_put_contents($this->testJsonPath, json_encode($this->testEntities));
 
         // Set the Entity class to use our test JSON file
@@ -90,8 +90,8 @@ class EntityTest extends PHPUnit\Framework\TestCase {
         $entity2 = Entity::getById('test-entity-2');
 
         // :: Assert
-        $this->assertEquals($this->testEntities['test-entity-1'], $entity1, "Entity::getById() should return the correct entity");
-        $this->assertEquals($this->testEntities['test-entity-2'], $entity2, "Entity::getById() should return the correct entity");
+        $this->assertEquals($this->testEntities->{'test-entity-1'}, $entity1, "Entity::getById() should return the correct entity");
+        $this->assertEquals($this->testEntities->{'test-entity-2'}, $entity2, "Entity::getById() should return the correct entity");
     }
 
     public function testNonExisting() {

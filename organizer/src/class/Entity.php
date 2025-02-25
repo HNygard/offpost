@@ -7,11 +7,19 @@
  * from a JSON file stored at data/entities.json
  */
 class Entity {
+    public string $entity_id;
+    public string $name;
+    public string $email;
+    public string $type;
+    public string $org_num;
+
     private static $entities = null;
     private static $jsonPath =  DATA_DIR . '/entities.json';
     
     /**
      * Load entities from JSON file
+     * 
+     * @return Entity[]
      */
     private static function loadEntities() {
         if (self::$entities === null) {
@@ -20,14 +28,15 @@ class Entity {
             }
             
             $json = file_get_contents(self::$jsonPath);
-            self::$entities = json_decode($json, true);
+            self::$entities = json_decode($json);
         }
         return self::$entities;
     }
     
     /**
      * Get all entities
-     * @return array All entities
+     * 
+     * @return Entity[]
      */
     public static function getAll() {
         return self::loadEntities();
@@ -40,7 +49,7 @@ class Entity {
      */
     public static function exists($entityId) {
         $entities = self::loadEntities();
-        return isset($entities[$entityId]);
+        return isset($entities->$entityId);
     }
     
     /**
@@ -56,6 +65,6 @@ class Entity {
             throw new InvalidArgumentException("Entity ID not found: $entityId");
         }
 
-        return $entities[$entityId];
+        return $entities->$entityId;
     }
 }

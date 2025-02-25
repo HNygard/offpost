@@ -151,7 +151,7 @@ function getIconClass($filetype) {
 
         <div class="thread-details">
             <p>
-                <strong>Entity:</strong> <?= htmlescape($threadEntity->title_prefix) ?> (<?= htmlescape($threadEntity->entity_id) ?>)<br>
+                <strong>Entity:</strong> <?= htmlescape($thread->getEntityName()) ?> (<?= htmlescape($threadEntity->entity_id) ?>)<br>
                 <strong>Identity:</strong> <?= htmlescape($thread->my_name) ?> &lt;<?= htmlescape($thread->my_email) ?>&gt;
             </p>
 

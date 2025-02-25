@@ -3,6 +3,7 @@
 require_once __DIR__ . '/ThreadAuthorization.php';
 require_once __DIR__ . '/Database.php';
 require_once __DIR__ . '/ThreadEmail.php';
+require_once __DIR__ . '/Entity.php';
 
 class Thread implements JsonSerializable {
     var $id;
@@ -15,6 +16,7 @@ class Thread implements JsonSerializable {
     var $archived;
     var $public = false;
     var $sentComment; // Added property
+    var $entity_id; // Entity ID for this thread
 
     /* @var ThreadEmail[] $emails */
     var $emails;
@@ -73,6 +75,19 @@ class Thread implements JsonSerializable {
         unset($data['id_old']);
         return $data;
     }
+    
+    /**
+     * Get entity name for this thread
+     * @return string The entity name or entity ID if not found
+     */
+    public function getEntityName() {
+        if (!isset($this->entity_id) || empty($this->entity_id)) {
+            return 'Unknown Entity';
+        }
+        
+        $entity = Entity::getById($this->entity_id);
+        return $entity->name;
+    }
 
     /**
      * Load a thread from the database by its ID
@@ -93,6 +108,7 @@ class Thread implements JsonSerializable {
         $thread->title = $data['title'];
         $thread->my_name = $data['my_name'];
         $thread->my_email = $data['my_email'];
+        $thread->entity_id = $data['entity_id'];
         // Convert PostgreSQL array to PHP array by removing {} and splitting by comma
         $labelsStr = trim($data['labels'] ?? '', '{}');
         $thread->labels = $labelsStr ? array_map(function($label) {

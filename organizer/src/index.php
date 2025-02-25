@@ -127,7 +127,7 @@ $allThreads = $filteredThreads;
                     <tr id="thread-<?= $thread->id ?>">
                         <?php /* Entity name / id */ ?>
                         <td>
-                            <b><?= htmlescape($threads->title_prefix) ?></b><br>
+                            <b><?= htmlescape($thread->getEntityName()) ?></b><br>
                             <span style="font-size: 0.8em;"><?= $threads->entity_id ?></span>
                         </td>
                         <?php /* Title / My name <email> */ ?>

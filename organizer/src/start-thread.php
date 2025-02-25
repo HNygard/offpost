@@ -152,7 +152,7 @@ if (!isset($_POST['entity_id'])) {
                     <?php
                     foreach ($entities as $id => $entity) {
                         $selected = (isset($_GET['entity_id']) && $_GET['entity_id'] === $id) ? 'selected' : '';
-                        echo "<option value=\"" . htmlescape($id) . "\" $selected>" . htmlescape($entity['name']) . "</option>";
+                        echo "<option value=\"" . htmlescape($id) . "\" $selected>" . htmlescape($entity->name) . "</option>";
                     }
                     ?>
                 </select>
@@ -213,13 +213,12 @@ if (isset($_POST['entity_id']) && !empty($_POST['entity_id'])) {
     
     // Validate entity ID
     if (!Entity::exists($entityId)) {
+        http_response_code(400);
         die("Invalid entity ID. Please select a valid entity. <a href='javascript:history.back()'>Go back</a>");
     }
     
     // If valid, pre-fill entity email if not provided
-    if (empty($_POST['entity_email'])) {
-        $_POST['entity_email'] = Entity::getEmailById($entityId);
-    }
+    $_POST['entity_email'] = Entity::getById($entityId)->email;
 }
 
 if ($thread == null) {
