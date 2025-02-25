@@ -183,12 +183,13 @@ class ThreadsTest extends TestCase {
         $thread->my_email = "test" . mt_rand(0, 100) . time() ."@example.com";
         $thread->my_name = 'Test User';
         $thread->sent = false;
+        $thread->entity_id = '000000000-test-entity-development';
 
         // Create thread in database
         $db = new Database();
         $db->execute(
             "INSERT INTO threads (id, entity_id, title, my_name, my_email, sent) VALUES (?, ?, ?, ?, ?, ?)",
-            [$thread->id, 'test-entity', 'Test Thread', $thread->my_name, $thread->my_email, 'f']
+            [$thread->id, '000000000-test-entity-development', 'Test Thread', $thread->my_name, $thread->my_email, 'f']
         );
 
         $emailService = new MockEmailService(true);
@@ -207,7 +208,7 @@ class ThreadsTest extends TestCase {
             'recipient@example.com',
             'Test Subject',
             'Test Body',
-            'entity1',
+            '000000000-test-entity-development',
             'user-id',
             $emailService,
             null,
@@ -232,12 +233,13 @@ class ThreadsTest extends TestCase {
         $thread->my_email = "test" . mt_rand(0, 100) . time() ."@example.com";
         $thread->my_name = 'Test User';
         $thread->sent = false;
+        $thread->entity_id = '000000000-test-entity-development';
 
         // Create thread in database
         $db = new Database();
         $db->execute(
             "INSERT INTO threads (id, entity_id, title, my_name, my_email, sent) VALUES (?, ?, ?, ?, ?, ?)",
-            [$thread->id, 'test-entity', 'Test Thread', $thread->my_name, $thread->my_email, 'f']
+            [$thread->id, '000000000-test-entity-development', 'Test Thread', $thread->my_name, $thread->my_email, 'f']
         );
 
         $emailService = new MockEmailService(false);
@@ -256,7 +258,7 @@ class ThreadsTest extends TestCase {
             'recipient@example.com',
             'Test Subject',
             'Test Body',
-            'entity1',
+            '000000000-test-entity-development',
             'user-id',
             $emailService,
             null,

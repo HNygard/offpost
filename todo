@@ -47,7 +47,7 @@ Goal: make production usable
 - [ ] Common list of entities
     - [x] Basic class and JSON file
     - [x] Test for entity validation
-    - [ ] Updates to threads can only be on valid entities. Input on Thread must be Entity to force compliance in code.
+    - [x] Updates to threads can only be on valid entities. Input on Thread must be Entity to force compliance in code.
     - [ ] entity_id param must be valid verify in all frontend templates. Check by Entity class
 
 - [ ] Views available for public

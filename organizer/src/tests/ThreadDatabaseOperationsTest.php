@@ -251,6 +251,51 @@ class ThreadDatabaseOperationsTest extends PHPUnit\Framework\TestCase {
         $this->assertEquals('unsent', $historyEntries[2]['action'], "Third action should be marking as not sent");
     }
 
+    public function testUpdateThreadWithDifferentEntityIdThrowsException() {
+        // Create a thread for one entity
+        $thread = new Thread();
+        $thread->title = "Test Thread";
+        $thread->my_name = "Test User";
+        $thread->my_email = "test" . mt_rand(0, 100) . time() ."@example.com";
+        $thread->sent = false;
+        $thread->archived = false;
+        $thread->labels = ["test"];
+        $thread->sentComment = "Test comment";
+
+        $createdThread = $this->threadDbOps->createThread('000000000-test-entity-development', 'Test', $thread, 'test-user');
+        
+        // Try to update the thread with a different entity_id
+        $thread->entity_id = '000000000-test-entity-1';
+        
+        // This should throw an exception
+        $this->expectException(Exception::class);
+        $this->expectExceptionMessage("Cannot move thread to a different entity");
+        $this->threadDbOps->updateThread($thread, 'test-user');
+    }
+    
+    public function testUpdateThreadWithNonExistentEntityIdThrowsException() {
+        // Create a thread for one entity
+        $thread = new Thread();
+        $thread->title = "Test Thread";
+        $thread->my_name = "Test User";
+        $thread->my_email = "test" . mt_rand(0, 100) . time() ."@example.com";
+        $thread->sent = false;
+        $thread->archived = false;
+        $thread->labels = ["test"];
+        $thread->sentComment = "Test comment";
+
+        $createdThread = $this->threadDbOps->createThread('000000000-test-entity-development', 'Test', $thread, 'test-user');
+        
+        // Try to update the thread with a non-existent entity_id
+        // This will trigger the "Cannot move thread to a different entity" check first
+        $thread->entity_id = 'non-existent-entity-id';
+        
+        // This should throw an exception
+        $this->expectException(Exception::class);
+        $this->expectExceptionMessage("Cannot move thread to a different entity");
+        $this->threadDbOps->updateThread($thread, 'test-user');
+    }
+
     public function testGetThreadsReturnsAllEntities() {
         // Create threads for multiple entities
         $thread1 = new Thread();

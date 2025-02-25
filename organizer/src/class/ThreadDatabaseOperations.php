@@ -331,6 +331,13 @@ class ThreadDatabaseOperations {
                 $thread->id
             ]
         );
+
+        if ($thread->entity_id != $currentThread->entity_id) {
+            throw new Exception("Cannot move thread to a different entity");
+        }
+
+        Entity::getById($thread->entity_id);
+
         // Log changes
         if ($currentThread) {
             $details = [];
