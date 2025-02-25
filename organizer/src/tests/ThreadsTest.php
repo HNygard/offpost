@@ -178,7 +178,7 @@ class ThreadsTest extends TestCase {
 
     public function testSendThreadEmail() {
         // Arrange
-        $thread = new stdClass();
+        $thread = new Thread();
         $thread->id = '550e8400-e29b-41d4-a716-446655440000';
         $thread->my_email = "test" . mt_rand(0, 100) . time() ."@example.com";
         $thread->my_name = 'Test User';
@@ -208,7 +208,7 @@ class ThreadsTest extends TestCase {
             'Test Subject',
             'Test Body',
             'entity1',
-            new Threads(),
+            'user-id',
             $emailService,
             null,
             new $mockHistory()
@@ -227,7 +227,7 @@ class ThreadsTest extends TestCase {
 
     public function testSendThreadEmailFailure() {
         // Arrange
-        $thread = new stdClass();
+        $thread = new Thread();
         $thread->id = '550e8400-e29b-41d4-a716-446655440001';
         $thread->my_email = "test" . mt_rand(0, 100) . time() ."@example.com";
         $thread->my_name = 'Test User';
@@ -257,7 +257,7 @@ class ThreadsTest extends TestCase {
             'Test Subject',
             'Test Body',
             'entity1',
-            new Threads(),
+            'user-id',
             $emailService,
             null,
             new $mockHistory()

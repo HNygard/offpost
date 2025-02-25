@@ -19,7 +19,10 @@ foreach ($threads->threads as $thread1) {
 }
 
 if (isset($_POST['submit'])) {
-    $result = sendThreadEmail($thread, $_POST['email-to'], $_POST['email-subject'], $_POST['email-body'], $entityId, $threads);
+    $result = sendThreadEmail($thread, $_POST['email-to'], 
+    $_POST['email-subject'], $_POST['email-body'], $entityId,
+    userId: $_SESSION['user']['sub']
+    );
     
     echo '<div style="height: 400px; overflow-y: scroll; font-family: monospace;">';
     echo $result['debug'];

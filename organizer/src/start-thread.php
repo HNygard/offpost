@@ -224,7 +224,12 @@ if ($thread == null) {
 
 if (isset($_POST['body']) && !empty($_POST['body'])) {
     // -> Send email
-    $result = sendThreadEmail($thread, $_POST['entity_email'], $_POST['title'], $_POST['body'], $entityId, $threads);
+    $result = sendThreadEmail($thread, 
+        $_POST['entity_email'], 
+        $_POST['title'], 
+        $_POST['body'], 
+        $entityId,
+        $_SESSION['user']['sub']);
     
     echo '<div style="height: 400px; overflow-y: scroll; font-family: monospace;">';
     echo $result['debug'];

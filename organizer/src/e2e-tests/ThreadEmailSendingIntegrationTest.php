@@ -181,11 +181,10 @@ class ThreadEmailSendingIntegrationTest extends TestCase {
             $subject,
             $body,
             $this->testEntityId,
-            new Threads(),
+            'test-user',
             $this->threadEmailService,
             null,
-            null,
-            'test-user'
+            null
         );
 
         // Assert email was sent successfully
