@@ -25,10 +25,7 @@ class ThreadStartPageTest extends E2EPageTestCase {
 
     public function testPagePost() {
         // :: Setup - Get a valid entity ID from the database
-        $entity = Database::queryOne("SELECT entity_id FROM threads LIMIT 1");
-        if (!$entity) {
-            $this->markTestSkipped('No entities found in database');
-        }
+        $entity_id = '000000000-test-entity-development';
         
         // :: Setup - Create post data
         $post_data = [
@@ -36,7 +33,7 @@ class ThreadStartPageTest extends E2EPageTestCase {
             'my_name' => 'Test User',
             'my_email' => 'test.user.' . uniqid() . '@example.com',
             'labels' => 'test e2e',
-            'entity_id' => $entity['entity_id'],
+            'entity_id' => $entity_id,
             'entity_title_prefix' => 'Test Entity',
             'entity_email' => 'entity.' . uniqid() . '@example.com',
             'body' => 'This is a test message body created by E2E test.',

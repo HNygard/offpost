@@ -45,6 +45,10 @@ Goal: make production usable
 - [ ] Email - Switch ID to UUID
 
 - [ ] Common list of entities
+    - [x] Basic class and JSON file
+    - [x] Test for entity validation
+    - [ ] Updates to threads can only be on valid entities. Input on Thread must be Entity to force compliance in code.
+    - [ ] entity_id param must be valid verify in all frontend templates. Check by Entity class
 
 - [ ] Views available for public
     - [ ] Public threads visible to non authenticated users
@@ -64,26 +68,10 @@ Goal: make production usable
     - [x] Start with one test and start a framework for making tests
     - [x] Add e2e-tests to github actions run
     - [x] Add e2e-tests to .clinerules
-    - [ ] Stucture e2e-tests
-        - [ ] Refactor to use a common class for setup
-        - [ ] Refactor to one test file per page
+    - [x] Stucture e2e-tests
+        - [x] Refactor to use a common class for setup
+        - [x] Refactor to one test file per page
         - [ ] Test that all pages are accessible
-
-
- Something to automatically test that the GUIs work
-    - [ ] End-to-end testing framework
-        - Selenium
-        - Cypress
-        - Playwright
-        - Puppeteer
-        - etc.
-    - Maybe just do some requests from PHP?
-        - Get a token
-        - Access all pages
-        - Get some data from DB to get thread ids
-        - Assert: 200 OK on all requests
-        - Need to run as github action
-        - Need to be very quick
 
 
 

@@ -1,0 +1,61 @@
+<?php
+
+/**
+ * Entity class for managing public entities
+ * 
+ * This class provides methods to validate and retrieve information about public entities
+ * from a JSON file stored at data/entities.json
+ */
+class Entity {
+    private static $entities = null;
+    private static $jsonPath =  DATA_DIR . '/entities.json';
+    
+    /**
+     * Load entities from JSON file
+     */
+    private static function loadEntities() {
+        if (self::$entities === null) {
+            if (!file_exists(self::$jsonPath)) {
+                throw new RuntimeException('Entities JSON file not found: ' . self::$jsonPath);
+            }
+            
+            $json = file_get_contents(self::$jsonPath);
+            self::$entities = json_decode($json, true);
+        }
+        return self::$entities;
+    }
+    
+    /**
+     * Get all entities
+     * @return array All entities
+     */
+    public static function getAll() {
+        return self::loadEntities();
+    }
+    
+    /**
+     * Check if an entity ID exists
+     * @param string $entityId The entity ID to check
+     * @return bool True if the entity exists, false otherwise
+     */
+    public static function exists($entityId) {
+        $entities = self::loadEntities();
+        return isset($entities[$entityId]);
+    }
+    
+    /**
+     * Get entity details by ID
+     * @param string $entityId The entity ID
+     * @return Entity Entity details
+     * @throws InvalidArgumentException If the entity ID is not found
+     */
+    public static function getById($entityId) {
+        $entities = self::loadEntities();
+
+        if(!self::exists($entityId)) {
+            throw new InvalidArgumentException("Entity ID not found: $entityId");
+        }
+
+        return $entities[$entityId];
+    }
+}

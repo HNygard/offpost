@@ -21,7 +21,7 @@ class E2ETestSetup {
      * @param string $userId The user ID to grant access to
      * @return array Returns an array with thread and email data
      */
-    public static function createTestThread($entityId = 'test-entity-development', $userId = 'dev-user-id') {
+    public static function createTestThread($entityId = '000000000-test-entity-development', $userId = 'dev-user-id') {
 
         // Create a unique ID for this test
         $uniqueId = uniqid();

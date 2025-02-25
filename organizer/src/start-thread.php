@@ -4,6 +4,7 @@ require_once __DIR__ . '/auth.php';
 require_once __DIR__ . '/class/Thread.php';
 require_once __DIR__ . '/class/ThreadAuthorization.php';
 require_once __DIR__ . '/class/ThreadStorageManager.php';
+require_once __DIR__ . '/class/Entity.php';
 
 // Require authentication
 requireAuth();
@@ -47,6 +48,8 @@ if ($threadId != null) {
 }
 
 if (!isset($_POST['entity_id'])) {
+    // Load entities for dropdown
+    $entities = Entity::getAll();
 
     if (isset($_GET['my_profile']) && $_GET['my_profile'] == 'RANDOM') {
         $obj = getRandomNameAndEmail();
@@ -143,8 +146,16 @@ if (!isset($_POST['entity_id'])) {
             </div>
 
             <div class="form-group">
-                <label for="entity_id">Entity ID</label>
-                <input type="text" id="entity_id" name="entity_id" value="<?= htmlescape(isset($_GET['entity_id']) ? $_GET['entity_id'] : '') ?>">
+                <label for="entity_id">Entity</label>
+                <select id="entity_id" name="entity_id" onchange="updateEntityEmail()">
+                    <option value="">Select an entity</option>
+                    <?php
+                    foreach ($entities as $id => $entity) {
+                        $selected = (isset($_GET['entity_id']) && $_GET['entity_id'] === $id) ? 'selected' : '';
+                        echo "<option value=\"" . htmlescape($id) . "\" $selected>" . htmlescape($entity['name']) . "</option>";
+                    }
+                    ?>
+                </select>
             </div>
 
             <div class="form-group">
@@ -157,6 +168,17 @@ if (!isset($_POST['entity_id'])) {
                 <label for="entity_email">Entity Email</label>
                 <input type="text" id="entity_email" name="entity_email" value="<?= htmlescape(isset($_GET['entity_email']) ? $_GET['entity_email'] : '') ?>">
             </div>
+
+            <script>
+            function updateEntityEmail() {
+                var entityId = document.getElementById('entity_id').value;
+                var entities = <?= json_encode($entities) ?>;
+                
+                if (entities[entityId]) {
+                    document.getElementById('entity_email').value = entities[entityId].email;
+                }
+            }
+            </script>
 
             <div class="form-group">
                 <label for="thread_id">Thread ID</label>
@@ -183,6 +205,21 @@ if (!isset($_POST['entity_id'])) {
     </body>
     <?php
     exit;
+}
+
+// Validate entity ID
+if (isset($_POST['entity_id']) && !empty($_POST['entity_id'])) {
+    $entityId = $_POST['entity_id'];
+    
+    // Validate entity ID
+    if (!Entity::exists($entityId)) {
+        die("Invalid entity ID. Please select a valid entity. <a href='javascript:history.back()'>Go back</a>");
+    }
+    
+    // If valid, pre-fill entity email if not provided
+    if (empty($_POST['entity_email'])) {
+        $_POST['entity_email'] = Entity::getEmailById($entityId);
+    }
 }
 
 if ($thread == null) {

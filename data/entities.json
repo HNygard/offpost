@@ -1,0 +1,74 @@
+{
+  "958935420-oslo-kommune": {
+    "name": "TODO - Oslo kommune",
+    "email": "postmottak@oslo.kommune.no",
+    "type": "municipality",
+    "org_num": "958935420"
+  },
+  "964950768-nord-odal-kommune": {
+    "name": "TODO - Nord-Odal kommune",
+    "email": "postmottak@nord-odal.kommune.no",
+    "type": "municipality",
+    "org_num": "964950768"
+  },
+  "921234554-drammen-kommune": {
+    "name": "TODO - Drammen kommune",
+    "email": "kommunepost@drammen.kommune.no",
+    "type": "municipality",
+    "org_num": "921234554"
+  },
+  "938759111-skien-kommune": {
+    "name": "TODO - Skien kommune",
+    "email": "skien.postmottak@skien.kommune.no",
+    "type": "municipality",
+    "org_num": "938759111"
+  },
+  "964965226-stavanger-kommune": {
+    "name": "TODO - Stavanger kommune",
+    "email": "postmottak@stavanger.kommune.no",
+    "type": "municipality",
+    "org_num": "964965226"
+  },
+  "959159092-halden-kommune": {
+    "name": "TODO - Halden kommune",
+    "email": "postmottak@halden.kommune.no",
+    "type": "municipality",
+    "org_num": "959159092"
+  },
+  "942110464-trondheim-kommune": {
+    "name": "TODO - Trondheim kommune",
+    "email": "postmottak@trondheim.kommune.no",
+    "type": "municipality",
+    "org_num": "942110464"
+  },
+  "921693230-viken-fylkeskommune": {
+    "name": "TODO - Viken fylkeskommune",
+    "email": "post@viken.no",
+    "type": "county",
+    "org_num": "921693230"
+  },
+  "817920632-trondelag-fylkeskommune": {
+    "name": "TODO - Trøndelag fylkeskommune",
+    "email": "postmottak@trondelagfylke.no",
+    "type": "county",
+    "org_num": "817920632"
+  },
+  "983887406-skatteetaten": {
+    "name": "TODO - Skatteetaten",
+    "email": "post@skatteetaten.no",
+    "type": "agency",
+    "org_num": "983887406"
+  },
+  "971526920-nav": {
+    "name": "TODO - NAV",
+    "email": "post@nav.no",
+    "type": "agency",
+    "org_num": "971526920"
+  },
+  "000000000-test-entity-development": {
+    "name": "TODO - Test Entity (Development)",
+    "email": "public-entity@dev.offpost.no",
+    "type": "test",
+    "org_num": "000000000"
+  }
+}
