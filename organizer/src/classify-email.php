@@ -6,15 +6,12 @@ require_once __DIR__ . '/class/ThreadEmailClassifier.php';
 require_once __DIR__ . '/class/ThreadStorageManager.php';
 require_once __DIR__ . '/class/ThreadEmailHistory.php';
 require_once __DIR__ . '/class/ThreadAuthorization.php';
+require_once __DIR__ . '/class/common.php';
 
 $emailHistory = new ThreadEmailHistory();
 
 // Require authentication
 requireAuth();
-
-function logDebug($message) {
-    echo $message . '<br>' . chr(10);
-}
 
 // Check required parameters
 if (!isset($_GET['entityId']) || !isset($_GET['threadId']) || !isset($_GET['emailId'])) {

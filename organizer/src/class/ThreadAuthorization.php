@@ -47,13 +47,6 @@ class ThreadAuthorizationManager {
     private static $db = null;
     private static $history = null;
 
-    private static function getDb() {
-        if (self::$db === null) {
-            self::$db = new Database();
-        }
-        return self::$db;
-    }
-
     private static function getHistory() {
         if (self::$history === null) {
             self::$history = new ThreadHistory();
@@ -62,11 +55,10 @@ class ThreadAuthorizationManager {
     }
 
     public static function addUserToThread($thread_id, $user_id, $is_owner = false, $acting_user_id = null) {
-        $db = self::getDb();
         $history = self::getHistory();
         
         // Verify thread exists first
-        $thread = $db->queryOne(
+        $thread = Database::queryOne(
             "SELECT id FROM threads WHERE id = ?",
             [$thread_id]
         );
@@ -76,7 +68,7 @@ class ThreadAuthorizationManager {
         }
         
         // Use upsert to handle existing authorizations
-        $db->execute(
+        Database::execute(
             "INSERT INTO thread_authorizations (thread_id, user_id, is_owner) 
              VALUES (?, ?, ?) 
              ON CONFLICT (thread_id, user_id) 
@@ -96,10 +88,9 @@ class ThreadAuthorizationManager {
     }
 
     public static function removeUserFromThread($thread_id, $user_id, $acting_user_id = null) {
-        $db = self::getDb();
         $history = self::getHistory();
         
-        $db->execute(
+        Database::execute(
             "DELETE FROM thread_authorizations WHERE thread_id = ? AND user_id = ?",
             [$thread_id, $user_id]
         );
@@ -114,8 +105,7 @@ class ThreadAuthorizationManager {
     }
 
     public static function getThreadUsers($thread_id) {
-        $db = self::getDb();
-        $rows = $db->query(
+        $rows = Database::query(
             "SELECT thread_id, user_id, is_owner, created_at 
              FROM thread_authorizations 
              WHERE thread_id = ?",
@@ -132,8 +122,7 @@ class ThreadAuthorizationManager {
     }
 
     public static function getUserThreads($user_id) {
-        $db = self::getDb();
-        $rows = $db->query(
+        $rows = Database::query(
             "SELECT ta.thread_id, ta.user_id, ta.is_owner, ta.created_at 
              FROM thread_authorizations ta
              JOIN threads t ON t.id = ta.thread_id
@@ -152,10 +141,8 @@ class ThreadAuthorizationManager {
     }
 
     public static function canUserAccessThread($thread_id, $user_id) {
-        $db = self::getDb();
-        
         // Check if thread is public or user has authorization
-        $result = $db->queryOne(
+        $result = Database::queryOne(
             "SELECT EXISTS (
                 SELECT 1 FROM threads t
                 LEFT JOIN thread_authorizations ta 
@@ -169,9 +156,7 @@ class ThreadAuthorizationManager {
     }
 
     public static function isThreadOwner($thread_id, $user_id) {
-        $db = self::getDb();
-        
-        $result = $db->queryOne(
+        $result = Database::queryOne(
             "SELECT EXISTS (
                 SELECT 1 FROM thread_authorizations
                 WHERE thread_id = ? AND user_id = ? AND is_owner = true

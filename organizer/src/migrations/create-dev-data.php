@@ -30,6 +30,12 @@ if (!file_exists(THREADS_DIR)) {
     mkdir(THREADS_DIR, 0777, true);
 }
 
+// Delete 'test-entity-development' threads
+if (file_exists('/organizer-data/threads/test-entity-development')) {
+    echo "- Removing test directory in threads.\n";
+    exec('rm -rf /organizer-data/threads/test-entity-development');
+}
+
 // Load thread data
 $threadsData = json_decode(file_get_contents($sourceThreadsFile), true);
 $threadOps = new ThreadDatabaseOperations();

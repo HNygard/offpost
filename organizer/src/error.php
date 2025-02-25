@@ -8,12 +8,14 @@ function displayErrorPage($error) {
 
     // User agent for less output
     if (isset($_SERVER['HTTP_USER_AGENT']) && str_starts_with($_SERVER['HTTP_USER_AGENT'], 'Offpost E2E Test')) {
+        header('Content-Type: text/plain');
         echo 'Error during rendering of page ' . htmlescape($_SERVER['REQUEST_URI']) . "\n\n"
             . htmlescape($error->getMessage()
             . "\n\nStack trace:\n"
             . htmlescape($error->getTraceAsString()));
         exit;
     }
+    header('Content-Type: text/html');
     
     echo '<html><head><title>Error - Offpost</title>';
     echo '<style>

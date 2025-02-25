@@ -1,15 +1,15 @@
 <?php
 
 require_once __DIR__ . '/common/E2EPageTestCase.php';
+require_once __DIR__ . '/common/E2ETestSetup.php';
 require_once(__DIR__ . '/../../class/Database.php');
 
 class ThreadViewPageTest extends E2EPageTestCase {
-
     public function testPageHappy() {
-        // Get a random thread ID
-        $thread = Database::query("SELECT id, entity_id FROM threads LIMIT 1");
-        $threadId = $thread[0]['id'];
-        $entityId = $thread[0]['entity_id'];
+        // Use the test data we created
+        $testData = E2ETestSetup::createTestThread();
+        $threadId = $testData['thread']->id;
+        $entityId = $testData['entity_id'];
 
         // Need to provide an entityId parameter
         $response = $this->renderPage('/thread-view?entityId=' . $entityId . '&threadId=' . $threadId);

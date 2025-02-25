@@ -1,19 +1,19 @@
 <?php
 
 require_once __DIR__ . '/common/E2EPageTestCase.php';
+require_once __DIR__ . '/common/E2ETestSetup.php';
 
 class FilePageTest extends E2EPageTestCase {
-
     public function testFileEmailBodyHappy() {
-        $file = Database::query("SELECT tea.id as att_id, te.thread_id, t.entity_id
-        FROM thread_email_attachments tea
-        join thread_emails te on tea.email_id = te.id
-        join threads t on te.thread_id = t.id
-        limit 1")[0];
-        var_dump($file);
+        $testData = E2ETestSetup::createTestThread();
+        $file = [
+            'email_id' => $testData['email_id'],
+            'thread_id' => $testData['thread']->id,
+            'entity_id' => $testData['entity_id']
+        ];
 
         // Need file ID to download
-        $response = $this->renderPage('/file?entityId=' . $file['entity_id'] . '&threadId=' . $file['thread_id'] . '&body=' . $file['att_id']);
+        $response = $this->renderPage('/file?entityId=' . $file['entity_id'] . '&threadId=' . $file['thread_id'] . '&body=' . $file['email_id']);
 
         // :: Assert content type header for file download
         $this->assertStringContainsString('Content-Type: text/html; charset=UTF-8', $response->headers);

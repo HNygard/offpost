@@ -1,6 +1,7 @@
 <?php
 
 require_once __DIR__ . '/common/E2EPageTestCase.php';
+require_once __DIR__ . '/common/E2ETestSetup.php';
 
 class ThreadStartPageTest extends E2EPageTestCase {
 
@@ -76,23 +77,20 @@ class ThreadStartPageTest extends E2EPageTestCase {
     }
     
     public function testPageWithExistingThread() {
-        // :: Setup - Get a valid thread from the database
-        $thread = Database::queryOne("SELECT t.id as thread_id, t.entity_id 
-                                     FROM threads t 
-                                     LIMIT 1");
-        if (!$thread) {
-            $this->markTestSkipped('No threads found in database');
-        }
+        // :: Setup
+        $testData = E2ETestSetup::createTestThread();
+        $threadId = $testData['thread']->id;
+        $entityId = $testData['entity_id'];
         
         // :: Act - Test GET request with thread_id parameter
         // Note: We're just testing if the page loads with these parameters
-        $response = $this->renderPage('/thread-start?thread_id=' . $thread['thread_id'] . '&entity_id=' . $thread['entity_id'] . '&body=Hello');
+        $response = $this->renderPage('/thread-start?thread_id=' . $threadId . '&entity_id=' . $entityId . '&body=Hello');
         
         // :: Assert - Page should load successfully
         $this->assertStringContainsString('<h1>Start', $response->body);
         $this->assertStringContainsString('Email Thread</h1>', $response->body);
         
         // Check that the thread_id field is populated
-        $this->assertStringContainsString('value="' . $thread['thread_id'] . '"', $response->body);
+        $this->assertStringContainsString('value="' . $threadId . '"', $response->body);
     }
 }

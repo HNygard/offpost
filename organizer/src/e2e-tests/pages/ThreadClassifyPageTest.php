@@ -1,15 +1,17 @@
 <?php
 
 require_once __DIR__ . '/common/E2EPageTestCase.php';
+require_once __DIR__ . '/common/E2ETestSetup.php';
 
 class ThreadClassifyPageTest extends E2EPageTestCase {
-
     public function testPageLoggedIn() {
-        // :: Setup - Get a valid thread and email from the database
-        $threadEmail = Database::query("SELECT te.id as email_id, te.thread_id, t.entity_id
-        FROM thread_emails te
-        JOIN threads t ON te.thread_id = t.id
-        LIMIT 1")[0];
+        // :: Setup - Use the test data we created
+        $testData = E2ETestSetup::createTestThread();
+        $threadEmail = [
+            'email_id' => $testData['email_id'],
+            'thread_id' => $testData['thread']->id,
+            'entity_id' => $testData['entity_id']
+        ];
         
         // :: Act - Need thread ID and email ID to classify
         $response = $this->renderPage('/thread-classify?entityId=' . $threadEmail['entity_id'] . '&threadId=' . $threadEmail['thread_id'] . '&emailId=' . $threadEmail['email_id']);
@@ -23,16 +25,16 @@ class ThreadClassifyPageTest extends E2EPageTestCase {
     }
 
     public function testPagePost() {
-        // :: Setup - Get a valid thread and email from the database
-        $threadEmail = Database::query("SELECT te.id as email_id, te.thread_id, t.entity_id
-        FROM thread_emails te
-        JOIN threads t ON te.thread_id = t.id
-        LIMIT 1")[0];
+        // :: Setup - Use the test data we created
+        $testData = E2ETestSetup::createTestThread();
+        $threadEmail = [
+            'email_id' => $testData['email_id'],
+            'thread_id' => $testData['thread']->id,
+            'entity_id' => $testData['entity_id']
+        ];
         
         // Get all emails for this thread to build the form data
-        $emails = Database::query("SELECT te.id as email_id
-        FROM thread_emails te
-        WHERE te.thread_id = ?", [$threadEmail['thread_id']]);
+        $emails = [['email_id' => $testData['email_id']]];
         
         // Build the POST data with actual email IDs
         $post_data = ['submit' => 'Save'];
@@ -79,10 +81,12 @@ class ThreadClassifyPageTest extends E2EPageTestCase {
     }
 
     public function testPageWithoutEmailId() {
-        // :: Setup - Get a valid thread from the database
-        $thread = Database::query("SELECT t.id as thread_id, t.entity_id
-        FROM threads t
-        LIMIT 1")[0];
+        // :: Setup - Use the test data we created
+        $testData = E2ETestSetup::createTestThread();
+        $thread = [
+            'thread_id' => $testData['thread']->id,
+            'entity_id' => $testData['entity_id']
+        ];
         
         // :: Act - Should fail when no emailId provided
         $response = $this->renderPage('/thread-classify?entityId=' . $thread['entity_id'] . '&threadId=' . $thread['thread_id'], 'dev-user-id', 'GET', '400 Bad Request');
@@ -92,11 +96,12 @@ class ThreadClassifyPageTest extends E2EPageTestCase {
     }
 
     public function testPageInvalidThreadId() {
-        // :: Setup - Get a valid entity and email from the database
-        $threadEmail = Database::query("SELECT te.id as email_id, t.entity_id
-        FROM thread_emails te
-        JOIN threads t ON te.thread_id = t.id
-        LIMIT 1")[0];
+        // :: Setup - Use the test data we created
+        $testData = E2ETestSetup::createTestThread();
+        $threadEmail = [
+            'email_id' => $testData['email_id'],
+            'entity_id' => $testData['entity_id']
+        ];
         
         // :: Act - Should fail with invalid threadId
         $response = $this->renderPage('/thread-classify?entityId=' . $threadEmail['entity_id'] . '&threadId=not-a-uuid&emailId=' . $threadEmail['email_id'], 'dev-user-id', 'GET', '400 Bad Request');
@@ -106,24 +111,25 @@ class ThreadClassifyPageTest extends E2EPageTestCase {
     }
 
     public function testPageThreadNotFound() {
-        // :: Setup - Get a valid email from the database
-        $threadEmail = Database::query("SELECT te.id as email_id
-        FROM thread_emails te
-        LIMIT 1")[0];
+        // :: Setup - Use the test data we created
+        $testData = E2ETestSetup::createTestThread();
+        $emailId = $testData['email_id'];
         
         // :: Act - Should fail with non-existent threadId
-        $response = $this->renderPage('/thread-classify?entityId=nonexistent&threadId=00000000-0000-0000-0000-000000000000&emailId=' . $threadEmail['email_id'], 'dev-user-id', 'GET', '404 Not Found');
+        $response = $this->renderPage('/thread-classify?entityId=nonexistent&threadId=00000000-0000-0000-0000-000000000000&emailId=' . $emailId, 'dev-user-id', 'GET', '404 Not Found');
         
         // :: Assert - Error message
         $this->assertStringContainsString('Thread not found', $response->body);
     }
 
     public function testPageNotLoggedIn() {
-        // :: Setup - Get a valid thread and email from the database
-        $threadEmail = Database::query("SELECT te.id as email_id, te.thread_id, t.entity_id
-        FROM thread_emails te
-        JOIN threads t ON te.thread_id = t.id
-        LIMIT 1")[0];
+        // :: Setup - Use the test data we created
+        $testData = E2ETestSetup::createTestThread();
+        $threadEmail = [
+            'email_id' => $testData['email_id'],
+            'thread_id' => $testData['thread']->id,
+            'entity_id' => $testData['entity_id']
+        ];
         
         // :: Act - Should redirect to login when not logged in
         $response = $this->renderPage('/thread-classify?entityId=' . $threadEmail['entity_id'] . '&threadId=' . $threadEmail['thread_id'] . '&emailId=' . $threadEmail['email_id'], user: null, expected_status: '302 Found');

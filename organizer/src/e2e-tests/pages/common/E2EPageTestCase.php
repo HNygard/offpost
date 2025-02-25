@@ -28,8 +28,8 @@ class E2EPageTestCase extends TestCase {
                 echo "\n\n";
                 echo 'Failed asserting status code: ' . $expected_status . "\n";
                 echo "\n";
-                echo "Full response:\n";
-                echo preg_replace('/^/m', '    ', $response->body ) . "\n";
+                echo "Full response from failed request:\n";
+                echo html_entity_decode(preg_replace('/^/m', '    ', $response->body )). "\n";
                 echo "--- End of full response\n\n";
                 throw $e;
             }
