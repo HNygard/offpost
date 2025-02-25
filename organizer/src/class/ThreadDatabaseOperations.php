@@ -97,6 +97,7 @@ class ThreadDatabaseOperations {
                 $currentThread->sent = (bool)$row['sent'];
                 $currentThread->archived = (bool)$row['archived'];
                 $currentThread->public = (bool)$row['public'];
+                $currentThread->entity_id = $row['entity_id'];
                 
                 // Parse PostgreSQL array format
                 if ($row['labels'] !== null) {
@@ -174,6 +175,7 @@ class ThreadDatabaseOperations {
                 SELECT 
                     t.id as thread_id,
                     t.id_old,
+                    t.entity_id,
                     t.title,
                     t.my_name,
                     t.my_email,
@@ -223,6 +225,7 @@ class ThreadDatabaseOperations {
                 $currentThread->sent = (bool)$row['sent'];
                 $currentThread->archived = (bool)$row['archived'];
                 $currentThread->public = (bool)$row['public'];
+                $currentThread->entity_id = $row['entity_id'];
                 
                 // Parse PostgreSQL array format
                 if ($row['labels'] !== null) {
@@ -367,6 +370,9 @@ class ThreadDatabaseOperations {
     }
 
     public function createThread($entityId, $entityTitlePrefix, Thread $thread, $userId) {
+        // Check entity
+        $entity = Entity::getById($entityId);
+
         // Generate UUID for new thread
         $uuid = $this->generateUuid();
         
@@ -376,7 +382,7 @@ class ThreadDatabaseOperations {
             [
                 $uuid,
                 $thread->id_old ?? null, // Use existing id_old if set, otherwise null
-                $entityId,
+                $entity->entity_id,
                 $thread->title,
                 $thread->my_name,
                 $thread->my_email,
@@ -390,6 +396,9 @@ class ThreadDatabaseOperations {
         
         // Set the UUID as the thread's ID
         $thread->id = $uuid;
+        
+        // Set the entity_id on the Thread object
+        $thread->entity_id = $entityId;
         
         // Log thread creation
         $this->history->logAction($uuid, 'created', $userId);

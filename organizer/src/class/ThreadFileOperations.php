@@ -31,6 +31,12 @@ class ThreadFileOperations {
                         unset($threadObj->id);
                     }
                     $threadObj->sentComment = isset($thread->sentComment) ? $thread->sentComment : null; // Initialize sentComment
+                    
+                    // Ensure entity_id is set on the Thread object
+                    if (empty($threadObj->entity_id) && !empty($threads[$file]->entity_id)) {
+                        $threadObj->entity_id = $threads[$file]->entity_id;
+                    }
+                    
                     $thread = $threadObj;
                 }
             }
@@ -56,6 +62,12 @@ class ThreadFileOperations {
                     $threadObj->$key = $value;
                 }
                 $threadObj->sentComment = isset($thread->sentComment) ? $thread->sentComment : null; // Initialize sentComment
+                
+                // Ensure entity_id is set on the Thread object
+                if (empty($threadObj->entity_id) && !empty($threads->entity_id)) {
+                    $threadObj->entity_id = $threads->entity_id;
+                }
+                
                 $thread = $threadObj;
             }
         }
@@ -109,6 +121,12 @@ class ThreadFileOperations {
             $existingThreads->title_prefix = $entityTitlePrefix;
             $existingThreads->threads = array();
         }
+        
+        // Ensure entity_id is set on the Thread object
+        if (empty($thread->entity_id)) {
+            $thread->entity_id = $entityId;
+        }
+        
         $existingThreads->threads[] = $thread;
 
         $path = joinPaths(THREADS_DIR, 'threads-' . $entityId . '.json');

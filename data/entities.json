@@ -66,6 +66,7 @@
     "org_num": "971526920"
   },
   "000000000-test-entity-development": {
+    "entity_id": "000000000-test-entity-development",
     "name": "TODO - Test Entity (Development)",
     "email": "public-entity@dev.offpost.no",
     "type": "test",

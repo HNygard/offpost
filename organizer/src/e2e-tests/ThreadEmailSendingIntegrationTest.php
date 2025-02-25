@@ -35,7 +35,7 @@ require_once(__DIR__ . '/../class/Imap/ImapAttachmentHandler.php');
 class ThreadEmailSendingIntegrationTest extends TestCase {
     private $imapConnection;
     private $threadEmailService;
-    private $testEntityId = 'test-entity-development';
+    private $testEntityId = '000000000-test-entity-development';
     private $testEntityEmail = 'public-entity@dev.offpost.no';
 
     protected function setUp(): void {

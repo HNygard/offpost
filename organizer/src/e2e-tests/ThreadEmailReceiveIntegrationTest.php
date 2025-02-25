@@ -35,7 +35,7 @@ require_once(__DIR__ . '/../class/Imap/ImapAttachmentHandler.php');
 class ThreadEmailReceiveIntegrationTest extends TestCase {
     private $imapConnection;
     private $threadEmailService;
-    private $testEntityId = 'test-entity-development';
+    private $testEntityId = '000000000-test-entity-development';
     private $testEntityEmail = 'public-entity@dev.offpost.no';
 
     protected function setUp(): void {
@@ -342,7 +342,7 @@ class ThreadEmailReceiveIntegrationTest extends TestCase {
             "archived": false,
             "public": false,
             "sentComment": null,
-            "entity_id": null,
+            "entity_id": "000000000-test-entity-development",
             "emails": [{
                 "timestamp_received": ' . $email_time . ',
                 "datetime_received": "2021-01-01 12:00:00",

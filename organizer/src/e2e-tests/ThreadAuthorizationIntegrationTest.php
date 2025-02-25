@@ -7,7 +7,7 @@ require_once __DIR__ . '/../class/Threads.php';
 require_once __DIR__ . '/../class/ThreadStorageManager.php';
 
 class ThreadAuthorizationIntegrationTest extends PHPUnit\Framework\TestCase {
-    private $entityId = 'test_entity';
+    private $entityId = '000000000-test-entity-development';
     private $userId = 'test_user';
     private $otherUserId = 'other_user';
     private $storageManager;

@@ -23,6 +23,10 @@ class Entity {
      */
     private static function loadEntities() {
         if (self::$entities === null) {
+            if (self::$jsonPath == '/tmp/organizer-test-data/entities.json') {
+                self::$jsonPath = __DIR__ . '/../../../data/entities_test.json';
+            }
+
             if (!file_exists(self::$jsonPath)) {
                 throw new RuntimeException('Entities JSON file not found: ' . self::$jsonPath);
             }

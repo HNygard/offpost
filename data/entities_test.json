@@ -1,0 +1,24 @@
+{
+    "000000000-test-entity-development": {
+      "entity_id": "000000000-test-entity-development",
+      "name": "TODO - Test Entity (Development)",
+      "email": "public-entity@dev.offpost.no",
+      "type": "test",
+      "org_num": "000000000"
+    },
+    "000000000-test-entity-1": {
+      "entity_id": "000000000-test-entity-1",
+      "name": "TODO - Test Entity (Development)",
+      "email": "public-entity@dev.offpost.no",
+      "type": "test",
+      "org_num": "000000000"
+    },
+    "000000000-test-entity-2": {
+      "entity_id": "000000000-test-entity-2",
+      "name": "TODO - Test Entity (Development)",
+      "email": "public-entity@dev.offpost.no",
+      "type": "test",
+      "org_num": "000000000"
+    }
+  }
+  
