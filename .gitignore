@@ -10,3 +10,4 @@ data/threads/db-migration.json
 data/threads/000000000-test-entity-development
 data/threads/test-entity-development
 !data/entities.json
+!data/entities_test.json
