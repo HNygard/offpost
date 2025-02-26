@@ -2,6 +2,8 @@
 
 echo "[migrate] Starting - " . date('Y-m-d H:i:s') . "\n";
 
+require_once __DIR__ . '/dump-db-schema.php';
+
 function getPasswordFromFile($file) {
     if (!file_exists($file)) {
         throw new RuntimeException("Password file not found: $file");
@@ -57,6 +59,11 @@ try {
     try {
         foreach ($sqlFiles as $file) {
             $filename = basename($file);
+
+            if ($filename === '99999-database-schema-after-migrations.sql') {
+                // Skip schema dump file
+                continue;
+            }
             
             // Skip if already executed
             if (isset($executed[$filename])) {
@@ -80,6 +87,14 @@ try {
         // Commit transaction
         $pdo->commit();
         echo "[migrate] All migrations completed successfully\n";
+        
+        // Dump schema to file
+        $schemaUpdated = dumpDatabaseSchema($pdo);
+        if ($schemaUpdated) {
+            echo "[migrate] Database schema file updated\n";
+        } else {
+            echo "[migrate] Database schema file unchanged or error occurred\n";
+        }
 
     } catch (Exception $e) {
         // Rollback transaction on error
