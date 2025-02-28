@@ -234,7 +234,12 @@ function dumpDatabaseSchema(PDO $pdo): bool {
         // Check if file exists and compare content
         if (file_exists($schemaFile)) {
             $currentContent = file_get_contents($schemaFile);
-            if ($currentContent === $newContent) {
+            
+            // Remove timestamp lines for comparison purposes
+            $currentContentNoTimestamp = preg_replace('/-- Generated on: .*\n/', '', $currentContent);
+            $newContentNoTimestamp = preg_replace('/-- Generated on: .*\n/', '', $newContent);
+            
+            if ($currentContentNoTimestamp === $newContentNoTimestamp) {
                 echo "[migrate] Schema file is already up to date\n";
                 return false;
             }
