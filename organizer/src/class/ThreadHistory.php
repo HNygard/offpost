@@ -13,6 +13,19 @@ class ThreadHistory {
         return Database::query($sql, [$threadId]);
     }
 
+    public static function sendingStatusToString($status) {
+        switch ($status) {
+            case Thread::SENDING_STATUS_STAGING:
+                return 'Staging';
+            case Thread::SENDING_STATUS_READY_FOR_SENDING:
+                return 'Ready for sending';
+            case Thread::SENDING_STATUS_SENT:
+                return 'Sent';
+            default:
+                throw new Exception('Unknown sending status: ' . $status);
+        }
+    }
+
     public function formatActionForDisplay($action, $details) {
         switch ($action) {
             case 'created':
@@ -48,6 +61,12 @@ class ThreadHistory {
             case 'user_removed':
                 $details = json_decode($details, true);
                 return 'Removed user: ' . ($details['user_id'] ?? 'Unknown user');
+            case 'status_changed':
+                $details = json_decode($details, true);
+                
+                return 'Sending status changed'
+                    . ' from [' . self::sendingStatusToString($details['from']) . ']'
+                    . ' to [' . self::sendingStatusToString($details['to']) . ']';
             default:
                 return 'Unknown action';
         }

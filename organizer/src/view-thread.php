@@ -61,7 +61,31 @@ if (isset($_POST['toggle_public_to']) && isset($_POST['thread_id'])) {
     }
     
     // Redirect to remove POST data
-    header("Location: /thread-view?threadId=" . urlencode($threadId) . "&entityId=" . urlencode($entityId));
+    header("Location: /thread-view?threadId=" . urlencode($toggleThread->id) . "&entityId=" . urlencode($entityId));
+    exit;
+}
+
+// Handle sending status change from STAGING to READY_FOR_SENDING
+if (isset($_POST['change_status_to_ready']) && isset($_POST['thread_id'])) {
+    $statusThread = null;
+    foreach ($allThreads as $threads) {
+        foreach ($threads->threads as $t) {
+            if ($t->id === $_POST['thread_id']) {
+                $statusThread = $t;
+                break 2;
+            }
+        }
+    }
+    
+    if ($statusThread 
+        && $statusThread->isUserOwner($userId) 
+        && $statusThread->sending_status === Thread::SENDING_STATUS_STAGING) {
+        $statusThread->sending_status = Thread::SENDING_STATUS_READY_FOR_SENDING;
+        $storageManager->updateThread($statusThread, $userId);
+    }
+    
+    // Redirect to remove POST data
+    header("Location: /thread-view?threadId=" . urlencode($statusThread->id) . "&entityId=" . urlencode($entityId));
     exit;
 }
 
@@ -82,7 +106,7 @@ if (isset($_POST['add_user']) && $_POST['user_id'] && $_POST['thread_id']) {
         $storageManager->updateThread($authThread, $userId);
     }
     
-    header("Location: /thread-view?threadId=" . urlencode($threadId) . "&entityId=" . urlencode($entityId));
+    header("Location: /thread-view?threadId=" . urlencode($authThread->id) . "&entityId=" . urlencode($entityId));
     exit;
 }
 
@@ -204,6 +228,18 @@ function getIconClass($filetype) {
                         </button>
                         <span class="status">(Currently <?= $thread->public ? 'Public' : 'Private' ?>)</span>
                     </form>
+
+                    <!-- Sending Status Change -->
+                    <?php if ($thread->sending_status === Thread::SENDING_STATUS_STAGING): ?>
+                    <form method="POST" style="margin-bottom: 20px;">
+                        <input type="hidden" name="thread_id" value="<?= htmlescape($thread->id) ?>">
+                        <input type="hidden" name="change_status_to_ready" value="1">
+                        <button type="submit" class="button">
+                            Mark as Ready for Sending
+                        </button>
+                        <span class="status">(Currently in <?=ThreadHistory::sendingStatusToString($thread->sending_status)?>)</span>
+                    </form>
+                    <?php endif; ?>
 
                     <!-- User Management -->
                     <div class="authorized-users">

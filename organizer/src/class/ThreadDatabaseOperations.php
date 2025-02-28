@@ -31,6 +31,8 @@ class ThreadDatabaseOperations {
                     t.title,
                     t.my_name,
                     t.my_email,
+                    t.sending_status,
+                    t.initial_request,
                     t.sent,
                     t.archived,
                     t.labels,
@@ -94,6 +96,8 @@ class ThreadDatabaseOperations {
                 $currentThread->title = $row['title'];
                 $currentThread->my_name = $row['my_name'];
                 $currentThread->my_email = $row['my_email'];
+                $currentThread->sending_status = $row['sending_status'];
+                $currentThread->initial_request = $row['initial_request'];
                 $currentThread->sent = (bool)$row['sent'];
                 $currentThread->archived = (bool)$row['archived'];
                 $currentThread->public = (bool)$row['public'];
@@ -313,7 +317,7 @@ class ThreadDatabaseOperations {
     public function updateThread(Thread $thread, $userId) {
         // Get current thread state to detect changes
         $currentThread = Thread::loadFromDatabase($thread->id);
-        
+
         Database::execute(
             "UPDATE threads 
              SET title = ?, my_name = ?, my_email = ?, sent = ?, archived = ?, 

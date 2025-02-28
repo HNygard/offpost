@@ -152,7 +152,7 @@ class Thread implements JsonSerializable {
         $thread->archived = (bool)$data['archived'];
         $thread->public = (bool)$data['public'];
         $thread->sentComment = $data['sent_comment'];
-        $thread->sending_status = $data['sending_status'] ?? ($data['sent'] ? self::SENDING_STATUS_SENT : self::SENDING_STATUS_STAGING);
+        $thread->sending_status = $data['sending_status'];
         $thread->initial_request = $data['initial_request'] ?? null;
 
         // Load emails
