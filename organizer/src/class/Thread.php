@@ -6,6 +6,12 @@ require_once __DIR__ . '/ThreadEmail.php';
 require_once __DIR__ . '/Entity.php';
 
 class Thread implements JsonSerializable {
+    // Sending status constants
+    const SENDING_STATUS_STAGED = 'STAGED';
+    const SENDING_STATUS_READY_FOR_SENDING = 'READY_FOR_SENDING';
+    const SENDING_STATUS_SENDING = 'SENDING';
+    const SENDING_STATUS_SENT = 'SENT';
+
     var $id;
     var $id_old;
     var $entity_id;
@@ -13,7 +19,9 @@ class Thread implements JsonSerializable {
     var $my_name;
     var $my_email;
     var $labels;
-    var $sent;
+    var $sent; // Kept for backward compatibility
+    var $sending_status;
+    var $initial_request;
     var $archived;
     var $public = false;
     var $sentComment;
@@ -33,6 +41,35 @@ class Thread implements JsonSerializable {
 
     public function __construct() {
         $this->id = $this->generateUuid();
+        $this->sending_status = self::SENDING_STATUS_STAGED; // Default to STAGED
+    }
+
+    /**
+     * Check if thread is in STAGED status
+     */
+    public function isStaged() {
+        return $this->sending_status === self::SENDING_STATUS_STAGED;
+    }
+    
+    /**
+     * Check if thread is in READY_FOR_SENDING status
+     */
+    public function isReadyForSending() {
+        return $this->sending_status === self::SENDING_STATUS_READY_FOR_SENDING;
+    }
+    
+    /**
+     * Check if thread is in SENDING status
+     */
+    public function isSending() {
+        return $this->sending_status === self::SENDING_STATUS_SENDING;
+    }
+    
+    /**
+     * Check if thread is in SENT status
+     */
+    public function isSent() {
+        return $this->sending_status === self::SENDING_STATUS_SENT;
     }
 
     /**
@@ -115,6 +152,8 @@ class Thread implements JsonSerializable {
         $thread->archived = (bool)$data['archived'];
         $thread->public = (bool)$data['public'];
         $thread->sentComment = $data['sent_comment'];
+        $thread->sending_status = $data['sending_status'] ?? ($data['sent'] ? self::SENDING_STATUS_SENT : self::SENDING_STATUS_STAGED);
+        $thread->initial_request = $data['initial_request'] ?? null;
 
         // Load emails
         $emails = Database::query(

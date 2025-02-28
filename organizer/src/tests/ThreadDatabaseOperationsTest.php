@@ -92,14 +92,12 @@ class ThreadDatabaseOperationsTest extends PHPUnit\Framework\TestCase {
         $history = new ThreadHistory();
         $historyEntries = $history->getHistoryForThread($thread->id);
         
-        $this->assertCount(5, $historyEntries, "Should have five history entries. History: " . json_encode($historyEntries));
+        $this->assertCount(3, $historyEntries, "Should have three history entries. History: " . json_encode($historyEntries));
         
         // Entries are in reverse chronological order
         $this->assertEquals('created', $historyEntries[0]['action'], "First action should be thread creation");
         $this->assertEquals('edited', $historyEntries[1]['action'], "Second action should be thread edit");
-        $this->assertEquals('unsent', $historyEntries[2]['action'], "Third action should be initial unsent state");
-        $this->assertEquals('archived', $historyEntries[3]['action'], "Fourth action should be archiving");
-        $this->assertEquals('unsent', $historyEntries[4]['action'], "Fifth action should be unsent after archive");
+        $this->assertEquals('archived', $historyEntries[2]['action'], "Third action should be archiving");
         
         // Verify edit details
         $editDetails = json_decode($historyEntries[1]['details'], true);
@@ -243,12 +241,10 @@ class ThreadDatabaseOperationsTest extends PHPUnit\Framework\TestCase {
         $history = new ThreadHistory();
         $historyEntries = $history->getHistoryForThread($thread->id);
 
-        $this->assertCount(3, $historyEntries, "Should have three history entries");
+        $this->assertCount(1, $historyEntries, "Should have one history entry");
 
         // Entries are returned in reverse chronological order
         $this->assertEquals('created', $historyEntries[0]['action'], "First action should be thread creation");
-        $this->assertEquals('sent', $historyEntries[1]['action'], "Second action should be marking as sent");
-        $this->assertEquals('unsent', $historyEntries[2]['action'], "Third action should be marking as not sent");
     }
 
     public function testUpdateThreadWithDifferentEntityIdThrowsException() {

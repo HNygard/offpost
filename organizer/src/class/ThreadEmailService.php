@@ -94,6 +94,14 @@ function sendThreadEmail(Thread $thread, $emailTo, $emailSubject, $emailBody, $e
         );
     }
 
+    if ($dbOps === null) {
+        $dbOps = new ThreadDatabaseOperations();
+    }
+    
+    // Update status to SENDING before attempting to send
+    $thread->sending_status = Thread::SENDING_STATUS_SENDING;
+    $dbOps->updateThread($thread, $userId);
+
     $success = $emailService->sendEmail(
         $thread->my_email,
         $thread->my_name,
@@ -104,11 +112,14 @@ function sendThreadEmail(Thread $thread, $emailTo, $emailSubject, $emailBody, $e
     );
 
     if ($success) {
-        $thread->sent = true;
-        if ($dbOps === null) {
-            $dbOps = new ThreadDatabaseOperations();
-        }
-        $dbOps->updateThread($thread,  $userId);
+        // Update to SENT if successful
+        $thread->sending_status = Thread::SENDING_STATUS_SENT;
+        $thread->sent = true; // For backward compatibility
+        $dbOps->updateThread($thread, $userId);
+    } else {
+        // Revert to READY_FOR_SENDING if failed
+        $thread->sending_status = Thread::SENDING_STATUS_READY_FOR_SENDING;
+        $dbOps->updateThread($thread, $userId);
     }
 
     return [

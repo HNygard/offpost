@@ -334,15 +334,17 @@ class ThreadEmailReceiveIntegrationTest extends TestCase {
         // Create expected thread object
         $expectedThread = json_decode('{
             "id": "' . $threadId . '",
+            "entity_id": "000000000-test-entity-development",
             "title": "Test Thread - ' . $uniqueId . '",
             "my_name": "Test User",
             "my_email": "test' . $uniqueId . '@example.com",
             "labels": ["uklassifisert-epost"],
             "sent": false,
+            "sending_status": "STAGED",
+            "initial_request": null,
             "archived": false,
             "public": false,
             "sentComment": null,
-            "entity_id": "000000000-test-entity-development",
             "emails": [{
                 "timestamp_received": ' . $email_time . ',
                 "datetime_received": "2021-01-01 12:00:00",

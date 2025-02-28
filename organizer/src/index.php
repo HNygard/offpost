@@ -154,7 +154,24 @@ $allThreads = $filteredThreads;
                         </td>
                         <?php /* Status */ ?>
                         <td>
-                            <?= $thread->sent ? '<span class="label label_ok"><a href="?label_filter=sent">Sent</a></span>' : '<span class="label label_warn"><a href="?label_filter=not_sent">Not sent</a></span>' ?><br>
+                            <?php 
+                            switch ($thread->sending_status) {
+                                case Thread::SENDING_STATUS_STAGED:
+                                    echo '<span class="label label_info"><a href="?label_filter=staged">Staged</a></span>';
+                                    break;
+                                case Thread::SENDING_STATUS_READY_FOR_SENDING:
+                                    echo '<span class="label label_warn"><a href="?label_filter=ready_for_sending">Ready for sending</a></span>';
+                                    break;
+                                case Thread::SENDING_STATUS_SENDING:
+                                    echo '<span class="label label_warn"><a href="?label_filter=sending">Sending</a></span>';
+                                    break;
+                                case Thread::SENDING_STATUS_SENT:
+                                    echo '<span class="label label_ok"><a href="?label_filter=sent">Sent</a></span>';
+                                    break;
+                                default:
+                                    echo $thread->sent ? '<span class="label label_ok"><a href="?label_filter=sent">Sent</a></span>' : '<span class="label label_warn"><a href="?label_filter=not_sent">Not sent</a></span>';
+                            }
+                            ?><br>
                             <?= $thread->archived ? '<span class="label label_ok"><a href="?label_filter=archived">Archived</a></span>' : '<span class="label label_warn"><a href="?label_filter=not_archived">Not archived</a></span>' ?>
                         </td>
                         <?php /* Labels */ ?>

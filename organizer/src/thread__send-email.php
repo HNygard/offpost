@@ -19,6 +19,13 @@ foreach ($threads->threads as $thread1) {
 }
 
 if (isset($_POST['submit'])) {
+    // Update status to READY_FOR_SENDING before sending
+    if ($thread->sending_status === Thread::SENDING_STATUS_STAGED) {
+        $thread->sending_status = Thread::SENDING_STATUS_READY_FOR_SENDING;
+        $dbOps = new ThreadDatabaseOperations();
+        $dbOps->updateThread($thread, $_SESSION['user']['sub']);
+    }
+    
     $result = sendThreadEmail($thread, $_POST['email-to'], 
     $_POST['email-subject'], $_POST['email-body'], $entityId,
     userId: $_SESSION['user']['sub']

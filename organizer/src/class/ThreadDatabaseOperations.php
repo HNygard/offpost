@@ -317,17 +317,19 @@ class ThreadDatabaseOperations {
         Database::execute(
             "UPDATE threads 
              SET title = ?, my_name = ?, my_email = ?, sent = ?, archived = ?, 
-                 labels = ?, sent_comment = ?, public = ?
+                 labels = ?, sent_comment = ?, public = ?, sending_status = ?, initial_request = ?
              WHERE id = ?",
             [
                 $thread->title,
                 $thread->my_name,
                 $thread->my_email,
-                $thread->sent ? 't' : 'f',
+                $thread->sending_status === Thread::SENDING_STATUS_SENT ? 't' : 'f', // Keep sent in sync with sending_status
                 $thread->archived ? 't' : 'f',
                 $this->formatLabelsForPostgres($thread->labels),
                 $thread->sentComment,
                 $thread->public ? 't' : 'f',
+                $thread->sending_status,
+                $thread->initial_request,
                 $thread->id
             ]
         );
@@ -357,6 +359,9 @@ class ThreadDatabaseOperations {
             if ($currentThread->sentComment !== $thread->sentComment) {
                 $details['sent_comment'] = $thread->sentComment;
             }
+            if ($currentThread->initial_request !== $thread->initial_request) {
+                $details['initial_request'] = $thread->initial_request;
+            }
             if (!empty($details)) {
                 $this->history->logAction($thread->id, 'edited', $userId, $details);
             }
@@ -368,8 +373,11 @@ class ThreadDatabaseOperations {
             if ($currentThread->public !== $thread->public) {
                 $this->history->logAction($thread->id, $thread->public ? 'made_public' : 'made_private', $userId);
             }
-            if ($currentThread->sent !== $thread->sent) {
-                $this->history->logAction($thread->id, $thread->sent ? 'sent' : 'unsent', $userId);
+            if ($currentThread->sending_status !== $thread->sending_status) {
+                $this->history->logAction($thread->id, 'status_changed', $userId, [
+                    'from' => $currentThread->sending_status,
+                    'to' => $thread->sending_status
+                ]);
             }
         }
         
@@ -384,8 +392,8 @@ class ThreadDatabaseOperations {
         $uuid = $this->generateUuid();
         
         Database::execute(
-            "INSERT INTO threads (id, id_old, entity_id, title, my_name, my_email, sent, archived, labels, sent_comment, public) 
-            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)",
+            "INSERT INTO threads (id, id_old, entity_id, title, my_name, my_email, sent, archived, labels, sent_comment, public, sending_status, initial_request) 
+            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)",
             [
                 $uuid,
                 $thread->id_old ?? null, // Use existing id_old if set, otherwise null
@@ -393,11 +401,13 @@ class ThreadDatabaseOperations {
                 $thread->title,
                 $thread->my_name,
                 $thread->my_email,
-                $thread->sent ? 't' : 'f',
+                $thread->sending_status === Thread::SENDING_STATUS_SENT ? 't' : 'f', // Keep sent in sync with sending_status
                 $thread->archived ? 't' : 'f',
                 $this->formatLabelsForPostgres($thread->labels),
                 $thread->sentComment,
-                $thread->public ? 't' : 'f'
+                $thread->public ? 't' : 'f',
+                $thread->sending_status ?? Thread::SENDING_STATUS_STAGED,
+                $thread->initial_request
             ]
         );
         

@@ -194,6 +194,13 @@ if (!isset($_POST['entity_id'])) {
             </div>
 
             <div class="form-group">
+                <label>
+                    <input type="checkbox" id="send_now" name="send_now" value="1" <?= isset($_GET['send_now']) && $_GET['send_now'] ? 'checked' : '' ?>>
+                    Send immediately (otherwise save as draft)
+                </label>
+            </div>
+
+            <div class="form-group">
                 <label for="body">Message Body</label>
                 <textarea id="body" name="body"><?= htmlescape(isset($_GET['body']) ? $_GET['body'] : '') ?></textarea>
             </div>
@@ -227,7 +234,11 @@ if ($thread == null) {
     $thread->my_name = $_POST['my_name'];
     $thread->my_email = $_POST['my_email'];
     $thread->labels = array();
-    $thread->sent = false;
+    $thread->initial_request = $_POST['body']; // Store the initial request
+    $thread->sending_status = isset($_POST['send_now']) && $_POST['send_now'] === '1' 
+        ? Thread::SENDING_STATUS_READY_FOR_SENDING 
+        : Thread::SENDING_STATUS_STAGED;
+    $thread->sent = false; // Will be updated if email is sent
     $thread->archived = false;
     $thread->public = isset($_POST['public']) && $_POST['public'] === '1';
     $thread->emails = array();
