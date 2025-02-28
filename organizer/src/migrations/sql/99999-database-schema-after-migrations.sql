@@ -1,6 +1,6 @@
 -- ******************************************************************
 -- AUTOMATICALLY GENERATED FILE - DO NOT MODIFY
--- Generated on: 2025-02-28 19:32:38
+-- Generated on: 2025-02-28 20:01:51
 -- 
 -- This file contains the current database schema after all migrations.
 -- It is NOT meant to be executed as a migration script.
@@ -23,6 +23,7 @@ ALTER TABLE thread_authorizations ADD CONSTRAINT thread_authorizations_thread_id
 CREATE INDEX thread_authorizations_thread_id_idx ON thread_authorizations USING btree (thread_id);
 CREATE INDEX thread_authorizations_user_id_idx ON thread_authorizations USING btree (user_id);
 CREATE INDEX thread_authorizations_thread_user_idx ON thread_authorizations USING btree (thread_id, user_id);
+CREATE INDEX thread_authorizations_thread_user_unique ON thread_authorizations USING btree (thread_id, user_id);
 
 CREATE TABLE thread_email_attachments (
     id integer NOT NULL DEFAULT nextval('thread_email_attachments_id_seq'::regclass),
@@ -42,6 +43,7 @@ ALTER TABLE thread_email_attachments ADD CONSTRAINT thread_email_attachments_ema
 CREATE INDEX thread_email_attachments_email_id_idx ON thread_email_attachments USING btree (email_id);
 CREATE INDEX thread_email_attachments_filetype_idx ON thread_email_attachments USING btree (filetype);
 CREATE INDEX thread_email_attachments_status_type_idx ON thread_email_attachments USING btree (status_type);
+CREATE INDEX thread_email_attachments_email_id_id_idx ON thread_email_attachments USING btree (email_id, id);
 
 CREATE TABLE thread_email_history (
     id integer NOT NULL DEFAULT nextval('thread_email_history_id_seq'::regclass),
@@ -57,6 +59,7 @@ ALTER TABLE thread_email_history ADD CONSTRAINT thread_email_history_pkey PRIMAR
 ALTER TABLE thread_email_history ADD CONSTRAINT thread_email_history_thread_id_fkey FOREIGN KEY (thread_id) REFERENCES threads (id);
 CREATE INDEX thread_email_history_thread_id_idx ON thread_email_history USING btree (thread_id);
 CREATE INDEX thread_email_history_email_id_idx ON thread_email_history USING btree (email_id);
+CREATE INDEX thread_email_history_user_id_idx ON thread_email_history USING btree (user_id);
 
 CREATE TABLE thread_emails (
     id integer NOT NULL DEFAULT nextval('thread_emails_id_seq'::regclass),
@@ -82,6 +85,7 @@ CREATE INDEX thread_emails_email_type_idx ON thread_emails USING btree (email_ty
 CREATE INDEX thread_emails_status_type_idx ON thread_emails USING btree (status_type);
 CREATE INDEX thread_emails_ignore_idx ON thread_emails USING btree (ignore);
 CREATE INDEX thread_emails_id_old_idx ON thread_emails USING btree (id_old);
+CREATE INDEX thread_emails_thread_datetime_idx ON thread_emails USING btree (thread_id, datetime_received);
 
 CREATE TABLE thread_history (
     id integer NOT NULL DEFAULT nextval('thread_history_id_seq'::regclass),
@@ -95,6 +99,7 @@ CREATE TABLE thread_history (
 ALTER TABLE thread_history ADD CONSTRAINT thread_history_pkey PRIMARY KEY (id);
 ALTER TABLE thread_history ADD CONSTRAINT thread_history_thread_id_fkey FOREIGN KEY (thread_id) REFERENCES threads (id);
 CREATE INDEX thread_history_thread_id_idx ON thread_history USING btree (thread_id);
+CREATE INDEX thread_history_user_id_idx ON thread_history USING btree (user_id);
 
 CREATE TABLE threads (
     id uuid NOT NULL,
@@ -122,6 +127,8 @@ CREATE INDEX threads_sent_idx ON threads USING btree (sent);
 CREATE INDEX threads_labels_idx ON threads USING gin (labels);
 CREATE INDEX threads_id_old_idx ON threads USING btree (id_old);
 CREATE INDEX threads_sending_status_idx ON threads USING btree (sending_status);
+CREATE INDEX threads_entity_created_idx ON threads USING btree (entity_id, created_at);
+CREATE INDEX threads_updated_at_idx ON threads USING btree (updated_at);
 
 CREATE OR REPLACE FUNCTION update_updated_at_column() RETURNS trigger AS $$ 
 BEGIN
