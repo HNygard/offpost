@@ -8,6 +8,7 @@ require_once __DIR__ . '/Entity.php';
 class Thread implements JsonSerializable {
     var $id;
     var $id_old;
+    var $entity_id;
     var $title;
     var $my_name;
     var $my_email;
@@ -15,8 +16,7 @@ class Thread implements JsonSerializable {
     var $sent;
     var $archived;
     var $public = false;
-    var $sentComment; // Added property
-    var $entity_id; // Entity ID for this thread
+    var $sentComment;
 
     /* @var ThreadEmail[] $emails */
     var $emails;
