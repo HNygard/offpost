@@ -406,7 +406,7 @@ class ThreadDatabaseOperations {
                 $this->formatLabelsForPostgres($thread->labels),
                 $thread->sentComment,
                 $thread->public ? 't' : 'f',
-                $thread->sending_status ?? Thread::SENDING_STATUS_STAGED,
+                $thread->sending_status ?? Thread::SENDING_STATUS_STAGING,
                 $thread->initial_request
             ]
         );

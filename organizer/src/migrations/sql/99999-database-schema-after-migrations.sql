@@ -1,6 +1,6 @@
 -- ******************************************************************
 -- AUTOMATICALLY GENERATED FILE - DO NOT MODIFY
--- Generated on: 2025-02-28 20:01:51
+-- Generated on: 2025-02-28 20:25:19
 -- 
 -- This file contains the current database schema after all migrations.
 -- It is NOT meant to be executed as a migration script.
@@ -115,7 +115,7 @@ CREATE TABLE threads (
     created_at timestamp with time zone NOT NULL DEFAULT CURRENT_TIMESTAMP,
     updated_at timestamp with time zone NOT NULL DEFAULT CURRENT_TIMESTAMP,
     id_old character varying(255),
-    sending_status character varying(20) DEFAULT 'STAGED'::character varying,
+    sending_status character varying(20) DEFAULT 'STAGING'::character varying,
     initial_request text
 );
 

@@ -340,7 +340,7 @@ class ThreadEmailReceiveIntegrationTest extends TestCase {
             "my_email": "test' . $uniqueId . '@example.com",
             "labels": ["uklassifisert-epost"],
             "sent": false,
-            "sending_status": "STAGED",
+            "sending_status": "STAGING",
             "initial_request": null,
             "archived": false,
             "public": false,

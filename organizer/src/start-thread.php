@@ -237,7 +237,7 @@ if ($thread == null) {
     $thread->initial_request = $_POST['body']; // Store the initial request
     $thread->sending_status = isset($_POST['send_now']) && $_POST['send_now'] === '1' 
         ? Thread::SENDING_STATUS_READY_FOR_SENDING 
-        : Thread::SENDING_STATUS_STAGED;
+        : Thread::SENDING_STATUS_STAGING;
     $thread->sent = false; // Will be updated if email is sent
     $thread->archived = false;
     $thread->public = isset($_POST['public']) && $_POST['public'] === '1';

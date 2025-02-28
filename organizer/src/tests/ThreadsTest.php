@@ -239,7 +239,7 @@ class ThreadsTest extends TestCase {
         $thread->my_name = 'Test User';
         $thread->title = 'Test Thread with Initial Request';
         $thread->initial_request = 'This is the initial request text';
-        $thread->sending_status = Thread::SENDING_STATUS_STAGED;
+        $thread->sending_status = Thread::SENDING_STATUS_STAGING;
         $thread->entity_id = '000000000-test-entity-development';
 
         // Create thread in database
@@ -266,7 +266,7 @@ class ThreadsTest extends TestCase {
         $thread->my_email = "test" . mt_rand(0, 100) . time() ."@example.com";
         $thread->my_name = 'Test User';
         $thread->title = 'Test Thread with Status Transitions';
-        $thread->sending_status = Thread::SENDING_STATUS_STAGED;
+        $thread->sending_status = Thread::SENDING_STATUS_STAGING;
         $thread->entity_id = '000000000-test-entity-development';
 
         // Create thread in database
@@ -325,7 +325,7 @@ class ThreadsTest extends TestCase {
         $threadWithoutSendNow->my_email = "test" . mt_rand(0, 100) . time() ."@example.com";
         $threadWithoutSendNow->labels = [];
         $threadWithoutSendNow->initial_request = 'This is a request to be staged';
-        $threadWithoutSendNow->sending_status = Thread::SENDING_STATUS_STAGED; // Simulating send_now=false
+        $threadWithoutSendNow->sending_status = Thread::SENDING_STATUS_STAGING; // Simulating send_now=false
         $threadWithoutSendNow->archived = false;
         $threadWithoutSendNow->emails = [];
         
@@ -339,7 +339,7 @@ class ThreadsTest extends TestCase {
         $loadedThreadWithoutSendNow = Thread::loadFromDatabase($resultWithoutSendNow->id);
         
         $this->assertEquals(Thread::SENDING_STATUS_READY_FOR_SENDING, $loadedThreadWithSendNow->sending_status);
-        $this->assertEquals(Thread::SENDING_STATUS_STAGED, $loadedThreadWithoutSendNow->sending_status);
+        $this->assertEquals(Thread::SENDING_STATUS_STAGING, $loadedThreadWithoutSendNow->sending_status);
         
         $this->assertEquals('This is a request to be sent immediately', $loadedThreadWithSendNow->initial_request);
         $this->assertEquals('This is a request to be staged', $loadedThreadWithoutSendNow->initial_request);

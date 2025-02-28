@@ -7,7 +7,7 @@ require_once __DIR__ . '/Entity.php';
 
 class Thread implements JsonSerializable {
     // Sending status constants
-    const SENDING_STATUS_STAGED = 'STAGED';
+    const SENDING_STATUS_STAGING = 'STAGING';
     const SENDING_STATUS_READY_FOR_SENDING = 'READY_FOR_SENDING';
     const SENDING_STATUS_SENDING = 'SENDING';
     const SENDING_STATUS_SENT = 'SENT';
@@ -41,14 +41,14 @@ class Thread implements JsonSerializable {
 
     public function __construct() {
         $this->id = $this->generateUuid();
-        $this->sending_status = self::SENDING_STATUS_STAGED; // Default to STAGED
+        $this->sending_status = self::SENDING_STATUS_STAGING; // Default to STAGING
     }
 
     /**
-     * Check if thread is in STAGED status
+     * Check if thread is in STAGING status
      */
     public function isStaged() {
-        return $this->sending_status === self::SENDING_STATUS_STAGED;
+        return $this->sending_status === self::SENDING_STATUS_STAGING;
     }
     
     /**
@@ -152,7 +152,7 @@ class Thread implements JsonSerializable {
         $thread->archived = (bool)$data['archived'];
         $thread->public = (bool)$data['public'];
         $thread->sentComment = $data['sent_comment'];
-        $thread->sending_status = $data['sending_status'] ?? ($data['sent'] ? self::SENDING_STATUS_SENT : self::SENDING_STATUS_STAGED);
+        $thread->sending_status = $data['sending_status'] ?? ($data['sent'] ? self::SENDING_STATUS_SENT : self::SENDING_STATUS_STAGING);
         $thread->initial_request = $data['initial_request'] ?? null;
 
         // Load emails
