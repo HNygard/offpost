@@ -173,7 +173,7 @@ $allThreads = $filteredThreads;
                                         . ThreadHistory::sendingStatusToString($thread->sending_status) . '</a></span>';
                                     break;
                                 default:
-                                    echo $thread->sent ? '<span class="label label_ok"><a href="?label_filter=sent">Sent</a></span>' : '<span class="label label_warn"><a href="?label_filter=not_sent">Not sent</a></span>';
+                                    throw new Exception('Unknown sending status: ' . $thread->sending_status);
                             }
                             ?><br>
                             <?= $thread->archived ? '<span class="label label_ok"><a href="?label_filter=archived">Archived</a></span>' : '<span class="label label_warn"><a href="?label_filter=not_archived">Not archived</a></span>' ?>

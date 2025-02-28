@@ -27,14 +27,19 @@ class ThreadHistoryFormatTest extends TestCase {
             ['action' => 'unsent', 'details' => null, 'expected' => 'Marked thread as not sent'],
             ['action' => 'user_added', 'details' => json_encode(['user_id' => 'test-user', 'is_owner' => true]), 'expected' => 'Added user: test-user as owner'],
             ['action' => 'user_added', 'details' => json_encode(['user_id' => 'test-user', 'is_owner' => false]), 'expected' => 'Added user: test-user as viewer'],
-            ['action' => 'user_removed', 'details' => json_encode(['user_id' => 'test-user']), 'expected' => 'Removed user: test-user'],
-            ['action' => 'unknown', 'details' => null, 'expected' => 'Unknown action']
+            ['action' => 'user_removed', 'details' => json_encode(['user_id' => 'test-user']), 'expected' => 'Removed user: test-user']
         ];
 
         foreach ($testCases as $testCase) {
             $result = $this->threadHistory->formatActionForDisplay($testCase['action'], $testCase['details']);
             $this->assertEquals($testCase['expected'], $result, "Failed formatting action '{$testCase['action']}'");
         }
+    }
+    
+    public function testFormatActionForDisplayWithInvalidAction() {
+        $this->expectException(Exception::class);
+        $this->expectExceptionMessage('Unknown action: unknown');
+        $this->threadHistory->formatActionForDisplay('unknown', null);
     }
 
     public function testFormatHistoryEntry() {
@@ -55,12 +60,8 @@ class ThreadHistoryFormatTest extends TestCase {
     }
 
     public function testFormatHistoryEntryWithMissingData() {
-        $result = $this->threadHistory->formatHistoryEntry([]);
-
-        $this->assertEquals([
-            'action' => 'Unknown action',
-            'user' => 'Unknown user',
-            'date' => (new DateTime())->format('Y-m-d H:i:s')
-        ], $result);
+        $this->expectException(Exception::class);
+        $this->expectExceptionMessage('Unknown action: ');
+        $this->threadHistory->formatHistoryEntry([]);
     }
 }

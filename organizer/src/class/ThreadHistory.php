@@ -68,7 +68,7 @@ class ThreadHistory {
                     . ' from [' . self::sendingStatusToString($details['from']) . ']'
                     . ' to [' . self::sendingStatusToString($details['to']) . ']';
             default:
-                return 'Unknown action';
+                throw new Exception('Unknown action: ' . $action);
         }
     }
 

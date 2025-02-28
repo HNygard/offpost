@@ -38,7 +38,7 @@ class ThreadEmailHistory {
                 $details = json_decode($details, true);
                 return 'Email ' . ($details['ignored'] ? 'ignored' : 'unignored');
             default:
-                return 'Unknown action';
+                throw new Exception('Unknown action: ' . $action);
         }
     }
 

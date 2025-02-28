@@ -82,17 +82,25 @@ class ThreadEmailHistoryTest extends PHPUnit\Framework\TestCase {
 
     public function testFormatHistoryEntryWithMissingData() {
         // :: Setup
+        $invalidAction = 'unknown_action';
         $entry = [
-            'action' => 'unknown_action'
+            'action' => $invalidAction,
+            'created_at' => null
         ];
 
-        // :: Act
-        $result = $this->history->formatHistoryEntry($entry);
+        // :: Act & Assert
+        $this->expectException(Exception::class);
+        $this->expectExceptionMessage('Unknown action: ' . $invalidAction);
+        $this->history->formatHistoryEntry($entry);
+    }
+    
+    public function testFormatActionForDisplayWithInvalidAction() {
+        // :: Setup
+        $invalidAction = 'unknown_action';
 
-        // :: Assert
-        $this->assertEquals('Unknown action', $result['action'], 'Should handle unknown action');
-        $this->assertNull($result['user'], 'Should handle missing user');
-        $this->assertMatchesRegularExpression('/^\d{4}-\d{2}-\d{2} \d{2}:\d{2}:\d{2}$/', $result['date'], 
-            'Should use current date for missing created_at');
+        // :: Act & Assert
+        $this->expectException(Exception::class);
+        $this->expectExceptionMessage('Unknown action: ' . $invalidAction);
+        $this->history->formatActionForDisplay($invalidAction, null);
     }
 }

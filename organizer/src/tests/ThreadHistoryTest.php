@@ -84,65 +84,37 @@ class ThreadHistoryTest extends PHPUnit\Framework\TestCase {
     }
 
     public function testFormatActionForDisplay() {
-        // Test created action
-        $this->assertEquals(
-            'Created thread',
-            $this->history->formatActionForDisplay('created', null)
-        );
+        // :: Setup
+        $testCases = [
+            ['action' => 'created', 'details' => null, 'expected' => 'Created thread'],
+            ['action' => 'edited', 'details' => json_encode(['title' => 'New Title']), 'expected' => 'Changed title to: New Title'],
+            ['action' => 'edited', 'details' => json_encode(['labels' => ['label1', 'label2']]), 'expected' => 'Updated labels: label1, label2'],
+            ['action' => 'archived', 'details' => null, 'expected' => 'Archived thread'],
+            ['action' => 'unarchived', 'details' => null, 'expected' => 'Unarchived thread'],
+            ['action' => 'made_public', 'details' => null, 'expected' => 'Made thread public'],
+            ['action' => 'made_private', 'details' => null, 'expected' => 'Made thread private'],
+            ['action' => 'sent', 'details' => null, 'expected' => 'Marked thread as sent'],
+            ['action' => 'unsent', 'details' => null, 'expected' => 'Marked thread as not sent']
+        ];
 
-        // Test edited action with title change
-        $this->assertEquals(
-            'Changed title to: New Title',
-            $this->history->formatActionForDisplay('edited', json_encode(['title' => 'New Title']))
-        );
+        // :: Act & Assert
+        foreach ($testCases as $testCase) {
+            $this->assertEquals(
+                $testCase['expected'],
+                $this->history->formatActionForDisplay($testCase['action'], $testCase['details']),
+                "Failed formatting action '{$testCase['action']}'"
+            );
+        }
+    }
 
-        // Test edited action with labels change
-        $this->assertEquals(
-            'Updated labels: label1, label2',
-            $this->history->formatActionForDisplay('edited', json_encode(['labels' => ['label1', 'label2']]))
-        );
+    public function testFormatActionForDisplayWithInvalidAction() {
+        // :: Setup
+        $invalidAction = 'invalid_action';
 
-        // Test archived action
-        $this->assertEquals(
-            'Archived thread',
-            $this->history->formatActionForDisplay('archived', null)
-        );
-
-        // Test unarchived action
-        $this->assertEquals(
-            'Unarchived thread',
-            $this->history->formatActionForDisplay('unarchived', null)
-        );
-
-        // Test made public action
-        $this->assertEquals(
-            'Made thread public',
-            $this->history->formatActionForDisplay('made_public', null)
-        );
-
-        // Test made private action
-        $this->assertEquals(
-            'Made thread private',
-            $this->history->formatActionForDisplay('made_private', null)
-        );
-
-        // Test sent action
-        $this->assertEquals(
-            'Marked thread as sent',
-            $this->history->formatActionForDisplay('sent', null)
-        );
-
-        // Test unsent action
-        $this->assertEquals(
-            'Marked thread as not sent',
-            $this->history->formatActionForDisplay('unsent', null)
-        );
-
-        // Test unknown action
-        $this->assertEquals(
-            'Unknown action',
-            $this->history->formatActionForDisplay('invalid_action', null)
-        );
+        // :: Act & Assert
+        $this->expectException(Exception::class);
+        $this->expectExceptionMessage('Unknown action: ' . $invalidAction);
+        $this->history->formatActionForDisplay($invalidAction, null);
     }
 
     public function testFormatHistoryEntry() {
@@ -169,10 +141,9 @@ class ThreadHistoryTest extends PHPUnit\Framework\TestCase {
             'created_at' => null
         ];
 
-        $result = $this->history->formatHistoryEntry($entry);
-        
-        $this->assertEquals('Unknown action', $result['action']);
-        $this->assertEquals('Unknown user', $result['user']);
-        $this->assertNotEmpty($result['date']); // Should still get a date even if not provided
+        // :: Act & Assert
+        $this->expectException(Exception::class);
+        $this->expectExceptionMessage('Unknown action: ');
+        $this->history->formatHistoryEntry($entry);
     }
 }
