@@ -23,6 +23,11 @@ TODO for Cline.
 - [x] Database driver missing from docker image. Not installed or missing rebuild??
 - [x] Is access to thread checked in file.php?
 
+- [x] dump-db-schema.php - The timestampe is always updated, so the dump is always different. Make the compare without timestamp.
+    Ref if ($currentContent === $newContent) {
+
+- [x] Check if we have index in database, if not add
+
 
 Goal: make production usable
 
@@ -40,7 +45,6 @@ Goal: make production usable
     - [x] Remove extra labels
     - [ ] Open some labels to public
     - [ ] Clean up old threads by archiving them
-- [ ] Check if we have index in database, if not add
 - [ ] Update-imap - Run on schedule
 - [ ] Email - Switch ID to UUID
 
