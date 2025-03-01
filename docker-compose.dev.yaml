@@ -98,6 +98,7 @@ services:
       - ./organizer/src:/php-frontend
       - /php-frontend/vendor
       - ./data/:/organizer-data
+      - ./data/entities.json:/organizer-entities.json
       - ./secrets/postgres_password:/run/secrets/postgres_password:ro
     environment:
       - ENVIRONMENT=development
