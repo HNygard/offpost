@@ -183,19 +183,23 @@ function getIconClass($filetype) {
                 <?php 
                 switch ($thread->sending_status) {
                     case Thread::SENDING_STATUS_STAGING:
-                        echo '<span class="label label_info"><a href="/?label_filter=staged">Staging</a></span>';
+                        echo '<span class="label label_info"><a href="/?label_filter=staging">'
+                                        . ThreadHistory::sendingStatusToString($thread->sending_status) . '</a></span>';
                         break;
                     case Thread::SENDING_STATUS_READY_FOR_SENDING:
-                        echo '<span class="label label_warn"><a href="/?label_filter=ready_for_sending">Ready for sending</a></span>';
+                        echo '<span class="label label_warn"><a href="/?label_filter=ready_for_sending">'
+                                        . ThreadHistory::sendingStatusToString($thread->sending_status) . '</a></span>';
                         break;
                     case Thread::SENDING_STATUS_SENDING:
-                        echo '<span class="label label_warn"><a href="/?label_filter=sending">Sending</a></span>';
+                        echo '<span class="label label_warn"><a href="/?label_filter=sending">'
+                                        . ThreadHistory::sendingStatusToString($thread->sending_status) . '</a></span>';
                         break;
                     case Thread::SENDING_STATUS_SENT:
-                        echo '<span class="label label_ok"><a href="/?label_filter=sent">Sent</a></span>';
+                        echo '<span class="label label_ok"><a href="/?label_filter=sent">'
+                                        . ThreadHistory::sendingStatusToString($thread->sending_status) . '</a></span>';
                         break;
                     default:
-                        echo $thread->sent ? '<span class="label label_ok"><a href="/?label_filter=sent">Sent</a></span>' : '<span class="label label_warn"><a href="/?label_filter=not_sent">Not sent</a></span>';
+                        throw new Exception('Unknown sending status: ' . $thread->sending_status);
                 }
                 ?>
                 <?= $thread->archived ? '<span class="label label_ok"><a href="/?label_filter=archived">Archived</a></span>' : '<span class="label label_warn"><a href="/?label_filter=not_archived">Not archived</a></span>' ?>

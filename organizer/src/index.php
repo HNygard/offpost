@@ -157,7 +157,7 @@ $allThreads = $filteredThreads;
                             <?php 
                             switch ($thread->sending_status) {
                                 case Thread::SENDING_STATUS_STAGING:
-                                    echo '<span class="label label_info"><a href="?label_filter=staged">' 
+                                    echo '<span class="label label_info"><a href="?label_filter=staging">' 
                                         . ThreadHistory::sendingStatusToString($thread->sending_status) . '</a></span>';
                                     break;
                                 case Thread::SENDING_STATUS_READY_FOR_SENDING:
