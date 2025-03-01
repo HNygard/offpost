@@ -14,7 +14,7 @@ class Entity {
     public string $org_num;
 
     private static $entities = null;
-    private static $jsonPath =  '/organizer-entities.json';
+    private static $jsonPath =  DATA_DIR . '/entities.json';
     
     /**
      * Load entities from JSON file
