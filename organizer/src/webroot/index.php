@@ -21,12 +21,14 @@ try {
 
     // :: System pages (dev or cron in prod)
     elseif ($path == '/scheduled-email-sending'
-    /*
         && (
             ($environment == 'development')
-            || ($environment == 'production' && $_SERVER['HTTP_HOST'] == 'organizer-http-server')
+            || (
+                $environment == 'production'
+                // Internal name - used by container 'cron'
+                && $_SERVER['HTTP_HOST'] == 'organizer'
+            )
         )
-            */
     ) {
         require __DIR__ . '/../system-pages/scheduled-email-sending.php';
     }
