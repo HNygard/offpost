@@ -23,6 +23,8 @@ if [ "$LOCAL_HASH" != "$REMOTE_HASH" ]; then
   # Build organizer image locally (it has its own Dockerfile)
   echo "[$(date)] Building organizer image..."
   docker compose -f docker-compose.prod.yaml build organizer
+  echo "[$(date)] Building cron image..."
+  docker compose -f docker-compose.prod.yaml build cron
 
   # Pull other images from registry
   echo "[$(date)] Pulling other images..."
