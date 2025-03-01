@@ -20,7 +20,7 @@ use Imap\ImapEmailProcessor;
 use Imap\ImapAttachmentHandler;
 
 // Load IMAP credentials
-require_once __DIR__ . '/username-password.php';
+require __DIR__ . '/username-password.php';
 
 echo '<pre>';
 

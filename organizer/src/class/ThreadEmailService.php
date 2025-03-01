@@ -84,7 +84,7 @@ class PHPMailerService implements IEmailService {
 function sendThreadEmail(Thread $thread, $emailTo, $emailSubject, $emailBody, $entityId, $userId,
     IEmailService $emailService = null, ThreadDatabaseOperations $dbOps = null, ThreadHistory $history = null) {
     if ($emailService === null) {
-        require_once __DIR__ . '/../username-password.php';
+        require __DIR__ . '/../username-password.php';
         $emailService = new PHPMailerService(
             $smtpServer,
             $smtpUsername,
