@@ -73,3 +73,9 @@ services:
       - DB_USER=offpost
       - DB_PASSWORD_FILE=/run/secrets/postgres_password
     restart: unless-stopped
+
+  cron:
+    build: ./cron-scheduler
+    links:
+      - organizer:organizer-http-server
+    restart: unless-stopped
