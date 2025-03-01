@@ -8,6 +8,15 @@ $path = parse_url($_SERVER['REQUEST_URI'], PHP_URL_PATH);
 try {
     ob_start();
 
+
+    require __DIR__ . '/../username-password.php';
+    if ($environment != 'development' && (
+        $path == '/update-imap'
+        || $path == '/update-identities'
+    )) {
+        throw new Exception("Not available in this environment");
+    }
+
     // Explicitly map URLs to PHP files
     switch ($path) {
         case '/':

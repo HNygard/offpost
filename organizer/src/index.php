@@ -61,13 +61,15 @@ $allThreads = $filteredThreads;
         <h1>Offpost - Email Engine Organizer</h1>
 
 
-        <div style="font-size: 0.7em;">
-            <h3 style="display: inline;">Old tools:</h3>
-            <ul class="nav-links" style="display: inline;">
-                <li><a href="/update-imap?update-only-before=<?= date('Y-m-d H:i:s') ?>">Update email threads (folders) to IMAP</a></li>
-                <li><a href="/update-identities">Update identities into Roundcube</a></li>
-            </ul>
-        </div>
+        <?php if ($environment == 'development') { ?>
+            <div style="font-size: 0.7em;">
+                <h3 style="display: inline;">Dev tools:</h3>
+                <ul class="nav-links" style="display: inline;">
+                    <li><a href="/update-imap?update-only-before=<?= date('Y-m-d H:i:s') ?>">Update email threads (folders) to IMAP</a></li>
+                    <li><a href="/update-identities">Update identities into Roundcube</a></li>
+                </ul>
+            </div>
+        <?php } ?>
 
         <?php
         // Count total threads
