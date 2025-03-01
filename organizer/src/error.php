@@ -87,9 +87,9 @@ function displayErrorPage($error) {
     echo '<div class="error-details">';
     echo '<button class="copy-button">Copy error</button>';
     echo '<pre contenteditable="true">'
-        . htmlescape($error->getMessage()
+        . htmlescape($error->getMessage())
         . "\n\nStack trace:\n"
-        . htmlescape($error->getTraceAsString()))
+        . htmlescape($error->getTraceAsString())
         . '</pre>';
     echo '</div>';
     echo '</div></body></html>';
