@@ -1,14 +1,14 @@
 {
     "958935420-oslo-kommune": {
         "entity_id": "958935420-oslo-kommune",
-        "name": "TODO - Oslo kommune",
+        "name": "Oslo kommune",
         "email": "postmottak@oslo.kommune.no",
         "type": "municipality",
         "org_num": "958935420"
     },
     "964950768-nord-odal-kommune": {
         "entity_id": "964950768-nord-odal-kommune",
-        "name": "TODO - Nord-Odal kommune",
+        "name": "Nord-Odal kommune",
         "email": "postmottak@nord-odal.kommune.no",
         "type": "municipality",
         "org_num": "964950768"
@@ -29,21 +29,21 @@
     },
     "964965226-stavanger-kommune": {
         "entity_id": "964965226-stavanger-kommune",
-        "name": "TODO - Stavanger kommune",
+        "name": "Stavanger kommune",
         "email": "postmottak@stavanger.kommune.no",
         "type": "municipality",
         "org_num": "964965226"
     },
     "959159092-halden-kommune": {
         "entity_id": "959159092-halden-kommune",
-        "name": "TODO - Halden kommune",
+        "name": "Halden kommune",
         "email": "postmottak@halden.kommune.no",
         "type": "municipality",
         "org_num": "959159092"
     },
     "942110464-trondheim-kommune": {
         "entity_id": "942110464-trondheim-kommune",
-        "name": "TODO - Trondheim kommune",
+        "name": "Trondheim kommune",
         "email": "postmottak@trondheim.kommune.no",
         "type": "municipality",
         "org_num": "942110464"
