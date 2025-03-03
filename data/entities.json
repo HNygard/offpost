@@ -23,13 +23,6 @@
         "type": "municipality",
         "org_num": "921234554"
     },
-    "938759111-skien-kommune": {
-        "entity_id": "938759111-skien-kommune",
-        "name": "TODO - Skien kommune",
-        "email": "skien.postmottak@skien.kommune.no",
-        "type": "municipality",
-        "org_num": "938759111"
-    },
     "964965226-stavanger-kommune": {
         "entity_id": "964965226-stavanger-kommune",
         "entity_id_norske_postlister": "1103-stavanger-kommune",
@@ -53,34 +46,6 @@
         "email": "postmottak@trondheim.kommune.no",
         "type": "municipality",
         "org_num": "942110464"
-    },
-    "921693230-viken-fylkeskommune": {
-        "entity_id": "921693230-viken-fylkeskommune",
-        "name": "TODO - Viken fylkeskommune",
-        "email": "post@viken.no",
-        "type": "county",
-        "org_num": "921693230"
-    },
-    "817920632-trondelag-fylkeskommune": {
-        "entity_id": "817920632-trondelag-fylkeskommune",
-        "name": "TODO - Trøndelag fylkeskommune",
-        "email": "postmottak@trondelagfylke.no",
-        "type": "county",
-        "org_num": "817920632"
-    },
-    "983887406-skatteetaten": {
-        "entity_id": "983887406-skatteetaten",
-        "name": "TODO - Skatteetaten",
-        "email": "post@skatteetaten.no",
-        "type": "agency",
-        "org_num": "983887406"
-    },
-    "971526920-nav": {
-        "entity_id": "971526920-nav",
-        "name": "TODO - NAV",
-        "email": "post@nav.no",
-        "type": "agency",
-        "org_num": "971526920"
     },
     "000000000-test-entity-development": {
         "entity_id": "000000000-test-entity-development",
