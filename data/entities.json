@@ -17,7 +17,8 @@
     },
     "921234554-drammen-kommune": {
         "entity_id": "921234554-drammen-kommune",
-        "name": "TODO - Drammen kommune",
+        "entity_id_norske_postlister": "0602-drammen-kommune",
+        "name": "Drammen kommune",
         "email": "kommunepost@drammen.kommune.no",
         "type": "municipality",
         "org_num": "921234554"
