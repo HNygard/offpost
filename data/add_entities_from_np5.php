@@ -50,9 +50,11 @@ foreach ($sourceData as $entity) {
         continue;
     }
     
-    // Create the new entity ID format: orgNumber-slugified-name
-    $nameSlug = slugify($entity['name']);
-    $newEntityId = $entity['orgNumber'] . '-' . $nameSlug;
+    // Create the new entity ID format: orgNumber-original-id-suffix
+    // Extract the suffix part from the original entityId (e.g., "trogstad-kommune" from "0122-trogstad-kommune")
+    $parts = explode('-', $entity['entityId'], 2);
+    $idSuffix = isset($parts[1]) ? $parts[1] : slugify($entity['name']);
+    $newEntityId = $entity['orgNumber'] . '-' . $idSuffix;
     
     // Add entity even if it already exists
     if (isset($destData[$newEntityId])) {
@@ -70,6 +72,7 @@ foreach ($sourceData as $entity) {
     // Create the new entity entry
     $newEntity = [
         'entity_id' => $newEntityId,
+        'entity_id_norske_postlister' => $entity['entityId'],
         'name' => $entity['name'],
         'email' => $entity['entityEmail'] ?? '',
         'type' => $type,

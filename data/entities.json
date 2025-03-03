@@ -1,6 +1,7 @@
 {
     "958935420-oslo-kommune": {
         "entity_id": "958935420-oslo-kommune",
+        "entity_id_norske_postlister": "0301-oslo-kommune",
         "name": "Oslo kommune",
         "email": "postmottak@oslo.kommune.no",
         "type": "municipality",
@@ -8,6 +9,7 @@
     },
     "964950768-nord-odal-kommune": {
         "entity_id": "964950768-nord-odal-kommune",
+        "entity_id_norske_postlister": "0418-nord-odal-kommune",
         "name": "Nord-Odal kommune",
         "email": "postmottak@nord-odal.kommune.no",
         "type": "municipality",
@@ -29,6 +31,7 @@
     },
     "964965226-stavanger-kommune": {
         "entity_id": "964965226-stavanger-kommune",
+        "entity_id_norske_postlister": "1103-stavanger-kommune",
         "name": "Stavanger kommune",
         "email": "postmottak@stavanger.kommune.no",
         "type": "municipality",
@@ -36,6 +39,7 @@
     },
     "959159092-halden-kommune": {
         "entity_id": "959159092-halden-kommune",
+        "entity_id_norske_postlister": "0101-halden-kommune",
         "name": "Halden kommune",
         "email": "postmottak@halden.kommune.no",
         "type": "municipality",
@@ -43,6 +47,7 @@
     },
     "942110464-trondheim-kommune": {
         "entity_id": "942110464-trondheim-kommune",
+        "entity_id_norske_postlister": "5001-trondheim-kommune",
         "name": "Trondheim kommune",
         "email": "postmottak@trondheim.kommune.no",
         "type": "municipality",
