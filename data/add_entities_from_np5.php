@@ -42,9 +42,15 @@ $idMapping = [];
 $addedCount = 0;
 $skippedCount = 0;
 
+
+$entities_to_keep = array(
+    'viken-fylkeskommune',
+    'arkivverket-digitalarkivet',
+);
+
 foreach ($sourceData as $entity) {
     // Skip entities without an org number
-    if (empty($entity['orgNumber'])) {
+    if (empty($entity['orgNumber']) && !in_array($entity['entityId'], $entities_to_keep)) {
         echo "Skipping entity without org number: {$entity['name']}\n";
         $skippedCount++;
         continue;
@@ -53,8 +59,12 @@ foreach ($sourceData as $entity) {
     // Create the new entity ID format: orgNumber-original-id-suffix
     // Extract the suffix part from the original entityId (e.g., "trogstad-kommune" from "0122-trogstad-kommune")
     $parts = explode('-', $entity['entityId'], 2);
-    $idSuffix = isset($parts[1]) ? $parts[1] : slugify($entity['name']);
+    $idSuffix = isset($parts[1]) && is_numeric($parts[0]) ? $parts[1] : slugify($entity['name']);
     $newEntityId = $entity['orgNumber'] . '-' . $idSuffix;
+
+    if (in_array($entity['entityId'], $entities_to_keep)) {
+        $newEntityId = $entity['entityId'];
+    }
     
     // Add entity even if it already exists
     if (isset($destData[$newEntityId])) {
