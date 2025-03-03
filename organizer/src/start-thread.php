@@ -247,7 +247,12 @@ if ($thread == null) {
     foreach ($labels as $label) {
         $thread->labels[] = trim($label);
     }
-    $newThread = ThreadStorageManager::getInstance()->createThread($_POST['entity_id'], $_POST['entity_title_prefix'], $thread, $_SESSION['user']['sub']);
+    $newThread = ThreadStorageManager::getInstance()->createThread(
+            $_POST['entity_id'],
+            $_POST['entity_title_prefix'],
+            $thread,
+            $_SESSION['user']['sub']
+        );
     $threadId = $newThread->id;
 
     // Set creator as owner using OpenID Connect subject identifier

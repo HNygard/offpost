@@ -1,65 +1,76 @@
 {
   "958935420-oslo-kommune": {
+    "entity_id": "958935420-oslo-kommune",
     "name": "TODO - Oslo kommune",
     "email": "postmottak@oslo.kommune.no",
     "type": "municipality",
     "org_num": "958935420"
   },
   "964950768-nord-odal-kommune": {
+    "entity_id": "964950768-nord-odal-kommune",
     "name": "TODO - Nord-Odal kommune",
     "email": "postmottak@nord-odal.kommune.no",
     "type": "municipality",
     "org_num": "964950768"
   },
   "921234554-drammen-kommune": {
+    "entity_id": "921234554-drammen-kommune",
     "name": "TODO - Drammen kommune",
     "email": "kommunepost@drammen.kommune.no",
     "type": "municipality",
     "org_num": "921234554"
   },
   "938759111-skien-kommune": {
+    "entity_id": "938759111-skien-kommune",
     "name": "TODO - Skien kommune",
     "email": "skien.postmottak@skien.kommune.no",
     "type": "municipality",
     "org_num": "938759111"
   },
   "964965226-stavanger-kommune": {
+    "entity_id": "964965226-stavanger-kommune",
     "name": "TODO - Stavanger kommune",
     "email": "postmottak@stavanger.kommune.no",
     "type": "municipality",
     "org_num": "964965226"
   },
   "959159092-halden-kommune": {
+    "entity_id": "959159092-halden-kommune",
     "name": "TODO - Halden kommune",
     "email": "postmottak@halden.kommune.no",
     "type": "municipality",
     "org_num": "959159092"
   },
   "942110464-trondheim-kommune": {
+    "entity_id": "942110464-trondheim-kommune",
     "name": "TODO - Trondheim kommune",
     "email": "postmottak@trondheim.kommune.no",
     "type": "municipality",
     "org_num": "942110464"
   },
   "921693230-viken-fylkeskommune": {
+    "entity_id": "921693230-viken-fylkeskommune",
     "name": "TODO - Viken fylkeskommune",
     "email": "post@viken.no",
     "type": "county",
     "org_num": "921693230"
   },
   "817920632-trondelag-fylkeskommune": {
+    "entity_id": "817920632-trondelag-fylkeskommune",
     "name": "TODO - Trøndelag fylkeskommune",
     "email": "postmottak@trondelagfylke.no",
     "type": "county",
     "org_num": "817920632"
   },
   "983887406-skatteetaten": {
+    "entity_id": "983887406-skatteetaten",
     "name": "TODO - Skatteetaten",
     "email": "post@skatteetaten.no",
     "type": "agency",
     "org_num": "983887406"
   },
   "971526920-nav": {
+    "entity_id": "971526920-nav",
     "name": "TODO - NAV",
     "email": "post@nav.no",
     "type": "agency",
