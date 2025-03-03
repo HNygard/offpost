@@ -64,7 +64,7 @@
     },
     "000000000-test-entity-development": {
         "entity_id": "000000000-test-entity-development",
-        "name": "TODO - Test Entity (Development)",
+        "name": "Test Entity (Development)",
         "email": "public-entity@dev.offpost.no",
         "type": "test",
         "org_num": "000000000"
@@ -3669,152 +3669,152 @@
         "type": "agency",
         "org_num": "818066872"
     },
-    "983887457-dep-arbeids-og-inkluderingsdepartementet": {
-        "entity_id": "983887457-dep-arbeids-og-inkluderingsdepartementet",
+    "983887457-arbeids-og-inkluderingsdepartementet": {
+        "entity_id": "983887457-arbeids-og-inkluderingsdepartementet",
         "entity_id_norske_postlister": "dep-arbeid-og-sosial",
         "name": "Arbeids- og inkluderingsdepartementet",
         "email": "",
         "type": "minitry",
         "org_num": "983887457"
     },
-    "972417793-dep-barne-og-familiedepartementet": {
-        "entity_id": "972417793-dep-barne-og-familiedepartementet",
+    "972417793-barne-og-familiedepartementet": {
+        "entity_id": "972417793-barne-og-familiedepartementet",
         "entity_id_norske_postlister": "dep-barne-og-likestilling",
         "name": "Barne- og familiedepartementet",
         "email": "",
         "type": "minitry",
         "org_num": "972417793"
     },
-    "932384469-dep-digitaliserings-og-forvaltningsdepartementet": {
-        "entity_id": "932384469-dep-digitaliserings-og-forvaltningsdepartementet",
+    "932384469-digitaliserings-og-forvaltningsdepartementet": {
+        "entity_id": "932384469-digitaliserings-og-forvaltningsdepartementet",
         "entity_id_norske_postlister": "dep-dfd",
         "name": "Digitaliserings- og forvaltningsdepartementet",
         "email": "postmottak@dfd.dep.no",
         "type": "minitry",
         "org_num": "932384469"
     },
-    "972417807-dep-finansdepartementet": {
-        "entity_id": "972417807-dep-finansdepartementet",
+    "972417807-finansdepartementet": {
+        "entity_id": "972417807-finansdepartementet",
         "entity_id_norske_postlister": "dep-finans",
         "name": "Finansdepartementet",
         "email": "",
         "type": "minitry",
         "org_num": "972417807"
     },
-    "972417815-dep-fiskeri-og-kystdepartementet": {
-        "entity_id": "972417815-dep-fiskeri-og-kystdepartementet",
+    "972417815-fiskeri-og-kystdepartementet": {
+        "entity_id": "972417815-fiskeri-og-kystdepartementet",
         "entity_id_norske_postlister": "dep-fiskeri-og-kyst",
         "name": "Fiskeri- og kystdepartementet",
         "email": "",
         "type": "minitry",
         "org_num": "972417815"
     },
-    "972417785-dep-fornyings-administrasjons-og-kirkedepartementet": {
-        "entity_id": "972417785-dep-fornyings-administrasjons-og-kirkedepartementet",
+    "972417785-fornyings-administrasjons-og-kirkedepartementet": {
+        "entity_id": "972417785-fornyings-administrasjons-og-kirkedepartementet",
         "entity_id_norske_postlister": "dep-fornying-admin-og-kirke",
         "name": "Fornyings-, administrasjons- og kirkedepartementet",
         "email": "",
         "type": "minitry",
         "org_num": "972417785"
     },
-    "972417823-dep-forsvarsdepartementet": {
-        "entity_id": "972417823-dep-forsvarsdepartementet",
+    "972417823-forsvarsdepartementet": {
+        "entity_id": "972417823-forsvarsdepartementet",
         "entity_id_norske_postlister": "dep-forsvar",
         "name": "Forsvarsdepartementet",
         "email": "",
         "type": "minitry",
         "org_num": "972417823"
     },
-    "983887406-dep-helse-og-omsorgsdepartementet": {
-        "entity_id": "983887406-dep-helse-og-omsorgsdepartementet",
+    "983887406-helse-og-omsorgsdepartementet": {
+        "entity_id": "983887406-helse-og-omsorgsdepartementet",
         "entity_id_norske_postlister": "dep-helse-og-omsorg",
         "name": "Helse- og omsorgsdepartementet",
         "email": "",
         "type": "minitry",
         "org_num": "983887406"
     },
-    "972417831-dep-justis-og-beredskapsdepartementet": {
-        "entity_id": "972417831-dep-justis-og-beredskapsdepartementet",
+    "972417831-justis-og-beredskapsdepartementet": {
+        "entity_id": "972417831-justis-og-beredskapsdepartementet",
         "entity_id_norske_postlister": "dep-justis-og-beredskap",
         "name": "Justis- og beredskapsdepartementet",
         "email": "",
         "type": "minitry",
         "org_num": "972417831"
     },
-    "972417882-dep-klima-og-miljodepartementet": {
-        "entity_id": "972417882-dep-klima-og-miljodepartementet",
+    "972417882-klima-og-miljodepartementet": {
+        "entity_id": "972417882-klima-og-miljodepartementet",
         "entity_id_norske_postlister": "dep-klima-og-miljo",
         "name": "Klima- og miljødepartementet",
         "email": "",
         "type": "minitry",
         "org_num": "972417882"
     },
-    "972417858-dep-kommunal-og-distriktsdepartementet": {
-        "entity_id": "972417858-dep-kommunal-og-distriktsdepartementet",
+    "972417858-kommunal-og-distriktsdepartementet": {
+        "entity_id": "972417858-kommunal-og-distriktsdepartementet",
         "entity_id_norske_postlister": "dep-kommunal-og-moderning",
         "name": "Kommunal- og distriktsdepartementet",
         "email": "",
         "type": "minitry",
         "org_num": "972417858"
     },
-    "972417866-dep-kultur-og-likestillingsdepartementet": {
-        "entity_id": "972417866-dep-kultur-og-likestillingsdepartementet",
+    "972417866-kultur-og-likestillingsdepartementet": {
+        "entity_id": "972417866-kultur-og-likestillingsdepartementet",
         "entity_id_norske_postlister": "dep-kultur",
         "name": "Kultur- og likestillingsdepartementet",
         "email": "",
         "type": "minitry",
         "org_num": "972417866"
     },
-    "872417842-dep-kunnskapsdepartementet": {
-        "entity_id": "872417842-dep-kunnskapsdepartementet",
+    "872417842-kunnskapsdepartementet": {
+        "entity_id": "872417842-kunnskapsdepartementet",
         "entity_id_norske_postlister": "dep-kunnskap",
         "name": "Kunnskapsdepartementet",
         "email": "",
         "type": "minitry",
         "org_num": "872417842"
     },
-    "972417874-dep-landbruks-og-matdepartementet": {
-        "entity_id": "972417874-dep-landbruks-og-matdepartementet",
+    "972417874-landbruks-og-matdepartementet": {
+        "entity_id": "972417874-landbruks-og-matdepartementet",
         "entity_id_norske_postlister": "dep-landbruk-og-mat",
         "name": "Landbruks- og matdepartementet",
         "email": "",
         "type": "minitry",
         "org_num": "972417874"
     },
-    "912660680-dep-naerings-og-fiskeridepartementet": {
-        "entity_id": "912660680-dep-naerings-og-fiskeridepartementet",
+    "912660680-naerings-og-fiskeridepartementet": {
+        "entity_id": "912660680-naerings-og-fiskeridepartementet",
         "entity_id_norske_postlister": "dep-naering-og-fiskeri",
         "name": "Nærings- og fiskeridepartementet",
         "email": "",
         "type": "minitry",
         "org_num": "912660680"
     },
-    "972417890-dep-naerings-og-handelsdepartementet": {
-        "entity_id": "972417890-dep-naerings-og-handelsdepartementet",
+    "972417890-naerings-og-handelsdepartementet": {
+        "entity_id": "972417890-naerings-og-handelsdepartementet",
         "entity_id_norske_postlister": "dep-naering-og-handel",
         "name": "Nærings- og handelsdepartementet",
         "email": "",
         "type": "minitry",
         "org_num": "972417890"
     },
-    "977161630-dep-energidepartementet": {
-        "entity_id": "977161630-dep-energidepartementet",
+    "977161630-energidepartementet": {
+        "entity_id": "977161630-energidepartementet",
         "entity_id_norske_postlister": "dep-olje-og-energi",
         "name": "Energidepartementet",
         "email": "",
         "type": "minitry",
         "org_num": "977161630"
     },
-    "972417904-dep-samferdselsdepartementet": {
-        "entity_id": "972417904-dep-samferdselsdepartementet",
+    "972417904-samferdselsdepartementet": {
+        "entity_id": "972417904-samferdselsdepartementet",
         "entity_id_norske_postlister": "dep-samferdsel",
         "name": "Samferdselsdepartementet",
         "email": "",
         "type": "minitry",
         "org_num": "972417904"
     },
-    "972417920-dep-utenriksdepartementet": {
-        "entity_id": "972417920-dep-utenriksdepartementet",
+    "972417920-utenriksdepartementet": {
+        "entity_id": "972417920-utenriksdepartementet",
         "entity_id_norske_postlister": "dep-utenriks",
         "name": "Utenriksdepartementet",
         "email": "",
@@ -3845,200 +3845,200 @@
         "type": "agency",
         "org_num": "986339523"
     },
-    "986128433-dir-barne-ungdoms-og-familiedirektoratet": {
-        "entity_id": "986128433-dir-barne-ungdoms-og-familiedirektoratet",
+    "986128433-barne-ungdoms-og-familiedirektoratet": {
+        "entity_id": "986128433-barne-ungdoms-og-familiedirektoratet",
         "entity_id_norske_postlister": "dir-barn-ungdom-familie",
         "name": "Barne-, ungdoms- og familiedirektoratet",
         "email": "",
         "type": "directorate",
         "org_num": "986128433"
     },
-    "974760223-dir-direktoratet-for-byggkvalitet": {
-        "entity_id": "974760223-dir-direktoratet-for-byggkvalitet",
+    "974760223-direktoratet-for-byggkvalitet": {
+        "entity_id": "974760223-direktoratet-for-byggkvalitet",
         "entity_id_norske_postlister": "dir-byggkvalitet",
         "name": "Direktoratet for byggkvalitet",
         "email": "",
         "type": "directorate",
         "org_num": "974760223"
     },
-    "915933149-dir-direktoratet-for-e-helse": {
-        "entity_id": "915933149-dir-direktoratet-for-e-helse",
+    "915933149-direktoratet-for-e-helse": {
+        "entity_id": "915933149-direktoratet-for-e-helse",
         "entity_id_norske_postlister": "dir-ehelse",
         "name": "Direktoratet for e-helse",
         "email": "",
         "type": "directorate",
         "org_num": "915933149"
     },
-    "971203420-dir-fiskeridirektoratet": {
-        "entity_id": "971203420-dir-fiskeridirektoratet",
+    "971203420-fiskeridirektoratet": {
+        "entity_id": "971203420-fiskeridirektoratet",
         "entity_id_norske_postlister": "dir-fiskeri",
         "name": "Fiskeridirektoratet",
         "email": "",
         "type": "directorate",
         "org_num": "971203420"
     },
-    "983544622-dir-helsedirektoratet": {
-        "entity_id": "983544622-dir-helsedirektoratet",
+    "983544622-helsedirektoratet": {
+        "entity_id": "983544622-helsedirektoratet",
         "entity_id_norske_postlister": "dir-helse",
         "name": "Helsedirektoratet",
         "email": "",
         "type": "directorate",
         "org_num": "983544622"
     },
-    "974788985-dir-direktoratet-for-hoyere-utdanning-og-kompetanse": {
-        "entity_id": "974788985-dir-direktoratet-for-hoyere-utdanning-og-kompetanse",
+    "974788985-direktoratet-for-hoyere-utdanning-og-kompetanse": {
+        "entity_id": "974788985-direktoratet-for-hoyere-utdanning-og-kompetanse",
         "entity_id_norske_postlister": "dir-hkdir",
         "name": "Direktoratet for høyere utdanning og kompetanse",
         "email": "post@hkdir.no",
         "type": "directorate",
         "org_num": "974788985"
     },
-    "987879696-dir-integrerings-og-mangfoldsdirektoratet": {
-        "entity_id": "987879696-dir-integrerings-og-mangfoldsdirektoratet",
+    "987879696-integrerings-og-mangfoldsdirektoratet": {
+        "entity_id": "987879696-integrerings-og-mangfoldsdirektoratet",
         "entity_id_norske_postlister": "dir-integrering-og-mangfold",
         "name": "Integrerings- og mangfoldsdirektoratet",
         "email": "",
         "type": "directorate",
         "org_num": "987879696"
     },
-    "970935657-dir-klima-og-forurensningsdirektoratet": {
-        "entity_id": "970935657-dir-klima-og-forurensningsdirektoratet",
+    "970935657-klima-og-forurensningsdirektoratet": {
+        "entity_id": "970935657-klima-og-forurensningsdirektoratet",
         "entity_id_norske_postlister": "dir-klima-og-forurensing",
         "name": "Klima- og forurensningsdirektoratet",
         "email": "",
         "type": "directorate",
         "org_num": "970935657"
     },
-    "911830868-dir-kriminalomsorgsdirektoratet": {
-        "entity_id": "911830868-dir-kriminalomsorgsdirektoratet",
+    "911830868-kriminalomsorgsdirektoratet": {
+        "entity_id": "911830868-kriminalomsorgsdirektoratet",
         "entity_id_norske_postlister": "dir-kriminalomsorg",
         "name": "Kriminalomsorgsdirektoratet",
         "email": "",
         "type": "directorate",
         "org_num": "911830868"
     },
-    "974760819-dir-riksantikvaren-direktoratet-for-kulturminneforvaltning": {
-        "entity_id": "974760819-dir-riksantikvaren-direktoratet-for-kulturminneforvaltning",
+    "974760819-riksantikvaren-direktoratet-for-kulturminneforvaltning": {
+        "entity_id": "974760819-riksantikvaren-direktoratet-for-kulturminneforvaltning",
         "entity_id_norske_postlister": "dir-kulturminneforvaltning-riksantikvaren",
         "name": "Riksantikvaren - Direktoratet for kulturminneforvaltning",
         "email": "",
         "type": "directorate",
         "org_num": "974760819"
     },
-    "981544315-dir-landbruksdirektoratet": {
-        "entity_id": "981544315-dir-landbruksdirektoratet",
+    "981544315-landbruksdirektoratet": {
+        "entity_id": "981544315-landbruksdirektoratet",
         "entity_id_norske_postlister": "dir-landbruk",
         "name": "Landbruksdirektoratet",
         "email": "",
         "type": "directorate",
         "org_num": "981544315"
     },
-    "974629925-dir-landbruksdirektoratet-alta": {
-        "entity_id": "974629925-dir-landbruksdirektoratet-alta",
+    "974629925-landbruksdirektoratet-alta": {
+        "entity_id": "974629925-landbruksdirektoratet-alta",
         "entity_id_norske_postlister": "dir-landbruk-alta",
         "name": "Landbruksdirektoratet Alta",
         "email": "",
         "type": "directorate",
         "org_num": "974629925"
     },
-    "999601391-dir-miljodirektoratet": {
-        "entity_id": "999601391-dir-miljodirektoratet",
+    "999601391-miljodirektoratet": {
+        "entity_id": "999601391-miljodirektoratet",
         "entity_id_norske_postlister": "dir-miljo",
         "name": "Miljødirektoratet",
         "email": "",
         "type": "directorate",
         "org_num": "999601391"
     },
-    "974760282-dir-direktoratet-for-mineralforvaltning-med-bergmesteren-for-svalbard": {
-        "entity_id": "974760282-dir-direktoratet-for-mineralforvaltning-med-bergmesteren-for-svalbard",
+    "974760282-direktoratet-for-mineralforvaltning-med-bergmesteren-for-svalbard": {
+        "entity_id": "974760282-direktoratet-for-mineralforvaltning-med-bergmesteren-for-svalbard",
         "entity_id_norske_postlister": "dir-mineral-svalbard",
         "name": "Direktoratet for mineralforvaltning med Bergmesteren for Svalbard",
         "email": "",
         "type": "directorate",
         "org_num": "974760282"
     },
-    "971036028-dir-direktoratet-for-naturforvaltning": {
-        "entity_id": "971036028-dir-direktoratet-for-naturforvaltning",
+    "971036028-direktoratet-for-naturforvaltning": {
+        "entity_id": "971036028-direktoratet-for-naturforvaltning",
         "entity_id_norske_postlister": "dir-naturforvaltning",
         "name": "Direktoratet for naturforvaltning",
         "email": "",
         "type": "directorate",
         "org_num": "971036028"
     },
-    "990382840-dir-direktoratet-for-nodkommunikasjon": {
-        "entity_id": "990382840-dir-direktoratet-for-nodkommunikasjon",
+    "990382840-direktoratet-for-nodkommunikasjon": {
+        "entity_id": "990382840-direktoratet-for-nodkommunikasjon",
         "entity_id_norske_postlister": "dir-nødkommunikasjon",
         "name": "Direktoratet for nødkommunikasjon",
         "email": "",
         "type": "directorate",
         "org_num": "990382840"
     },
-    "986252932-dir-direktoratet-for-forvaltning-og-okonomistyring": {
-        "entity_id": "986252932-dir-direktoratet-for-forvaltning-og-okonomistyring",
+    "986252932-direktoratet-for-forvaltning-og-okonomistyring": {
+        "entity_id": "986252932-direktoratet-for-forvaltning-og-okonomistyring",
         "entity_id_norske_postlister": "dir-okonomistyring",
         "name": "Direktoratet for forvaltning og økonomistyring",
         "email": "",
         "type": "directorate",
         "org_num": "986252932"
     },
-    "870917732-dir-sokkeldirektoratet": {
-        "entity_id": "870917732-dir-sokkeldirektoratet",
+    "870917732-sokkeldirektoratet": {
+        "entity_id": "870917732-sokkeldirektoratet",
         "entity_id_norske_postlister": "dir-olje",
         "name": "Sokkeldirektoratet",
         "email": "",
         "type": "directorate",
         "org_num": "870917732"
     },
-    "974760983-dir-direktoratet-for-samfunnssikkerhet-og-beredskap": {
-        "entity_id": "974760983-dir-direktoratet-for-samfunnssikkerhet-og-beredskap",
+    "974760983-direktoratet-for-samfunnssikkerhet-og-beredskap": {
+        "entity_id": "974760983-direktoratet-for-samfunnssikkerhet-og-beredskap",
         "entity_id_norske_postlister": "dir-samfunnssikkerhet-og-beredskap",
         "name": "Direktoratet for samfunnssikkerhet og beredskap",
         "email": "",
         "type": "directorate",
         "org_num": "974760983"
     },
-    "974761262-dir-sjofartsdirektoratet": {
-        "entity_id": "974761262-dir-sjofartsdirektoratet",
+    "974761262-sjofartsdirektoratet": {
+        "entity_id": "974761262-sjofartsdirektoratet",
         "entity_id_norske_postlister": "dir-sjofart",
         "name": "Sjøfartsdirektoratet",
         "email": "",
         "type": "directorate",
         "org_num": "974761262"
     },
-    "996250318-dir-skattedirektoratet": {
-        "entity_id": "996250318-dir-skattedirektoratet",
+    "996250318-skattedirektoratet": {
+        "entity_id": "996250318-skattedirektoratet",
         "entity_id_norske_postlister": "dir-skatt",
         "name": "Skattedirektoratet",
         "email": "",
         "type": "directorate",
         "org_num": "996250318"
     },
-    "919477822-dir-sikt-kunnskapssektorens-tjenesteleverandor": {
-        "entity_id": "919477822-dir-sikt-kunnskapssektorens-tjenesteleverandor",
+    "919477822-sikt-kunnskapssektorens-tjenesteleverandor": {
+        "entity_id": "919477822-sikt-kunnskapssektorens-tjenesteleverandor",
         "entity_id_norske_postlister": "dir-unit",
         "name": "Sikt – Kunnskapssektorens tjenesteleverandør",
         "email": "",
         "type": "directorate",
         "org_num": "919477822"
     },
-    "970018131-dir-utdanningsdirektoratet": {
-        "entity_id": "970018131-dir-utdanningsdirektoratet",
+    "970018131-utdanningsdirektoratet": {
+        "entity_id": "970018131-utdanningsdirektoratet",
         "entity_id_norske_postlister": "dir-utdanning",
         "name": "Utdanningsdirektoratet",
         "email": "",
         "type": "directorate",
         "org_num": "970018131"
     },
-    "974760746-dir-utlendingsdirektoratet": {
-        "entity_id": "974760746-dir-utlendingsdirektoratet",
+    "974760746-utlendingsdirektoratet": {
+        "entity_id": "974760746-utlendingsdirektoratet",
         "entity_id_norske_postlister": "dir-utlending",
         "name": "Utlendingsdirektoratet",
         "email": "",
         "type": "directorate",
         "org_num": "974760746"
     },
-    "971277882-dir-direktoratet-for-utviklingssamarbeid": {
-        "entity_id": "971277882-dir-direktoratet-for-utviklingssamarbeid",
+    "971277882-direktoratet-for-utviklingssamarbeid": {
+        "entity_id": "971277882-direktoratet-for-utviklingssamarbeid",
         "entity_id_norske_postlister": "dir-utviklingssamarbeid",
         "name": "Direktoratet for utviklingssamarbeid",
         "email": "",
@@ -4405,280 +4405,280 @@
         "type": "county",
         "org_num": "942116217"
     },
-    "983971636-helse-akershus-universitetssykehus-hf": {
-        "entity_id": "983971636-helse-akershus-universitetssykehus-hf",
+    "983971636-akershus-universitetssykehus-hf": {
+        "entity_id": "983971636-akershus-universitetssykehus-hf",
         "entity_id_norske_postlister": "helse-akershus-universitetssykehus",
         "name": "Akershus Universitetssykehus HF",
         "email": "",
         "type": "health",
         "org_num": "983971636"
     },
-    "983974724-helse-helse-bergen-hf": {
-        "entity_id": "983974724-helse-helse-bergen-hf",
+    "983974724-helse-bergen-hf": {
+        "entity_id": "983974724-helse-bergen-hf",
         "entity_id_norske_postlister": "helse-bergen",
         "name": "Helse Bergen HF",
         "email": "",
         "type": "health",
         "org_num": "983974724"
     },
-    "983974880-helse-finnmarkssykehuset-hf": {
-        "entity_id": "983974880-helse-finnmarkssykehuset-hf",
+    "983974880-finnmarkssykehuset-hf": {
+        "entity_id": "983974880-finnmarkssykehuset-hf",
         "entity_id_norske_postlister": "helse-finnmarkssykehuset",
         "name": "Finnmarkssykehuset HF",
         "email": "",
         "type": "health",
         "org_num": "983974880"
     },
-    "983974694-helse-helse-fonna-hf": {
-        "entity_id": "983974694-helse-helse-fonna-hf",
+    "983974694-helse-fonna-hf": {
+        "entity_id": "983974694-helse-fonna-hf",
         "entity_id_norske_postlister": "helse-fonna",
         "name": "Helse Fonna HF",
         "email": "",
         "type": "health",
         "org_num": "983974694"
     },
-    "983974732-helse-helse-forde-hf": {
-        "entity_id": "983974732-helse-helse-forde-hf",
+    "983974732-helse-forde-hf": {
+        "entity_id": "983974732-helse-forde-hf",
         "entity_id_norske_postlister": "helse-forde-hf",
         "name": "Helse Førde HF",
         "email": "",
         "type": "health",
         "org_num": "983974732"
     },
-    "986965610-helse-helfo": {
-        "entity_id": "986965610-helse-helfo",
+    "986965610-helfo": {
+        "entity_id": "986965610-helfo",
         "entity_id_norske_postlister": "helse-helfo",
         "name": "Helfo",
         "email": "",
         "type": "health",
         "org_num": "986965610"
     },
-    "983974929-helse-helgelandssykehuset-hf": {
-        "entity_id": "983974929-helse-helgelandssykehuset-hf",
+    "983974929-helgelandssykehuset-hf": {
+        "entity_id": "983974929-helgelandssykehuset-hf",
         "entity_id_norske_postlister": "helse-helgelandssykehuset",
         "name": "Helgelandssykehuset HF",
         "email": "",
         "type": "health",
         "org_num": "983974929"
     },
-    "928033821-helse-helse-midt-norge-it": {
-        "entity_id": "928033821-helse-helse-midt-norge-it",
+    "928033821-helse-midt-norge-it": {
+        "entity_id": "928033821-helse-midt-norge-it",
         "entity_id_norske_postlister": "helse-hemit",
         "name": "Helse Midt-Norge IT",
         "email": "",
         "type": "health",
         "org_num": "928033821"
     },
-    "983974791-helse-helse-nord-trondelag-hf": {
-        "entity_id": "983974791-helse-helse-nord-trondelag-hf",
+    "983974791-helse-nord-trondelag-hf": {
+        "entity_id": "983974791-helse-nord-trondelag-hf",
         "entity_id_norske_postlister": "helse-hnt",
         "name": "Helse Nord-Trøndelag HF",
         "email": "",
         "type": "health",
         "org_num": "983974791"
     },
-    "818711832-helse-luftambulansetjenesten-hf": {
-        "entity_id": "818711832-helse-luftambulansetjenesten-hf",
+    "818711832-luftambulansetjenesten-hf": {
+        "entity_id": "818711832-luftambulansetjenesten-hf",
         "entity_id_norske_postlister": "helse-luftambolansetjenesten-hf",
         "name": "Luftambulansetjenesten HF",
         "email": "",
         "type": "health",
         "org_num": "818711832"
     },
-    "983658776-helse-helse-midt-norge-rhf": {
-        "entity_id": "983658776-helse-helse-midt-norge-rhf",
+    "983658776-helse-midt-norge-rhf": {
+        "entity_id": "983658776-helse-midt-norge-rhf",
         "entity_id_norske_postlister": "helse-midt-norge-rhf",
         "name": "Helse Midt-Norge RHF",
         "email": "",
         "type": "health",
         "org_num": "983658776"
     },
-    "997005562-helse-helse-more-og-romsdal-hf": {
-        "entity_id": "997005562-helse-helse-more-og-romsdal-hf",
+    "997005562-helse-more-og-romsdal-hf": {
+        "entity_id": "997005562-helse-more-og-romsdal-hf",
         "entity_id_norske_postlister": "helse-more-og-romsdal-hf",
         "name": "Helse Møre og Romsdal HF",
         "email": "",
         "type": "health",
         "org_num": "997005562"
     },
-    "918177833-helse-helse-nord-ikt-hf": {
-        "entity_id": "918177833-helse-helse-nord-ikt-hf",
+    "918177833-helse-nord-ikt-hf": {
+        "entity_id": "918177833-helse-nord-ikt-hf",
         "entity_id_norske_postlister": "helse-nord-ikt",
         "name": "Helse Nord IKT HF",
         "email": "",
         "type": "health",
         "org_num": "918177833"
     },
-    "883658752-helse-helse-nord-rhf": {
-        "entity_id": "883658752-helse-helse-nord-rhf",
+    "883658752-helse-nord-rhf": {
+        "entity_id": "883658752-helse-nord-rhf",
         "entity_id_norske_postlister": "helse-nord-rhf",
         "name": "Helse Nord RHF",
         "email": "",
         "type": "health",
         "org_num": "883658752"
     },
-    "983974910-helse-nordlandssykehuset-hf": {
-        "entity_id": "983974910-helse-nordlandssykehuset-hf",
+    "983974910-nordlandssykehuset-hf": {
+        "entity_id": "983974910-nordlandssykehuset-hf",
         "entity_id_norske_postlister": "helse-nordlandssykehuset-hf",
         "name": "Nordlandssykehuset HF",
         "email": "",
         "type": "health",
         "org_num": "983974910"
     },
-    "993467049-helse-oslo-universitetssykehus-hf": {
-        "entity_id": "993467049-helse-oslo-universitetssykehus-hf",
+    "993467049-oslo-universitetssykehus-hf": {
+        "entity_id": "993467049-oslo-universitetssykehus-hf",
         "entity_id_norske_postlister": "helse-oslo-universitetssykehus-hf",
         "name": "Oslo universitetssykehus HF",
         "email": "",
         "type": "health",
         "org_num": "993467049"
     },
-    "918695079-helse-pasientreiser-hf": {
-        "entity_id": "918695079-helse-pasientreiser-hf",
+    "918695079-pasientreiser-hf": {
+        "entity_id": "918695079-pasientreiser-hf",
         "entity_id_norske_postlister": "helse-pasientreiser-hf",
         "name": "Pasientreiser HF",
         "email": "",
         "type": "health",
         "org_num": "918695079"
     },
-    "983974716-helse-sjukehusapoteka-vest-hf": {
-        "entity_id": "983974716-helse-sjukehusapoteka-vest-hf",
+    "983974716-sjukehusapoteka-vest-hf": {
+        "entity_id": "983974716-sjukehusapoteka-vest-hf",
         "entity_id_norske_postlister": "helse-sjukehusapoteka-vest",
         "name": "Sjukehusapoteka Vest HF",
         "email": "",
         "type": "health",
         "org_num": "983974716"
     },
-    "991324968-helse-helse-sor-ost-rhf": {
-        "entity_id": "991324968-helse-helse-sor-ost-rhf",
+    "991324968-helse-sor-ost-rhf": {
+        "entity_id": "991324968-helse-sor-ost-rhf",
         "entity_id_norske_postlister": "helse-sor-ost-rhf",
         "name": "Helse Sør-Øst RHF",
         "email": "",
         "type": "health",
         "org_num": "991324968"
     },
-    "883974832-helse-st-olavs-hospital-hf": {
-        "entity_id": "883974832-helse-st-olavs-hospital-hf",
+    "883974832-st-olavs-hospital-hf": {
+        "entity_id": "883974832-st-olavs-hospital-hf",
         "entity_id_norske_postlister": "helse-st-olavs-hospital",
         "name": "St. Olavs hospital HF",
         "email": "",
         "type": "health",
         "org_num": "883974832"
     },
-    "983974678-helse-helse-stavanger-hf": {
-        "entity_id": "983974678-helse-helse-stavanger-hf",
+    "983974678-helse-stavanger-hf": {
+        "entity_id": "983974678-helse-stavanger-hf",
         "entity_id_norske_postlister": "helse-stavanger",
         "name": "Helse Stavanger HF",
         "email": "",
         "type": "health",
         "org_num": "983974678"
     },
-    "883971752-helse-sunnaas-sykehus-hf": {
-        "entity_id": "883971752-helse-sunnaas-sykehus-hf",
+    "883971752-sunnaas-sykehus-hf": {
+        "entity_id": "883971752-sunnaas-sykehus-hf",
         "entity_id_norske_postlister": "helse-sunnaas-sykehus",
         "name": "Sunnaas Sykehus HF",
         "email": "",
         "type": "health",
         "org_num": "883971752"
     },
-    "992281618-helse-sykehusapotekene-hf": {
-        "entity_id": "992281618-helse-sykehusapotekene-hf",
+    "992281618-sykehusapotekene-hf": {
+        "entity_id": "992281618-sykehusapotekene-hf",
         "entity_id_norske_postlister": "helse-sykehusapotekene-hf",
         "name": "Sykehusapotekene HF",
         "email": "",
         "type": "health",
         "org_num": "992281618"
     },
-    "983974805-helse-sykehusapotekene-midt-norge-hf": {
-        "entity_id": "983974805-helse-sykehusapotekene-midt-norge-hf",
+    "983974805-sykehusapotekene-midt-norge-hf": {
+        "entity_id": "983974805-sykehusapotekene-midt-norge-hf",
         "entity_id_norske_postlister": "helse-sykehusapotekene-midt-norge",
         "name": "Sykehusapotekene Midt-Norge HF",
         "email": "",
         "type": "health",
         "org_num": "983974805"
     },
-    "814630722-helse-sykehusbygg-hf": {
-        "entity_id": "814630722-helse-sykehusbygg-hf",
+    "814630722-sykehusbygg-hf": {
+        "entity_id": "814630722-sykehusbygg-hf",
         "entity_id_norske_postlister": "helse-sykehusbygg-hf",
         "name": "Sykehusbygg HF",
         "email": "",
         "type": "health",
         "org_num": "814630722"
     },
-    "983975259-helse-sykehuset-i-vestfold-hf": {
-        "entity_id": "983975259-helse-sykehuset-i-vestfold-hf",
+    "983975259-sykehuset-i-vestfold-hf": {
+        "entity_id": "983975259-sykehuset-i-vestfold-hf",
         "entity_id_norske_postlister": "helse-sykehuset-i-vestfold",
         "name": "Sykehuset i Vestfold HF",
         "email": "",
         "type": "health",
         "org_num": "983975259"
     },
-    "983971709-helse-sykehuset-innlandet-hf": {
-        "entity_id": "983971709-helse-sykehuset-innlandet-hf",
+    "983971709-sykehuset-innlandet-hf": {
+        "entity_id": "983971709-sykehuset-innlandet-hf",
         "entity_id_norske_postlister": "helse-sykehuset-innlandet-hf",
         "name": "Sykehuset Innlandet HF",
         "email": "",
         "type": "health",
         "org_num": "983971709"
     },
-    "983971768-helse-sykehuset-ostfold-hf": {
-        "entity_id": "983971768-helse-sykehuset-ostfold-hf",
+    "983971768-sykehuset-ostfold-hf": {
+        "entity_id": "983971768-sykehuset-ostfold-hf",
         "entity_id_norske_postlister": "helse-sykehuset-ostfold-hf",
         "name": "Sykehuset Østfold HF",
         "email": "",
         "type": "health",
         "org_num": "983971768"
     },
-    "983975240-helse-sorlandet-sykehus-hf": {
-        "entity_id": "983975240-helse-sorlandet-sykehus-hf",
+    "983975240-sorlandet-sykehus-hf": {
+        "entity_id": "983975240-sorlandet-sykehus-hf",
         "entity_id_norske_postlister": "helse-sykehuset-sorlandet-hf",
         "name": "Sørlandet Sykehus HF",
         "email": "",
         "type": "health",
         "org_num": "983975240"
     },
-    "983975267-helse-sykehuset-telemark-hf": {
-        "entity_id": "983975267-helse-sykehuset-telemark-hf",
+    "983975267-sykehuset-telemark-hf": {
+        "entity_id": "983975267-sykehuset-telemark-hf",
         "entity_id_norske_postlister": "helse-sykehuset-telemark-hf",
         "name": "Sykehuset Telemark HF",
         "email": "",
         "type": "health",
         "org_num": "983975267"
     },
-    "914637651-helse-sykehuspartner-hf": {
-        "entity_id": "914637651-helse-sykehuspartner-hf",
+    "914637651-sykehuspartner-hf": {
+        "entity_id": "914637651-sykehuspartner-hf",
         "entity_id_norske_postlister": "helse-sykehuspartner-hf",
         "name": "Sykehuspartner HF",
         "email": "",
         "type": "health",
         "org_num": "914637651"
     },
-    "983974899-helse-universitetssykehuset-nord-norge-hf": {
-        "entity_id": "983974899-helse-universitetssykehuset-nord-norge-hf",
+    "983974899-universitetssykehuset-nord-norge-hf": {
+        "entity_id": "983974899-universitetssykehuset-nord-norge-hf",
         "entity_id_norske_postlister": "helse-unn",
         "name": "Universitetssykehuset Nord-Norge HF",
         "email": "",
         "type": "health",
         "org_num": "983974899"
     },
-    "987601787-helse-helse-vest-ikt-as": {
-        "entity_id": "987601787-helse-helse-vest-ikt-as",
+    "987601787-helse-vest-ikt-as": {
+        "entity_id": "987601787-helse-vest-ikt-as",
         "entity_id_norske_postlister": "helse-vest-ikt",
         "name": "Helse Vest IKT AS",
         "email": "",
         "type": "health",
         "org_num": "987601787"
     },
-    "983658725-helse-helse-vest-rhf": {
-        "entity_id": "983658725-helse-helse-vest-rhf",
+    "983658725-helse-vest-rhf": {
+        "entity_id": "983658725-helse-vest-rhf",
         "entity_id_norske_postlister": "helse-vest-rhf",
         "name": "Helse Vest RHF",
         "email": "",
         "type": "health",
         "org_num": "983658725"
     },
-    "894166762-helse-vestre-viken-hf": {
-        "entity_id": "894166762-helse-vestre-viken-hf",
+    "894166762-vestre-viken-hf": {
+        "entity_id": "894166762-vestre-viken-hf",
         "entity_id_norske_postlister": "helse-vestre-viken",
         "name": "Vestre Viken HF",
         "email": "",

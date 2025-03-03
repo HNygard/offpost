@@ -5,6 +5,13 @@
 
 // Function to convert entity name to slug format
 function slugify($text) {
+    $text = str_replace('æ', 'ae', $text);
+    $text = str_replace('ø', 'o', $text);
+    $text = str_replace('å', 'a', $text);
+    $text = str_replace('Æ', 'ae', $text);
+    $text = str_replace('Ø', 'o', $text);
+    $text = str_replace('Å', 'a', $text);
+
     // Replace spaces with hyphens
     $text = str_replace(' ', '-', $text);
     // Convert to lowercase
@@ -56,10 +63,38 @@ foreach ($sourceData as $entity) {
         continue;
     }
     
+    // Determine entity type (default to municipality)
+    $type = "agency";
+    if (strpos($entity['entityId'], 'fylkeskommune') !== false) {
+        $type = "county";
+    }
+    elseif (strpos($entity['entityId'], 'kommune') !== false) {
+        $type = "municipality";
+    }
+    elseif (substr($entity['entityId'], 0, strlen('dep-')) === 'dep-') {
+        $type = "minitry";
+    }
+    elseif (substr($entity['entityId'], 0, strlen('dir-')) === 'dir-') {
+        $type = "directorate";
+    }
+    elseif (substr($entity['entityId'], 0, strlen('helse-')) === 'helse-') {
+        $type = "health";
+    }
+    
+    
     // Create the new entity ID format: orgNumber-original-id-suffix
     // Extract the suffix part from the original entityId (e.g., "trogstad-kommune" from "0122-trogstad-kommune")
     $parts = explode('-', $entity['entityId'], 2);
     $idSuffix = isset($parts[1]) && is_numeric($parts[0]) ? $parts[1] : slugify($entity['name']);
+    if ($type == 'minitry') {
+        //$idSuffix = 'dep-'.$idSuffix;
+    }
+    if ($type == 'directorate') {
+        //$idSuffix = 'dir-'.$idSuffix;
+    }
+    if ($type == 'health') {
+        //$idSuffix = 'helse-'.$idSuffix;
+    }
     $newEntityId = $entity['orgNumber'] . '-' . $idSuffix;
 
     if (in_array($entity['entityId'], $entities_to_keep)) {
@@ -70,15 +105,7 @@ foreach ($sourceData as $entity) {
     if (isset($destData[$newEntityId])) {
         echo "Updating existing entity: $newEntityId\n";
     }
-    
-    // Determine entity type (default to municipality)
-    $type = "municipality";
-    if (strpos($entity['entityId'], 'fylkeskommune') !== false) {
-        $type = "county";
-    } elseif (strpos($entity['entityId'], 'kommune') === false) {
-        $type = "agency";
-    }
-    
+
     // Create the new entity entry
     $newEntity = [
         'entity_id' => $newEntityId,
