@@ -5,6 +5,26 @@ require_once __DIR__ . '/../error.php';
 
 $path = parse_url($_SERVER['REQUEST_URI'], PHP_URL_PATH);
 
+
+// Secret parameter to get all unique entity_ids from threads table
+if (isset($_GET['secret']) && $_GET['secret'] === 'offpost_entity_list_2025') {
+    require_once __DIR__ . '/../class/Database.php';
+    $query = "SELECT DISTINCT entity_id FROM threads ORDER BY entity_id";
+    $results = Database::query($query);
+    
+    // Extract just the entity_ids into a simple array
+    $entityIds = array_map(function($row) {
+        return $row['entity_id'];
+    }, $results);
+    
+    header('Content-Type: application/json');
+    echo json_encode([
+        'count' => count($entityIds),
+        'entity_ids' => $entityIds
+    ], JSON_PRETTY_PRINT);
+    exit;
+}
+
 try {
     ob_start();
 
