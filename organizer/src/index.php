@@ -84,6 +84,7 @@ $allThreads = $filteredThreads;
 
         <ul class="nav-links">
             <li><a href="/thread-start">Start new thread</a></li>
+            <li><a href="/entities">View entities</a></li>
             <li><?php if (isset($_GET['archived'])): ?>
                 <a href="/">Show only active</a>
             <?php else: ?>

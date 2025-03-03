@@ -87,6 +87,9 @@ try {
             case '/file':
                 require __DIR__ . '/../file.php';
                 break;
+            case '/entities':
+                require __DIR__ . '/../entities.php';
+                break;
             case '/archive-threads-by-label':
                 require __DIR__ . '/../archive-threads-by-label.php';
                 break;
