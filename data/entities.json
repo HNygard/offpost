@@ -15,6 +15,21 @@
         "type": "municipality",
         "org_num": "964950768"
     },
+    "arkivverket-digitalarkivet": {
+        "entity_id": "arkivverket-digitalarkivet",
+        "name": "Arkivverket - Digitalarkivet",
+        "type": "agency"
+    },
+    "email-dmarc": {
+        "entity_id": "email-dmarc",
+        "name": "Technical - DMARC",
+        "type": "technical"
+    },
+    "email-engine-technical": {
+        "entity_id": "email-engine-technical",
+        "name": "Technical - Email Engine",
+        "type": "technical"
+    },
     "921234554-drammen-kommune": {
         "entity_id": "921234554-drammen-kommune",
         "entity_id_norske_postlister": "0602-drammen-kommune",
