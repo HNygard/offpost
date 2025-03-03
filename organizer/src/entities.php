@@ -69,9 +69,11 @@ foreach ($results as $row) {
                         <?php if (!$hasOrgNum): ?>
                             <span class="label label_warn">Missing Org Number</span>
                         <?php endif; ?>
-                        <?php if ($hasEmail && $hasOrgNum): ?>
+                        <?php if ($hasEmail && $hasOrgNum) { ?>
                             <span class="label label_ok">Complete</span>
-                        <?php endif; ?>
+                        <?php } else { ?>
+                            <a href="https://github.com/HNygard/offpost/blob/main/data/entities.json">Add at Github</a>
+                        <?php } ?>
                     </td>
                 </tr>
                 <?php
