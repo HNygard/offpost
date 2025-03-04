@@ -14,11 +14,11 @@ require_once __DIR__ . '/class/random-profile.php';
 $entityId = null;
 $threadId = null;
 if (isset($_GET['thread_id'])) {
-    $entityId = $_GET['entity_id'];
+    $entityId = Entity::getById($_GET['entity_id'])->entity_id;
     $threadId = $_GET['thread_id'];
 }
 if (isset($_POST['thread_id']) && !empty($_POST['thread_id'])) {
-    $entityId = $_POST['entity_id'];
+    $entityId = Entity::getById($_POST['entity_id'])->entity_id;
     $threadId = $_POST['thread_id'];
 }
 $thread = null;
