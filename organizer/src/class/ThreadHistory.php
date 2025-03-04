@@ -21,6 +21,8 @@ class ThreadHistory {
                 return 'Ready for sending';
             case Thread::SENDING_STATUS_SENT:
                 return 'Sent';
+            case Thread::SENDING_STATUS_SENDING:
+                return 'Sending';
             default:
                 throw new Exception('Unknown sending status: ' . $status);
         }
