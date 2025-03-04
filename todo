@@ -1,33 +1,5 @@
 TODO for Cline.
 
-- [x] End-to-end testing
-    - [x] Test email flow from SMTP to IMAP
-    - [x] Test thread creation 
-    - [x] Test thread updates
-    - [x] Test attachment handling
-- [x] Setup development IMAP server
-    - [x] Docker container for IMAP server
-    - [x] Configuration for test environment
-    - [x] Test data setup scripts
-- [x] Setup of production
-    - [x] Domain setup
-    - [x] Cloudflare setup
-    - [x] Rsync to server or server auto pulling from Github?
-        - Auto pull from server.
-    - [x] Prod authentication setup
-    - [x] Setup scripts and cron job
-    - [x] Start server
-    - [x] Copy over the existing data
-    - [x] Migrate data to new format (script)
-- [x] Apache webroot is not being used. The webroot/index.php is not used. Instead the organizer/src/index.php is used.
-- [x] Database driver missing from docker image. Not installed or missing rebuild??
-- [x] Is access to thread checked in file.php?
-
-- [x] dump-db-schema.php - The timestampe is always updated, so the dump is always different. Make the compare without timestamp.
-    Ref if ($currentContent === $newContent) {
-
-- [x] Check if we have index in database, if not add
-
 
 Goal: make production usable
 
@@ -57,14 +29,6 @@ Goal: make production usable
 
     - [ ] Scheduled updater for sending. Take Thread from "READY_FOR_SENDING" to "SENT"
     - [ ] thread__send-email.php - Remove this
-
-- [x] Common list of entities
-    - [x] Basic class and JSON file
-    - [x] Test for entity validation
-    - [x] Updates to threads can only be on valid entities. Input on Thread must be Entity to force compliance in code.
-    - [ ] entity_id param must be valid verify in all frontend templates. Check by Entity class
-    - [x] Create production list
-    - [x] Migrated from old entity_id to new entity_id
 
 - [ ] Views available for public
     - [ ] Public threads visible to non authenticated users
