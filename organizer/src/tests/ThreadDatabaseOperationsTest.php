@@ -42,7 +42,7 @@ class ThreadDatabaseOperationsTest extends PHPUnit\Framework\TestCase {
         $thread->labels = ["test"];
         $thread->sentComment = "Test comment";
 
-        $createdThread = $this->threadDbOps->createThread('000000000-test-entity-development', 'Test', $thread, 'test-user');
+        $createdThread = $this->threadDbOps->createThread('000000000-test-entity-development', $thread, 'test-user');
         $this->assertNotNull($createdThread->id, "Thread should have an ID after creation");
 
         // Retrieve and verify
@@ -76,7 +76,7 @@ class ThreadDatabaseOperationsTest extends PHPUnit\Framework\TestCase {
         $thread->labels = ["initial"];
         $thread->archived = false;
         
-        $createdThread = $this->threadDbOps->createThread('000000000-test-entity-development', 'Test', $thread, 'test-user');
+        $createdThread = $this->threadDbOps->createThread('000000000-test-entity-development', $thread, 'test-user');
         
         // Update thread title and labels
         $thread->id = $createdThread->id;
@@ -114,7 +114,7 @@ class ThreadDatabaseOperationsTest extends PHPUnit\Framework\TestCase {
         $thread->my_name = "Test User";
         $thread->my_email = "test" . mt_rand(0, 100) . time() ."@example.com";
         
-        $createdThread = $this->threadDbOps->createThread('000000000-test-entity-development', 'Test', $thread, 'test-user');
+        $createdThread = $this->threadDbOps->createThread('000000000-test-entity-development', $thread, 'test-user');
         
         // Add an email to the thread
         $now = new DateTime();
@@ -163,7 +163,7 @@ class ThreadDatabaseOperationsTest extends PHPUnit\Framework\TestCase {
         $thread->my_email = "test" . mt_rand(0, 100) . time() ."@example.com";
         $thread->public = false;
         
-        $createdThread = $this->threadDbOps->createThread('000000000-test-entity-development', 'Test', $thread, 'test-user');
+        $createdThread = $this->threadDbOps->createThread('000000000-test-entity-development', $thread, 'test-user');
         
         // Add authorization for Auth0 user
         $auth0UserId = 'auth0|1234abc1234abc1234abc123';
@@ -191,7 +191,7 @@ class ThreadDatabaseOperationsTest extends PHPUnit\Framework\TestCase {
         $thread->my_email = "test" . mt_rand(0, 100) . time() ."@example.com";
         $thread->public = false;
 
-        $createdThread = $this->threadDbOps->createThread('000000000-test-entity-development', 'Test', $thread, 'test-user');
+        $createdThread = $this->threadDbOps->createThread('000000000-test-entity-development', $thread, 'test-user');
 
         // Load current thread state
         $thread = Thread::loadFromDatabase($createdThread->id);
@@ -224,7 +224,7 @@ class ThreadDatabaseOperationsTest extends PHPUnit\Framework\TestCase {
         $thread->my_email = "test" . mt_rand(0, 100) . time() ."@example.com";
         $thread->sent = false;
 
-        $createdThread = $this->threadDbOps->createThread('000000000-test-entity-development', 'Test', $thread, 'test-user');
+        $createdThread = $this->threadDbOps->createThread('000000000-test-entity-development', $thread, 'test-user');
 
         // Load current thread state
         $thread = Thread::loadFromDatabase($createdThread->id);
@@ -258,7 +258,7 @@ class ThreadDatabaseOperationsTest extends PHPUnit\Framework\TestCase {
         $thread->labels = ["test"];
         $thread->sentComment = "Test comment";
 
-        $createdThread = $this->threadDbOps->createThread('000000000-test-entity-development', 'Test', $thread, 'test-user');
+        $createdThread = $this->threadDbOps->createThread('000000000-test-entity-development', $thread, 'test-user');
         
         // Try to update the thread with a different entity_id
         $thread->entity_id = '000000000-test-entity-1';
@@ -280,7 +280,7 @@ class ThreadDatabaseOperationsTest extends PHPUnit\Framework\TestCase {
         $thread->labels = ["test"];
         $thread->sentComment = "Test comment";
 
-        $createdThread = $this->threadDbOps->createThread('000000000-test-entity-development', 'Test', $thread, 'test-user');
+        $createdThread = $this->threadDbOps->createThread('000000000-test-entity-development', $thread, 'test-user');
         
         // Try to update the thread with a non-existent entity_id
         // This will trigger the "Cannot move thread to a different entity" check first
@@ -304,8 +304,8 @@ class ThreadDatabaseOperationsTest extends PHPUnit\Framework\TestCase {
         $thread2->my_name = "Test User 2";
         $thread2->my_email = "test2@example.com";
         
-        $this->threadDbOps->createThread('000000000-test-entity-1', 'Test1', $thread1, 'test-user');
-        $this->threadDbOps->createThread('000000000-test-entity-2', 'Test2', $thread2, 'test-user');
+        $this->threadDbOps->createThread('000000000-test-entity-1', $thread1, 'test-user');
+        $this->threadDbOps->createThread('000000000-test-entity-2', $thread2, 'test-user');
         
         // Get all threads
         $allThreads = $this->threadDbOps->getThreads();

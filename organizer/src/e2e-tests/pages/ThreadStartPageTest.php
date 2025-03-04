@@ -19,7 +19,6 @@ class ThreadStartPageTest extends E2EPageTestCase {
         $this->assertStringContainsString('name="my_name"', $response->body);
         $this->assertStringContainsString('name="my_email"', $response->body);
         $this->assertStringContainsString('name="entity_id"', $response->body);
-        $this->assertStringContainsString('name="entity_email"', $response->body);
         $this->assertStringContainsString('name="body"', $response->body);
     }
 
@@ -34,7 +33,6 @@ class ThreadStartPageTest extends E2EPageTestCase {
             'my_email' => 'test.user.' . uniqid() . '@example.com',
             'labels' => 'test e2e',
             'entity_id' => $entity_id,
-            'entity_title_prefix' => 'Test Entity',
             'entity_email' => 'entity.' . uniqid() . '@example.com',
             'body' => 'This is a test message body created by E2E test.',
             'public' => '1'

@@ -36,7 +36,7 @@ class ThreadAuthorizationTest extends PHPUnit\Framework\TestCase {
         $this->testThread->my_email = 'test' . uniqid() . '@example.com';
         
         // Store the thread using ThreadStorageManager
-        $this->storageManager->createThread('000000000-test-entity-development', 'Test', $this->testThread, $this->testUserId);
+        $this->storageManager->createThread('000000000-test-entity-development', $this->testThread, $this->testUserId);
     }
 
     protected function tearDown(): void {
@@ -142,7 +142,7 @@ class ThreadAuthorizationTest extends PHPUnit\Framework\TestCase {
         $anotherThread->my_email = 'test' . uniqid() . '@example.com';
         
         // Store the second thread
-        $this->storageManager->createThread('000000000-test-entity-development', 'Test', $anotherThread);
+        $this->storageManager->createThread('000000000-test-entity-development', $anotherThread);
         
         // Add user to both threads
         $this->testThread->addUser($this->testUserId);

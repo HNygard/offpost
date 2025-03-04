@@ -59,7 +59,7 @@ class ThreadAuthorizationIntegrationTest extends PHPUnit\Framework\TestCase {
         $thread->public = false;
         
         // Save thread
-        $savedThread = $this->storageManager->createThread($this->entityId, 'Test Entity', $thread);
+        $savedThread = $this->storageManager->createThread($this->entityId, $thread);
         
         // Set creator as owner
         $savedThread->addUser($this->userId, true);
@@ -81,7 +81,7 @@ class ThreadAuthorizationIntegrationTest extends PHPUnit\Framework\TestCase {
         $thread->public = true;
         
         // Save thread
-        $savedThread = $this->storageManager->createThread($this->entityId, 'Test Entity', $thread);
+        $savedThread = $this->storageManager->createThread($this->entityId, $thread);
         
         // Set creator as owner
         $savedThread->addUser($this->userId, true);
@@ -103,7 +103,7 @@ class ThreadAuthorizationIntegrationTest extends PHPUnit\Framework\TestCase {
         $thread->my_email = $this->generateUniqueEmail();
         
         // Save thread and add users
-        $savedThread = $this->storageManager->createThread($this->entityId, 'Test Entity', $thread);
+        $savedThread = $this->storageManager->createThread($this->entityId, $thread);
         $savedThread->addUser($this->userId, true);
         $savedThread->addUser($this->otherUserId);
         
@@ -135,7 +135,7 @@ class ThreadAuthorizationIntegrationTest extends PHPUnit\Framework\TestCase {
         $thread->public = false;
         
         // Save thread and add owner
-        $savedThread = $this->storageManager->createThread($this->entityId, 'Test Entity', $thread);
+        $savedThread = $this->storageManager->createThread($this->entityId, $thread);
         $savedThread->addUser($this->userId, true);
         
         // Initially other user can't access

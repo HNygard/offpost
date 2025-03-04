@@ -388,7 +388,7 @@ class ThreadDatabaseOperations {
         return $thread;
     }
 
-    public function createThread($entityId, $entityTitlePrefix, Thread $thread, $userId) {
+    public function createThread($entityId, Thread $thread, $userId) {
         // Check entity
         $entity = Entity::getById($entityId);
 

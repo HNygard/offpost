@@ -113,12 +113,11 @@ class ThreadFileOperations {
         logDebug('Writing to [' . $path . '].');
         file_put_contents($path, json_encode($entity_threads, JSON_PRETTY_PRINT ^ JSON_UNESCAPED_UNICODE ^ JSON_UNESCAPED_SLASHES));
     }
-    public function createThread($entityId, $entityTitlePrefix, Thread $thread, $userId = 'system') {
+    public function createThread($entityId, Thread $thread, $userId = 'system') {
         $existingThreads = $this->getThreadsForEntity($entityId);
         if ($existingThreads == null) {
             $existingThreads = new Threads();
             $existingThreads->entity_id = $entityId;
-            $existingThreads->title_prefix = $entityTitlePrefix;
             $existingThreads->threads = array();
         }
         

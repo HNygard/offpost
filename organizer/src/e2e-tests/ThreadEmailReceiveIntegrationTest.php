@@ -166,7 +166,7 @@ class ThreadEmailReceiveIntegrationTest extends TestCase {
         $thread->emails = [];
 
         // Create thread in the system
-        $createdThread = createThread($this->testEntityId, 'Test', $thread);
+        $createdThread = createThread($this->testEntityId,  $thread);
         $this->assertNotNull($createdThread);
 
         // Initialize components needed for email processing
@@ -238,7 +238,6 @@ class ThreadEmailReceiveIntegrationTest extends TestCase {
         // Create entity threads structure
         $entityThreads = new Threads();
         $entityThreads->entity_id = $this->testEntityId;
-        $entityThreads->title_prefix = 'Test ' . $uniqueId;
         $entityThreads->threads = [$createdThread];
         
         // Create required folders

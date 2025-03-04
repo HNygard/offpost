@@ -82,7 +82,7 @@ class ThreadEmailMover {
      * Get the IMAP folder path for a thread
      */
     private function getThreadEmailFolder($entityThreads, $thread): string {
-        $title = $entityThreads->title_prefix . ' - ' . str_replace('/', '-', $thread->title);
+        $title = $entityThreads->entity_id . ' - ' . str_replace('/', '-', $thread->title);
         $title = str_replace(
             ['Æ', 'Ø', 'Å', 'æ', 'ø', 'å'],
             ['AE', 'OE', 'AA', 'ae', 'oe', 'aa'],

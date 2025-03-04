@@ -35,7 +35,6 @@ class ThreadEmailMoverTest extends TestCase {
         // Create test thread data
         $threads = [
             (object)[
-                'title_prefix' => 'Test',
                 'entity_id' => 'test-entity',
                 'threads' => [
                     (object)[
@@ -61,7 +60,7 @@ class ThreadEmailMoverTest extends TestCase {
 
         // Verify mapping
         $this->assertArrayHasKey('test1@example.com', $mapping);
-        $this->assertEquals('INBOX.Test - Thread 1', $mapping['test1@example.com']);
+        $this->assertEquals('INBOX.test-entity - Thread 1', $mapping['test1@example.com']);
         
         // Archived threads should not be in mapping
         $this->assertArrayNotHasKey('test2@example.com', $mapping);

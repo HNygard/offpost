@@ -67,7 +67,7 @@ function createThreadTestData($threadsData, $threadData, $sourceEntityId) {
     $thread->public = $threadData['public'];
     $thread->sentComment = $threadData['sentComment'];
 
-    $thread = $threadOps->createThread($sourceEntityId, $threadsData['title_prefix'], $thread, 'dev-user-id');
+    $thread = $threadOps->createThread($sourceEntityId, $thread, 'dev-user-id');
 
     // Process emails
     foreach ($threadData['emails'] as $emailData) {

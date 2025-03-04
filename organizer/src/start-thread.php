@@ -158,17 +158,6 @@ if (!isset($_POST['entity_id'])) {
                 </select>
             </div>
 
-            <div class="form-group">
-                <label for="entity_title_prefix">Entity Title Prefix</label>
-                <input type="text" id="entity_title_prefix" name="entity_title_prefix" value="<?= htmlescape(isset($_GET['entity_title_prefix']) ? $_GET['entity_title_prefix'] : '') ?>">
-                <small style="color: #666; display: block; margin-top: 5px;">Only used if first thread for this entity</small>
-            </div>
-
-            <div class="form-group">
-                <label for="entity_email">Entity Email</label>
-                <input type="text" id="entity_email" name="entity_email" value="<?= htmlescape(isset($_GET['entity_email']) ? $_GET['entity_email'] : '') ?>">
-            </div>
-
             <script>
             function updateEntityEmail() {
                 var entityId = document.getElementById('entity_id').value;
@@ -249,7 +238,6 @@ if ($thread == null) {
     }
     $newThread = ThreadStorageManager::getInstance()->createThread(
             $_POST['entity_id'],
-            $_POST['entity_title_prefix'],
             $thread,
             $_SESSION['user']['sub']
         );

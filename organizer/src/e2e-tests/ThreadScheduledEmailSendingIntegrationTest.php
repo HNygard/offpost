@@ -165,7 +165,7 @@ class ThreadScheduledEmailSendingIntegrationTest extends TestCase {
         $thread->entity_id = $this->testEntityId;
 
         // Create thread in the system
-        $createdThread = createThread($this->testEntityId, 'Test', $thread);
+        $createdThread = createThread($this->testEntityId, $thread);
         $this->assertNotNull($createdThread, 'Failed to create test thread');
         
         // Ensure the thread has READY_FOR_SENDING status

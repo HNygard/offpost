@@ -66,7 +66,7 @@ class ThreadFolderManager {
      * @return string IMAP folder path
      */
     public function getThreadEmailFolder($entityThreads, $thread): string {
-        $title = $entityThreads->title_prefix . ' - ' . $thread->title;
+        $title = $entityThreads->entity_id . ' - ' . $thread->title;
         
         // Replace Nordic characters
         $title = str_replace(

@@ -62,7 +62,6 @@ class ThreadsTest extends TestCase {
         $entityId = 'test-entity';
         $threads = new Threads();
         $threads->entity_id = $entityId;
-        $threads->title_prefix = 'Test';
         $threads->threads = [];
 
         // Act
@@ -72,14 +71,12 @@ class ThreadsTest extends TestCase {
         $savedThreads = $this->fileOps->getThreadsForEntity($entityId);
         $this->assertNotNull($savedThreads);
         $this->assertEquals($entityId, $savedThreads->entity_id);
-        $this->assertEquals('Test', $savedThreads->title_prefix);
         $this->assertIsArray($savedThreads->threads);
     }
 
     public function testCreateThreadForNewEntity() {
         // Arrange
         $entityId = 'test-entity';
-        $titlePrefix = 'Test Prefix';
         $thread = new Thread();
         $thread->title = 'Test Thread';
         $thread->my_name = 'Test User';
@@ -90,13 +87,12 @@ class ThreadsTest extends TestCase {
         $thread->emails = [];
 
         // Act
-        $result = $this->fileOps->createThread($entityId, $titlePrefix, $thread);
+        $result = $this->fileOps->createThread($entityId, $thread);
 
         // Assert
         $savedThreads = $this->fileOps->getThreadsForEntity($entityId);
         $this->assertNotNull($savedThreads);
         $this->assertEquals($entityId, $savedThreads->entity_id);
-        $this->assertEquals($titlePrefix, $savedThreads->title_prefix);
         $this->assertCount(1, $savedThreads->threads);
         $this->assertEquals($thread, $savedThreads->threads[0]);
         $this->assertEquals($thread, $result);
@@ -105,7 +101,6 @@ class ThreadsTest extends TestCase {
     public function testCreateThreadForExistingEntity() {
         // Arrange
         $entityId = 'test-entity';
-        $titlePrefix = 'Test Prefix';
         
         // Create existing thread
         $existingThread = new Thread();
@@ -118,7 +113,7 @@ class ThreadsTest extends TestCase {
         $existingThread->archived = false;
         $existingThread->emails = [];
         
-        $this->fileOps->createThread($entityId, $titlePrefix, $existingThread);
+        $this->fileOps->createThread($entityId, $existingThread);
 
         // Create new thread to add
         $newThread = new Thread();
@@ -131,13 +126,12 @@ class ThreadsTest extends TestCase {
         $newThread->emails = [];
 
         // Act
-        $result = $this->fileOps->createThread($entityId, $titlePrefix, $newThread);
+        $result = $this->fileOps->createThread($entityId, $newThread);
 
         // Assert
         $savedThreads = $this->fileOps->getThreadsForEntity($entityId);
         $this->assertNotNull($savedThreads);
         $this->assertEquals($entityId, $savedThreads->entity_id);
-        $this->assertEquals($titlePrefix, $savedThreads->title_prefix);
         $this->assertCount(2, $savedThreads->threads);
         $this->assertEquals($existingThread, $savedThreads->threads[0]);
         $this->assertEquals($newThread, $savedThreads->threads[1]);
@@ -273,8 +267,7 @@ class ThreadsTest extends TestCase {
         
         // Arrange
         $entityId = '000000000-test-entity-development'; // Use a valid entity ID
-        $titlePrefix = 'Test Prefix';
-        
+
         // Create thread with send_now = true
         $threadWithSendNow = new Thread();
         $threadWithSendNow->title = 'Thread with Send Now';
@@ -299,8 +292,8 @@ class ThreadsTest extends TestCase {
         
         // Act
         $dbOps = new ThreadDatabaseOperations();
-        $resultWithSendNow = $dbOps->createThread($entityId, $titlePrefix, $threadWithSendNow, 'test-user');
-        $resultWithoutSendNow = $dbOps->createThread($entityId, $titlePrefix, $threadWithoutSendNow, 'test-user');
+        $resultWithSendNow = $dbOps->createThread($entityId, $threadWithSendNow, 'test-user');
+        $resultWithoutSendNow = $dbOps->createThread($entityId, $threadWithoutSendNow, 'test-user');
         
         // Assert
         $loadedThreadWithSendNow = Thread::loadFromDatabase($resultWithSendNow->id);

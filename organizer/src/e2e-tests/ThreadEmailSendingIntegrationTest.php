@@ -167,7 +167,7 @@ class ThreadEmailSendingIntegrationTest extends TestCase {
         $thread->emails = [];
 
         // Create thread in the system
-        $createdThread = createThread($this->testEntityId, 'Test', $thread);
+        $createdThread = createThread($this->testEntityId, $thread);
         $this->assertNotNull($createdThread);
 
         // Generate a unique subject for this test

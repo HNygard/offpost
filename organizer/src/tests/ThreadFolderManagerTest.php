@@ -33,7 +33,7 @@ class ThreadFolderManagerTest extends TestCase {
         // Create test thread data
         $threads = [
             (object)[
-                'title_prefix' => 'Test',
+                'entity_id' => 'Test',
                 'threads' => [
                     (object)[
                         'title' => 'Thread 1',
@@ -65,7 +65,7 @@ class ThreadFolderManagerTest extends TestCase {
 
     public function testArchiveThreadFolder() {
         $entityThreads = (object)[
-            'title_prefix' => 'Test',
+            'entity_id' => 'Test',
             'threads' => []
         ];
         
@@ -89,7 +89,7 @@ class ThreadFolderManagerTest extends TestCase {
 
     public function testGetThreadEmailFolderWithSpecialCharacters() {
         $entityThreads = (object)[
-            'title_prefix' => 'Test',
+            'entity_id' => 'Test',
             'threads' => []
         ];
         
@@ -106,7 +106,7 @@ class ThreadFolderManagerTest extends TestCase {
 
     public function testGetThreadEmailFolderArchived() {
         $entityThreads = (object)[
-            'title_prefix' => 'Test',
+            'entity_id' => 'Test',
             'threads' => []
         ];
         
@@ -131,7 +131,7 @@ class ThreadFolderManagerTest extends TestCase {
     public function testCreateRequiredFoldersWithError() {
         $threads = [
             (object)[
-                'title_prefix' => 'Test',
+                'entity_id' => 'Test',
                 'threads' => [
                     (object)[
                         'title' => 'Thread 1',
@@ -154,7 +154,7 @@ class ThreadFolderManagerTest extends TestCase {
 
     public function testArchiveThreadFolderWithNonexistentFolder() {
         $entityThreads = (object)[
-            'title_prefix' => 'Test',
+            'entity_id' => 'Test',
             'threads' => []
         ];
         
@@ -177,7 +177,7 @@ class ThreadFolderManagerTest extends TestCase {
 
     public function testArchiveThreadFolderWithError() {
         $entityThreads = (object)[
-            'title_prefix' => 'Test',
+            'entity_id' => 'Test',
             'threads' => []
         ];
         
@@ -204,7 +204,7 @@ class ThreadFolderManagerTest extends TestCase {
 
     public function testGetThreadEmailFolderWithInvalidCharacters() {
         $entityThreads = (object)[
-            'title_prefix' => 'Test',
+            'entity_id' => 'Test',
             'threads' => []
         ];
         
@@ -221,7 +221,7 @@ class ThreadFolderManagerTest extends TestCase {
 
     public function testGetThreadEmailFolderWithLongTitle() {
         $entityThreads = (object)[
-            'title_prefix' => 'Test',
+            'entity_id' => 'Test',
             'threads' => []
         ];
         
@@ -243,7 +243,7 @@ class ThreadFolderManagerTest extends TestCase {
     public function testCreateRequiredFoldersWithConcurrentOperations() {
         $threads = [
             (object)[
-                'title_prefix' => 'Test',
+                'entity_id' => 'Test',
                 'threads' => [
                     (object)[
                         'title' => 'Thread 1',

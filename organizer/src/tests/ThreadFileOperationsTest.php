@@ -165,19 +165,17 @@ class ThreadFileOperationsTest extends TestCase {
 
     public function testCreateThread() {
         $entityId = 'test-entity';
-        $entityTitlePrefix = 'Test Prefix';
         $thread = new Thread();
         $thread->title = 'Test Thread';
         $thread->sentComment = 'Test Comment';
 
-        $createdThread = $this->fileOps->createThread($entityId, $entityTitlePrefix, $thread);
+        $createdThread = $this->fileOps->createThread($entityId, $thread);
 
         $this->assertEquals('Test Thread', $createdThread->title);
         $this->assertEquals('Test Comment', $createdThread->sentComment);
 
         $savedThreads = $this->fileOps->getThreadsForEntity($entityId);
         $this->assertNotNull($savedThreads);
-        $this->assertEquals('Test Prefix', $savedThreads->title_prefix);
         $this->assertCount(1, $savedThreads->threads);
         $this->assertEquals('Test Thread', $savedThreads->threads[0]->title);
         $this->assertEquals('Test Comment', $savedThreads->threads[0]->sentComment);
@@ -187,7 +185,6 @@ class ThreadFileOperationsTest extends TestCase {
         $entityId = 'test-entity';
         $threads = new Threads();
         $threads->entity_id = $entityId;
-        $threads->title_prefix = 'Test Prefix';
         $thread = new Thread();
         $thread->title = 'Test Thread';
         $thread->sentComment = 'Test Comment';
@@ -197,7 +194,6 @@ class ThreadFileOperationsTest extends TestCase {
 
         $savedThreads = $this->fileOps->getThreadsForEntity($entityId);
         $this->assertNotNull($savedThreads);
-        $this->assertEquals('Test Prefix', $savedThreads->title_prefix);
         $this->assertCount(1, $savedThreads->threads);
         $this->assertEquals('Test Thread', $savedThreads->threads[0]->title);
         $this->assertEquals('Test Comment', $savedThreads->threads[0]->sentComment);

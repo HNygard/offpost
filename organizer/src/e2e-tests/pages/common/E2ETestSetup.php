@@ -37,7 +37,7 @@ class E2ETestSetup {
         
         // Create thread in the system
         $threadOps = new ThreadDatabaseOperations();
-        $createdThread = $threadOps->createThread($entityId, 'Test', $thread, $userId);
+        $createdThread = $threadOps->createThread($entityId, $thread, $userId);
         
         // Create test email
         $email_time = mktime(12, 0, 0, 1, 1, 2021);
