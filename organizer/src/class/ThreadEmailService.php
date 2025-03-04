@@ -34,6 +34,29 @@ class PHPMailerService implements IEmailService {
     public function sendEmail($from, $fromName, $to, $subject, $body, $bcc = null) {
         require_once __DIR__ . '/../vendor/autoload.php';
 
+        // Assert incoming parameters, one by one
+        if (empty($from)) {
+            $this->lastError = 'From address is required';
+            return false;
+        }
+        if (empty($fromName)) {
+            $this->lastError = 'From name is required';
+            return false;
+        }
+        if (empty($to)) {
+            $this->lastError = 'To address is required';
+            return false;
+        }
+        if (empty($subject)) {
+            $this->lastError = 'Subject is required';
+            return false;
+        }
+        if (empty($body)) {
+            $this->lastError = 'Body is required';
+            return false;
+        }
+
+
         $mail = new \PHPMailer\PHPMailer\PHPMailer(true);
         $mail->XMailer = 'Roundcube thread starter';
         $mail->isSMTP();

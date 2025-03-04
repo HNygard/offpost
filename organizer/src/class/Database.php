@@ -68,6 +68,9 @@ class Database {
     public static function queryOne(string $sql, array $params = []): ?array {
         $stmt = self::prepare($sql);
         $stmt->execute($params);
+        if ($stmt->rowCount() != 1) {
+            throw new Exception("Expected 1 row, got {$stmt->rowCount()}");
+        }
         $result = $stmt->fetch();
         return $result === false ? null : $result;
     }

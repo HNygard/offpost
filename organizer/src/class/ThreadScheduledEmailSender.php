@@ -110,9 +110,11 @@ class ThreadScheduledEmailSender {
      */
     protected function findNextThreadForSending() {
         $query = "
-            SELECT id 
-            FROM threads 
-            WHERE sending_status = ? 
+            SELECT id
+            FROM threads
+            WHERE sending_status = ?
+            AND initial_request IS NOT NULL
+            AND initial_request != ''
             ORDER BY created_at ASC 
             LIMIT 1
         ";

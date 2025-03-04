@@ -6,7 +6,7 @@ $yourEmailPassword = "EzUVrHxLVrF2";
 
 
 if (defined('PHPUNIT_RUNNING')) {
-    $environment = 'development';
+    require __DIR__ . '/username-password-override-dev.php';
 }
 else {
     require '/username-password-override.php';
@@ -31,6 +31,13 @@ if ($environment == 'development') {
 
     $oidc_client_id = 'organizer';
     $oidc_client_secret = 'secret';
+
+
+    if (defined('PHPUNIT_RUNNING')) {
+        $imapServer = '{localhost:25993/imap/ssl}';
+        $smtpServer = 'localhost';
+        $smtpPort = '25025';  // GreenMail SMTP port
+    }
 }
 else if ($environment == 'production') {
     $imapServer = '{ssl://imap.one.com:993/imap/ssl}';
