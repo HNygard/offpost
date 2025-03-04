@@ -48,11 +48,23 @@ Goal: make production usable
 - [ ] Update-imap - Run on schedule
 - [ ] Email - Switch ID to UUID
 
-- [ ] Common list of entities
+- [ ] Thread - Staging => ready for sending => sent
+    - [x] Add new sending status
+    - [x] UI - Update Thread from "STAGING" to "READY_FOR_SENDING"
+        - view-thread.php: Add button to change status. Look at "toggle_public_to" for inspiration
+        - ThreadViewPageTest.php: Add test for this
+        - ThreadViewPageTest.php: Add test for other actions
+
+    - [ ] Scheduled updater for sending. Take Thread from "READY_FOR_SENDING" to "SENT"
+    - [ ] thread__send-email.php - Remove this
+
+- [x] Common list of entities
     - [x] Basic class and JSON file
     - [x] Test for entity validation
     - [x] Updates to threads can only be on valid entities. Input on Thread must be Entity to force compliance in code.
     - [ ] entity_id param must be valid verify in all frontend templates. Check by Entity class
+    - [x] Create production list
+    - [x] Migrated from old entity_id to new entity_id
 
 - [ ] Views available for public
     - [ ] Public threads visible to non authenticated users

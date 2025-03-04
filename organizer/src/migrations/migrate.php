@@ -93,7 +93,7 @@ try {
         if ($schemaUpdated) {
             echo "[migrate] Database schema file updated\n";
         } else {
-            echo "[migrate] Database schema file unchanged or error occurred\n";
+            echo "[migrate] Database schema file unchanged\n";
         }
 
     } catch (Exception $e) {
