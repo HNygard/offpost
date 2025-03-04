@@ -72,7 +72,7 @@ foreach ($results as $row) {
                         <?php if ($hasEmail && $hasOrgNum) { ?>
                             <span class="label label_ok">Complete</span>
                         <?php } else { ?>
-                            <a href="https://github.com/HNygard/offpost/blob/main/data/entities.json">Add at Github</a>
+                            <div><a href="https://github.com/HNygard/offpost/blob/main/data/entities.json">Add at Github</a></div>
                         <?php } ?>
                     </td>
                 </tr>
