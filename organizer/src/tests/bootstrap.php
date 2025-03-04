@@ -68,3 +68,43 @@ function getThreadsForEntity($entityId) {
     $fileOps = new ThreadFileOperations();
     return $fileOps->getThreadsForEntity($entityId);
 }
+
+
+class MockEmailService implements IEmailService {
+    private $shouldSucceed;
+    private $lastError = '';
+    public $lastEmailData;
+    private $sentEmails = [];
+
+    public function __construct($shouldSucceed = true) {
+        $this->shouldSucceed = $shouldSucceed;
+    }
+
+    public function sendEmail($from, $fromName, $to, $subject, $body, $bcc = null) {
+        $this->lastEmailData = [
+            'from' => $from,
+            'fromName' => $fromName,
+            'to' => $to,
+            'subject' => $subject,
+            'body' => $body,
+            'bcc' => $bcc
+        ];
+        $this->sentEmails[] = $this->lastEmailData;
+        if (!$this->shouldSucceed) {
+            $this->lastError = 'Mock email failure';
+        }
+        return $this->shouldSucceed;
+    }
+
+    public function getLastError() {
+        return $this->lastError;
+    }
+
+    public function getDebugOutput() {
+        return 'Mock debug output';
+    }
+
+    public function getSentEmails() {
+        return $this->sentEmails;
+    }
+}

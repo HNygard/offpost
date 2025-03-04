@@ -7,38 +7,6 @@ require_once(__DIR__ . '/../class/Threads.php');
 require_once(__DIR__ . '/../class/Thread.php');
 require_once(__DIR__ . '/../class/ThreadFileOperations.php');
 
-class MockEmailService implements IEmailService {
-    private $shouldSucceed;
-    private $lastError = '';
-    public $lastEmailData;
-
-    public function __construct($shouldSucceed = true) {
-        $this->shouldSucceed = $shouldSucceed;
-    }
-
-    public function sendEmail($from, $fromName, $to, $subject, $body, $bcc = null) {
-        $this->lastEmailData = [
-            'from' => $from,
-            'fromName' => $fromName,
-            'to' => $to,
-            'subject' => $subject,
-            'body' => $body,
-            'bcc' => $bcc
-        ];
-        if (!$this->shouldSucceed) {
-            $this->lastError = 'Mock email failure';
-        }
-        return $this->shouldSucceed;
-    }
-
-    public function getLastError() {
-        return $this->lastError;
-    }
-
-    public function getDebugOutput() {
-        return 'Mock debug output';
-    }
-}
 
 class ThreadsTest extends TestCase {
     private $testDataDir;
