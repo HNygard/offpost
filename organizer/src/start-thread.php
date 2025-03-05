@@ -51,13 +51,35 @@ if (!isset($_POST['entity_id'])) {
     // Load entities for dropdown
     $entities = Entity::getAll();
 
-    if (isset($_GET['my_profile']) && $_GET['my_profile'] == 'RANDOM') {
+    if (!isset($_GET['body'])) {
+        $starterMessages = array(
+            "Søker innsyn.",
+            "Søker innsyn i:",
+            "Ønsker innsyn:",
+            "Jeg ønsker innsyn:",
+            "Jeg ønsker innsyn i:",
+            "Kunne jeg fått innsyn i følgende?",
+            "Kunne jeg etter Offentleglova få innsyn i følgende?",
+            "Etter Offl:",
+            "Etter Offentleglova",
+            "Etter Offentleglova ønsker jeg",
+            "Etter Offentleglova søker jeg innsyn i:",
+            "Vil ha innsyn i",
+            "Jfr Offentleglova:",
+            "Jfr Offentleglova søker jeg innsyn i:",
+            "Jfr Offentleglova søker jeg innsyn i følgende:",
+            "Jfr. Offl. søker jeg innsyn i:",
+        );
+        $rand = mt_rand(0, count($starterMessages) - 1);
+        $starterMessage = $starterMessages[$rand];
+        $signDelim = mt_rand(0, 10) > 5 ? '---' : '--';
+        
+        $_GET['body'] = $starterMessage . "\n\n\n";
+
         $obj = getRandomNameAndEmail();
         $_GET['my_name'] = $obj->firstName . $obj->middleName . ' ' . $obj->lastName;
         $_GET['my_email'] = $obj->email;
-        if (isset($_GET['body'])) {
-            $_GET['body'] .= "\n\n--\n" . $obj->firstName . $obj->middleName . ' ' . $obj->lastName;
-        }
+        $_GET['body'] .= "\n\n$signDelim\n" . $obj->firstName . $obj->middleName . ' ' . $obj->lastName;
     }
 
 

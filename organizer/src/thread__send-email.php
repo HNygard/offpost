@@ -43,28 +43,6 @@ if (isset($_POST['submit'])) {
     exit;
 }
 
-$starterMessages = array(
-    "Søker innsyn.",
-    "Søker innsyn i:",
-    "Ønsker innsyn:",
-    "Jeg ønsker innsyn:",
-    "Jeg ønsker innsyn i:",
-    "Kunne jeg fått innsyn i følgende?",
-    "Kunne jeg etter Offentleglova få innsyn i følgende?",
-    "Etter Offl:",
-    "Etter Offentleglova",
-    "Etter Offentleglova ønsker jeg",
-    "Etter Offentleglova søker jeg innsyn i:",
-    "Vil ha innsyn i",
-    "Jfr Offentleglova:",
-    "Jfr Offentleglova søker jeg innsyn i:",
-    "Jfr Offentleglova søker jeg innsyn i følgende:",
-    "Jfr. Offl. søker jeg innsyn i:",
-);
-$rand = mt_rand(0, count($starterMessages) - 1);
-
-$starterMessage = $starterMessages[$rand];
-$signDelim = mt_rand(0, 10) > 5 ? '---' : '--';
 
 ?>
 <link href="style.css" rel="stylesheet">
