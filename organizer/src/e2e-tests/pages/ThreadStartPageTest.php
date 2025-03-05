@@ -39,10 +39,10 @@ class ThreadStartPageTest extends E2EPageTestCase {
         ];
         
         // :: Act - Test POST request to start thread
-        $response = $this->renderPage('/thread-start', 'dev-user-id', 'POST', '200 OK', $post_data);
-        
-        // :: Assert - Should show success message
-        $this->assertStringContainsString('Message has been sent', $response->body);
+        $response = $this->renderPage('/thread-start', 'dev-user-id', 'POST', '302 Found', $post_data);
+
+        // :: Assert - Should redirect to thread view
+        $this->assertStringContainsString('Location: /thread-view', $response->headers);
     }
     
     public function testPageNotLoggedIn() {

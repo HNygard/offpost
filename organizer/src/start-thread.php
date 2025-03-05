@@ -305,4 +305,5 @@ if (isset($_POST['body']) && !empty($_POST['body'])) {
 }
 
 
-echo '<br>Created. <a href="./">Back</a>';
+header('Location: /thread-view?entityId=' . urlencode($thread->entity_id) . '&threadId=' . urlencode($thread->id));
+exit;
