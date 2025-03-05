@@ -29,7 +29,7 @@ class ThreadScheduledEmailSender {
         $this->history = $history ?: new ThreadHistory();
         
         if ($emailService === null) {
-            require_once __DIR__ . '/../username-password.php';
+            require __DIR__ . '/../username-password.php';
             $this->emailService = new PHPMailerService(
                 $smtpServer,
                 $smtpUsername,

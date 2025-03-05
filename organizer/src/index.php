@@ -67,6 +67,8 @@ $allThreads = $filteredThreads;
                 <ul class="nav-links" style="display: inline;">
                     <li><a href="/update-imap?update-only-before=<?= date('Y-m-d H:i:s') ?>">Update email threads (folders) to IMAP</a></li>
                     <li><a href="/update-identities">Update identities into Roundcube</a></li>
+
+                    <li><a href="/scheduled-email-sending">Scheduled email sending</a></li>
                 </ul>
             </div>
         <?php } ?>
