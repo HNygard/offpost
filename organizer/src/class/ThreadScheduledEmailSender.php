@@ -4,14 +4,15 @@ require_once __DIR__ . '/Thread.php';
 require_once __DIR__ . '/ThreadDatabaseOperations.php';
 require_once __DIR__ . '/ThreadEmailService.php';
 require_once __DIR__ . '/ThreadHistory.php';
+require_once __DIR__ . '/ThreadEmailSending.php';
 
 /**
  * Class for handling scheduled email sending
  */
 class ThreadScheduledEmailSender {
-    private $dbOps;
-    private $emailService;
-    private $history;
+    protected $dbOps;
+    protected $emailService;
+    protected $history;
     
     /**
      * Constructor
@@ -48,28 +49,44 @@ class ThreadScheduledEmailSender {
      * @return array Result of the operation
      */
     public function sendNextScheduledEmail() {
-        // Find the next thread that is ready for sending
-        $thread = $this->findNextThreadForSending();
+        // Find the next email that is ready for sending
+        $emailSending = ThreadEmailSending::findNextForSending();
         
-        if (!$thread) {
+        if (!$emailSending) {
             return [
                 'success' => false,
                 'message' => 'No threads ready for sending'
             ];
         }
         
-        // Get entity details for the thread
-        $entity = $this->getEntityById($thread->entity_id);
+        // Get the thread for this email
+        $thread = Thread::loadFromDatabase($emailSending->thread_id);
+        if (!$thread) {
+            return [
+                'success' => false,
+                'message' => 'Thread not found for email sending record'
+            ];
+        }
         
-        // Update status to SENDING
+        // Update status to SENDING in both places
+        $emailSending->status = ThreadEmailSending::STATUS_SENDING;
+        ThreadEmailSending::updateStatus($emailSending->id, ThreadEmailSending::STATUS_SENDING);
+        
         $thread->sending_status = Thread::SENDING_STATUS_SENDING;
         $this->dbOps->updateThread($thread, 'system');
         
         // Send the email
-        $result = $this->sendEmail($thread, $entity);
+        $result = $this->sendEmail($emailSending);
         
         if ($result['success']) {
-            // Update status to SENT
+            // Update status to SENT in both places
+            ThreadEmailSending::updateStatus(
+                $emailSending->id, 
+                ThreadEmailSending::STATUS_SENT,
+                $result['smtp_response'] ?? null,
+                $result['debug'] ?? null
+            );
+            
             $thread->sending_status = Thread::SENDING_STATUS_SENT;
             $thread->sent = true; // For backward compatibility
             $this->dbOps->updateThread($thread, 'system');
@@ -81,6 +98,14 @@ class ThreadScheduledEmailSender {
             ];
         } else {
             // Revert to READY_FOR_SENDING if failed
+            ThreadEmailSending::updateStatus(
+                $emailSending->id, 
+                ThreadEmailSending::STATUS_READY_FOR_SENDING,
+                $result['smtp_response'] ?? null,
+                $result['debug'] ?? null,
+                $result['error'] ?? null
+            );
+            
             $thread->sending_status = Thread::SENDING_STATUS_READY_FOR_SENDING;
             $this->dbOps->updateThread($thread, 'system');
             
@@ -104,57 +129,43 @@ class ThreadScheduledEmailSender {
     }
     
     /**
-     * Find the next thread that is ready for sending
+     * This method is kept for backward compatibility and testing
+     * It's now a wrapper around ThreadEmailSending::findNextForSending()
      * 
      * @return Thread|null The thread or null if none found
      */
     protected function findNextThreadForSending() {
-        $query = "
-            SELECT id
-            FROM threads
-            WHERE sending_status = ?
-            AND initial_request IS NOT NULL
-            AND initial_request != ''
-            ORDER BY created_at ASC 
-            LIMIT 1
-        ";
+        $emailSending = ThreadEmailSending::findNextForSending();
         
-        $threadId = Database::queryValue($query, [Thread::SENDING_STATUS_READY_FOR_SENDING]);
-        
-        if (!$threadId) {
+        if (!$emailSending) {
             return null;
         }
         
-        return Thread::loadFromDatabase($threadId);
+        return Thread::loadFromDatabase($emailSending->thread_id);
     }
     
     /**
-     * Send an email for a thread
+     * Send an email using the ThreadEmailSending record
      * 
-     * @param Thread $thread The thread to send email for
-     * @param object $entity The entity to send email to
+     * @param ThreadEmailSending $emailSending The email sending record
      * @return array Result of the send operation
      */
-    protected function sendEmail(Thread $thread, $entity) {
-        // Get email details from thread
-        $emailTo = $entity->email;
-        $emailSubject = $thread->title;
-        $emailBody = $thread->initial_request;
-        
+    protected function sendEmail(ThreadEmailSending $emailSending) {
         // Send the email
         $success = $this->emailService->sendEmail(
-            $thread->my_email,
-            $thread->my_name,
-            $emailTo,
-            $emailSubject,
-            $emailBody,
-            $thread->my_email // BCC
+            $emailSending->email_from,
+            $emailSending->email_from_name,
+            $emailSending->email_to,
+            $emailSending->email_subject,
+            $emailSending->email_content,
+            $emailSending->email_from // BCC
         );
         
         return [
             'success' => $success,
             'error' => $this->emailService->getLastError(),
-            'debug' => $this->emailService->getDebugOutput()
+            'debug' => $this->emailService->getDebugOutput(),
+            'smtp_response' => $success ? 'Email sent successfully' : $this->emailService->getLastError()
         ];
     }
 }

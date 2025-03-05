@@ -2,6 +2,7 @@
 
 require_once __DIR__ . '/common/E2EPageTestCase.php';
 require_once __DIR__ . '/common/E2ETestSetup.php';
+require_once __DIR__ . '/../../class/ThreadEmailSending.php';
 
 class ThreadStartPageTest extends E2EPageTestCase {
 
@@ -40,9 +41,23 @@ class ThreadStartPageTest extends E2EPageTestCase {
         
         // :: Act - Test POST request to start thread
         $response = $this->renderPage('/thread-start', 'dev-user-id', 'POST', '302 Found', $post_data);
-
+        
         // :: Assert - Should redirect to thread view
         $this->assertStringContainsString('Location: /thread-view', $response->headers);
+        
+        // Extract thread ID from the redirect URL
+        preg_match('/threadId=([a-z0-9\-]+)/', $response->headers, $matches);
+        $this->assertNotEmpty($matches[1], 'Thread ID should be in the redirect URL');
+        $threadId = $matches[1];
+        
+        // Verify ThreadEmailSending record was created
+        $emailSendings = ThreadEmailSending::getByThreadId($threadId);
+        $this->assertNotEmpty($emailSendings, 'ThreadEmailSending record should be created');
+        $this->assertEquals($post_data['body'], $emailSendings[0]->email_content, 'Email content should match');
+        $this->assertEquals($post_data['title'], $emailSendings[0]->email_subject, 'Email subject should match');
+        $this->assertEquals($post_data['my_email'], $emailSendings[0]->email_from, 'Email from should match');
+        $this->assertEquals($post_data['my_name'], $emailSendings[0]->email_from_name, 'Email from name should match');
+        $this->assertEquals(ThreadEmailSending::STATUS_STAGING, $emailSendings[0]->status, 'Status should be STAGING by default');
     }
     
     public function testPageNotLoggedIn() {
@@ -51,6 +66,41 @@ class ThreadStartPageTest extends E2EPageTestCase {
         
         // :: Assert - Redirect to OIDC authentication
         $this->assertStringContainsString('Location: http://localhost:25083/oidc/auth', $response->headers);
+    }
+    
+    public function testPagePostWithSendNow() {
+        // :: Setup - Get a valid entity ID from the database
+        $entity_id = '000000000-test-entity-development';
+        
+        // :: Setup - Create post data with send_now option
+        $post_data = [
+            'title' => 'Test Thread ' . uniqid(),
+            'my_name' => 'Test User',
+            'my_email' => 'test.user.' . uniqid() . '@example.com',
+            'labels' => 'test e2e',
+            'entity_id' => $entity_id,
+            'entity_email' => 'entity.' . uniqid() . '@example.com',
+            'body' => 'This is a test message body created by E2E test.',
+            'public' => '1',
+            'send_now' => '1'
+        ];
+        
+        // :: Act - Test POST request to start thread with send_now
+        $response = $this->renderPage('/thread-start', 'dev-user-id', 'POST', '302 Found', $post_data);
+        
+        // :: Assert - Should redirect to thread view
+        $this->assertStringContainsString('Location: /thread-view', $response->headers);
+        
+        // Extract thread ID from the redirect URL
+        preg_match('/threadId=([a-z0-9\-]+)/', $response->headers, $matches);
+        $this->assertNotEmpty($matches[1], 'Thread ID should be in the redirect URL');
+        $threadId = $matches[1];
+        
+        // Verify ThreadEmailSending record was created with READY_FOR_SENDING status
+        $emailSendings = ThreadEmailSending::getByThreadId($threadId);
+        $this->assertNotEmpty($emailSendings, 'ThreadEmailSending record should be created');
+        $this->assertEquals(ThreadEmailSending::STATUS_READY_FOR_SENDING, $emailSendings[0]->status, 
+            'Status should be READY_FOR_SENDING when send_now is selected');
     }
     
     public function testPagePostMissingRequiredFields() {

@@ -25,6 +25,7 @@ class ThreadsTest extends TestCase {
         $db->execute("DELETE FROM thread_authorizations");
         $db->execute("DELETE FROM thread_email_attachments");
         $db->execute("DELETE FROM thread_emails");
+        $db->execute("DELETE FROM thread_email_sendings");
         $db->execute("DELETE FROM threads");
         
         // Create test directories

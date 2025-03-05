@@ -24,6 +24,7 @@ require_once(__DIR__ . '/../class/ThreadDatabaseOperations.php');
 require_once(__DIR__ . '/../class/Entity.php');
 require_once(__DIR__ . '/../class/Imap/ImapWrapper.php');
 require_once(__DIR__ . '/../class/Imap/ImapConnection.php');
+require_once(__DIR__ . '/../class/ThreadEmailSending.php');
 
 /**
  * Integration test for the scheduled email sending functionality
@@ -172,10 +173,28 @@ class ThreadScheduledEmailSendingIntegrationTest extends TestCase {
         $createdThread->sending_status = Thread::SENDING_STATUS_READY_FOR_SENDING;
         $this->dbOps->updateThread($createdThread, 'test-user');
         
+        // Create a ThreadEmailSending record for this thread
+        $entity = Entity::getById($this->testEntityId);
+        ThreadEmailSending::create(
+            $createdThread->id,
+            $body,
+            $subject,
+            $entity->email,
+            $testEmail,
+            $testName,
+            ThreadEmailSending::STATUS_READY_FOR_SENDING
+        );
+        
         // Verify thread was created with correct status
         $threadFromDb = Thread::loadFromDatabase($createdThread->id);
         $this->assertEquals(Thread::SENDING_STATUS_READY_FOR_SENDING, $threadFromDb->sending_status, 
             'Thread should have READY_FOR_SENDING status');
+        
+        // Verify ThreadEmailSending was created with correct status
+        $emailSendings = ThreadEmailSending::getByThreadId($createdThread->id);
+        $this->assertCount(1, $emailSendings, 'There should be one ThreadEmailSending record');
+        $this->assertEquals(ThreadEmailSending::STATUS_READY_FOR_SENDING, $emailSendings[0]->status,
+            'ThreadEmailSending should have READY_FOR_SENDING status');
         
         // :: Act
         
@@ -211,5 +230,13 @@ class ThreadScheduledEmailSendingIntegrationTest extends TestCase {
         $this->assertEquals(Thread::SENDING_STATUS_SENT, $updatedThread->sending_status, 
             'Thread status should be updated to SENT');
         $this->assertTrue($updatedThread->sent, 'Thread sent flag should be true');
+        
+        // Verify ThreadEmailSending status was updated to SENT
+        $updatedEmailSendings = ThreadEmailSending::getByThreadId($createdThread->id);
+        $this->assertCount(1, $updatedEmailSendings, 'There should still be one ThreadEmailSending record');
+        $this->assertEquals(ThreadEmailSending::STATUS_SENT, $updatedEmailSendings[0]->status,
+            'ThreadEmailSending status should be updated to SENT');
+        $this->assertNotNull($updatedEmailSendings[0]->smtp_response, 'SMTP response should be recorded');
+        $this->assertNotNull($updatedEmailSendings[0]->smtp_debug, 'SMTP debug output should be recorded');
     }
 }

@@ -5,6 +5,7 @@ require_once __DIR__ . '/class/Thread.php';
 require_once __DIR__ . '/class/ThreadAuthorization.php';
 require_once __DIR__ . '/class/ThreadStorageManager.php';
 require_once __DIR__ . '/class/Entity.php';
+require_once __DIR__ . '/class/ThreadEmailSending.php';
 
 // Require authentication
 requireAuth();
@@ -268,6 +269,20 @@ if ($thread == null) {
     // Set creator as owner using OpenID Connect subject identifier
     $userId = $_SESSION['user']['sub']; // From OpenID Connect session
     $newThread->addUser($userId, true);
+    
+    // Create a ThreadEmailSending record for this thread
+    $entity = Entity::getById($_POST['entity_id']);
+    ThreadEmailSending::create(
+        $threadId,
+        $_POST['body'],
+        $_POST['title'],
+        $entity->email,
+        $_POST['my_email'],
+        $_POST['my_name'],
+        isset($_POST['send_now']) && $_POST['send_now'] === '1' 
+            ? ThreadEmailSending::STATUS_READY_FOR_SENDING 
+            : ThreadEmailSending::STATUS_STAGING
+    );
 
     $threads = ThreadStorageManager::getInstance()->getThreadsForEntity($_POST['entity_id']);
 
@@ -284,25 +299,6 @@ if ($thread == null) {
 }
 
 
-if (isset($_POST['body']) && !empty($_POST['body'])) {
-    // -> Send email
-    $result = sendThreadEmail($thread, 
-        $_POST['entity_email'], 
-        $_POST['title'], 
-        $_POST['body'], 
-        $entityId,
-        $_SESSION['user']['sub']);
-    
-    echo '<div style="height: 400px; overflow-y: scroll; font-family: monospace;">';
-    echo $result['debug'];
-    echo '</div>';
-    
-    if ($result['success']) {
-        echo '<pre style="color: green; font-size: 2em;">Message has been sent</pre>';
-    } else {
-        echo '<pre style="color: red; font-size: 2em;">Message could not be sent. Mailer Error: ' . $result['error'] . '</pre>';
-    }
-}
 
 
 header('Location: /thread-view?entityId=' . urlencode($thread->entity_id) . '&threadId=' . urlencode($thread->id));
