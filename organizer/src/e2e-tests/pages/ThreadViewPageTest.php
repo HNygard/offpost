@@ -4,6 +4,8 @@ require_once __DIR__ . '/common/E2EPageTestCase.php';
 require_once __DIR__ . '/common/E2ETestSetup.php';
 require_once(__DIR__ . '/../../class/Database.php');
 require_once(__DIR__ . '/../../class/Thread.php');
+require_once(__DIR__ . '/../../class/Entity.php');
+require_once(__DIR__ . '/../../class/ThreadEmailSending.php');
 
 class ThreadViewPageTest extends E2EPageTestCase {
     public function testPageHappy() {
@@ -103,6 +105,18 @@ class ThreadViewPageTest extends E2EPageTestCase {
             [Thread::SENDING_STATUS_STAGING, $threadId]
         );
         
+        // Create a ThreadEmailSending record for this thread
+        $entity = Entity::getById($entityId);
+        ThreadEmailSending::create(
+            $threadId,
+            "Test email content",
+            "Test email subject",
+            $entity->email,
+            "test@example.com",
+            "Test User",
+            ThreadEmailSending::STATUS_STAGING
+        );
+        
         // :: Act
         // First, check that the thread is in STAGING status
         $response = $this->renderPage('/thread-view?entityId=' . $entityId . '&threadId=' . $threadId);
@@ -133,12 +147,19 @@ class ThreadViewPageTest extends E2EPageTestCase {
         $this->assertStringNotContainsString('(Currently in Staging)', $response->body);
         $this->assertStringContainsString('Sending status changed from [Staging] to [Ready for sending]', $response->body);
         
-        // Verify in database
+        // Verify Thread status in database
         $status = Database::queryValue(
             "SELECT sending_status FROM threads WHERE id = ?",
             [$threadId]
         );
-        $this->assertEquals(Thread::SENDING_STATUS_READY_FOR_SENDING, $status, "Thread should be in READY_FOR_SENDING status in the database");
+        $this->assertEquals(Thread::SENDING_STATUS_READY_FOR_SENDING, $status, 
+            "Thread should be in READY_FOR_SENDING status in the database");
+        
+        // Verify ThreadEmailSending status in database
+        $emailSendings = ThreadEmailSending::getByThreadId($threadId);
+        $this->assertNotEmpty($emailSendings, "ThreadEmailSending record should exist");
+        $this->assertEquals(ThreadEmailSending::STATUS_READY_FOR_SENDING, $emailSendings[0]->status, 
+            "ThreadEmailSending should be in READY_FOR_SENDING status");
     }
     
     public function testAddAndRemoveUser() {

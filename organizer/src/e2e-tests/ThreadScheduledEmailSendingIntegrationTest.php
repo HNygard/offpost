@@ -142,7 +142,7 @@ class ThreadScheduledEmailSendingIntegrationTest extends TestCase {
         // :: Setup
 
         // Update all existing threads with status READY_FOR_SENDING to STAGED
-        Database::execute("UPDATE threads SET sending_status = ? WHERE sending_status = ?", 
+        Database::execute("UPDATE thread_email_sendings SET status = ? WHERE status = ?", 
             [Thread::SENDING_STATUS_STAGING, Thread::SENDING_STATUS_READY_FOR_SENDING]);
         
         // Create unique test data

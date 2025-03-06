@@ -4,6 +4,7 @@ require_once __DIR__ . '/class/Threads.php';
 require_once __DIR__ . '/class/ThreadEmailClassifier.php';
 require_once __DIR__ . '/class/ThreadStorageManager.php';
 require_once __DIR__ . '/class/ThreadHistory.php';
+require_once __DIR__ . '/class/ThreadEmailSending.php';
 
 // Require authentication
 requireAuth();
@@ -80,8 +81,20 @@ if (isset($_POST['change_status_to_ready']) && isset($_POST['thread_id'])) {
     if ($statusThread 
         && $statusThread->isUserOwner($userId) 
         && $statusThread->sending_status === Thread::SENDING_STATUS_STAGING) {
+        // Update thread status
         $statusThread->sending_status = Thread::SENDING_STATUS_READY_FOR_SENDING;
         $storageManager->updateThread($statusThread, $userId);
+        
+        // Also update the corresponding ThreadEmailSending records
+        $emailSendings = ThreadEmailSending::getByThreadId($statusThread->id);
+        foreach ($emailSendings as $emailSending) {
+            if ($emailSending->status === ThreadEmailSending::STATUS_STAGING) {
+                ThreadEmailSending::updateStatus(
+                    $emailSending->id,
+                    ThreadEmailSending::STATUS_READY_FOR_SENDING
+                );
+            }
+        }
     }
     
     // Redirect to remove POST data
