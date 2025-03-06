@@ -219,7 +219,11 @@ function getIconClass($filetype) {
             </div>
 
             <div class="labels">
-                <?php foreach ($thread->labels as $label): ?>
+                <?php foreach ($thread->labels as $label): 
+                    if (empty($label)) {
+                        continue;
+                    }
+                    ?>
                     <span class="label"><a href="/?label_filter=<?=urlencode($label)?>"><?= htmlescape($label) ?></a></span>
                 <?php endforeach; ?>
             </div>

@@ -187,6 +187,9 @@ $allThreads = $filteredThreads;
                         <td>
                             <?php
                             foreach ($thread->labels as $label) {
+                                if (empty($label)) {
+                                    continue;
+                                }
                                 ?><span class="label"><a href="?label_filter=<?=urlencode($label)?>"><?= $label ?></a></span><?php
                             }
                             ?>
