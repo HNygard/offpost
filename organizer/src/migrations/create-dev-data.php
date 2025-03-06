@@ -25,7 +25,7 @@ function generateUuid(): string {
 echo "Creating development data...\n";
 
 // Source and destination paths
-$sourceEntityId = "0418-nord-odal-kommune";
+$sourceEntityId = "964950768-nord-odal-kommune";
 $sourceThreadsFile = "/organizer-data/threads/threads-{$sourceEntityId}.json";
 $sourceThreadsDir = "/organizer-data/threads/{$sourceEntityId}";
 
