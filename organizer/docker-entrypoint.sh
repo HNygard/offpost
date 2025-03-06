@@ -32,9 +32,17 @@ php /php-frontend/migrations/migrate.php
 if [ "$ENVIRONMENT" = "development" ]; then
     echo "Development environment detected. Creating development data..."
     php /php-frontend/migrations/create-dev-data.php
+    if [ $? -ne 0 ]; then
+        echo "ERROR: Failed to create development data. Exiting."
+        exit 1
+    fi
     
     echo "Granting thread access to dev-user-id..."
     php /php-frontend/grant-thread-access.php dev-user-id
+    if [ $? -ne 0 ]; then
+        echo "ERROR: Failed to grant thread access. Exiting."
+        exit 1
+    fi
 fi
 
 # Apache gets grumpy about PID files pre-existing

@@ -14,6 +14,7 @@ $db = new Database();
 // Get all thread IDs
 $threads = $db->query("SELECT id FROM threads");
 $granted = 0;
+$errors = 0;
 
 foreach ($threads as $thread) {
     try {
@@ -27,7 +28,15 @@ foreach ($threads as $thread) {
         $granted++;
     } catch (Exception $e) {
         echo "Error granting access to thread {$thread['id']}: " . $e->getMessage() . "\n";
+        $errors++;
     }
 }
 
 echo "\nAccess granted to $granted threads for user $userId\n";
+
+if ($errors > 0) {
+    echo "Encountered $errors errors while granting access.\n";
+    exit(1);
+}
+
+exit(0);

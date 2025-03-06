@@ -9,6 +9,10 @@ require_once __DIR__ . '/../class/common.php';
 if (getenv('ENVIRONMENT') !== 'development') {
     exit(0);
 }
+
+// Flag to track if any errors occurred
+$hasErrors = false;
+
 function generateUuid(): string {
     return sprintf('%04x%04x-%04x-%04x-%04x-%04x%04x%04x',
         mt_rand(0, 0xffff), mt_rand(0, 0xffff),
@@ -49,7 +53,7 @@ foreach ($threadsData['threads'] as $threadData) {
         echo "Error creating thread: " . $e->getMessage() . "\n";
         echo $e->getTraceAsString() . "\n";
         echo "Error creating thread: " . $e->getMessage() . "\n";
-
+        $hasErrors = true;
     }
 }
 function createThreadTestData($threadsData, $threadData, $sourceEntityId) {
@@ -122,4 +126,10 @@ function createThreadTestData($threadsData, $threadData, $sourceEntityId) {
     return $thread->id; // Return UUID for mapping
 }
 
-echo "Development data created successfully.\n";
+if ($hasErrors) {
+    echo "Errors occurred while creating development data. Check the logs above.\n";
+    exit(1);
+} else {
+    echo "Development data created successfully.\n";
+    exit(0);
+}
