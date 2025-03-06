@@ -46,9 +46,6 @@ try {
             case '/thread-start':
                 require __DIR__ . '/../start-thread.php';
                 break;
-            case '/thread-send-email':
-                require __DIR__ . '/../thread__send-email.php';
-                break;
             case '/thread-classify':
                 require __DIR__ . '/../classify-email.php';
                 break;

@@ -20,15 +20,15 @@ Goal: make production usable
 - [ ] Update-imap - Run on schedule
 - [ ] Email - Switch ID to UUID
 
-- [ ] Thread - Staging => ready for sending => sent
+- [x] Thread - Staging => ready for sending => sent
     - [x] Add new sending status
     - [x] UI - Update Thread from "STAGING" to "READY_FOR_SENDING"
         - view-thread.php: Add button to change status. Look at "toggle_public_to" for inspiration
         - ThreadViewPageTest.php: Add test for this
         - ThreadViewPageTest.php: Add test for other actions
 
-    - [ ] Scheduled updater for sending. Take Thread from "READY_FOR_SENDING" to "SENT"
-    - [ ] thread__send-email.php - Remove this
+    - [x] Scheduled updater for sending. Take Thread from "READY_FOR_SENDING" to "SENT"
+    - [x] thread__send-email.php - Remove this
 
 - [ ] Views available for public
     - [ ] Public threads visible to non authenticated users

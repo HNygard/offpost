@@ -149,9 +149,6 @@ $allThreads = $filteredThreads;
                                 <a href="/thread-classify?entityId=<?=
                                     htmlescape($threads->entity_id)?>&threadId=<?=
                                     htmlescape($thread->id)?>">Classify</a>
-                                <a href="/thread-send-email?entityId=<?=
-                                    htmlescape($threads->entity_id)?>&threadId=<?=
-                                    htmlescape($thread->id)?>">Send email</a>
                                 <a href="/setSuccessForThreadAndDocument?entityId=<?=
                                     htmlescape($threads->entity_id)?>&threadId=<?=
                                     htmlescape($thread->id)?>">Archive thread</a>
