@@ -1,6 +1,6 @@
 -- ******************************************************************
 -- AUTOMATICALLY GENERATED FILE - DO NOT MODIFY
--- Generated on: 2025-03-05 19:12:46
+-- Generated on: 2025-03-07 17:39:01
 -- 
 -- This file contains the current database schema after all migrations.
 -- It is NOT meant to be executed as a migration script.
@@ -27,7 +27,7 @@ CREATE INDEX thread_authorizations_thread_user_unique ON thread_authorizations U
 
 CREATE TABLE thread_email_attachments (
     id integer NOT NULL DEFAULT nextval('thread_email_attachments_id_seq'::regclass),
-    email_id integer NOT NULL,
+    email_id uuid NOT NULL,
     name character varying(255) NOT NULL,
     filename character varying(255) NOT NULL,
     filetype character varying(255) NOT NULL,
@@ -40,9 +40,9 @@ CREATE TABLE thread_email_attachments (
 
 ALTER TABLE thread_email_attachments ADD CONSTRAINT thread_email_attachments_pkey PRIMARY KEY (id);
 ALTER TABLE thread_email_attachments ADD CONSTRAINT thread_email_attachments_email_id_fkey FOREIGN KEY (email_id) REFERENCES thread_emails (id);
-CREATE INDEX thread_email_attachments_email_id_idx ON thread_email_attachments USING btree (email_id);
 CREATE INDEX thread_email_attachments_filetype_idx ON thread_email_attachments USING btree (filetype);
 CREATE INDEX thread_email_attachments_status_type_idx ON thread_email_attachments USING btree (status_type);
+CREATE INDEX thread_email_attachments_email_id_idx ON thread_email_attachments USING btree (email_id);
 CREATE INDEX thread_email_attachments_email_id_id_idx ON thread_email_attachments USING btree (email_id, id);
 
 CREATE TABLE thread_email_history (
@@ -83,7 +83,7 @@ CREATE INDEX thread_email_sendings_thread_id_idx ON thread_email_sendings USING 
 CREATE INDEX thread_email_sendings_status_idx ON thread_email_sendings USING btree (status);
 
 CREATE TABLE thread_emails (
-    id integer NOT NULL DEFAULT nextval('thread_emails_id_seq'::regclass),
+    id uuid NOT NULL DEFAULT gen_random_uuid(),
     thread_id uuid NOT NULL,
     timestamp_received timestamp with time zone NOT NULL,
     datetime_received timestamp with time zone,
