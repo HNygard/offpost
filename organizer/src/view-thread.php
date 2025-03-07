@@ -189,7 +189,9 @@ function getIconClass($filetype) {
         <div class="thread-details">
             <p>
                 <strong>Entity:</strong> <?= htmlescape($thread->getEntityName()) ?> (<?= htmlescape($threadEntity->entity_id) ?>)<br>
-                <strong>Identity:</strong> <?= htmlescape($thread->my_name) ?> &lt;<?= htmlescape($thread->my_email) ?>&gt;
+                <strong>Identity:</strong> <?= htmlescape($thread->my_name) ?> &lt;<?= htmlescape($thread->my_email) ?>&gt;<br>
+                <strong>Law Basis:</strong> <?= $thread->request_law_basis === Thread::REQUEST_LAW_BASIS_OFFENTLEGLOVA ? 'Offentlegova' : ($thread->request_law_basis === Thread::REQUEST_LAW_BASIS_OTHER ? 'Other type of request' : 'Not specified') ?><br>
+                <strong>Follow-up Plan:</strong> <?= $thread->request_follow_up_plan === Thread::REQUEST_FOLLOW_UP_PLAN_SPEEDY ? 'Simple request, expecting speedy follow up' : ($thread->request_follow_up_plan === Thread::REQUEST_FOLLOW_UP_PLAN_SLOW ? 'Complex request, expecting slow follow up' : 'Not specified') ?>
             </p>
 
             <div class="status-labels">

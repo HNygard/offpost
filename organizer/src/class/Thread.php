@@ -11,6 +11,14 @@ class Thread implements JsonSerializable {
     const SENDING_STATUS_READY_FOR_SENDING = 'READY_FOR_SENDING';
     const SENDING_STATUS_SENDING = 'SENDING';
     const SENDING_STATUS_SENT = 'SENT';
+    
+    // Request law basis constants
+    const REQUEST_LAW_BASIS_OFFENTLEGLOVA = 'offentleglova';
+    const REQUEST_LAW_BASIS_OTHER = 'other';
+    
+    // Request follow-up plan constants
+    const REQUEST_FOLLOW_UP_PLAN_SPEEDY = 'speedy';
+    const REQUEST_FOLLOW_UP_PLAN_SLOW = 'slow';
 
     var $id;
     var $id_old;
@@ -25,6 +33,8 @@ class Thread implements JsonSerializable {
     var $archived;
     var $public = false;
     var $sentComment;
+    var $request_law_basis;
+    var $request_follow_up_plan;
 
     /* @var ThreadEmail[] $emails */
     var $emails;
@@ -154,6 +164,8 @@ class Thread implements JsonSerializable {
         $thread->sentComment = $data['sent_comment'];
         $thread->sending_status = $data['sending_status'];
         $thread->initial_request = $data['initial_request'] ?? null;
+        $thread->request_law_basis = $data['request_law_basis'] ?? null;
+        $thread->request_follow_up_plan = $data['request_follow_up_plan'] ?? null;
 
         // Load emails
         $emails = Database::query(

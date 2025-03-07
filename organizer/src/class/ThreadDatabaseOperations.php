@@ -321,7 +321,8 @@ class ThreadDatabaseOperations {
         Database::execute(
             "UPDATE threads 
              SET title = ?, my_name = ?, my_email = ?, sent = ?, archived = ?, 
-                 labels = ?, sent_comment = ?, public = ?, sending_status = ?, initial_request = ?
+                 labels = ?, sent_comment = ?, public = ?, sending_status = ?, initial_request = ?,
+                 request_law_basis = ?, request_follow_up_plan = ?
              WHERE id = ?",
             [
                 $thread->title,
@@ -334,6 +335,8 @@ class ThreadDatabaseOperations {
                 $thread->public ? 't' : 'f',
                 $thread->sending_status,
                 $thread->initial_request,
+                $thread->request_law_basis,
+                $thread->request_follow_up_plan,
                 $thread->id
             ]
         );
@@ -366,6 +369,12 @@ class ThreadDatabaseOperations {
             if ($currentThread->initial_request !== $thread->initial_request) {
                 $details['initial_request'] = $thread->initial_request;
             }
+            if ($currentThread->request_law_basis !== $thread->request_law_basis) {
+                $details['request_law_basis'] = $thread->request_law_basis;
+            }
+            if ($currentThread->request_follow_up_plan !== $thread->request_follow_up_plan) {
+                $details['request_follow_up_plan'] = $thread->request_follow_up_plan;
+            }
             if (!empty($details)) {
                 $this->history->logAction($thread->id, 'edited', $userId, $details);
             }
@@ -394,10 +403,23 @@ class ThreadDatabaseOperations {
 
         // Generate UUID for new thread
         $uuid = $this->generateUuid();
+
+        if ($thread->request_law_basis != null && !in_array(
+            $thread->request_law_basis,
+            [Thread::REQUEST_LAW_BASIS_OFFENTLEGLOVA, Thread::REQUEST_LAW_BASIS_OTHER]
+        )) {
+            throw new Exception("Invalid request law basis");
+        }
+        if ($thread->request_follow_up_plan != null && !in_array(
+            $thread->request_follow_up_plan,
+            [Thread::REQUEST_FOLLOW_UP_PLAN_SPEEDY, Thread::REQUEST_FOLLOW_UP_PLAN_SLOW]
+        )) {
+            throw new Exception("Invalid request follup plan");
+        }
         
         Database::execute(
-            "INSERT INTO threads (id, id_old, entity_id, title, my_name, my_email, sent, archived, labels, sent_comment, public, sending_status, initial_request) 
-            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)",
+            "INSERT INTO threads (id, id_old, entity_id, title, my_name, my_email, sent, archived, labels, sent_comment, public, sending_status, initial_request, request_law_basis, request_follow_up_plan) 
+            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)",
             [
                 $uuid,
                 $thread->id_old ?? null, // Use existing id_old if set, otherwise null
@@ -411,7 +433,9 @@ class ThreadDatabaseOperations {
                 $thread->sentComment,
                 $thread->public ? 't' : 'f',
                 $thread->sending_status ?? Thread::SENDING_STATUS_STAGING,
-                $thread->initial_request
+                $thread->initial_request,
+                $thread->request_law_basis,
+                $thread->request_follow_up_plan
             ]
         );
         

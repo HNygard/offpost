@@ -1,6 +1,6 @@
 -- ******************************************************************
 -- AUTOMATICALLY GENERATED FILE - DO NOT MODIFY
--- Generated on: 2025-03-07 17:39:01
+-- Generated on: 2025-03-07 22:44:51
 -- 
 -- This file contains the current database schema after all migrations.
 -- It is NOT meant to be executed as a migration script.
@@ -137,7 +137,9 @@ CREATE TABLE threads (
     updated_at timestamp with time zone NOT NULL DEFAULT CURRENT_TIMESTAMP,
     id_old character varying(255),
     sending_status character varying(20) DEFAULT 'STAGING'::character varying,
-    initial_request text
+    initial_request text,
+    request_law_basis character varying(50),
+    request_follow_up_plan character varying(50)
 );
 
 ALTER TABLE threads ADD CONSTRAINT threads_pkey PRIMARY KEY (id);
@@ -150,6 +152,8 @@ CREATE INDEX threads_id_old_idx ON threads USING btree (id_old);
 CREATE INDEX threads_sending_status_idx ON threads USING btree (sending_status);
 CREATE INDEX threads_entity_created_idx ON threads USING btree (entity_id, created_at);
 CREATE INDEX threads_updated_at_idx ON threads USING btree (updated_at);
+CREATE INDEX threads_request_law_basis_idx ON threads USING btree (request_law_basis);
+CREATE INDEX threads_request_follow_up_plan_idx ON threads USING btree (request_follow_up_plan);
 
 CREATE OR REPLACE FUNCTION update_updated_at_column() RETURNS trigger AS $$ 
 BEGIN

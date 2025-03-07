@@ -155,6 +155,38 @@ if (!isset($_POST['entity_ids']) || empty($_POST['entity_ids'])) {
             </div>
 
             <div class="form-group">
+                <label>Request Law Basis</label>
+                <div>
+                    <label style="display: inline-block; margin-right: 15px;">
+                        <input type="radio" name="request_law_basis" value="offentleglova" checked>
+                        Offentlegova
+                    </label>
+                    <label style="display: inline-block;">
+                        <input type="radio" name="request_law_basis" value="other">
+                        Other type of request
+                    </label>
+                </div>
+            </div>
+
+            <div class="form-group">
+                <label>Request Follow-up Plan</label>
+                <div>
+                    <label style="display: inline-block; margin-right: 15px;">
+                        <input type="radio" name="request_follow_up_plan" value="">
+                        No follow up
+                    </label>
+                    <label style="display: inline-block; margin-right: 15px;">
+                        <input type="radio" name="request_follow_up_plan" value="speedy" checked>
+                        Simple request, expecting speedy follow up
+                    </label>
+                    <label style="display: inline-block;">
+                        <input type="radio" name="request_follow_up_plan" value="slow">
+                        Complex request, expecting slow follow up
+                    </label>
+                </div>
+            </div>
+
+            <div class="form-group">
                 <label for="body">Message Body</label>
                 <textarea id="body" name="body"><?= htmlescape(isset($_GET['body']) ? $_GET['body'] : '') ?></textarea>
                 <small style="color: #666; display: block; margin-top: 5px;">A signature will be added to the email.</small>
@@ -214,6 +246,10 @@ foreach ($entityIds as $entityId) {
     $thread->sent = false; // Will be updated if email is sent
     $thread->archived = false;
     $thread->public = isset($_POST['public']) && $_POST['public'] === '1';
+    $thread->request_law_basis = isset($_POST['request_law_basis']) ? $_POST['request_law_basis'] : Thread::REQUEST_LAW_BASIS_OTHER;
+    $thread->request_follow_up_plan = isset($_POST['request_follow_up_plan']) && !empty($_POST['request_follow_up_plan'])
+        ? $_POST['request_follow_up_plan']
+        : null;
     $thread->emails = array();
 
     $labels = explode(' ', $_POST['labels']);
@@ -260,4 +296,3 @@ else {
     header('Location: /thread-view?entityId=' . urlencode($thread->entity_id) . '&threadId=' . urlencode($thread->id));
     exit;
 }
-
