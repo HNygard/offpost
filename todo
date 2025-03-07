@@ -22,7 +22,7 @@ Goal: make production usable
 - [x] Threads - Multiple entities per start-thread
     - Connect together by label
     - Redirect to label
-- [ ] Threads - Have a type of request + follow up plan (implementation of these later)
+- [x] Threads - Have a type of request + follow up plan (implementation of these later)
 
 - [ ] Views available for public
     - [ ] Public threads visible to non authenticated users
