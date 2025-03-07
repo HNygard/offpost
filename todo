@@ -18,7 +18,11 @@ Goal: make production usable
     - [ ] Open some labels to public
     - [ ] Clean up old threads by archiving them
 - [ ] Update-imap - Run on schedule
-- [ ] Email - Switch ID to UUID
+
+- [x] Threads - Multiple entities per start-thread
+    - Connect together by label
+    - Redirect to label
+- [ ] Threads - Have a type of request + follow up plan (implementation of these later)
 
 - [ ] Views available for public
     - [ ] Public threads visible to non authenticated users
