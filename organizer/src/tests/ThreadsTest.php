@@ -27,6 +27,8 @@ class ThreadsTest extends TestCase {
         $db->execute("DELETE FROM thread_email_attachments");
         $db->execute("DELETE FROM thread_emails");
         $db->execute("DELETE FROM thread_email_sendings");
+        $db->execute("COMMIT");
+        $db->execute("BEGIN");
         $db->execute("DELETE FROM threads");
         $db->execute("COMMIT");
         
