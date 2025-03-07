@@ -20,6 +20,7 @@ class ThreadsTest extends TestCase {
         
         // Clean database tables
         $db = new Database();
+        $db->execute("BEGIN");
         $db->execute("DELETE FROM thread_email_history");
         $db->execute("DELETE FROM thread_history");
         $db->execute("DELETE FROM thread_authorizations");
@@ -27,6 +28,7 @@ class ThreadsTest extends TestCase {
         $db->execute("DELETE FROM thread_emails");
         $db->execute("DELETE FROM thread_email_sendings");
         $db->execute("DELETE FROM threads");
+        $db->execute("COMMIT");
         
         // Create test directories
         if (!file_exists($this->threadsDir)) {
