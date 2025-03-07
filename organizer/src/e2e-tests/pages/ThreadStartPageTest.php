@@ -17,10 +17,16 @@ class ThreadStartPageTest extends E2EPageTestCase {
         // :: Assert form elements exist
         $this->assertStringContainsString('<form', $response->body);
         $this->assertStringContainsString('name="title"', $response->body);
-        $this->assertStringContainsString('name="my_name"', $response->body);
-        $this->assertStringContainsString('name="my_email"', $response->body);
-        $this->assertStringContainsString('name="entity_id"', $response->body);
+        $this->assertStringContainsString('name="entity_ids[]"', $response->body);
         $this->assertStringContainsString('name="body"', $response->body);
+    }
+    
+    public function testPageNotLoggedIn() {
+        // :: Act - Should redirect to login when not logged in
+        $response = $this->renderPage('/thread-start', user: null, expected_status: '302 Found');
+        
+        // :: Assert - Redirect to OIDC authentication
+        $this->assertStringContainsString('Location: http://localhost:25083/oidc/auth', $response->headers);
     }
 
     public function testPagePost() {
@@ -30,11 +36,8 @@ class ThreadStartPageTest extends E2EPageTestCase {
         // :: Setup - Create post data
         $post_data = [
             'title' => 'Test Thread ' . uniqid(),
-            'my_name' => 'Test User',
-            'my_email' => 'test.user.' . uniqid() . '@example.com',
             'labels' => 'test e2e',
-            'entity_id' => $entity_id,
-            'entity_email' => 'entity.' . uniqid() . '@example.com',
+            'entity_ids[]' => $entity_id,
             'body' => 'This is a test message body created by E2E test.',
             'public' => '1'
         ];
@@ -53,19 +56,9 @@ class ThreadStartPageTest extends E2EPageTestCase {
         // Verify ThreadEmailSending record was created
         $emailSendings = ThreadEmailSending::getByThreadId($threadId);
         $this->assertNotEmpty($emailSendings, 'ThreadEmailSending record should be created');
-        $this->assertEquals($post_data['body'], $emailSendings[0]->email_content, 'Email content should match');
+        $this->assertEquals($post_data['body'], explode("\n\n", $emailSendings[0]->email_content)[0], 'Email content should match');
         $this->assertEquals($post_data['title'], $emailSendings[0]->email_subject, 'Email subject should match');
-        $this->assertEquals($post_data['my_email'], $emailSendings[0]->email_from, 'Email from should match');
-        $this->assertEquals($post_data['my_name'], $emailSendings[0]->email_from_name, 'Email from name should match');
         $this->assertEquals(ThreadEmailSending::STATUS_STAGING, $emailSendings[0]->status, 'Status should be STAGING by default');
-    }
-    
-    public function testPageNotLoggedIn() {
-        // :: Act - Should redirect to login when not logged in
-        $response = $this->renderPage('/thread-start', user: null, expected_status: '302 Found');
-        
-        // :: Assert - Redirect to OIDC authentication
-        $this->assertStringContainsString('Location: http://localhost:25083/oidc/auth', $response->headers);
     }
     
     public function testPagePostWithSendNow() {
@@ -75,11 +68,8 @@ class ThreadStartPageTest extends E2EPageTestCase {
         // :: Setup - Create post data with send_now option
         $post_data = [
             'title' => 'Test Thread ' . uniqid(),
-            'my_name' => 'Test User',
-            'my_email' => 'test.user.' . uniqid() . '@example.com',
             'labels' => 'test e2e',
-            'entity_id' => $entity_id,
-            'entity_email' => 'entity.' . uniqid() . '@example.com',
+            'entity_ids[]' => $entity_id,
             'body' => 'This is a test message body created by E2E test.',
             'public' => '1',
             'send_now' => '1'
@@ -121,21 +111,82 @@ class ThreadStartPageTest extends E2EPageTestCase {
         $this->assertStringNotContainsString('Location: /thread-view', $response->headers);
     }
     
-    public function testPageWithExistingThread() {
-        // :: Setup
-        $testData = E2ETestSetup::createTestThread();
-        $threadId = $testData['thread']->id;
-        $entityId = $testData['entity_id'];
+
+    public function testPagePost_multipleEntities() {
+        // :: Setup - Get a valid entity ID from the database
+        $entity_id1 = '000000000-test-entity-development';
+        $entity_id2 = '958935420-oslo-kommune';
         
-        // :: Act - Test GET request with thread_id parameter
-        // Note: We're just testing if the page loads with these parameters
-        $response = $this->renderPage('/thread-start?thread_id=' . $threadId . '&entity_id=' . $entityId . '&body=Hello');
+        // :: Setup - Create post data
+        $post_data = [
+            'title' => 'Test Thread ' . uniqid(),
+            'labels' => 'test e2e',
+            'entity_ids' => [$entity_id1 , $entity_id2],
+            'body' => 'This is a test message body created by E2E test.',
+            'public' => '1'
+        ];
         
-        // :: Assert - Page should load successfully
-        $this->assertStringContainsString('<h1>Start', $response->body);
-        $this->assertStringContainsString('Email Thread</h1>', $response->body);
+        // :: Act - Test POST request to start thread
+        $response = $this->renderPage('/thread-start', 'dev-user-id', 'POST', '302 Found', $post_data);
         
-        // Check that the thread_id field is populated
-        $this->assertStringContainsString('value="' . $threadId . '"', $response->body);
+        // :: Assert - Should redirect to thread overview with label
+        $this->assertStringContainsString('Location: /?label_filter=group-', $response->headers);
+        
+
+        // Extract thread ID from the redirect URL
+        preg_match('/label_filter=([a-z0-9\-]+)/', $response->headers, $matches);
+        $this->assertNotEmpty($matches[1], 'Thread ID should be in the redirect URL');
+        $groupLabel = $matches[1];
+
+        $threads = Database::query("SELECT * FROM threads WHERE ? = any(labels)", [$groupLabel]);
+        $this->assertEquals(2, count($threads), 'Two threads should be created');
+        
+        foreach($threads as $thread) {
+            // Verify ThreadEmailSending record was created
+            $emailSendings = ThreadEmailSending::getByThreadId($thread['id']);
+            $this->assertNotEmpty($emailSendings, 'ThreadEmailSending record should be created');
+            $this->assertEquals($post_data['body'], explode("\n\n", $emailSendings[0]->email_content)[0], 'Email content should match');
+            $this->assertEquals($post_data['title'], $emailSendings[0]->email_subject, 'Email subject should match');
+            $this->assertEquals(ThreadEmailSending::STATUS_STAGING, $emailSendings[0]->status, 'Status should be STAGING by default');
+        }
     }
+    
+    public function testPagePostWithSendNow_multipleEntities() {
+        // :: Setup - Get a valid entity ID from the database
+        $entity_id1 = '000000000-test-entity-development';
+        $entity_id2 = '958935420-oslo-kommune';
+        
+        // :: Setup - Create post data with send_now option
+        $post_data = [
+            'title' => 'Test Thread ' . uniqid(),
+            'labels' => 'test e2e',
+            'entity_ids' => [$entity_id1 , $entity_id2],
+            'body' => 'This is a test message body created by E2E test.',
+            'public' => '1',
+            'send_now' => '1'
+        ];
+        
+        // :: Act - Test POST request to start thread with send_now
+        $response = $this->renderPage('/thread-start', 'dev-user-id', 'POST', '302 Found', $post_data);
+        
+        // :: Assert - Should redirect to thread overview with label
+        $this->assertStringContainsString('Location: /?label_filter=group-', $response->headers);
+        
+        // Extract thread ID from the redirect URL
+        preg_match('/label_filter=([a-z0-9\-]+)/', $response->headers, $matches);
+        $this->assertNotEmpty($matches[1], 'Thread ID should be in the redirect URL');
+        $groupLabel = $matches[1];
+
+        $threads = Database::query("SELECT * FROM threads WHERE ? = any(labels)", [$groupLabel]);
+        $this->assertEquals(2, count($threads), 'Two threads should be created');
+        
+        foreach($threads as $thread) {
+            // Verify ThreadEmailSending record was created with READY_FOR_SENDING status
+            $emailSendings = ThreadEmailSending::getByThreadId($thread['id']);
+            $this->assertNotEmpty($emailSendings, 'ThreadEmailSending record should be created');
+            $this->assertEquals(ThreadEmailSending::STATUS_READY_FOR_SENDING, $emailSendings[0]->status, 
+                'Status should be READY_FOR_SENDING when send_now is selected');
+        }
+    }
+    
 }

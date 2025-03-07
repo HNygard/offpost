@@ -12,43 +12,17 @@ requireAuth();
 require_once __DIR__ . '/class/Threads.php';
 require_once __DIR__ . '/class/random-profile.php';
 
-$entityId = null;
-$threadId = null;
+$entity_ids = array();
 if (isset($_GET['thread_id'])) {
-    $entityId = Entity::getById($_GET['entity_id'])->entity_id;
-    $threadId = $_GET['thread_id'];
+    $entity = Entity::getById($_GET['entity_id']);
+    $entity_ids[] = $entity->entity_id;
 }
-if (isset($_POST['thread_id']) && !empty($_POST['thread_id'])) {
-    $entityId = Entity::getById($_POST['entity_id'])->entity_id;
-    $threadId = $_POST['thread_id'];
-}
-$thread = null;
-if ($threadId != null) {
-    $threads = ThreadStorageManager::getInstance()->getThreadsForEntity($entityId);
-
-    foreach ($threads->threads as $thread1) {
-        if ($thread1->id == $threadId) {
-            $thread = $thread1;
-        }
-    }
-    if ($thread == null) {
-        throw new Exception('Unknown thread_id');
-    }
-
-    // Check if user has access to continue this thread
-    $userId = $_SESSION['user']['sub'];
-    if (!ThreadAuthorizationManager::canUserAccessThread($threadId, $userId)) {
-        throw new Exception('You do not have access to continue this thread');
-    }
-
-    $_GET['my_name'] = $thread->my_name;
-    $_GET['my_email'] = $thread->my_email;
-
-    $_GET['body'] = str_replace('MY_EMAIL', $thread->my_email, $_GET['body']);
-    $_GET['body'] = str_replace('MY_NAME', $thread->my_name, $_GET['body']);
+elseif (isset($_POST['thread_id']) && !empty($_POST['thread_id'])) {
+    $entity = Entity::getById($_POST['entity_id']);
+    $entity_ids[] = $entity->entity_id;
 }
 
-if (!isset($_POST['entity_id'])) {
+if (!isset($_POST['entity_ids']) || empty($_POST['entity_ids'])) {
     // Load entities for dropdown
     $entities = Entity::getAll();
 
@@ -73,14 +47,8 @@ if (!isset($_POST['entity_id'])) {
         );
         $rand = mt_rand(0, count($starterMessages) - 1);
         $starterMessage = $starterMessages[$rand];
-        $signDelim = mt_rand(0, 10) > 5 ? '---' : '--';
         
-        $_GET['body'] = $starterMessage . "\n\n\n";
-
-        $obj = getRandomNameAndEmail();
-        $_GET['my_name'] = $obj->firstName . $obj->middleName . ' ' . $obj->lastName;
-        $_GET['my_email'] = $obj->email;
-        $_GET['body'] .= "\n\n$signDelim\n" . $obj->firstName . $obj->middleName . ' ' . $obj->lastName;
+        $_GET['body'] = $starterMessage . "\n\n";
     }
 
 
@@ -144,23 +112,10 @@ if (!isset($_POST['entity_id'])) {
         <h1>Start Email Thread</h1>
         
         <form method="POST" id="startthreadform-<?=date('Y-m-d')?>">
-            <?php if ($thread != null): ?>
-                <div class="continue-thread">Continue existing thread...</div>
-            <?php endif; ?>
 
             <div class="form-group">
                 <label for="title">Title</label>
                 <input type="text" id="title" name="title" value="<?= htmlescape(isset($_GET['title']) ? $_GET['title'] : '') ?>">
-            </div>
-
-            <div class="form-group">
-                <label for="my_name">My Name</label>
-                <input type="text" id="my_name" name="my_name" value="<?= htmlescape(isset($_GET['my_name']) ? $_GET['my_name'] : '') ?>">
-            </div>
-
-            <div class="form-group">
-                <label for="my_email">My Email</label>
-                <input type="text" id="my_email" name="my_email" value="<?= htmlescape(isset($_GET['my_email']) ? $_GET['my_email'] : '') ?>">
             </div>
 
             <div class="form-group">
@@ -169,33 +124,20 @@ if (!isset($_POST['entity_id'])) {
             </div>
 
             <div class="form-group">
-                <label for="entity_id">Entity</label>
-                <select id="entity_id" name="entity_id" onchange="updateEntityEmail()">
-                    <option value="">Select an entity</option>
+                <label for="entity_ids">Entities (hold Ctrl/Cmd to select multiple)</label>
+                <select id="entity_ids" name="entity_ids[]" multiple size="5">
                     <?php
                     foreach ($entities as $id => $entity) {
-                        $selected = (isset($_GET['entity_id']) && $_GET['entity_id'] === $id) ? 'selected' : '';
+                        if (empty($entity->email)) {
+                            continue;
+                        }
+
+                        $selected = in_array($id, $entity_ids) ? 'selected' : '';
                         echo "<option value=\"" . htmlescape($id) . "\" $selected>" . htmlescape($entity->name) . "</option>";
                     }
                     ?>
                 </select>
-            </div>
-
-            <script>
-            function updateEntityEmail() {
-                var entityId = document.getElementById('entity_id').value;
-                var entities = <?= json_encode($entities) ?>;
-                
-                if (entities[entityId]) {
-                    document.getElementById('entity_email').value = entities[entityId].email;
-                }
-            }
-            </script>
-
-            <div class="form-group">
-                <label for="thread_id">Thread ID</label>
-                <input type="text" id="thread_id" name="thread_id" value="<?= htmlescape(isset($_GET['thread_id']) ? $_GET['thread_id'] : '') ?>">
-                <small style="color: #666; display: block; margin-top: 5px;">Used to continue an existing thread</small>
+                <small style="color: #666; display: block; margin-top: 5px;">Select multiple entities to create one thread for each entity</small>
             </div>
 
             <div class="form-group">
@@ -215,6 +157,7 @@ if (!isset($_POST['entity_id'])) {
             <div class="form-group">
                 <label for="body">Message Body</label>
                 <textarea id="body" name="body"><?= htmlescape(isset($_GET['body']) ? $_GET['body'] : '') ?></textarea>
+                <small style="color: #666; display: block; margin-top: 5px;">A signature will be added to the email.</small>
             </div>
 
             <div class="form-group">
@@ -226,25 +169,43 @@ if (!isset($_POST['entity_id'])) {
     exit;
 }
 
-// Validate entity ID
-if (isset($_POST['entity_id']) && !empty($_POST['entity_id'])) {
-    $entityId = $_POST['entity_id'];
-    
-    // Validate entity ID
+// E: entity_ids is set. Form was submitted
+
+// Validate entity IDs
+$entityIds = $_POST['entity_ids'];
+
+// Validate each entity ID
+foreach ($entityIds as $entityId) {
     if (!Entity::exists($entityId)) {
         http_response_code(400);
-        die("Invalid entity ID. Please select a valid entity. <a href='javascript:history.back()'>Go back</a>");
+        die("Invalid entity ID: $entityId. Please select valid entities. <a href='javascript:history.back()'>Go back</a>");
     }
-    
-    // If valid, pre-fill entity email if not provided
-    $_POST['entity_email'] = Entity::getById($entityId)->email;
 }
 
-if ($thread == null) {
+$entityIds = $_POST['entity_ids'];
+$createdThreads = [];
+$groupLabel = 'group-' . time() . '-' . substr(md5(rand()), 0, 6);
+
+// Add the group label to the labels
+$labelsString = $_POST['labels'];
+if (!empty($labelsString)) {
+    $labelsString .= ' ' . $groupLabel;
+} else {
+    $labelsString = $groupLabel;
+}
+$_POST['labels'] = $labelsString;
+
+// Create a thread for each entity
+foreach ($entityIds as $entityId) {
+    $signDelim = mt_rand(0, 10) > 5 ? '---' : '--';
+    $obj = getRandomNameAndEmail();
+    $my_name = $obj->firstName . $obj->middleName . ' ' . $obj->lastName;
+    $my_email = $obj->email;
+
     $thread = new Thread();
     $thread->title = $_POST['title'];
-    $thread->my_name = $_POST['my_name'];
-    $thread->my_email = $_POST['my_email'];
+    $thread->my_name = $my_name;
+    $thread->my_email = $my_email;
     $thread->labels = array();
     $thread->initial_request = $_POST['body']; // Store the initial request
     $thread->sending_status = isset($_POST['send_now']) && $_POST['send_now'] === '1' 
@@ -259,11 +220,12 @@ if ($thread == null) {
     foreach ($labels as $label) {
         $thread->labels[] = trim($label);
     }
+    
     $newThread = ThreadStorageManager::getInstance()->createThread(
-            $_POST['entity_id'],
-            $thread,
-            $_SESSION['user']['sub']
-        );
+        $entityId,
+        $thread,
+        $_SESSION['user']['sub']
+    );
     $threadId = $newThread->id;
 
     // Set creator as owner using OpenID Connect subject identifier
@@ -271,35 +233,31 @@ if ($thread == null) {
     $newThread->addUser($userId, true);
     
     // Create a ThreadEmailSending record for this thread
-    $entity = Entity::getById($_POST['entity_id']);
+    $entity = Entity::getById($entityId);
     ThreadEmailSending::create(
         $threadId,
-        $_POST['body'],
+        $_POST['body'] . "\n\n$signDelim\n" . $obj->firstName . $obj->middleName . ' ' . $obj->lastName,
         $_POST['title'],
         $entity->email,
-        $_POST['my_email'],
-        $_POST['my_name'],
+        $my_email,
+        $my_name,
         isset($_POST['send_now']) && $_POST['send_now'] === '1' 
             ? ThreadEmailSending::STATUS_READY_FOR_SENDING 
             : ThreadEmailSending::STATUS_STAGING
     );
-
-    $threads = ThreadStorageManager::getInstance()->getThreadsForEntity($_POST['entity_id']);
-
-    $thread = null;
-    foreach ($threads->threads as $thread1) {
-        if ($thread1->id == $threadId) {
-            $thread = $thread1;
-        }
-    }
-
-    if ($thread == null) {
-        throw new Exception('Error. Missing thread.');
-    }
+    
+    $createdThreads[] = $newThread;
 }
 
+if (count($createdThreads) > 1) {
+    // Redirect to the index page with the group label filter
+    header('Location: /?label_filter=' . urlencode($groupLabel));
+    exit;
+} 
+else {
+    // Redirect to the thread view page
+    $thread = $createdThreads[0];
+    header('Location: /thread-view?entityId=' . urlencode($thread->entity_id) . '&threadId=' . urlencode($thread->id));
+    exit;
+}
 
-
-
-header('Location: /thread-view?entityId=' . urlencode($thread->entity_id) . '&threadId=' . urlencode($thread->id));
-exit;
