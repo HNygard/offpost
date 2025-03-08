@@ -197,7 +197,7 @@ function formatStatus($status) {
             <tr>
                 <th class="id-col">ID</th>
                 <th class="thread-col">Thread / Subject</th>
-                <th class="to-from-col">To / from</th>
+                <th class="to-from-col">To / From</th>
                 <th class="status-col">Status</th>
                 <th class="date-col">Created / Updated</th>
                 <th class="actions-col">Actions</th>

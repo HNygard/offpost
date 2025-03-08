@@ -26,7 +26,7 @@ Goal: make production usable
 
 - [ ] Sending overview
     - [x] Overview page
-    - [ ] Improve overview page
+    - [x] Improve overview page
     - [ ] Concept of admin and only admin can view the overview page
 
 - [ ] Views available for public

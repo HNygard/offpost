@@ -97,13 +97,10 @@ class EmailSendingOverviewPageTest extends E2EPageTestCase {
         
         // Assert that the table headers are present
         $this->assertStringContainsString('<th class="id-col">ID</th>', $response->body);
-        $this->assertStringContainsString('<th class="thread-col">Thread</th>', $response->body);
-        $this->assertStringContainsString('<th class="subject-col">Subject</th>', $response->body);
-        $this->assertStringContainsString('<th class="to-col">To</th>', $response->body);
-        $this->assertStringContainsString('<th class="from-col">From</th>', $response->body);
+        $this->assertStringContainsString('<th class="thread-col">Thread / Subject</th>', $response->body);
+        $this->assertStringContainsString('<th class="to-from-col">To / From</th>', $response->body);
         $this->assertStringContainsString('<th class="status-col">Status</th>', $response->body);
-        $this->assertStringContainsString('<th class="date-col">Created</th>', $response->body);
-        $this->assertStringContainsString('<th class="date-col">Updated</th>', $response->body);
+        $this->assertStringContainsString('<th class="date-col">Created / Updated</th>', $response->body);
         $this->assertStringContainsString('<th class="actions-col">Actions</th>', $response->body);
         
         // Assert that the table has our test content
@@ -112,7 +109,7 @@ class EmailSendingOverviewPageTest extends E2EPageTestCase {
         $this->assertStringContainsString('recipient@example', $response->body); // Account for truncation
         $this->assertStringContainsString('sender@example', $response->body); // Account for truncation
         $this->assertStringContainsString('SENT', $response->body);
-        $this->assertStringContainsString('View Response', $response->body);
+        $this->assertStringContainsString('Show Response', $response->body);
     }
 
     public function testPageNotLoggedIn() {
