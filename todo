@@ -19,16 +19,6 @@ Goal: make production usable
     - [ ] Clean up old threads by archiving them
 - [ ] Update-imap - Run on schedule
 
-- [x] Threads - Multiple entities per start-thread
-    - Connect together by label
-    - Redirect to label
-- [x] Threads - Have a type of request + follow up plan (implementation of these later)
-
-- [x] Sending overview
-    - [x] Overview page
-    - [x] Improve overview page
-    - [x] Concept of admin and only admin can view the overview page
-
 - [ ] Views available for public
     - [ ] Public threads visible to non authenticated users
     - [ ] Front page with information
@@ -43,6 +33,7 @@ Goal: make production usable
     - Enable notiication for replies
     - Automatic follow up
 
+- [ ] Database - run backup on schedule
 
 TODO - medium term:
 - [ ] Automatic follow up
