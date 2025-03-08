@@ -136,18 +136,26 @@ function dumpDatabaseSchema(PDO $pdo): bool {
                     schemaname = 'public'
                     AND tablename = '$table'
                     AND indexname NOT LIKE '%_pkey'
+                ORDER BY indexname
             ")->fetchAll(PDO::FETCH_ASSOC);
             
+            $indexStatements = [];
             foreach ($indexes as $idx) {
                 // Extract the index method (btree, gin, etc.) and columns from indexdef
                 if (preg_match('/USING\s+(\w+)\s+\((.+)\)/', $idx['indexdef'], $matches)) {
                     $method = $matches[1];
                     $columns = $matches[2];
-                    $schema .= "CREATE INDEX " . $idx['indexname'] . " ON " . $idx['tablename'] . " USING " . $method . " (" . $columns . ");\n";
+                    $indexStatements[] = "CREATE INDEX " . $idx['indexname'] . " ON " . $idx['tablename'] . " USING " . $method . " (" . $columns . ");";
                 } else {
                     // Fallback if regex doesn't match
-                    $schema .= "CREATE INDEX " . $idx['indexname'] . " ON " . $idx['tablename'] . ";\n";
+                    $indexStatements[] = "CREATE INDEX " . $idx['indexname'] . " ON " . $idx['tablename'] . ";";
                 }
+            }
+            
+            // Sort index statements to ensure consistent order
+            sort($indexStatements);
+            foreach ($indexStatements as $statement) {
+                $schema .= $statement . "\n";
             }
             
             $schema .= "\n";
@@ -203,8 +211,11 @@ function dumpDatabaseSchema(PDO $pdo): bool {
             WHERE 
                 n.nspname = 'public'
                 AND t.tgisinternal = false
+            ORDER BY t.tgname
         ")->fetchAll(PDO::FETCH_COLUMN);
         
+        // Sort triggers to ensure consistent order
+        sort($triggers);
         foreach ($triggers as $trig) {
             $schema .= $trig . "\n";
         }
