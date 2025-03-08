@@ -65,7 +65,7 @@ function formatStatus($status) {
             $class = 'label_ok';
             break;
         case ThreadEmailSending::STATUS_READY_FOR_SENDING:
-            $class = 'label_warn';
+            $class = 'label_pending';
             break;
         case ThreadEmailSending::STATUS_SENDING:
             $class = 'label_warn';
@@ -73,7 +73,7 @@ function formatStatus($status) {
         default:
             $class = 'label_disabled';
     }
-    return '<span class="label ' . $class . '"><a href="#">' . htmlspecialchars($status) . '</a></span>';
+    return '<span class="label ' . $class . '"><a href="#" onclick="return false;">' . htmlspecialchars($status) . '</a></span>';
 }
 
 ?>
@@ -130,25 +130,24 @@ function formatStatus($status) {
             width: 5%;
         }
         th.thread-col, td.thread-col {
-            width: 15%;
+            width: 30%;
         }
-        th.subject-col, td.subject-col {
-            width: 15%;
-        }
-        th.to-col, td.to-col {
-            width: 15%;
-        }
-        th.from-col, td.from-col {
-            width: 15%;
+        th.to-from-col, td.to-from-col {
+            width: 30%;
         }
         th.status-col, td.status-col {
             width: 10%;
         }
         th.date-col, td.date-col {
-            width: 10%;
+            width: 20%;
         }
         th.actions-col, td.actions-col {
             width: 15%;
+        }
+
+        /* Label styling */
+        span.label {
+            font-size: 0.2em;
         }
     </style>
 </head>
@@ -180,13 +179,10 @@ function formatStatus($status) {
         <table>
             <tr>
                 <th class="id-col">ID</th>
-                <th class="thread-col">Thread</th>
-                <th class="subject-col">Subject</th>
-                <th class="to-col">To</th>
-                <th class="from-col">From</th>
+                <th class="thread-col">Thread / Subject</th>
+                <th class="to-from-col">To / from</th>
                 <th class="status-col">Status</th>
-                <th class="date-col">Created</th>
-                <th class="date-col">Updated</th>
+                <th class="date-col">Created / Updated</th>
                 <th class="actions-col">Actions</th>
             </tr>
             <?php foreach ($allEmails as $email): ?>
@@ -194,15 +190,20 @@ function formatStatus($status) {
                     <td class="id-col"><?= $email['id'] ?></td>
                     <td class="thread-col">
                         <a href="/thread-view?id=<?= htmlspecialchars($email['thread_id']) ?>">
-                            <?= htmlspecialchars(truncateText(getThreadTitle($email['thread_id']), 20)) ?>
-                        </a>
+                            <?= htmlspecialchars(getThreadTitle($email['thread_id'])) ?>
+                        </a><br>
+                        <?= htmlspecialchars(truncateText($email['email_subject'], 20)) ?>
                     </td>
-                    <td class="subject-col"><?= htmlspecialchars(truncateText($email['email_subject'], 20)) ?></td>
-                    <td class="to-col"><?= htmlspecialchars(truncateText($email['email_to'], 20)) ?></td>
-                    <td class="from-col"><?= htmlspecialchars(truncateText($email['email_from'], 20)) ?></td>
+                    <td class="to-from-col">
+                        <?= htmlspecialchars($email['email_to']) ?><br>
+                        <?= htmlspecialchars($email['email_from']) ?>
+                    </td>
                     <td class="status-col"><?= formatStatus($email['status']) ?></td>
-                    <td class="date-col"><?= date('Y-m-d H:i', strtotime($email['created_at'])) ?></td>
-                    <td class="date-col"><?= date('Y-m-d H:i', strtotime($email['updated_at'])) ?></td>
+                    <td class="date-col"><?= date('Y-m-d H:i', strtotime($email['created_at'])) ?><?php
+                        if( $email['created_at'] != $email['updated_at'] ) {
+                            echo '<br>' . date('Y-m-d H:i', strtotime($email['updated_at']));
+                        }
+                    ?></td>
                     <td class="actions-col">
                         <?php if ($email['status'] === ThreadEmailSending::STATUS_SENT): ?>
                             <a href="#" class="toggle-response" data-id="<?= $email['id'] ?>">View Response</a>

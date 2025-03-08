@@ -24,6 +24,11 @@ Goal: make production usable
     - Redirect to label
 - [x] Threads - Have a type of request + follow up plan (implementation of these later)
 
+- [ ] Sending overview
+    - [x] Overview page
+    - [ ] Improve overview page
+    - [ ] Concept of admin and only admin can view the overview page
+
 - [ ] Views available for public
     - [ ] Public threads visible to non authenticated users
     - [ ] Front page with information
