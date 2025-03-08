@@ -4,6 +4,8 @@
 $yourEmail = "greenmail-user";
 $yourEmailPassword = "EzUVrHxLVrF2";
 
+$admins = array();
+
 
 if (defined('PHPUNIT_RUNNING')) {
     require __DIR__ . '/username-password-override-dev.php';
@@ -13,6 +15,7 @@ else {
 }
 
 if ($environment == 'development') {
+    $admins[] = 'dev-user-id';
     $imapServer = '{greenmail:3993/imap/ssl}';
     $imapSentFolder = 'Sent';
     $smtpSecure = null;

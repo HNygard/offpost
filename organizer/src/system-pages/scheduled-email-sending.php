@@ -10,6 +10,7 @@ ini_set('display_errors', 1);
 $emailSender = new ThreadScheduledEmailSender();
 
 // Send the next scheduled email
+// Note: We only send one at the time to not trigger to many alerts for spam.
 $result = $emailSender->sendNextScheduledEmail();
 
 // Output the result

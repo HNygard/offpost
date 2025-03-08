@@ -32,17 +32,15 @@ try {
     ) {
         require __DIR__ . '/../system-pages/scheduled-email-sending.php';
     }
-    elseif ($path == '/email-sending-overview'
-        && (
-            ($environment == 'development')
-            || (
-                $environment == 'production'
-                // Internal name - used by container 'cron'
-                && $_SERVER['HTTP_HOST'] == 'organizer'
-            )
-        )
-    ) {
-        require __DIR__ . '/../system-pages/email-sending-overview.php';
+    elseif ($path == '/email-sending-overview') {
+        require_once __DIR__ . '/../auth.php';
+        requireAuth();
+        if (in_array($_SESSION['user']['sub'], $admins)) {
+            require __DIR__ . '/../system-pages/email-sending-overview.php';
+        }
+        else {
+            throw new Exception("404 Not Found", 404);
+        }
     }
 
     // :: Rest of the pages

@@ -72,6 +72,14 @@ $allThreads = $filteredThreads;
                 </ul>
             </div>
         <?php } ?>
+        <?php if (in_array($_SESSION['user']['sub'], $admins)) { ?>
+            <div style="font-size: 0.7em;">
+                <h3 style="display: inline;">Admin tools:</h3>
+                <ul class="nav-links" style="display: inline;">
+                    <li><a href="/email-sending-overview">Email sending overview</a></li>
+                </ul>
+            </div>
+        <?php } ?>
 
         <?php
         // Count total threads
