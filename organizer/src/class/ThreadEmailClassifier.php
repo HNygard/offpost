@@ -50,7 +50,7 @@ class ThreadEmailClassifier {
         }
 
         if (!isset($email->auto_classification)) {
-            return 'Manuel';
+            return 'Human';
         }
 
         if ($email->auto_classification === 'algo') {
@@ -61,6 +61,6 @@ class ThreadEmailClassifier {
             return 'AI';
         }
 
-        return 'Manuel';
+        return 'Unknown';
     }
 }
