@@ -85,17 +85,34 @@ function formatStatus($status) {
     include __DIR__ . '/../head.php';
     ?>
     <style>
-        .smtp-response {
-            display: none;
+        dialog.smtp-response {
             background-color: #f8f9fa;
             border: 1px solid #dee2e6;
             border-radius: 4px;
             padding: 15px;
-            margin-top: 10px;
             white-space: pre-wrap;
             font-family: monospace;
-            max-height: 300px;
+            max-width: 80%;
+            max-height: 80vh;
             overflow-y: auto;
+        }
+        dialog.smtp-response::backdrop {
+            background-color: rgba(0, 0, 0, 0.5);
+        }
+        dialog.smtp-response .dialog-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 15px;
+        }
+        dialog.smtp-response .dialog-header h3 {
+            margin: 0;
+        }
+        dialog.smtp-response .dialog-header .close-button {
+            background: none;
+            border: none;
+            font-size: 1.5em;
+            cursor: pointer;
         }
         .summary-box {
             background-color: #f8f9fa;
@@ -206,23 +223,30 @@ function formatStatus($status) {
                     ?></td>
                     <td class="actions-col">
                         <?php if ($email['status'] === ThreadEmailSending::STATUS_SENT): ?>
-                            <a href="#" class="toggle-response" data-id="<?= $email['id'] ?>">View Response</a>
-                            <div id="response-<?= $email['id'] ?>" class="smtp-response">
-                                <strong>SMTP Response:</strong>
-                                <?= htmlspecialchars($email['smtp_response'] ?: 'No response data available') ?>
-                                
-                                <?php if ($email['smtp_debug']): ?>
-                                    <hr>
-                                    <strong>SMTP Debug:</strong>
-                                    <?= htmlspecialchars($email['smtp_debug']) ?>
-                                <?php endif; ?>
-                                
-                                <?php if ($email['error_message']): ?>
-                                    <hr>
-                                    <strong>Error Message:</strong>
-                                    <?= htmlspecialchars($email['error_message']) ?>
-                                <?php endif; ?>
-                            </div>
+                            <a href="#" class="toggle-response" data-id="<?= $email['id'] ?>">Show Response</a>
+                            <dialog id="response-<?= $email['id'] ?>" class="smtp-response">
+                                <div class="dialog-header">
+                                    <h3>Email Sending Details - ID: <?= $email['id'] ?></h3>
+                                    <button class="close-button" onclick="document.getElementById('response-<?= $email['id'] ?>').close()">&times;</button>
+                                </div>
+                                <div class="dialog-content"><?php
+                                    echo "<strong>SMTP Response:</strong>\n";
+                                    echo htmlspecialchars($email['smtp_response'] ?: 'No response data available');
+
+                                    if ($email['smtp_debug']) {
+                                        echo "<hr>\n";
+                                        echo "<strong>SMTP Debug:</strong>\n";
+                                        echo htmlspecialchars($email['smtp_debug']) . "\n";
+                                    }
+
+                                    if ($email['error_message']) {
+                                        echo "<hr>\n";
+                                        echo "<strong>Error Message:</strong>\n";
+                                        echo htmlspecialchars($email['error_message']) . "\n";
+                                    }
+                                ?>
+                                </div>
+                            </dialog>
                         <?php else: ?>
                             -
                         <?php endif; ?>
@@ -239,20 +263,32 @@ function formatStatus($status) {
 
     <script>
         document.addEventListener('DOMContentLoaded', function() {
-            // Add click handlers for toggling SMTP response visibility
+            // Add click handlers for opening SMTP response dialogs
             const toggleButtons = document.querySelectorAll('.toggle-response');
             toggleButtons.forEach(button => {
                 button.addEventListener('click', function(e) {
                     e.preventDefault();
                     const id = this.getAttribute('data-id');
-                    const responseDiv = document.getElementById('response-' + id);
+                    const responseDialog = document.getElementById('response-' + id);
                     
-                    if (responseDiv.style.display === 'block') {
-                        responseDiv.style.display = 'none';
-                        this.textContent = 'View Response';
-                    } else {
-                        responseDiv.style.display = 'block';
-                        this.textContent = 'Hide Response';
+                    if (responseDialog) {
+                        responseDialog.showModal();
+                    }
+                });
+            });
+            
+            // Close dialog when clicking on backdrop (outside the dialog)
+            const dialogs = document.querySelectorAll('dialog');
+            dialogs.forEach(dialog => {
+                dialog.addEventListener('click', function(e) {
+                    const dialogDimensions = dialog.getBoundingClientRect();
+                    if (
+                        e.clientX < dialogDimensions.left ||
+                        e.clientX > dialogDimensions.right ||
+                        e.clientY < dialogDimensions.top ||
+                        e.clientY > dialogDimensions.bottom
+                    ) {
+                        dialog.close();
                     }
                 });
             });
