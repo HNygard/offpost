@@ -255,7 +255,7 @@ function formatStatus($status) {
             <?php endforeach; ?>
             <?php if (empty($allEmails)): ?>
                 <tr>
-                    <td colspan="9" style="text-align: center;">No email sending records found</td>
+                    <td colspan="6" style="text-align: center;">No email sending records found</td>
                 </tr>
             <?php endif; ?>
         </table>
