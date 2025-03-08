@@ -32,6 +32,18 @@ try {
     ) {
         require __DIR__ . '/../system-pages/scheduled-email-sending.php';
     }
+    elseif ($path == '/email-sending-overview'
+        && (
+            ($environment == 'development')
+            || (
+                $environment == 'production'
+                // Internal name - used by container 'cron'
+                && $_SERVER['HTTP_HOST'] == 'organizer'
+            )
+        )
+    ) {
+        require __DIR__ . '/../system-pages/email-sending-overview.php';
+    }
 
     // :: Rest of the pages
     else {
