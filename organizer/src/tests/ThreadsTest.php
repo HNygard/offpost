@@ -18,19 +18,8 @@ class ThreadsTest extends TestCase {
         $this->testDataDir = DATA_DIR;
         $this->threadsDir = THREADS_DIR;
         
-        // Clean database tables
-        $db = new Database();
-        $db->execute("BEGIN");
-        $db->execute("DELETE FROM thread_email_history");
-        $db->execute("DELETE FROM thread_history");
-        $db->execute("DELETE FROM thread_authorizations");
-        $db->execute("DELETE FROM thread_email_attachments");
-        $db->execute("DELETE FROM thread_emails");
-        $db->execute("DELETE FROM thread_email_sendings");
-        $db->execute("COMMIT");
-        $db->execute("BEGIN");
-        $db->execute("DELETE FROM threads");
-        $db->execute("COMMIT");
+        // Start a transaction that will be rolled back in tearDown
+        Database::beginTransaction();
         
         // Create test directories
         if (!file_exists($this->threadsDir)) {
@@ -40,9 +29,26 @@ class ThreadsTest extends TestCase {
     }
 
     protected function tearDown(): void {
+        // Roll back all database changes
+        Database::rollBack();
+        
         // Clean up test directories
         $this->removeDirectory($this->threadsDir);
         parent::tearDown();
+    }
+    
+    /**
+     * Generate a unique UUID for testing
+     */
+    private function generateUniqueId() {
+        return sprintf(
+            '%04x%04x-%04x-%04x-%04x-%04x%04x%04x',
+            mt_rand(0, 0xffff), mt_rand(0, 0xffff),
+            mt_rand(0, 0xffff),
+            mt_rand(0, 0x0fff) | 0x4000,
+            mt_rand(0, 0x3fff) | 0x8000,
+            mt_rand(0, 0xffff), mt_rand(0, 0xffff), mt_rand(0, 0xffff)
+        );
     }
     
     private function removeDirectory($dir) {
@@ -111,7 +117,6 @@ class ThreadsTest extends TestCase {
         $existingThread = new Thread();
         $existingThread->title = 'Existing Thread';
         $existingThread->my_name = 'Test User';
-        $existingThread->my_email = 'test@example.com';
         $existingThread->my_email = "test" . mt_rand(0, 100) . time() ."@example.com";
         $existingThread->labels = [];
         $existingThread->sent = true;
@@ -146,7 +151,7 @@ class ThreadsTest extends TestCase {
     public function testSendThreadEmail() {
         // Arrange
         $thread = new Thread();
-        $thread->id = '550e8400-e29b-41d4-a716-446655440000';
+        $thread->id = $this->generateUniqueId();
         $thread->my_email = "test" . mt_rand(0, 100) . time() ."@example.com";
         $thread->my_name = 'Test User';
         $thread->sent = false;
@@ -201,7 +206,7 @@ class ThreadsTest extends TestCase {
     public function testInitialRequestStorage() {
         // Arrange
         $thread = new Thread();
-        $thread->id = '550e8400-e29b-41d4-a716-446655440002';
+        $thread->id = $this->generateUniqueId();
         $thread->my_email = "test" . mt_rand(0, 100) . time() ."@example.com";
         $thread->my_name = 'Test User';
         $thread->title = 'Test Thread with Initial Request';
@@ -229,7 +234,7 @@ class ThreadsTest extends TestCase {
     public function testSendingStatusTransitions() {
         // Arrange
         $thread = new Thread();
-        $thread->id = '550e8400-e29b-41d4-a716-446655440003';
+        $thread->id = $this->generateUniqueId();
         $thread->my_email = "test" . mt_rand(0, 100) . time() ."@example.com";
         $thread->my_name = 'Test User';
         $thread->title = 'Test Thread with Status Transitions';
@@ -314,7 +319,7 @@ class ThreadsTest extends TestCase {
     public function testSendThreadEmailFailure() {
         // Arrange
         $thread = new Thread();
-        $thread->id = '550e8400-e29b-41d4-a716-446655440001';
+        $thread->id = $this->generateUniqueId();
         $thread->my_email = "test" . mt_rand(0, 100) . time() ."@example.com";
         $thread->my_name = 'Test User';
         $thread->sent = false;
