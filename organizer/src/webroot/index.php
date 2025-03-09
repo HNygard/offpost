@@ -15,9 +15,6 @@ try {
     if ($environment == 'development' && $path == '/update-identities') {
         require __DIR__ . '/../update-identities.php';
     }
-    elseif ($environment == 'development' && $path == '/update-imap') {
-        require __DIR__ . '/../update-imap.php';
-    }
 
     // :: System pages (dev or cron in prod)
     elseif ($path == '/scheduled-email-sending'
@@ -47,6 +44,17 @@ try {
         requireAuth();
         if (in_array($_SESSION['user']['sub'], $admins)) {
             require __DIR__ . '/../system-pages/extraction-overview.php';
+        }
+        else {
+            throw new Exception("404 Not Found", 404);
+        }
+    }
+    // Temporary while we wait for new imap integration
+    elseif ($path == '/update-imap') {
+        require_once __DIR__ . '/../auth.php';
+        requireAuth();
+        if (in_array($_SESSION['user']['sub'], $admins)) {
+            require __DIR__ . '/../update-imap.php';
         }
         else {
             throw new Exception("404 Not Found", 404);
