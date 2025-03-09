@@ -23,6 +23,22 @@ Goal: make production usable
     - [ ] Public threads visible to non authenticated users
     - [ ] Front page with information
 
+- [ ] Email extractor
+    - To be used as foundation for automatic classification and follow up
+    - [ ] New datatype ThreadEmailExtraction
+        - extraction_id
+        - email_id
+        - attachment_id (nullable)
+        - prompt_id
+        - prompt_text
+        - prompt_service
+        - extracted_text
+        - error_message
+        - created_at
+        - updated_at
+    - [ ] Service class for creating and updating ThreadEmailExtraction
+    - [ ] Overview page for admin to see all unclassified emails and attachments
+
 - [ ] Update-imap - folder creation should be done in class so that logic is the same in tests and update-imap.php
 - [ ] GUI for replying to threads
     - [ ] Reply form with rich text editor
