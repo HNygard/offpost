@@ -311,11 +311,6 @@ class ThreadDatabaseOperationsTest extends PHPUnit\Framework\TestCase {
         // Get all threads
         $allThreads = $this->threadDbOps->getThreads();
         
-        // Clean up additional test entities in correct order
-        Database::execute("DELETE FROM thread_email_history WHERE thread_id IN (SELECT id FROM threads WHERE entity_id IN ('000000000-test-entity-1', '000000000-test-entity-2'))");
-        Database::execute("DELETE FROM thread_history WHERE thread_id IN (SELECT id FROM threads WHERE entity_id IN ('000000000-test-entity-1', '000000000-test-entity-2'))");
-        Database::execute("DELETE FROM threads WHERE entity_id IN ('000000000-test-entity-1', '000000000-test-entity-2')");
-        
         // Verify
         $this->assertNotEmpty($allThreads, "Should retrieve threads");
         $this->assertIsArray($allThreads, "Should return an array of threads");

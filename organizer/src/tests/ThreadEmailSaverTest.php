@@ -28,6 +28,7 @@ class ThreadEmailSaverTest extends TestCase {
         $db->execute("DELETE FROM thread_authorizations");
         $db->execute("DELETE FROM thread_email_attachments");
         $db->execute("DELETE FROM thread_email_sendings");
+        $db->execute("DELETE FROM thread_email_extractions");
         $db->execute("DELETE FROM threads");
         
         // Create temp directory for test files

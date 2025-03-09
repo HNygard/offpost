@@ -77,6 +77,7 @@ $allThreads = $filteredThreads;
                 <h3 style="display: inline;">Admin tools:</h3>
                 <ul class="nav-links" style="display: inline;">
                     <li><a href="/email-sending-overview">Email sending overview</a></li>
+                    <li><a href="/extraction-overview">Email extraction overview</a></li>
                 </ul>
             </div>
         <?php } ?>

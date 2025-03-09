@@ -42,6 +42,16 @@ try {
             throw new Exception("404 Not Found", 404);
         }
     }
+    elseif ($path == '/extraction-overview') {
+        require_once __DIR__ . '/../auth.php';
+        requireAuth();
+        if (in_array($_SESSION['user']['sub'], $admins)) {
+            require __DIR__ . '/../system-pages/extraction-overview.php';
+        }
+        else {
+            throw new Exception("404 Not Found", 404);
+        }
+    }
 
     // :: Rest of the pages
     else {
