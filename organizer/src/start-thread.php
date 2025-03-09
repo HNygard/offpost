@@ -227,6 +227,9 @@ if (!empty($labelsString)) {
 }
 $_POST['labels'] = $labelsString;
 
+
+Database::beginTransaction();
+
 // Create a thread for each entity
 foreach ($entityIds as $entityId) {
     $signDelim = mt_rand(0, 10) > 5 ? '---' : '--';
@@ -284,6 +287,7 @@ foreach ($entityIds as $entityId) {
     
     $createdThreads[] = $newThread;
 }
+Database::commit();
 
 if (count($createdThreads) > 1) {
     // Redirect to the index page with the group label filter
