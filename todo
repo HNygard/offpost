@@ -25,7 +25,7 @@ Goal: make production usable
 
 - [ ] Email extractor
     - To be used as foundation for automatic classification and follow up
-    - [ ] New datatype ThreadEmailExtraction
+    - [x] New datatype ThreadEmailExtraction
         - extraction_id
         - email_id
         - attachment_id (nullable)
@@ -36,8 +36,12 @@ Goal: make production usable
         - error_message
         - created_at
         - updated_at
-    - [ ] Service class for creating and updating ThreadEmailExtraction
-    - [ ] Overview page for admin to see all unclassified emails and attachments
+    - [x] Service class for creating and updating ThreadEmailExtraction
+    - [x] Overview page for admin to see all unclassified emails and attachments
+    - [ ] Manually trigger extration prompts from overview page
+    - [ ] Integration with OpenAI for extraction using prompts
+        - One prompt can depend on another.
+        - Some prompts depend on the type of request
 
 - [ ] Update-imap - folder creation should be done in class so that logic is the same in tests and update-imap.php
 - [ ] GUI for replying to threads
