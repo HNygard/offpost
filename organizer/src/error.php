@@ -3,8 +3,7 @@
 function displayErrorPage($error) {
     ob_end_clean();
 
-    $statusCode = $error instanceof Exception ? ($error->getCode() ?: 500) : 500;
-    http_response_code($statusCode);
+    http_response_code(500);
 
     // User agent for less output
     if (isset($_SERVER['HTTP_USER_AGENT']) && str_starts_with($_SERVER['HTTP_USER_AGENT'], 'Offpost E2E Test')) {
