@@ -49,7 +49,7 @@ foreach ($results as $row) {
                 ?>
                 <tr>
                     <td>
-                        <b><?= htmlspecialchars($entity->name) ?></b><br>
+                        <b><?= Entity::getNameHtml($entity) ?></b><br>
                         <span style="font-size: 0.8em;"><?= htmlspecialchars($entity_id) ?></span>
                     </td>
                     <td>

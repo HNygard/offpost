@@ -131,6 +131,9 @@ if (!isset($_POST['entity_ids']) || empty($_POST['entity_ids'])) {
                         if (empty($entity->email)) {
                             continue;
                         }
+                        if (!empty($entity->entity_existed_to_and_including)) {
+                            continue;
+                        }
 
                         $selected = in_array($id, $entity_ids) ? 'selected' : '';
                         echo "<option value=\"" . htmlescape($id) . "\" $selected>" . htmlescape($entity->name) . "</option>";

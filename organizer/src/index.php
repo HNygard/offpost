@@ -141,7 +141,7 @@ $allThreads = $filteredThreads;
                     <tr id="thread-<?= $thread->id ?>">
                         <?php /* Entity name / id */ ?>
                         <td>
-                            <b><?= htmlescape($thread->getEntityName()) ?></b><br>
+                            <b><?= Entity::getNameHtml($thread->getEntity()) ?></b><br>
                             <span style="font-size: 0.8em;"><?= $threads->entity_id ?></span>
                         </td>
                         <?php /* Title / My name <email> */ ?>

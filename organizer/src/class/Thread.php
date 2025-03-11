@@ -124,13 +124,12 @@ class Thread implements JsonSerializable {
     }
     
     /**
-     * Get entity name for this thread
-     * @return string The entity name or entity ID if not found
-     * @throws InvalidArgumentException If entity_id is null or empty
+     * Get Entity of the thread
+     * 
+     * @return Entity
      */
-    public function getEntityName() {
-        $entity = Entity::getById($this->entity_id);
-        return $entity->name;
+    public function getEntity() {
+        return Entity::getById($this->entity_id);
     }
 
     /**
