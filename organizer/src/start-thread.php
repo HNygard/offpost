@@ -60,6 +60,11 @@ if (!isset($_POST['entity_ids']) || empty($_POST['entity_ids'])) {
     $pageTitle = 'Start Email Thread - Email Engine Organizer';
     include 'head.php';
     ?>
+    <script src="/js/entitySearch.js"></script>
+    <script>
+        // Initialize entity data for the entity search
+        window.entityData = <?php echo json_encode(array_values((array)$entities)); ?>;
+    </script>
     <style>
         .form-group {
             margin-bottom: 15px;
@@ -105,7 +110,7 @@ if (!isset($_POST['entity_ids']) || empty($_POST['entity_ids'])) {
         }
     </style>
 </head>
-<body onload="document.getElementById('startthreadform-2023-09-17').submit();">
+<body>
     <div class="container">
         <?php include 'header.php'; ?>
         
@@ -124,22 +129,22 @@ if (!isset($_POST['entity_ids']) || empty($_POST['entity_ids'])) {
             </div>
 
             <div class="form-group">
-                <label for="entity_ids">Entities (hold Ctrl/Cmd to select multiple)</label>
-                <select id="entity_ids" name="entity_ids[]" multiple size="5">
-                    <?php
-                    foreach ($entities as $id => $entity) {
-                        if (empty($entity->email)) {
-                            continue;
-                        }
-                        if (!empty($entity->entity_existed_to_and_including)) {
-                            continue;
-                        }
-
-                        $selected = in_array($id, $entity_ids) ? 'selected' : '';
-                        echo "<option value=\"" . htmlescape($id) . "\" $selected>" . htmlescape($entity->name) . "</option>";
-                    }
-                    ?>
-                </select>
+                <label for="entity-search">Entities</label>
+                <div class="entity-search-container">
+                    <input type="text" id="entity-search" class="entity-search-input" placeholder="Search for entities...">
+                    <ul id="entity-list" class="entity-list"></ul>
+                </div>
+                
+                <div class="selected-entities-container">
+                    <div class="selected-entities-header">
+                        <h4>Selected Entities <span id="selected-entities-count" class="selected-entities-count">0</span></h4>
+                        <button type="button" id="select-all-municipalities" class="select-all-btn">Select All Municipalities</button>
+                    </div>
+                    <ul id="selected-entities-list" class="selected-entities-list"></ul>
+                </div>
+                
+                <input type="hidden" id="selected-entities-input" name="entity_ids[]" value="[]">
+                
                 <small style="color: #666; display: block; margin-top: 5px;">Select multiple entities to create one thread for each entity</small>
             </div>
 
@@ -209,6 +214,17 @@ if (!isset($_POST['entity_ids']) || empty($_POST['entity_ids'])) {
 // Validate entity IDs
 $entityIds = $_POST['entity_ids'];
 
+// Check if the first element is a JSON string (from the new entity search)
+if (isset($entityIds[0]) && $entityIds[0] !== '' && $entityIds[0][0] === '[') {
+    $entityIds = json_decode($entityIds[0], true);
+    
+    // If JSON decoding failed or returned an empty array
+    if ($entityIds === null || empty($entityIds)) {
+        http_response_code(400);
+        die("No entities selected. Please select at least one entity. <a href='javascript:history.back()'>Go back</a>");
+    }
+}
+
 // Validate each entity ID
 foreach ($entityIds as $entityId) {
     if (!Entity::exists($entityId)) {
@@ -216,8 +232,6 @@ foreach ($entityIds as $entityId) {
         die("Invalid entity ID: $entityId. Please select valid entities. <a href='javascript:history.back()'>Go back</a>");
     }
 }
-
-$entityIds = $_POST['entity_ids'];
 $createdThreads = [];
 $groupLabel = 'group-' . time() . '-' . substr(md5(rand()), 0, 6);
 
