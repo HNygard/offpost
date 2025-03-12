@@ -32,14 +32,26 @@ document.addEventListener('DOMContentLoaded', () => {
         bulkActionSelect.addEventListener('change', updateBulkActionButton);
     }
     
+    // Listen for the tableFiltered event from tableSearch.js
+    document.addEventListener('tableFiltered', () => {
+        updateSelectAllCheckbox();
+    });
+    
     /**
      * Toggle all thread checkboxes based on the "Select All" checkbox
+     * If a search is active, only toggle visible checkboxes
      */
     function toggleAllThreads() {
         const isChecked = selectAllCheckbox.checked;
         
         threadCheckboxes.forEach(checkbox => {
-            checkbox.checked = isChecked;
+            // Get the parent row of the checkbox
+            const row = checkbox.closest('tr');
+            
+            // Only toggle checkboxes of visible rows when a search is active
+            if (!row || row.style.display !== 'none') {
+                checkbox.checked = isChecked;
+            }
         });
         
         updateSelectedCount();
@@ -48,17 +60,24 @@ document.addEventListener('DOMContentLoaded', () => {
     
     /**
      * Update the "Select All" checkbox based on individual thread selections
+     * Only considers visible checkboxes when a search is active
      */
     function updateSelectAllCheckbox() {
         if (!selectAllCheckbox) return;
         
-        const totalCheckboxes = threadCheckboxes.length;
-        const checkedCheckboxes = Array.from(threadCheckboxes).filter(cb => cb.checked).length;
+        // Get visible checkboxes (those whose parent row is not hidden)
+        const visibleCheckboxes = Array.from(threadCheckboxes).filter(cb => {
+            const row = cb.closest('tr');
+            return !row || row.style.display !== 'none';
+        });
         
-        if (checkedCheckboxes === 0) {
+        const totalVisibleCheckboxes = visibleCheckboxes.length;
+        const checkedVisibleCheckboxes = visibleCheckboxes.filter(cb => cb.checked).length;
+        
+        if (checkedVisibleCheckboxes === 0) {
             selectAllCheckbox.checked = false;
             selectAllCheckbox.indeterminate = false;
-        } else if (checkedCheckboxes === totalCheckboxes) {
+        } else if (checkedVisibleCheckboxes === totalVisibleCheckboxes) {
             selectAllCheckbox.checked = true;
             selectAllCheckbox.indeterminate = false;
         } else {

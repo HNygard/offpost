@@ -38,5 +38,8 @@ document.addEventListener('DOMContentLoaded', function() {
                 row.style.display = 'none';
             }
         });
+        
+        // Dispatch a custom event to notify that the table has been filtered
+        document.dispatchEvent(new CustomEvent('tableFiltered'));
     }
 });
