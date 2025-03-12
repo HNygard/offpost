@@ -52,9 +52,9 @@ $allThreads = $filteredThreads;
     $pageTitle = 'Offpost';
     include 'head.php';
     ?>
-    <script src="/js/threadMultiSelect.js?2"></script>
-    <script src="/js/threadLabels.js?2"></script>
-    <script src="/js/tableSearch.js?2"></script>
+    <script src="/js/threadMultiSelect.js?3"></script>
+    <script src="/js/threadLabels.js?3"></script>
+    <script src="/js/tableSearch.js?3"></script>
 </head>
 <body>
     <div class="container">
