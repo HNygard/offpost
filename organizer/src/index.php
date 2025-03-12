@@ -53,6 +53,7 @@ $allThreads = $filteredThreads;
     include 'head.php';
     ?>
     <script src="/js/threadLabels.js"></script>
+    <script src="/js/tableSearch.js"></script>
 </head>
 <body>
     <div class="container">
@@ -157,8 +158,12 @@ $allThreads = $filteredThreads;
                         <input type="checkbox" id="select-all-threads" title="Select all threads">
                     </div>
                 </th>
-                <td>Entity name / id</td>
-                <th>Title / My name &lt;email&gt;</th>
+                <td>Entity name / id
+                    <input type="text" id="entity-search" placeholder="Filter by entity name/id...">
+                </td>
+                <th>Title / My name &lt;email&gt;
+                    <input type="text" id="title-search" placeholder="Filter by title/name...">
+                </th>
                 <td>Status</td>
                 <td>Labels</td>
             </tr>
