@@ -113,7 +113,47 @@ class BulkThreadActionsPageTest extends E2EPageTestCase {
                 "SELECT archived FROM threads WHERE id = ?",
                 [$testData['thread']->id]
             );
-            $this->assertTrue((bool)$isArchived, "Thread {$testData['thread']->id} should be archived");
+            $this->assertTrue((bool)$isArchived, "Thread {$testData['thread']->id} should be archived in database");
+        }
+        
+        // Verify that the threads are shown as archived in the UI
+        foreach ($this->testThreads as $testData) {
+            // Load the thread view page to verify it shows as archived
+            $threadViewResponse = $this->renderPage(
+                '/thread-view?entityId=' . urlencode($this->testEntityId) . '&threadId=' . urlencode($testData['thread']->id)
+            );
+            
+            // Check for archived indicator in the UI
+            $this->assertStringContainsString(
+                '<span class="label label_ok"><a href="/?label_filter=archived">Archived</a></span>',
+                $threadViewResponse->body,
+                "Thread {$testData['thread']->id} should be shown as archived in the UI as label"
+            );
+            $this->assertStringContainsString(
+                '<span class="history-action">Archived thread</span>',
+                $threadViewResponse->body,
+                "Thread {$testData['thread']->id} should be shown as archived in the UI thread history"
+            );
+        }
+        
+        // Verify that the StorageManager returns the thread as archived
+        $storageManager = ThreadStorageManager::getInstance();
+        $threads = $storageManager->getThreads('dev-user-id');
+        
+        foreach ($this->testThreads as $testData) {
+            $found = false;
+            foreach ($threads as $file => $entityThreads) {
+                if ($entityThreads->entity_id === $this->testEntityId) {
+                    foreach ($entityThreads->threads as $thread) {
+                        if ($thread->id === $testData['thread']->id) {
+                            $this->assertTrue($thread->archived, "Thread {$thread->id} should be archived in StorageManager");
+                            $found = true;
+                            break 2;
+                        }
+                    }
+                }
+            }
+            $this->assertTrue($found, "Thread {$testData['thread']->id} should be found in StorageManager results");
         }
     }
     
