@@ -165,8 +165,12 @@ $allThreads = $filteredThreads;
                 <th>Title / My name &lt;email&gt;<br>
                     <input type="text" id="title-search" placeholder="Filter by title/name...">
                 </th>
-                <td>Status</td>
-                <td>Labels</td>
+                <td>Status<br>
+                    <input type="text" id="status-search" placeholder="Filter by status...">
+                </td>
+                <td>Labels<br>
+                    <input type="text" id="label-search" placeholder="Filter by label...">
+                </td>
             </tr>
             <?php
             foreach ($allThreads as $file => $threads) {
