@@ -3809,7 +3809,7 @@
         "entity_id_norske_postlister": "cultiva-kristiansand-kommunes-energiverksstiftelse",
         "name": "Cultiva - Kristiansand kommunes Energiverksstiftelse",
         "email": "",
-        "type": "municipality",
+        "type": "municipality-unit",
         "org_num": "984336845"
     },
     "925775908-dagligvaretilsynet": {
@@ -4895,7 +4895,7 @@
         "entity_id_norske_postlister": "iks-brannvesenet-sor",
         "name": "Brannvesenet Sør IKS",
         "email": "",
-        "type": "agency",
+        "type": "municipality-unit",
         "org_num": "969952890"
     },
     "984054408-drammensregionens-brannvesen-iks": {
@@ -4903,7 +4903,7 @@
         "entity_id_norske_postlister": "iks-drammenregionens-brannvesen",
         "name": "Drammensregionens Brannvesen IKS",
         "email": "",
-        "type": "agency",
+        "type": "municipality-unit",
         "org_num": "984054408"
     },
     "976112555-gjovikregionen-helse-og-miljotilsyn-iks": {
@@ -4911,7 +4911,7 @@
         "entity_id_norske_postlister": "iks-gjovikregionen-helse-og-miljotilsyn",
         "name": "Gjøvikregionen helse- og miljøtilsyn IKS",
         "email": "",
-        "type": "agency",
+        "type": "municipality-unit",
         "org_num": "976112555"
     },
     "951608629-hallingdal-renovasjon-iks": {
@@ -4919,7 +4919,7 @@
         "entity_id_norske_postlister": "iks-hallingdal-renovasjon",
         "name": "Hallingdal Renovasjon IKS",
         "email": "",
-        "type": "agency",
+        "type": "municipality-unit",
         "org_num": "951608629"
     },
     "947293265-hias-iks": {
@@ -4927,7 +4927,7 @@
         "entity_id_norske_postlister": "iks-hias",
         "name": "Hias IKS",
         "email": "",
-        "type": "agency",
+        "type": "municipality-unit",
         "org_num": "947293265"
     },
     "986504907-helse-og-miljotilsyn-salten-iks": {
@@ -4935,7 +4935,7 @@
         "entity_id_norske_postlister": "iks-hmts",
         "name": "Helse- og miljøtilsyn Salten IKS",
         "email": "post@hmts.no",
-        "type": "agency",
+        "type": "municipality-unit",
         "org_num": "986504907"
     },
     "997499778-interkommunal-arkivordning-ost-iks": {
@@ -4943,7 +4943,7 @@
         "entity_id_norske_postlister": "iks-interkommunal-arkivordning-ost",
         "name": "Interkommunal arkivordning Øst IKS",
         "email": "",
-        "type": "agency",
+        "type": "municipality-unit",
         "org_num": "997499778"
     },
     "871035032-ivar-iks": {
@@ -4951,7 +4951,7 @@
         "entity_id_norske_postlister": "iks-ivar",
         "name": "IVAR IKS",
         "email": "",
-        "type": "agency",
+        "type": "municipality-unit",
         "org_num": "871035032"
     },
     "976634934-kommunerevisjon-iks": {
@@ -4959,7 +4959,7 @@
         "entity_id_norske_postlister": "iks-kommunerevisjon",
         "name": "Kommunerevisjon IKS",
         "email": "",
-        "type": "municipality",
+        "type": "municipality-unit",
         "org_num": "976634934"
     },
     "976634438-nedre-romerike-brann-og-redningsvesen-iks": {
@@ -4967,7 +4967,7 @@
         "entity_id_norske_postlister": "iks-nedre-romerike-brann-og-redningsvesen",
         "name": "Nedre Romerike brann- og redningsvesen IKS",
         "email": "",
-        "type": "agency",
+        "type": "municipality-unit",
         "org_num": "976634438"
     },
     "916923082-sirkula-iks": {
@@ -4975,7 +4975,7 @@
         "entity_id_norske_postlister": "iks-sirkula",
         "name": "Sirkula IKS",
         "email": "",
-        "type": "agency",
+        "type": "municipality-unit",
         "org_num": "916923082"
     },
     "942110375-tonsberg-renseanlegg-iks": {
@@ -4983,7 +4983,7 @@
         "entity_id_norske_postlister": "iks-tonsberg-renseanlegg",
         "name": "Tønsberg Renseanlegg IKS",
         "email": "",
-        "type": "agency",
+        "type": "municipality-unit",
         "org_num": "942110375"
     },
     "992047364-trondelag-brann-og-redningstjeneste-iks": {
@@ -4991,7 +4991,7 @@
         "entity_id_norske_postlister": "iks-trondelag-brann-og-redningstjeneste",
         "name": "Trøndelag Brann- og Redningstjeneste IKS",
         "email": "",
-        "type": "agency",
+        "type": "municipality-unit",
         "org_num": "992047364"
     },
     "962351409-vestfold-vann-iks": {
@@ -4999,7 +4999,7 @@
         "entity_id_norske_postlister": "iks-vestfold-vann",
         "name": "Vestfold Vann IKS",
         "email": "",
-        "type": "agency",
+        "type": "municipality-unit",
         "org_num": "962351409"
     },
     "985359385-ikt-agder-iks": {
@@ -5007,7 +5007,7 @@
         "entity_id_norske_postlister": "ikt-agder",
         "name": "Ikt-Agder IKS",
         "email": "postmottak@ikt-agder.no",
-        "type": "agency",
+        "type": "municipality-unit",
         "org_num": "985359385"
     },
     "920717152-innlandet-fylkeskommune": {
@@ -5048,7 +5048,7 @@
         "entity_id_norske_postlister": "kilden",
         "name": "Kilden teater og konserthus for Sørlandet IKS",
         "email": "",
-        "type": "agency",
+        "type": "municipality-unit",
         "org_num": "986471839"
     },
     "918195548-klagenemndssekretariatet": {
@@ -5064,7 +5064,7 @@
         "entity_id_norske_postlister": "kolumbus",
         "name": "Kolumbus AS",
         "email": "",
-        "type": "agency",
+        "type": "county-unit",
         "org_num": "914749360"
     },
     "992375434-kompetansesenter-for-distriktsutvikling": {
@@ -5328,7 +5328,7 @@
         "entity_id_norske_postlister": "oslo-kommune-barne--og-familieetaten",
         "name": "Oslo kommune Barne- og familieetaten",
         "email": "",
-        "type": "municipality",
+        "type": "municipality-unit",
         "org_num": "976819896"
     },
     "971185589-oslo-kommune-vann-og-avlopsetaten": {
@@ -5336,7 +5336,7 @@
         "entity_id_norske_postlister": "oslo-kommune-vann-og-avlopsetaten",
         "name": "Oslo kommune Vann- og avløpsetaten",
         "email": "",
-        "type": "municipality",
+        "type": "municipality-unit",
         "org_num": "971185589"
     },
     "842952972-ostfold-fylkeskommune-arkiv": {
@@ -5506,7 +5506,7 @@
         "entity_id_norske_postlister": "rogaland-brann-og-redning-iks",
         "name": "Rogaland Brann og Redning IKS",
         "email": "",
-        "type": "agency",
+        "type": "municipality-unit",
         "org_num": "886884702"
     },
     "971045698-rogaland-fylkeskommune": {
@@ -5949,7 +5949,7 @@
         "entity_id_norske_postlister": "vekst-i-grenland",
         "name": "Vekst i Grenland IKS",
         "email": "",
-        "type": "agency",
+        "type": "municipality-unit",
         "org_num": "913559363"
     },
     "960895827-vest-agder-fylkeskommune": {
@@ -5967,7 +5967,7 @@
         "entity_id_norske_postlister": "vest-telemark-brannvern-iks",
         "name": "Vest-Telemark brannvern IKS",
         "email": "post@vtbv.no",
-        "type": "agency",
+        "type": "municipality-unit",
         "org_num": "994517139"
     },
     "944025391-vestfold-fylkeskommune-arkiv": {
