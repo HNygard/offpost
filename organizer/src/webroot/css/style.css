@@ -557,6 +557,86 @@ span.label.label_disabled a {
     margin-right: 5px;
 }
 
+/* Thread Multi-Select Styles */
+.thread-checkbox-container {
+    display: inline-block;
+    margin-right: 10px;
+    vertical-align: middle;
+}
+
+.thread-checkbox {
+    cursor: pointer;
+    width: 18px;
+    height: 18px;
+}
+
+.bulk-actions-container {
+    margin: 20px 0;
+    padding: 15px;
+    background-color: #f8f9fa;
+    border-radius: 6px;
+    border: 1px solid #dee2e6;
+    display: flex;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: 10px;
+}
+
+.bulk-actions-container select {
+    padding: 8px 12px;
+    border: 1px solid #dee2e6;
+    border-radius: 4px;
+    background-color: white;
+    min-width: 200px;
+}
+
+.bulk-actions-container button {
+    padding: 8px 15px;
+    background-color: #3498db;
+    color: white;
+    border: none;
+    border-radius: 4px;
+    cursor: pointer;
+}
+
+.bulk-actions-container button:hover {
+    background-color: #2980b9;
+}
+
+.bulk-actions-container button:disabled {
+    background-color: #cccccc;
+    cursor: not-allowed;
+}
+
+.selected-count-container {
+    margin-left: 15px;
+    padding: 5px 10px;
+    background-color: #e9ecef;
+    border-radius: 4px;
+    font-size: 0.9em;
+    display: none;
+}
+
+/* Alert styles */
+.alert {
+    padding: 15px;
+    margin-bottom: 20px;
+    border: 1px solid transparent;
+    border-radius: 4px;
+}
+
+.alert-success {
+    color: #155724;
+    background-color: #d4edda;
+    border-color: #c3e6cb;
+}
+
+.alert-error {
+    color: #721c24;
+    background-color: #f8d7da;
+    border-color: #f5c6cb;
+}
+
 /* Media query for mobile responsiveness */
 @media (max-width: 600px) {
     .responsive-form {

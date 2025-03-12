@@ -80,9 +80,6 @@ try {
             case '/api/threads':
                 require __DIR__ . '/../api.php';
                 break;
-            case '/toggle-thread-archive':
-                require __DIR__ . '/../toggle-thread-archive.php';
-                break;
             case '/callback':
                 require __DIR__ . '/../callback.php';
                 break;
@@ -95,8 +92,8 @@ try {
             case '/entities':
                 require __DIR__ . '/../entities.php';
                 break;
-            case '/archive-threads-by-label':
-                require __DIR__ . '/../archive-threads-by-label.php';
+            case '/thread-bulk-actions':
+                require __DIR__ . '/../thread-bulk-actions.php';
                 break;
             default:
                 throw new Exception("404 Not Found", 404);

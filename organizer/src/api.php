@@ -50,9 +50,6 @@ foreach ($allThreads as $entityFile => $entityThreads) {
                             . '&threadId='. urlencode($thread->id)
                             . '&attachment=' . urlencode($att->location)
                             . '&text=true';
-                        $att->linkSetSuccess = 'http://localhost:25081/setSuccessForThreadAndDocument.php?entityId=' . urlencode($entityThreads->entity_id)
-                            . '&threadId='. urlencode($thread->id)
-                            . '&attachment=' . urlencode($att->location);
                     }
                 }
 

@@ -102,6 +102,36 @@ $allThreads = $filteredThreads;
                 <a href="?archived">Show archived</a>
             <?php endif; ?></li>
         </ul>
+        
+        <?php
+        // Display success/error messages if set
+        if (isset($_SESSION['success_message'])) {
+            echo '<div class="alert alert-success">' . htmlescape($_SESSION['success_message']) . '</div>';
+            unset($_SESSION['success_message']);
+        }
+        
+        if (isset($_SESSION['error_message'])) {
+            echo '<div class="alert alert-error">' . htmlescape($_SESSION['error_message']) . '</div>';
+            unset($_SESSION['error_message']);
+        }
+        ?>
+        
+        <!-- Bulk Actions Form -->
+        <div class="bulk-actions-container">
+            <form action="/thread-bulk-actions" method="post" id="bulk-actions-form">
+                <select name="action" id="bulk-action">
+                    <option value="">-- Select Action --</option>
+                    <option value="archive">Archive thread</option>
+                    <option value="ready_for_sending">Mark thread as ready for sending</option>
+                    <option value="make_private">Mark thread as private</option>
+                    <option value="make_public">Mark thread as public</option>
+                </select>
+                <button type="submit" id="bulk-action-button" disabled>Apply to Selected</button>
+                <div class="selected-count-container" id="selected-count-container">
+                    <span id="selected-count">0</span> thread(s) selected
+                </div>
+            </form>
+        </div>
 
         <?php
             if (isset($_GET['label_filter']) && count($allThreads) > 0) {
@@ -110,12 +140,6 @@ $allThreads = $filteredThreads;
         <ul class="nav-links">
             <li><a href="/">Back to all threads</a></li>
             <li><a href="/api/threads?label=<?=urlencode($_GET['label_filter'])?>">View API response for label</a></li>
-            <li>
-                <form action="/archive-threads-by-label" method="post" style="display: inline;">
-                    <input type="hidden" name="label" value="<?= htmlspecialchars($_GET['label_filter'], ENT_QUOTES) ?>">
-                    <button type="submit" onclick="return confirm('Are you sure you want to archive all threads with this label?')">Archive all threads with this label</button>
-                </form>
-            </li>
         </ul>
         
         <?php
@@ -128,6 +152,11 @@ $allThreads = $filteredThreads;
 
         <table>
             <tr>
+                <th>
+                    <div class="thread-checkbox-container">
+                        <input type="checkbox" id="select-all-threads" title="Select all threads">
+                    </div>
+                </th>
                 <td>Entity name / id</td>
                 <th>Title / My name &lt;email&gt;</th>
                 <td>Status</td>
@@ -139,6 +168,11 @@ $allThreads = $filteredThreads;
                 foreach ($threads->threads as $thread) {
                     ?>
                     <tr id="thread-<?= $thread->id ?>">
+                        <td>
+                            <div class="thread-checkbox-container">
+                                <input type="checkbox" class="thread-checkbox" name="thread_ids[]" value="<?= htmlescape($threads->entity_id) ?>:<?= htmlescape($thread->id) ?>" form="bulk-actions-form">
+                            </div>
+                        </td>
                         <?php /* Entity name / id */ ?>
                         <td>
                             <b><?= Entity::getNameHtml($thread->getEntity()) ?></b><br>
@@ -158,9 +192,6 @@ $allThreads = $filteredThreads;
                                 <a href="/thread-classify?entityId=<?=
                                     htmlescape($threads->entity_id)?>&threadId=<?=
                                     htmlescape($thread->id)?>">Classify</a>
-                                <a href="/setSuccessForThreadAndDocument?entityId=<?=
-                                    htmlescape($threads->entity_id)?>&threadId=<?=
-                                    htmlescape($thread->id)?>">Archive thread</a>
                             </div>
                         </td>
                         <?php /* Status */ ?>
