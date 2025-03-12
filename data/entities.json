@@ -861,12 +861,12 @@
         "type": "municipality",
         "org_num": "964962766"
     },
-    "964962855-krodsherad": {
+    "964962855-krodsherad-kommune": {
         "entity_id": "964962855-krodsherad",
         "entity_id_norske_postlister": "0622-krodsherad",
         "name": "Krødsherad kommune",
         "email": "krodsherad.kommune@krodsherad.kommune.no",
-        "type": "agency",
+        "type": "municipality",
         "org_num": "964962855"
     },
     "970491589-modum-kommune": {
@@ -1707,12 +1707,12 @@
         "type": "municipality",
         "org_num": "959412340"
     },
-    "964967636-kvinnherad": {
+    "964967636-kvinnherad-kommune": {
         "entity_id": "964967636-kvinnherad",
         "entity_id_norske_postlister": "1224-kvinnherad",
         "name": "Kvinnherad kommune",
         "email": "post@kvinnherad.kommune.no",
-        "type": "agency",
+        "type": "municipality",
         "org_num": "964967636"
     },
     "944439927-jondal-kommune": {
@@ -1740,7 +1740,7 @@
         "entity_id_norske_postlister": "1231-ullensvang-herad",
         "name": "Ullensvang kommune",
         "email": "postmottak@ullensvang.kommune.no",
-        "type": "agency",
+        "type": "municipality",
         "org_num": "920500633"
     },
     "944227121-eidfjord-kommune": {
@@ -1782,7 +1782,7 @@
         "entity_id_norske_postlister": "1238-kvam-herad",
         "name": "Kvam herad",
         "email": "postmottak@kvam.kommune.no",
-        "type": "agency",
+        "type": "municipality",
         "org_num": "944233199"
     },
     "964968896-fusa-kommune": {
@@ -3603,7 +3603,15 @@
         "type": "municipality",
         "org_num": "939896600"
     },
-    "995012766-flatanger-kommune": {
+    "845153272-flatanger-kommune": {
+        "entity_id": "845153272-flatanger-kommune",
+        "entity_id_norske_postlister": "5049-flatanger-kommune2",
+        "name": "Flatanger kommune",
+        "email": "postmottak@flatanger.kommune.no",
+        "type": "municipality",
+        "org_num": "845153272"
+    },
+    "995012766-midtre-namdal-samkommune": {
         "entity_id": "995012766-flatanger-kommune",
         "entity_id_norske_postlister": "5049-flatanger-kommune",
         "name": "Midtre Namdal samkommune",
