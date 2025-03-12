@@ -8,4 +8,3 @@ if (!isset($pageTitle)) {
 <title><?= $pageTitle ?></title>
 <link rel="icon" type="image/png" href="/images/offpost-favicon.png">
 <link href="/css/style.css" rel="stylesheet">
-<script src="/js/threadMultiSelect.js"></script>

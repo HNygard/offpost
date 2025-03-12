@@ -52,8 +52,9 @@ $allThreads = $filteredThreads;
     $pageTitle = 'Offpost';
     include 'head.php';
     ?>
-    <script src="/js/threadLabels.js"></script>
-    <script src="/js/tableSearch.js"></script>
+    <script src="/js/threadMultiSelect.js?2"></script>
+    <script src="/js/threadLabels.js?2"></script>
+    <script src="/js/tableSearch.js?2"></script>
 </head>
 <body>
     <div class="container">
@@ -158,10 +159,10 @@ $allThreads = $filteredThreads;
                         <input type="checkbox" id="select-all-threads" title="Select all threads">
                     </div>
                 </th>
-                <td>Entity name / id
+                <td>Entity name / id<br>
                     <input type="text" id="entity-search" placeholder="Filter by entity name/id...">
                 </td>
-                <th>Title / My name &lt;email&gt;
+                <th>Title / My name &lt;email&gt;<br>
                     <input type="text" id="title-search" placeholder="Filter by title/name...">
                 </th>
                 <td>Status</td>
