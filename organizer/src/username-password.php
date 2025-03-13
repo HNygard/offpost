@@ -43,7 +43,7 @@ if ($environment == 'development') {
     }
 }
 else if ($environment == 'production') {
-    $imapServer = '{ssl://imap.one.com:993/imap/ssl}';
+    $imapServer = '{imap.one.com:993/imap/ssl}';
     $imapSentFolder = 'INBOX.Sent';
     
     $smtpServer = 'smtp.sendgrid.net';
