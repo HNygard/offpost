@@ -56,7 +56,6 @@ class PHPMailerService implements IEmailService {
             return false;
         }
 
-
         $mail = new \PHPMailer\PHPMailer\PHPMailer(true);
         $mail->XMailer = 'Roundcube thread starter';
         $mail->isSMTP();
@@ -69,22 +68,22 @@ class PHPMailerService implements IEmailService {
         $mail->SMTPSecure = $this->secure;
         $mail->Port = $this->port;
 
-        ob_start();
-        $mail->SMTPDebug = 2;
-        
-        $mail->From = $from;
-        $mail->FromName = $fromName;
-        $mail->addAddress($to);
-        if ($bcc) {
-            $mail->addBCC($bcc);
-        }
-
-        $mail->WordWrap = 150;
-        $mail->Subject = $subject;
-        $mail->Body = $body;
-        $mail->Timeout = 10;
-
         try {
+            ob_start();
+            $mail->SMTPDebug = 2;
+
+            $mail->From = $from;
+            $mail->FromName = $fromName;
+            $mail->addAddress($to);
+            if ($bcc) {
+                $mail->addBCC($bcc);
+            }
+
+            $mail->WordWrap = 150;
+            $mail->Subject = $subject;
+            $mail->Body = $body;
+            $mail->Timeout = 10;
+
             $result = $mail->send();
             $this->debugOutput = ob_get_clean();
             return $result;

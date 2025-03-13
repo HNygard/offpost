@@ -51,9 +51,9 @@ function getRandomNameAndEmail() {
     // Random: Å ha mellomnavn
     $middle = profileRandom(70, $last_names_to_clean[array_rand($last_names_to_clean)], '');
 
-    $first = mb_ucfirst(mb_strtolower($first, 'UTF-8'), 'UTF-8');
-    $middle = mb_ucfirst(mb_strtolower($middle, 'UTF-8'), 'UTF-8');
-    $last = mb_ucfirst(mb_strtolower($last, 'UTF-8'), 'UTF-8');
+    $first = trim(mb_ucfirst(mb_strtolower($first, 'UTF-8'), 'UTF-8'),  " \n\r\t\v\x00");
+    $middle = trim(mb_ucfirst(mb_strtolower($middle, 'UTF-8'), 'UTF-8'),  " \n\r\t\v\x00");
+    $last = trim(mb_ucfirst(mb_strtolower($last, 'UTF-8'), 'UTF-8'),  " \n\r\t\v\x00");
 
     $middleShort = '';
     if ($middle != '') {
@@ -79,8 +79,11 @@ function getRandomNameAndEmail() {
     $email = str_replace('æ', 'ae', $email);
     $email = str_replace('ø', profileRandom(50, 'oe', 'o'), $email);
 
-    // Clean out spaces
-    $email = str_replace(' ', '', $email);
+    // Clean out all whitespace characters
+    $email = preg_replace('/\s+/', '', $email);
+    
+    // Ensure email doesn't start with a period
+    $email = ltrim($email, '.');
 
     $obj = new stdClass();
     $obj->firstName = $first;

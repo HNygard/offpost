@@ -70,12 +70,18 @@ class RandomProfileTest extends TestCase
         $this->assertMatchesRegularExpression('/^[A-ZÆØÅ][a-zæøå]+$/', $result->lastName);
 
         // Test email format
-        $this->assertMatchesRegularExpression('/^[a-z0-9.-]+@offpost\.no$/', $result->email);
+        $this->assertMatchesRegularExpression('/^[a-z0-9][a-z0-9.-]*@offpost\.no$/', $result->email);
         
         // Test special character replacements in email
         $this->assertStringNotContainsString('æ', $result->email);
         $this->assertStringNotContainsString('ø', $result->email);
         $this->assertStringNotContainsString('å', $result->email);
+        
+        // Test that email doesn't start with a period (which was a bug)
+        $this->assertFalse(preg_match('/^\.[a-z0-9.-]*@offpost\.no$/', $result->email) === 1, 'Email should not start with a period');
+        
+        // Test that email doesn't contain spaces (which was a bug)
+        $this->assertStringNotContainsString(' ', $result->email);
     }
 
     public function testGetNamesFromCsv()
