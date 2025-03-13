@@ -28,13 +28,13 @@ class ImapWrapper {
 
     public function createMailbox(mixed $imap_stream, string $mailbox): bool {
         $result = \imap_createmailbox($imap_stream, $mailbox);
-        $this->checkError('createMailbox');
+        $this->checkError('createMailbox(' . $mailbox . ')');
         return $result;
     }
 
     public function subscribe(mixed $imap_stream, string $mailbox): bool {
         $result = \imap_subscribe($imap_stream, $mailbox);
-        $this->checkError('subscribe');
+        $this->checkError('subscribe(' . $mailbox . ')');
         return $result;
     }
 
