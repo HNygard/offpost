@@ -1,8 +1,8 @@
 <?php
 
 // This is also the user name and password for entering Roundcube
-$yourEmail = "greenmail-user";
-$yourEmailPassword = "EzUVrHxLVrF2";
+$imap_username = "greenmail-user";
+$imap_password = "EzUVrHxLVrF2";
 
 $admins = array();
 

@@ -26,13 +26,13 @@ function logDebug($text) {
 
 $server = '{imap.one.com:993/imap/ssl}';
 function openConnection($folder = 'INBOX') {
-    /* @var $yourEmail string */
-    /* @var $yourEmailPassword string */
+    /* @var $imap_username string */
+    /* @var $imap_password string */
     require __DIR__ . '/username-password.php';
 
     global $server;
     try {
-        $m = imap_open($server . $folder, $yourEmail, $yourEmailPassword, 0, 1,
+        $m = imap_open($server . $folder, $imap_username, $imap_password, 0, 1,
             array('DISABLE_AUTHENTICATOR' => 'PLAIN'));
         checkForImapError();
         return $m;

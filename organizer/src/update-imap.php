@@ -26,7 +26,7 @@ echo '<pre>';
 
 try {
     // Initialize IMAP connection and components
-    $connection = new ImapConnection($imapServer, $yourEmail, $yourEmailPassword, true);
+    $connection = new ImapConnection($imapServer, $imap_username, $imap_password, true);
     $connection->openConnection();
     
     $folderManager = new ImapFolderManager($connection);
@@ -69,7 +69,7 @@ try {
     
     // Process Sent folder
     $connection->logDebug('---- PROCESSING SENT FOLDER ----');
-    $connection = new ImapConnection($imapServer, $yourEmail, $yourEmailPassword, true);
+    $connection = new ImapConnection($imapServer, $imap_username, $imap_password, true);
     $connection->openConnection($imapSentFolder);
     
     $folderManager = new ImapFolderManager($connection);
@@ -106,7 +106,7 @@ try {
             }
             
             try {
-                $connection = new ImapConnection($imapServer, $yourEmail, $yourEmailPassword, true);
+                $connection = new ImapConnection($imapServer, $imap_username, $imap_password, true);
                 $connection->openConnection($folder);
                 
                 $folderManager = new ImapFolderManager($connection);
