@@ -24,6 +24,11 @@ require __DIR__ . '/username-password.php';
 
 echo '<pre>';
 
+echo ":: IMAP setting\n";
+echo "Server ..... : $imapServer\n";
+echo "Username ... : $imap_username\n";
+echo "\n\n";
+
 try {
     // Initialize IMAP connection and components
     $connection = new ImapConnection($imapServer, $imap_username, $imap_password, true);
