@@ -80,7 +80,7 @@ class ThreadFolderManager {
         
         // Ensure reasonable length (max 80 chars for folder name)
         if (strlen($title) > 80) {
-            $title = substr($title, 0, 77) . '...';
+            $title = substr($title, 0, 77) . 'osv';
         }
         
         return $thread->archived ? 'INBOX.Archive.' . $title : 'INBOX.' . $title;
