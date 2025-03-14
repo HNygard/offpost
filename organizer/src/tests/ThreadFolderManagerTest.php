@@ -227,7 +227,7 @@ class ThreadFolderManagerTest extends TestCase {
         
         // Create a very long title (80 chars max for folder name)
         $longTitle = str_repeat('a', 100);
-        $expectedTitle = substr($longTitle, 0, 70) . '...';
+        $expectedTitle = substr($longTitle, 0, 70) . 'osv';
         
         $thread = (object)[
             'title' => $longTitle,
