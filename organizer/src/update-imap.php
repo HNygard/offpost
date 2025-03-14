@@ -132,7 +132,6 @@ try {
             
             $connection->logDebug('');
         }
-        saveEntityThreads($entityThreads->entity_id, $entityThreads);
     }
     
 } catch(Exception $e) {

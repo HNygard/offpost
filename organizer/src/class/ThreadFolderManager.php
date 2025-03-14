@@ -30,7 +30,8 @@ class ThreadFolderManager {
      * @return array List of created folder paths
      */
     public function createRequiredFolders(array $threads): array {
-        $requiredFolders = ['INBOX.Archive'];
+        require __DIR__ . '/../username-password.php';
+        $requiredFolders = ['INBOX.Archive', $imapSentFolder];
         
         foreach ($threads as $entityThreads) {
             foreach ($entityThreads->threads as $thread) {
