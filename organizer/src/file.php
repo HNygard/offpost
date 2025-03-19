@@ -50,7 +50,7 @@ if (!ThreadAuthorizationManager::canUserAccessThread($threadId, $_SESSION['user'
 
 foreach ($thread->emails as $email) {
     if (isset($_GET['body']) && $_GET['body'] == $email->id) {
-        $eml = ThreadStorageManager::getInstance()->getThreadFile($entityId, $thread, $email->id_old . '.eml'); 
+        $eml =  ThreadStorageManager::getInstance()->getThreadEmailContent($entityId, $thread, $email->id); 
         $message = new Message(['raw' => $eml]);
 
         switch ($message->getHeaders()->getEncoding()) {
@@ -67,9 +67,9 @@ foreach ($thread->emails as $email) {
 
         $message = new Message(['raw' => $eml]);
 
-        $email_content = json_decode(ThreadStorageManager::getInstance()->getThreadFile($entityId, $thread, $email->id_old . '.json'));
+        $email_content = $email;
         echo '<h1 id="email-subject">Subject: ' . htmlescape($message->getHeader('subject')->getFieldValue()) . '</h1>' . chr(10);
-        echo '<b>Date: ' . $email_content->date . '</b><br>' . chr(10);
+        echo '<b>Date: ' . $email_content->datetime_received . '</b><br>' . chr(10);
         //echo '<b>Sender: ' . $email_content->senderAddress . '</b><br>'.chr(10);
 
         // Access the plain text content
@@ -101,14 +101,11 @@ foreach ($thread->emails as $email) {
             echo '<pre>' . $htmlConvert(imap_qprint($message->getContent())) . '</pre>';
         }
 
-        unset($email_content->subject);
-        unset($email_content->date);
-        unset($email_content->body);
-        unset($email_content->attachments);
-        unset($email_content->attachements);
-        unset($email_content->timestamp);
         echo '<pre>';
-        echo json_encode($email_content, JSON_PRETTY_PRINT ^ JSON_UNESCAPED_UNICODE ^ JSON_UNESCAPED_SLASHES);
+        echo '-------------------' . chr(10);
+        echo "HEADERS:\n";
+        echo $message->getHeaders()->toString();
+        echo '</pre>';
         exit;
     }
 
@@ -117,6 +114,7 @@ foreach ($thread->emails as $email) {
     }
     if (isset($_GET['attachment'])) {
         foreach ($email->attachments as $att) {
+            /* @var $att ThreadEmailAttachment */
             if ($att->location == $_GET['attachment']) {
                 if (str_contains($att->location, '/')) {
                     // Strip last part of location to get the filename
@@ -126,11 +124,15 @@ foreach ($thread->emails as $email) {
                     // New format of location
                     $filename = $att->location;
                 }
-                $body = ThreadStorageManager::getInstance()->getThreadFile($entityId, $thread, $filename);
+                $att = ThreadStorageManager::getInstance()->getThreadEmailAttachment($thread, $att->location);
+                if (empty($att->content)) {
+                    throw new Exception("Attachment content empty: threadId={$threadId}, entityId={$entityId}, attachment={$att->location}", 404);
+                }
+
                 if ($att->filetype == 'pdf') {
                     header("Content-type:application/pdf");
                 }
-                echo $body;
+                echo $att->content;
                 exit;
             }
         }

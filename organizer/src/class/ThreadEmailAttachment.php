@@ -7,6 +7,7 @@ class ThreadEmailAttachment {
     var $location;
     var $status_type;
     var $status_text;
+    var $content;
 
     public function getIconClass() {
         switch ($this->filetype) {

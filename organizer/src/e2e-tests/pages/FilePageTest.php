@@ -19,7 +19,8 @@ class FilePageTest extends E2EPageTestCase {
         $this->assertStringContainsString('Content-Type: text/html; charset=UTF-8', $response->headers);
 
         // Contain "mailHeaders" as part of the output
-        $this->assertStringContainsString('mailHeaders', $response->body);
+        $this->assertStringContainsString('HEADERS', $response->body);
+        $this->assertStringContainsString('From: sender@example.com', $response->body);
     }
     /*
     public function testFilePdfHappy() {
@@ -60,6 +61,26 @@ class FilePageTest extends E2EPageTestCase {
 
         // Assert error message
         $this->assertStringContainsString('Thread not found: threadId=00000000-0000-0000-0000-000000000000, entityId=ab&lt;b&gt;c', $response->body);
+    }
+
+    public function testFileWithoutContent() {
+
+        $testData = E2ETestSetup::createTestThread();
+        $file = [
+            'email_id' => $testData['email_id'],
+            'thread_id' => $testData['thread']->id,
+            'entity_id' => $testData['entity_id']
+        ];
+
+        // Update content to empty
+        Database::query("UPDATE thread_emails SET content = '' WHERE id = ?", [$file['email_id']]);
+
+        // Need file ID to download
+        $response = $this->renderPage('/file?entityId=' . $file['entity_id'] . '&threadId=' . $file['thread_id'] . '&body=' . $file['email_id'], 
+        'dev-user-id', 'GET', '500 Internal Server Error');
+
+        // Correct error message
+        $this->assertStringContainsString("Thread Email have no content [thread_id={$testData['thread']->id}, email_id={$testData['email_id']}", $response->body);
     }
 
 }

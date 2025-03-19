@@ -1,6 +1,6 @@
 -- ******************************************************************
 -- AUTOMATICALLY GENERATED FILE - DO NOT MODIFY
--- Generated on: 2025-03-08 23:33:12
+-- Generated on: 2025-03-19 22:32:17
 -- 
 -- This file contains the current database schema after all migrations.
 -- It is NOT meant to be executed as a migration script.
@@ -35,7 +35,8 @@ CREATE TABLE thread_email_attachments (
     status_type character varying(50),
     status_text text,
     created_at timestamp with time zone NOT NULL DEFAULT CURRENT_TIMESTAMP,
-    size bigint
+    size bigint,
+    content text
 );
 
 ALTER TABLE thread_email_attachments ADD CONSTRAINT thread_email_attachments_pkey PRIMARY KEY (id);
@@ -115,7 +116,8 @@ CREATE TABLE thread_emails (
     answer text,
     content text NOT NULL,
     created_at timestamp with time zone NOT NULL DEFAULT CURRENT_TIMESTAMP,
-    id_old character varying(255)
+    id_old character varying(255),
+    imap_headers jsonb
 );
 
 ALTER TABLE thread_emails ADD CONSTRAINT thread_emails_pkey PRIMARY KEY (id);

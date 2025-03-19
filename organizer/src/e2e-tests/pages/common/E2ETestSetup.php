@@ -39,8 +39,14 @@ class E2ETestSetup {
         $threadOps = new ThreadDatabaseOperations();
         $createdThread = $threadOps->createThread($entityId, $thread, $userId);
         
-        // Create test email
+        // Create test email with raw email content
         $email_time = mktime(12, 0, 0, 1, 1, 2021);
+        $content = "From: sender@example.com\r\n" .
+                "To: {$thread->my_email}\r\n" .
+                "Subject: Test Email\r\n" .
+                "Date: " . date('r', $email_time) . "\r\n" .
+                "\r\n" .
+                "This is a test email";
         $emailId = Database::queryValue(
             "INSERT INTO thread_emails (thread_id, id_old, timestamp_received, datetime_received, ignore, email_type, status_type, status_text, content) 
             VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?) RETURNING id",
@@ -53,14 +59,14 @@ class E2ETestSetup {
                 'IN',
                 'unknown',
                 'Uklassifisert',
-                'Test email content'
+                $content
             ]
         );
         
-        // Create test attachment
+        // Create test attachment metadata in database
         $attachmentId = Database::queryValue(
-            "INSERT INTO thread_email_attachments (email_id, name, filename, filetype, location, status_type, status_text, size)
-            VALUES (?, ?, ?, ?, ?, ?, ?, ?) RETURNING id",
+            "INSERT INTO thread_email_attachments (email_id, name, filename, filetype, location, status_type, status_text, size, content)
+            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?) RETURNING id",
             [
                 $emailId,
                 'test.pdf',
@@ -69,36 +75,8 @@ class E2ETestSetup {
                 date('Y-m-d_His', $email_time) . ' - IN - att 1-754dc77d28e62763c4916970d595a10f.pdf',
                 'unknown',
                 'uklassifisert-dok',
-                1024
-            ]
-        );
-        
-        // Create thread directory and files
-        $threadDir = __DIR__ . '/../../../../../data/threads/' . $entityId . '/' . $createdThread->id;
-        if (!file_exists($threadDir)) {
-            mkdir($threadDir, 0777, true);
-        }
-        
-        // Create email file
-        $emailFile = $threadDir . '/' . date('Y-m-d_His', $email_time) . ' - IN.eml';
-        file_put_contents($emailFile, "From: sender@example.com\r\nTo: {$thread->my_email}\r\nSubject: Test Email\r\n\r\nThis is a test email");
-        
-        // Create email JSON file
-        $emailJsonFile = $threadDir . '/' . date('Y-m-d_His', $email_time) . ' - IN.json';
-        file_put_contents($emailJsonFile, json_encode([
-            'subject' => 'Hello world.',
-            'date' => 'Fri, 24 Nov 2023 23:35:09 +0100',
-            'mailHeaders' => [
-                'from' => 'sender@example.com',
-                'to' => $thread->my_email,
-                'subject' => 'Test Email'
-            ],
-            'body' => 'This is a test email'
-        ]));
-        
-        // Create attachment file
-        $attachmentFile = $threadDir . '/' . date('Y-m-d_His', $email_time) . ' - IN - att 1-754dc77d28e62763c4916970d595a10f.pdf';
-        file_put_contents($attachmentFile, "%PDF-1.4
+                1024,
+                '%PDF-1.4
 %âãÏÓ
 
 1 0 obj
@@ -144,7 +122,9 @@ trailer
   >>
 startxref
 210
-%%EOF");
+%%EOF'
+            ]
+        );
         
         // Grant access to the user
         $thread->addUser($userId, true);
@@ -172,33 +152,5 @@ startxref
         Database::execute("DELETE FROM thread_emails WHERE thread_id = ?", [$threadId]);
         Database::execute("DELETE FROM thread_history WHERE thread_id = ?", [$threadId]);
         Database::execute("DELETE FROM threads WHERE id = ?", [$threadId]);
-        
-        // Delete thread directory
-        $threadDir = THREADS_DIR . '/' . $entityId . '/' . $threadId;
-        if (file_exists($threadDir)) {
-            self::removeDirectory($threadDir);
-        }
-    }
-    
-    /**
-     * Recursively remove a directory
-     * 
-     * @param string $dir The directory to remove
-     */
-    private static function removeDirectory($dir) {
-        if (!file_exists($dir)) {
-            return;
-        }
-        
-        $files = array_diff(scandir($dir), array('.', '..'));
-        foreach ($files as $file) {
-            $path = $dir . '/' . $file;
-            if (is_dir($path)) {
-                self::removeDirectory($path);
-            } else {
-                unlink($path);
-            }
-        }
-        rmdir($dir);
     }
 }

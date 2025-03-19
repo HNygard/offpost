@@ -98,10 +98,7 @@ class ImapAttachmentHandler {
         return $att;
     }
 
-    /**
-     * Save attachment to file
-     */
-    public function saveAttachment(int $uid, int $partNumber, object $attachment, string $savePath): void {
+    public function getAttachmentContent(int $uid, int $partNumber): string {
         $content = $this->connection->getFetchbody($uid, (string)$partNumber, FT_UID);
         $structure = $this->connection->getFetchstructure($uid, FT_UID);
 
@@ -110,7 +107,18 @@ class ImapAttachmentHandler {
         } elseif ($structure->parts[$partNumber - 1]->encoding == 4) { // QUOTED-PRINTABLE
             $content = quoted_printable_decode($content);
         }
+        else {
+            throw new \Exception('Unsupported encoding: ' . $structure->parts[$partNumber - 1]->encoding);
+        }
+        return $content;
+    }
 
+
+    /**
+     * Save attachment to file
+     */
+    public function saveAttachment(int $uid, int $partNumber, object $attachment, string $savePath): void {
+        $content = $this->getAttachmentContent($uid, $partNumber);
         $this->connection->logDebug("Saving attachment to: $savePath");
         file_put_contents($savePath, $content);
         chmod($savePath, 0777);

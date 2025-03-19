@@ -11,6 +11,7 @@ requireAuth();
 require_once __DIR__ . '/class/ThreadFolderManager.php';
 require_once __DIR__ . '/class/ThreadEmailMover.php';
 require_once __DIR__ . '/class/ThreadEmailSaver.php';
+require_once __DIR__ . '/class/ThreadEmailDatabaseSaver.php';
 require_once __DIR__ . '/class/Threads.php';
 require_once __DIR__ . '/class/ThreadStorageManager.php';
 
@@ -43,6 +44,7 @@ try {
     $threadFolderManager = new ThreadFolderManager($connection, $folderManager);
     $threadEmailMover = new ThreadEmailMover($connection, $folderManager, $emailProcessor);
     $threadEmailSaver = new ThreadEmailSaver($connection, $emailProcessor, $attachmentHandler);
+    $threadEmailDbSaver = new ThreadEmailDatabaseSaver($connection, $emailProcessor, $attachmentHandler);
     
     // Get threads
     $threads = ThreadStorageManager::getInstance()->getThreads();
@@ -92,24 +94,6 @@ try {
             $folder = $threadFolderManager->getThreadEmailFolder($entityThreads, $thread);
             $connection->logDebug("-- $folder");
             
-            $folderJson = '/organizer-data/threads/' . $entityThreads->entity_id . '/' . $thread->id;
-            $connection->logDebug("   Folder ... : $folderJson");
-            
-            // Skip if already archived
-            if (file_exists($folderJson . '/archiving_finished.json')) {
-                if (!$thread->archived) {
-                    unlink($folderJson . '/archiving_finished.json');
-                } else {
-                    continue;
-                }
-            }
-            
-            // Check if folder needs update
-            if (isset($_GET['update-only-before']) && 
-                !$emailProcessor->needsUpdate($folderJson, $_GET['update-only-before'])) {
-                continue;
-            }
-            
             try {
                 $connection = new ImapConnection($imapServer, $imap_username, $imap_password, true);
                 $connection->openConnection($folder);
@@ -118,10 +102,17 @@ try {
                 $folderManager->initialize();  // Initialize folder manager to populate existing folders
                 $emailProcessor = new ImapEmailProcessor($connection);
                 $attachmentHandler = new ImapAttachmentHandler($connection);
-                $threadEmailSaver = new ThreadEmailSaver($connection, $emailProcessor, $attachmentHandler);
+                $threadEmailDbSaver = new ThreadEmailDatabaseSaver($connection, $emailProcessor, $attachmentHandler);
                 
-                $threadEmailSaver->saveThreadEmails($folderJson, $thread, $folder);
-                $threadEmailSaver->finishThreadProcessing($folderJson, $thread);
+                $savedEmails = $threadEmailDbSaver->saveThreadEmails($entityThreads->entity_id, $thread, $folder);
+                if (!empty($savedEmails)) {
+                    $connection->logDebug("   Saved " . count($savedEmails) . " emails");
+                    
+                    // Update thread in database
+                    ThreadStorageManager::getInstance()->updateThread($thread);
+                }
+                
+                $threadEmailDbSaver->finishThreadProcessing($thread);
                 
             } catch(Exception $e) {
                 $connection->logDebug('ERROR during thread email processing.');

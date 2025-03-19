@@ -43,9 +43,42 @@ class ThreadStorageManager {
             $this->fileOps->updateThread($thread, $userId);
     }
 
-    public function getThreadFile($entityId, Thread $thread, $attachment) {
-        // Always use file operations for getting files, regardless of storage setting
-        // since files are always stored in the filesystem
-        return $this->fileOps->getThreadFile($entityId, $thread, $attachment);
+    public function getThreadEmailContent($entityId, Thread $thread, $email_id) {
+        // Get email content from database
+        $content = Database::queryValue(
+            "SELECT content FROM thread_emails WHERE thread_id = ? AND id = ?",
+            [$thread->id, $email_id]
+        );
+        
+        if (!$content) {
+            throw new Exception("Thread Email have no content [thread_id=$thread->id, email_id=$email_id]");
+        }
+        
+        return $content;
+    }
+    public function getThreadEmailAttachment(Thread $thread, $attachment_location) {
+        // Get attachment from database
+        $rows = Database::queryOne(
+            "SELECT tea.name, tea.filename, tea.filetype, tea.location, tea.status_type, tea.status_text, tea.content 
+             FROM thread_email_attachments tea
+             JOIN thread_emails te ON tea.email_id = te.id
+             WHERE te.thread_id = ? AND tea.location = ?",
+            [$thread->id, $attachment_location]
+        );
+        
+        if (empty($rows)) {
+            throw new Exception("Thread Email Attachment not found [thread_id=$thread->id, attachment_id=$attachment_location]");
+        }
+        
+        $attachment = new ThreadEmailAttachment();
+        $attachment->name = $rows['name'];
+        $attachment->filename = $rows['filename'];
+        $attachment->filetype = $rows['filetype'];
+        $attachment->location = $rows['location'];
+        $attachment->status_type = $rows['status_type'];
+        $attachment->status_text = $rows['status_text'];
+        $attachment->content = $rows['content'];
+        
+        return $attachment;
     }
 }
