@@ -21,7 +21,7 @@ class ThreadStorageManagerTest extends PHPUnit\Framework\TestCase {
         );
 
         // Create a test email
-        $this->testEmailId = Database::queryValue(
+        $testEmailId = Database::queryValue(
             "INSERT INTO thread_emails (id, thread_id, timestamp_received, content) 
              VALUES (gen_random_uuid(), ?, NOW(), 'test content') 
              RETURNING id",
@@ -37,7 +37,7 @@ class ThreadStorageManagerTest extends PHPUnit\Framework\TestCase {
                 email_id, name, filename, filetype, location, status_type, status_text, content
             ) VALUES (?, ?, ?, ?, ?, ?, ?, ?)",
             [
-                $this->testEmailId,
+                $testEmailId,
                 'test.pdf',
                 '/path/to/test.pdf',
                 'application/pdf',
