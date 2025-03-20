@@ -100,7 +100,7 @@ try {
         }
     }
 } 
-catch (Exception $e) {
+catch (Throwable $e) {
     displayErrorPage($e);
 }
 
