@@ -104,7 +104,7 @@ class ThreadEmailSaverTest extends TestCase {
 
         // Set up mock expectations
         $this->mockEmailProcessor->expects($this->once())
-            ->method('processEmails')
+            ->method('getEmails')
             ->with($folder)
             ->willReturn([$testEmail]);
 
@@ -177,7 +177,7 @@ class ThreadEmailSaverTest extends TestCase {
 
         // Set up mock expectations
         $this->mockEmailProcessor->expects($this->once())
-            ->method('processEmails')
+            ->method('getEmails')
             ->willReturn([$testEmail]);
 
         $this->mockEmailProcessor->expects($this->once())
@@ -291,7 +291,7 @@ class ThreadEmailSaverTest extends TestCase {
 
         // Set up mock expectations
         $this->mockEmailProcessor->expects($this->once())
-            ->method('processEmails')
+            ->method('getEmails')
             ->willReturn([$malformedEmail]);
 
         $this->expectException(Exception::class);
@@ -321,7 +321,7 @@ class ThreadEmailSaverTest extends TestCase {
 
         // Set up mock expectations
         $this->mockEmailProcessor->expects($this->once())
-            ->method('processEmails')
+            ->method('getEmails')
             ->willReturn([$testEmail]);
 
         $this->mockEmailProcessor->expects($this->once())

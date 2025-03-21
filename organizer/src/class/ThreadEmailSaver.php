@@ -58,7 +58,7 @@ class ThreadEmailSaver {
                 throw new Exception('Failed to create lock file');
             }
 
-            $emails = $this->emailProcessor->processEmails($folder);
+            $emails = $this->emailProcessor->getEmails($folder);
             
             foreach ($emails as $email) {
                 if (!isset($email->mailHeaders) || !is_object($email->mailHeaders)) {

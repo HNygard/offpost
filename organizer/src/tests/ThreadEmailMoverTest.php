@@ -81,7 +81,7 @@ class ThreadEmailMoverTest extends TestCase {
 
         // Set up mock expectations
         $this->mockEmailProcessor->expects($this->once())
-            ->method('processEmails')
+            ->method('getEmails')
             ->with('INBOX')
             ->willReturn([$testEmail]);
 
@@ -118,7 +118,7 @@ class ThreadEmailMoverTest extends TestCase {
 
         // Set up mock expectations
         $this->mockEmailProcessor->expects($this->once())
-            ->method('processEmails')
+            ->method('getEmails')
             ->with('INBOX')
             ->willReturn([$testEmail]);
 
@@ -159,7 +159,7 @@ class ThreadEmailMoverTest extends TestCase {
 
         // Set up mock expectations
         $this->mockEmailProcessor->expects($this->once())
-            ->method('processEmails')
+            ->method('getEmails')
             ->with('INBOX')
             ->willReturn([$testEmail]);
 
@@ -182,7 +182,7 @@ class ThreadEmailMoverTest extends TestCase {
 
     public function testProcessMailboxWithConnectionError() {
         $this->mockEmailProcessor->expects($this->once())
-            ->method('processEmails')
+            ->method('getEmails')
             ->with('INBOX')
             ->willThrowException(new Exception('Connection failed'));
 
@@ -202,7 +202,7 @@ class ThreadEmailMoverTest extends TestCase {
         ];
 
         $this->mockEmailProcessor->expects($this->once())
-            ->method('processEmails')
+            ->method('getEmails')
             ->willReturn([$testEmail]);
 
         $this->mockEmailProcessor->expects($this->once())
@@ -232,7 +232,7 @@ class ThreadEmailMoverTest extends TestCase {
 
         // Set up mock expectations
         $this->mockEmailProcessor->expects($this->once())
-            ->method('processEmails')
+            ->method('getEmails')
             ->with('INBOX')
             ->willReturn([$testEmail]);
 

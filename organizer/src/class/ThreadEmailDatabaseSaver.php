@@ -45,7 +45,7 @@ class ThreadEmailDatabaseSaver {
             // Use a database transaction for concurrency control
             Database::beginTransaction();
             
-            $emails = $this->emailProcessor->processEmails($folder);
+            $emails = $this->emailProcessor->getEmails($folder);
             
             foreach ($emails as $email) {
                 if (!isset($email->mailHeaders) || !is_object($email->mailHeaders)) {

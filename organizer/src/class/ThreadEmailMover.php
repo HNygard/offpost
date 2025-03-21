@@ -33,7 +33,7 @@ class ThreadEmailMover {
      */
     public function processMailbox(string $mailbox, array $emailToFolder): array {
         $unmatchedAddresses = [];
-        $emails = $this->emailProcessor->processEmails($mailbox);
+        $emails = $this->emailProcessor->getEmails($mailbox);
         
         foreach ($emails as $email) {
             $addresses = $this->emailProcessor->getEmailAddresses($email->mailHeaders);

@@ -64,7 +64,7 @@ class ImapEmailProcessor {
     /**
      * Process emails in a folder
      */
-    public function processEmails(string $folder): array {
+    public function getEmails(string $folder): array {
         $imapStream = $this->connection->getConnection();
         if (!$imapStream) {
             throw new \Exception('No active IMAP connection');
@@ -80,7 +80,7 @@ class ImapEmailProcessor {
 
         foreach ($mailUIDs as $uid) {
             $this->connection->logDebug("Processing email UID: $uid");
-            $email = $this->processEmail($uid);
+            $email = $this->getEmail($uid);
             if ($email) {
                 $emails[] = $email;
             }
@@ -92,7 +92,7 @@ class ImapEmailProcessor {
     /**
      * Process a single email
      */
-    private function processEmail(int $uid): ?object {
+    private function getEmail(int $uid): ?object {
         $msgNo = $this->connection->getMsgno($uid);
         $headers = $this->connection->getHeaderInfo($msgNo);
 

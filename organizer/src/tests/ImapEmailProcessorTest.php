@@ -65,7 +65,7 @@ class ImapEmailProcessorTest extends TestCase {
         $this->assertFalse($this->processor->needsUpdate('TestFolder', $pastTimestamp));
     }
 
-    public function testProcessEmails(): void {
+    public function testGetEmails(): void {
         // Setup mock connection
         $resource = fopen('php://memory', 'r');
         $this->mockWrapper->method('open')->willReturn($resource);
@@ -104,7 +104,7 @@ class ImapEmailProcessorTest extends TestCase {
             ->willReturnCallback(function($str) { return $str; });
 
         // Process emails
-        $emails = $this->processor->processEmails('INBOX');
+        $emails = $this->processor->getEmails('INBOX');
 
         // Verify results
         $this->assertCount(2, $emails);
