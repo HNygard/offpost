@@ -59,21 +59,24 @@ function processSentFolder($connection, $folderManager, $emailProcessor, $thread
     return $threadEmailMover->processMailbox($imapSentFolder, $emailToFolder);
 }
 
-function processThreadFolder($connection, $folderManager, $emailProcessor, $attachmentHandler, $entityThreads, $thread) {
-    $threadFolderManager = new ThreadFolderManager($connection, $folderManager);
-    $folder = $threadFolderManager->getThreadEmailFolder($entityThreads, $thread);
+/**
+ * Get thread folders from IMAP server
+ * Returns array of folders that are thread folders (starting with INBOX. but not INBOX.Archive.)
+ */
+function getThreadFoldersFromImap($folderManager) {
+    $folders = $folderManager->getExistingFolders();
+    return array_filter($folders, function($folder) {
+        return strpos($folder, 'INBOX.') === 0 && 
+               strpos($folder, 'INBOX.Archive.') === false;
+    });
+}
+
+function processThreadFolder($connection, $folderManager, $emailProcessor, $attachmentHandler, $folder = null) {
     $connection->logDebug("-- $folder");
     
     try {
         $threadEmailDbSaver = new ThreadEmailDatabaseSaver($connection, $emailProcessor, $attachmentHandler);
-        $savedEmails = $threadEmailDbSaver->saveThreadEmails($entityThreads->entity_id, $thread, $folder);
-        
-        if (!empty($savedEmails)) {
-            $connection->logDebug("   Saved " . count($savedEmails) . " emails");
-            ThreadStorageManager::getInstance()->updateThread($thread);
-        }
-        
-        $threadEmailDbSaver->finishThreadProcessing($thread);
+        $savedEmails = $threadEmailDbSaver->saveThreadEmails($folder);
         return $savedEmails;
         
     } catch(Exception $e) {
@@ -96,19 +99,7 @@ function displayTaskOptions($threads) {
         <li><a href="?task=process-inbox">Process Inbox</a></li>
         <li><a href="?task=process-sent">Process Sent Folder</a></li>
         <li><a href="?task=process-all">Process All Thread Folders</a></li>
-    </ul>
-
-    <h2>Process Specific Thread Folder</h2>
-    <ul>
-    <?php foreach ($threads as $entityThreads): ?>
-        <?php foreach ($entityThreads->threads as $thread): ?>
-            <li>
-                <a href="?task=process-thread&entity_id=<?= urlencode($entityThreads->entity_id) ?>&thread_id=<?= urlencode($thread->id) ?>">
-                    <?= htmlspecialchars($entityThreads->entity_id . ' - ' . $thread->title) ?>
-                </a>
-            </li>
-        <?php endforeach; ?>
-    <?php endforeach; ?>
+        <li><a href="?task=list-folders">List All Folders</a></li>
     </ul>
     <?php
 }
@@ -182,70 +173,93 @@ try {
                 $connection->closeConnection(CL_EXPUNGE);
                 echo "Processed sent folder\n";
                 break;
+            
+            case 'list-folders':
+                $folders = $folderManager->getExistingFolders();
+                echo "All folders:\n";
+                echo "</pre><ul>\n";
+                foreach ($folders as $folder) {
+                    ?>
+                    <li>
+                        <a href="?task=process-folder&folder==<?= urlencode($folder) ?>">
+                            <?= htmlspecialchars($folder) ?>
+                        </a>
+                    </li>
+                    <?php
+                }
+                echo "</ul><pre>\n";
                 
-            case 'process-thread':
-                $entityId = $_GET['entity_id'] ?? null;
-                $threadId = $_GET['thread_id'] ?? null;
+                break;
+
                 
-                if (!$entityId || !$threadId) {
-                    echo "Error: Missing entity_id or thread_id parameter\n";
+            case 'process-folder':
+                $folder = $_GET['folder'] ?? null;
+                if (!$folder) {
+                    echo "Error: Missing folder parameter\n";
                     break;
                 }
                 
-                $found = false;
-                foreach ($threads as $entityThreads) {
-                    if ($entityThreads->entity_id === $entityId) {
-                        foreach ($entityThreads->threads as $thread) {
-                            if ($thread->id === $threadId) {
-                                $savedEmails = processThreadFolder(
-                                    $connection, 
-                                    $folderManager, 
-                                    $emailProcessor, 
-                                    $attachmentHandler,
-                                    $entityThreads,
-                                    $thread
-                                );
-                                
-                                if (!empty($savedEmails)) {
-                                    echo "Saved emails:\n";
-                                    foreach ($savedEmails as $email) {
-                                        echo "- $email\n";
-                                    }
-                                } else {
-                                    echo "No new emails to save\n";
-                                }
-                                
-                                $found = true;
-                                break 2;
-                            }
-                        }
+                $savedEmails = processThreadFolder(
+                    $connection, 
+                    $folderManager, 
+                    $emailProcessor, 
+                    $attachmentHandler,
+                    $folder
+                );
+                
+                if (!empty($savedEmails)) {
+                    echo "Saved emails:\n";
+                    foreach ($savedEmails as $email) {
+                        echo "- $email\n";
                     }
+                } else {
+                    echo "No new emails to save\n";
                 }
                 
-                if (!$found) {
-                    echo "Error: Thread not found\n";
-                }
                 break;
                 
             case 'process-all':
-                foreach ($threads as $entityThreads) {
-                    foreach ($entityThreads->threads as $thread) {
-                        $savedEmails = processThreadFolder(
-                            $connection, 
-                            $folderManager, 
-                            $emailProcessor, 
-                            $attachmentHandler,
-                            $entityThreads,
-                            $thread
-                        );
-                        
-                        if (!empty($savedEmails)) {
-                            echo "Saved emails for {$entityThreads->entity_id} - {$thread->title}:\n";
-                            foreach ($savedEmails as $email) {
-                                echo "- $email\n";
+                $threadFolders = getThreadFoldersFromImap($folderManager);
+                echo "Processing folders from IMAP server:\n";
+                foreach ($threadFolders as $folder) {
+                    echo "Processing folder: $folder\n";
+                    try {
+                        // Find matching thread for this folder
+                        $found = false;
+                        foreach ($threads as $entityThreads) {
+                            foreach ($entityThreads->threads as $thread) {
+                                $threadFolderManager = new ThreadFolderManager($connection, $folderManager);
+                                $expectedFolder = $threadFolderManager->getThreadEmailFolder($entityThreads, $thread);
+                                if ($expectedFolder === $folder) {
+                                    $savedEmails = processThreadFolder(
+                                        $connection,
+                                        $folderManager,
+                                        $emailProcessor,
+                                        $attachmentHandler,
+                                        $folder
+                                    );
+                                    
+                                    if (!empty($savedEmails)) {
+                                        echo "  Saved emails:\n";
+                                        foreach ($savedEmails as $email) {
+                                            echo "  - $email\n";
+                                        }
+                                        echo "\n";
+                                    } else {
+                                        echo "  No new emails to save\n\n";
+                                    }
+                                    $found = true;
+                                    break 2;
+                                }
                             }
-                            echo "\n";
                         }
+                        
+                        if (!$found) {
+                            echo "  Warning: No matching thread found for folder $folder\n\n";
+                        }
+                    } catch (Exception $e) {
+                        echo "  Error processing folder $folder: " . $e->getMessage() . "\n\n";
+                        continue;
                     }
                 }
                 break;
@@ -255,7 +269,7 @@ try {
         }
         
         echo "\n";
-        echo '<a href="update-imap.php">Back to task selection</a>';
+        echo '<a href="./">Back to task selection</a>';
         echo '</pre>';
     }
     

@@ -79,9 +79,7 @@ class UpdateImapPageTest extends E2EPageTestCase {
 
     public function testProcessSpecificThread() {
         // :: Act
-        $response = $this->renderPage('/update-imap?task=process-thread&entity_id=' . 
-            urlencode($this->testData['entity_id']) . '&thread_id=' . 
-            urlencode($this->testData['thread']->id));
+        $response = $this->renderPage('/update-imap?task=process-folder&folder=abc');
 
         // :: Assert
         $this->assertStringContainsString(':: IMAP setting', $response->body);

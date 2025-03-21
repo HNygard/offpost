@@ -38,7 +38,7 @@ class ThreadEmailDatabaseSaver {
      * @param string $folder IMAP folder to process
      * @return array Array of saved email IDs
      */
-    public function saveThreadEmails(string $entityId, object $thread, string $folder): array {
+    public function saveThreadEmails(string $folder): array {
         try {
             $savedEmails = [];
             
@@ -51,6 +51,20 @@ class ThreadEmailDatabaseSaver {
                 if (!isset($email->mailHeaders) || !is_object($email->mailHeaders)) {
                     throw new Exception('Failed to process email: Invalid email headers');
                 }
+
+                # Figure out which thread this email is part of
+                $all_emails = $this->emailProcessor->getEmailAddresses($email->mailHeaders);
+                $threads = Database::query(
+                    "SELECT id, my_email FROM threads WHERE my_email IN (?)",
+                    [$all_emails]
+                );
+                if (count($threads) == 0) {
+                    throw new Exception('Failed to process email: No matching thread found');
+                }
+                if (count($threads) > 1) {
+                    throw new Exception('Failed to process email: Multiple matching threads found');
+                }
+                $thread = Thread::loadFromDatabase($threads[0]['id']);
 
                 try {
                     $direction = $this->emailProcessor->getEmailDirection($email->mailHeaders, $thread->my_email);
@@ -75,7 +89,7 @@ class ThreadEmailDatabaseSaver {
                                                  md5($attachment->name) . '.' . $attachment->filetype;
                             
                             // Save attachment file to disk
-                            $attachmentPath = joinPaths(THREADS_DIR, $entityId, $thread->id, $attachment->location);
+                            $attachmentPath = joinPaths(THREADS_DIR, $thread->en, $thread->id, $attachment->location);
                             $attachmentDir = dirname($attachmentPath);
                             
                             if (!file_exists($attachmentDir)) {
