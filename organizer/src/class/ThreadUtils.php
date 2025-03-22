@@ -19,7 +19,7 @@ function getLabelType($type, $status_type) {
     elseif ($status_type == 'success') {
         $label_type = 'label label_ok';
     }
-    elseif ($status_type == 'unknown') {
+    elseif ($status_type == 'unknown' || $status_type == null) {
         $label_type = 'label';
     }
     else {
