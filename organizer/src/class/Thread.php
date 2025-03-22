@@ -178,7 +178,7 @@ class Thread implements JsonSerializable {
             $email->timestamp_received = $emailData['timestamp_received'];
             $email->id = $emailData['id'];
             $email->id_old = $emailData['id_old'];
-            $email->datetime_received = $emailData['datetime_received'] ? new DateTime($emailData['datetime_received']) : null;
+            $email->datetime_received = $emailData['datetime_received'] ? $emailData['datetime_received'] : null;
             $email->ignore = (bool)$emailData['ignore'];
             $email->email_type = $emailData['email_type'];
             $email->status_type = $emailData['status_type'];
