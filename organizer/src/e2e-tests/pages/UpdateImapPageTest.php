@@ -8,19 +8,15 @@ require_once(__DIR__ . '/../../class/Entity.php');
 
 class UpdateImapPageTest extends E2EPageTestCase {
 
-    private $testData;
-
-    protected function setUp(): void {
-        parent::setUp();
-        // Create a test thread that will be processed by update-imap
-        $this->testData = E2ETestSetup::createTestThread();
-    }
-
     public function testShowsTaskMenu() {
+        // :: Setup
+        E2ETestSetup::createTestThread();
+
         // :: Act
         $response = $this->renderPage('/update-imap');
 
         // :: Assert
+        $this->assertNotErrorInResponse($response);
         $this->assertStringContainsString('<h1>IMAP Tasks</h1>', $response->body);
         $this->assertStringContainsString('<h2>Available Tasks</h2>', $response->body);
         $this->assertStringContainsString('<a href="?task=create-folders">Create Required Folders</a>', $response->body);
@@ -31,32 +27,57 @@ class UpdateImapPageTest extends E2EPageTestCase {
     }
 
     public function testCreateFolders() {
-        // :: Act
+        // :: Setup
+        $testdata = E2ETestSetup::createTestThread();
+
+        // :: Act part 1 - create folders
         $response = $this->renderPage('/update-imap?task=create-folders');
 
-        // :: Assert
+        // :: Assert part 1 - create folders
+        $this->assertNotErrorInResponse($response);
         $this->assertStringContainsString(':: IMAP setting', $response->body);
         $this->assertStringContainsString('Created folders:', $response->body);
         $this->assertStringContainsString('INBOX.Archive', $response->body);
-        $this->assertStringContainsString($this->testData['entity_id'], $response->body);
-        $this->assertStringNotContainsString('Error updating imap:', $response->body);
+        $this->assertStringContainsString($testdata['entity_id'], $response->body);
+
+        // :: Setup part 2 - process folder
+        preg_match('/Created folders:\n-\s*(\S+)/', $response->body, $matches);
+
+        // :: Act part 2 - process folder
+        $response = $this->renderPage('/update-imap?task=process-folder&folder=' . $matches[1]);
+
+        // :: Assert part 2 - process folder
+        $this->assertStringContainsString(':: IMAP setting', $response->body);
+        // Either we have new emails or not
+        $this->assertNotErrorInResponse($response);
+        $this->assertTrue(
+            strpos($response->body, 'No new emails to save') !== false ||
+            strpos($response->body, 'Saved emails:') !== false
+        );
     }
 
     public function testArchiveFolders() {
+        // :: Setup
+        E2ETestSetup::createTestThread();
+
         // :: Act
         $response = $this->renderPage('/update-imap?task=archive-folders');
 
         // :: Assert
+        $this->assertNotErrorInResponse($response);
         $this->assertStringContainsString(':: IMAP setting', $response->body);
         $this->assertStringContainsString('Archived folders for archived threads', $response->body);
-        $this->assertStringNotContainsString('Error updating imap:', $response->body);
     }
 
     public function testProcessInbox() {
+        // :: Setup
+        E2ETestSetup::createTestThread();
+
         // :: Act
         $response = $this->renderPage('/update-imap?task=process-inbox');
 
         // :: Assert
+        $this->assertNotErrorInResponse($response);
         $this->assertStringContainsString(':: IMAP setting', $response->body);
         $this->assertStringContainsString('---- PROCESSING INBOX ----', $response->body);
         // Either we have unmatched addresses or not
@@ -64,40 +85,36 @@ class UpdateImapPageTest extends E2EPageTestCase {
             strpos($response->body, 'No unmatched email addresses found') !== false ||
             strpos($response->body, 'Unmatched email addresses:') !== false
         );
-        $this->assertStringNotContainsString('Error updating imap:', $response->body);
     }
 
     public function testProcessSentFolder() {
+        // :: Setup
+        E2ETestSetup::createTestThread();
+
         // :: Act
         $response = $this->renderPage('/update-imap?task=process-sent');
 
         // :: Assert
+        $this->assertNotErrorInResponse($response);
         $this->assertStringContainsString(':: IMAP setting', $response->body);
         $this->assertStringContainsString('Processed sent folder', $response->body);
-        $this->assertStringNotContainsString('Error updating imap:', $response->body);
-    }
-
-    public function testProcessSpecificThread() {
-        // :: Act
-        $response = $this->renderPage('/update-imap?task=process-folder&folder=abc');
-
-        // :: Assert
-        $this->assertStringContainsString(':: IMAP setting', $response->body);
-        // Either we have new emails or not
-        $this->assertTrue(
-            strpos($response->body, 'No new emails to save') !== false ||
-            strpos($response->body, 'Saved emails:') !== false
-        );
-        $this->assertStringNotContainsString('Error updating imap:', $response->body);
     }
 
     public function testProcessAllThreads() {
+        // :: Setup
+        $testdata = E2ETestSetup::createTestThread();
+
         // :: Act
         $response = $this->renderPage('/update-imap?task=process-all');
 
         // :: Assert
+        $this->assertNotErrorInResponse($response);
         $this->assertStringContainsString(':: IMAP setting', $response->body);
-        $this->assertStringContainsString($this->testData['entity_id'], $response->body);
-        $this->assertStringNotContainsString('Error updating imap:', $response->body);
+        $this->assertStringContainsString($testdata['entity_id'], $response->body);
+    }
+
+    private function assertNotErrorInResponse($response) {
+        $this->assertStringNotContainsString('thrown', $response->body, 'Reponse body contained "thrown": ' . $response->body);
+        $this->assertStringNotContainsString('Error updating imap:', $response->body, 'Reponse body contained "Error updating imap:": ' . $response->body);
     }
 }
