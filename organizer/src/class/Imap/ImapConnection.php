@@ -31,16 +31,6 @@ class ImapConnection {
         $this->password = $password;
         $this->debug = $debug;
         $this->wrapper = $wrapper ?? new ImapWrapper();
-
-        // Set custom error handler for IMAP operations
-        \set_error_handler([$this, 'errorHandler']);
-    }
-
-    /**
-     * Custom error handler that converts PHP errors to exceptions
-     */
-    public function errorHandler($errno, $errstr, $errfile, $errline) {
-        throw new \ErrorException('ImapConnection-errorHandler: ' . $errstr, 0, $errno, $errfile, $errline);
     }
 
     /**
