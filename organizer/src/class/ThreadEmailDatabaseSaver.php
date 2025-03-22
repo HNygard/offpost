@@ -160,6 +160,7 @@ class ThreadEmailDatabaseSaver {
                     }
                 } catch (Exception $e) {
                     Database::rollBack();
+                    $this->connection->logDebug('Exception during processing of email [' . $email->uid . '][' . $email->subject . ']: ' . $e->getMessage());
                     throw new Exception('Exception during processing of email [' . $email->uid . '][' . $email->subject . ']', 0, $e);
                 }
             }
@@ -173,6 +174,7 @@ class ThreadEmailDatabaseSaver {
             if (Database::getInstance()->inTransaction()) {
                 Database::rollBack();
             }
+            $this->connection->logDebug('Rolling back DB transaction: ' . $e->getMessage());
             throw new Exception('Rolling back DB transaction', 0, $e);
         }
     }
