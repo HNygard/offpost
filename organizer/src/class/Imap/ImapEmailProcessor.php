@@ -65,7 +65,7 @@ class ImapEmailProcessor {
      * Process emails in a folder
      */
     public function getEmails(string $folder): array {
-        $imapStream = $this->connection->getConnection();
+        $imapStream = $this->connection->openConnection($folder);
         if (!$imapStream) {
             throw new \Exception('No active IMAP connection');
         }

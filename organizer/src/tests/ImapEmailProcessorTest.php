@@ -66,10 +66,19 @@ class ImapEmailProcessorTest extends TestCase {
     }
 
     public function testGetEmails(): void {
-        // Setup mock connection
+        // Setup mock connection with specific folder
         $resource = fopen('php://memory', 'r');
-        $this->mockWrapper->method('open')->willReturn($resource);
-        $this->connection->openConnection();
+        $testFolder = 'TestFolder';
+        
+        // Expect openConnection to be called with the specific folder
+        $this->mockWrapper->expects($this->once())
+            ->method('open')
+            ->with(
+                $this->stringContains($testFolder),
+                $this->equalTo($this->testEmail),
+                $this->equalTo($this->testPassword)
+            )
+            ->willReturn($resource);
 
         // Mock search results
         $this->mockWrapper->expects($this->once())
@@ -104,7 +113,7 @@ class ImapEmailProcessorTest extends TestCase {
             ->willReturnCallback(function($str) { return $str; });
 
         // Process emails
-        $emails = $this->processor->getEmails('INBOX');
+        $emails = $this->processor->getEmails($testFolder);
 
         // Verify results
         $this->assertCount(2, $emails);
