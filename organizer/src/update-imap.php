@@ -74,18 +74,9 @@ function getThreadFoldersFromImap($folderManager) {
 function processThreadFolder($connection, $folderManager, $emailProcessor, $attachmentHandler, $folder = null) {
     $connection->logDebug("-- $folder");
     
-    try {
-        $threadEmailDbSaver = new ThreadEmailDatabaseSaver($connection, $emailProcessor, $attachmentHandler);
-        $savedEmails = $threadEmailDbSaver->saveThreadEmails($folder);
-        return $savedEmails;
-        
-    } catch(Exception $e) {
-        $connection->logDebug('ERROR during thread email processing.');
-        $connection->logDebug($e->getMessage());
-        $connection->logDebug($e->getTraceAsString());
-        $connection->logDebug('----');
-        throw $e;
-    }
+    $threadEmailDbSaver = new ThreadEmailDatabaseSaver($connection, $emailProcessor, $attachmentHandler);
+    $savedEmails = $threadEmailDbSaver->saveThreadEmails($folder);
+    return $savedEmails;
 }
 
 function displayTaskOptions($threads) {
