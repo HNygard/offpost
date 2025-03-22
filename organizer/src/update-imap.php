@@ -1,6 +1,7 @@
 <?php
 
 require_once __DIR__ . '/auth.php';
+require_once(__DIR__ . '/class/common.php');
 
 set_time_limit(0);
 ini_set('memory_limit', '-1');
@@ -254,6 +255,5 @@ try {
 } catch(Exception $e) {
     echo "\n\n";
     echo "Error updating imap:\n";
-    echo $e->getMessage() . "\n";
-    echo $e->getTraceAsString();
+    echo jTraceEx($e);
 }

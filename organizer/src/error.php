@@ -1,4 +1,5 @@
 <?php
+require_once(__DIR__ . '/class/common.php');
 
 function displayErrorPage($error) {
     ob_end_clean();
@@ -86,9 +87,7 @@ function displayErrorPage($error) {
     echo '<div class="error-details">';
     echo '<button class="copy-button">Copy error</button>';
     echo '<pre contenteditable="true">'
-        . htmlescape($error->getMessage())
-        . "\n\nStack trace:\n"
-        . htmlescape($error->getTraceAsString())
+        . htmlescape(jTraceEx($error))
         . '</pre>';
     echo '</div>';
     echo '</div></body></html>';
