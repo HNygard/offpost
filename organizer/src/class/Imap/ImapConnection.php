@@ -363,9 +363,12 @@ class ImapConnection {
     /**
      * Get the current IMAP connection resource
      * 
-     * @return resource|null The IMAP stream or null if not connected
+     * @return IMAP\Connection The IMAP stream
      */
     public function getConnection() {
+        if ($this->connection == null) {
+            throw new Exception('No active IMAP connection');
+        }
         return $this->connection;
     }
 
