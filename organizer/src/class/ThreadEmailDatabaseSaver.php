@@ -71,7 +71,12 @@ class ThreadEmailDatabaseSaver {
                     $filename = $this->emailProcessor->generateEmailFilename($email->mailHeaders, $thread->my_email);
                     
                     // Check if email already exists in database
-                    if (!$this->emailExistsInDatabase($thread->id, $filename)) {
+                    if ($this->emailExistsInDatabase($thread->id, $filename)) {
+                        $this->connection->logDebug("Already existing email .. : $filename");
+                    }
+                    else {
+                        $this->connection->logDebug("Saving to database ...... : $filename");
+
                         // Get raw email content
                         $rawEmail = $this->connection->getRawEmail($email->uid);
                         if (!$rawEmail) {

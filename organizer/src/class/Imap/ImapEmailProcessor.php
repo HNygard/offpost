@@ -79,7 +79,7 @@ class ImapEmailProcessor {
         }
 
         foreach ($mailUIDs as $uid) {
-            $this->connection->logDebug("Processing email UID: $uid");
+            $this->connection->logDebug("Fetching email UID: $uid");
             $email = $this->getEmail($uid);
             if ($email) {
                 $emails[] = $email;
