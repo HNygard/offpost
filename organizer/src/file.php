@@ -53,17 +53,17 @@ foreach ($thread->emails as $email) {
         $eml =  ThreadStorageManager::getInstance()->getThreadEmailContent($entityId, $thread, $email->id); 
         $message = new Message(['raw' => $eml]);
 
-        switch ($message->getHeaders()->getEncoding()) {
-            case 'ASCII':
-                $htmlConvert = function ($html) {
+        $htmlConvert = function ($html, $charset) {
+            switch ($charset) {
+                case 'UTF-8':
+                    return $html;
+                case 'ASCII':
                     return mb_convert_encoding($html, 'UTF-8', 'ISO-8859-1');
-                };
-                break;
-            default:
-                echo 'Unknown encoding: ' . $message->getHeaders()->getEncoding();
-                exit;
-        }
-        //header('Content-Type: text/html; charset='. $message->getHeaders()->getEncoding());
+                default:
+                    throw new Exception(message: 'Unknown encoding: ' . $charset);
+            }
+        };
+        header('Content-Type: text/html; charset=UTF-8');
 
         $message = new Message(['raw' => $eml]);
 
@@ -100,15 +100,28 @@ foreach ($thread->emails as $email) {
             $html = $htmlPart ? $htmlPart->getContent() : '';
 
             echo '<b>Plain text version:</b><br>' . chr(10);
-            echo '<pre>' . $htmlConvert(base64_decode($plainText)) . '</pre><br><br>' . chr(10) . chr(10);
+            echo '<pre>' . $htmlConvert(base64_decode($plainText), $message->getHeaders()->getEncoding()) . '</pre><br><br>' . chr(10) . chr(10);
 
             echo 'HTML version:<br>' . chr(10);
-            echo $htmlConvert(base64_decode($html)) . '<br><br>' . chr(10) . chr(10);
-            //unset($email_content->body);
+            echo $htmlConvert(base64_decode($html), $message->getHeaders()->getEncoding()) . '<br><br>' . chr(10) . chr(10);
         }
         else {
             // If the message is not multipart, simply echo the content
-            echo '<pre>' . $htmlConvert(imap_qprint($message->getContent())) . '</pre>';
+
+            $charset = $message->getHeaders()->getEncoding();
+            if ($message->getHeaders()->get('content-type') !== false) {
+                // Example:
+                // Content-Type: text/plain;
+                //  charset="UTF-8";
+                //  format="flowed"
+                $content_type = $message->getHeaders()->get('content-type')->getFieldValue();
+                preg_match('/charset=["\']?([\w-]+)["\']?/i', $content_type, $matches);
+                if (isset($matches[1])) {
+                    $charset = $matches[1];
+                }
+            }
+            
+            echo '<pre>' . $htmlConvert($message->getContent(), $charset) . '</pre>';
         }
 
         echo '<pre>';
