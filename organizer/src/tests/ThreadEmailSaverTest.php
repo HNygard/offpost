@@ -268,7 +268,7 @@ class ThreadEmailSaverTest extends TestCase {
 
         // Expect exception due to permission error
         $this->expectException(Exception::class);
-        $this->expectExceptionMessage('ImapConnection-errorHandler: mkdir(): Permission denied');
+        $this->expectExceptionMessage('mkdir(): Permission denied');
 
         $this->threadEmailSaver->saveThreadEmails($folderJson, $thread, $folder);
     }
