@@ -30,8 +30,8 @@ class ThreadEmailAttachmentTest extends TestCase {
             'filename' => '/path/to/test.pdf',
             'filetype' => 'application/pdf',
             'location' => '/storage/attachments/test.pdf',
-            'status_type' => 'processed',
-            'status_text' => 'Successfully processed',
+            'status_type' => 'success',
+            'status_text' => 'Successfully got info',
             'content' => 'PDF content here'
         ];
 

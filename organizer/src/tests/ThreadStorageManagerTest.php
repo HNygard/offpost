@@ -42,7 +42,7 @@ class ThreadStorageManagerTest extends PHPUnit\Framework\TestCase {
                 '/path/to/test.pdf',
                 'application/pdf',
                 $testLocation,
-                'processed',
+                'danger',
                 'Successfully processed',
                 $testContent
             ]
@@ -61,7 +61,7 @@ class ThreadStorageManagerTest extends PHPUnit\Framework\TestCase {
         $this->assertEquals('/path/to/test.pdf', $attachment->filename, 'Should have correct filename');
         $this->assertEquals('application/pdf', $attachment->filetype, 'Should have correct filetype');
         $this->assertEquals($testLocation, $attachment->location, 'Should have correct location');
-        $this->assertEquals('processed', $attachment->status_type, 'Should have correct status_type');
+        $this->assertEquals('danger', $attachment->status_type, 'Should have correct status_type');
         $this->assertEquals('Successfully processed', $attachment->status_text, 'Should have correct status_text');
         $this->assertEquals($testContent, $attachment->content, 'Should have correct content');
     }

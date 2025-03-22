@@ -52,7 +52,7 @@ class ThreadEmailExtractionServiceTest extends TestCase {
         // Create a test attachment for the email
         $this->attachmentId = Database::queryValue(
             "INSERT INTO thread_email_attachments (email_id, name, filename, filetype, status_type, status_text, location) 
-            VALUES (?, 'test.pdf', 'test.pdf', 'application/pdf', 'processed', 'Test attachment status', '/test/path/test.pdf') RETURNING id",
+            VALUES (?, 'test.pdf', 'test.pdf', 'application/pdf', 'info', 'Test attachment status', '/test/path/test.pdf') RETURNING id",
             [$this->emailId]
         );
         

@@ -133,7 +133,7 @@ class ThreadDatabaseOperationsTest extends PHPUnit\Framework\TestCase {
         // Add an attachment to the email
         Database::execute(
             "INSERT INTO thread_email_attachments (email_id, name, filename, filetype, status_type, status_text, location) 
-            VALUES (?, 'test.pdf', 'test.pdf', 'application/pdf', 'processed', 'Test attachment status', '/test/path/test.pdf')",
+            VALUES (?, 'test.pdf', 'test.pdf', 'application/pdf', 'success', 'Test attachment status', '/test/path/test.pdf')",
             [$emailId]
         );
         
@@ -152,7 +152,7 @@ class ThreadDatabaseOperationsTest extends PHPUnit\Framework\TestCase {
         $attachment = $email->attachments[0];
         $this->assertEquals('test.pdf', $attachment->name);
         $this->assertEquals('application/pdf', $attachment->filetype);
-        $this->assertEquals('processed', $attachment->status_type);
+        $this->assertEquals('success', $attachment->status_type);
         $this->assertEquals('Test attachment status', $attachment->status_text);
     }
 
