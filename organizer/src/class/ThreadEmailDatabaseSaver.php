@@ -260,7 +260,7 @@ class ThreadEmailDatabaseSaver {
                 status_type, 
                 status_text,
                 content
-            ) VALUES (?, ?, ?, ?, ?, ?, ?, ?)
+            ) VALUES (?, ?, ?, ?, ?, ?, ?, ?::bytea)
             RETURNING id
         ";
         
