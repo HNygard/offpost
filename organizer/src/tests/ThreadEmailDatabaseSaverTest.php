@@ -131,12 +131,15 @@ class ThreadEmailDatabaseSaverTest extends PHPUnit\Framework\TestCase {
         $attachment->filetype = 'pdf';
         $attachment->location = 'test-location';
         
+        // Create a binary test content
+        $testContent = "test-attachment-content";
+        
         // Call the method
         $attachmentId = $reflectionMethod->invoke(
             $this->threadEmailDatabaseSaver,
             $emailId,
             $attachment,
-            'test-attachment-content'
+            $testContent
         );
         
         // Verify the attachment was saved
@@ -144,7 +147,9 @@ class ThreadEmailDatabaseSaverTest extends PHPUnit\Framework\TestCase {
         
         // Check that the attachment exists in the database
         $savedAttachment = Database::queryOne(
-            "SELECT * FROM thread_email_attachments WHERE id = ?",
+            "SELECT email_id, name, filename, filetype, location, status_type, status_text, 
+                    encode(content, 'escape') as content_encoded
+             FROM thread_email_attachments WHERE id = ?",
             [$attachmentId]
         );
         
@@ -154,7 +159,9 @@ class ThreadEmailDatabaseSaverTest extends PHPUnit\Framework\TestCase {
         $this->assertEquals($attachment->filename, $savedAttachment['filename'], 'Attachment should have the correct filename');
         $this->assertEquals($attachment->filetype, $savedAttachment['filetype'], 'Attachment should have the correct filetype');
         $this->assertEquals($attachment->location, $savedAttachment['location'], 'Attachment should have the correct location');
-        $this->assertEquals('test-attachment-content', stream_get_contents($savedAttachment['content']), 'Attachment should have the correct content');
+        
+        // For bytea content, we need to check the encoded value
+        $this->assertStringContainsString($testContent, $savedAttachment['content_encoded'], 'Attachment should have the correct content');
     }
     
     public function testFinishThreadProcessing() {

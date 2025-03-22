@@ -35,7 +35,7 @@ class ThreadStorageManagerTest extends PHPUnit\Framework\TestCase {
         Database::execute(
             "INSERT INTO thread_email_attachments (
                 email_id, name, filename, filetype, location, status_type, status_text, content
-            ) VALUES (?, ?, ?, ?, ?, ?, ?, ?)",
+            ) VALUES (?, ?, ?, ?, ?, ?, ?, ?::bytea)",
             [
                 $testEmailId,
                 'test.pdf',
