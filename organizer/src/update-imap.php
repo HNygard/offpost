@@ -181,7 +181,7 @@ try {
                 foreach ($folders as $folder) {
                     ?>
                     <li>
-                        <a href="?task=process-folder&folder==<?= urlencode($folder) ?>">
+                        <a href="?task=process-folder&folder=<?= urlencode($folder) ?>">
                             <?= htmlspecialchars($folder) ?>
                         </a>
                     </li>
