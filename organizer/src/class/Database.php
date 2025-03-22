@@ -84,6 +84,33 @@ class Database {
         $result = $stmt->fetchColumn();
         return $result === false ? null : $result;
     }
+    
+    /**
+     * Execute a query with binary data and return a single value
+     * 
+     * @param string $sql SQL query
+     * @param array $params Regular parameters
+     * @param array $binaryParams Binary parameters with keys matching placeholders in SQL
+     * @return mixed Query result
+     */
+    public static function queryValueWithBinary(string $sql, array $params = [], array $binaryParams = []): mixed {
+        $stmt = self::prepare($sql);
+        
+        // Bind regular parameters
+        foreach ($params as $key => $value) {
+            $stmt->bindValue($key, $value);
+        }
+        
+        // Bind binary parameters
+        foreach ($binaryParams as $key => $value) {
+            $stmt->bindValue($key, $value, PDO::PARAM_LOB);
+        }
+        
+        // Execute without parameters (they're already bound)
+        $stmt->execute();
+        $result = $stmt->fetchColumn();
+        return $result === false ? null : $result;
+    }
 
     /**
      * Execute a query that doesn't return results (INSERT, UPDATE, DELETE)

@@ -247,6 +247,7 @@ class ThreadEmailDatabaseSaver {
      * 
      * @param string $emailId Email ID
      * @param object $attachment Attachment object
+     * @param mixed $content Binary content of the attachment
      * @return int ID of the saved attachment
      */
     private function saveAttachmentToDatabase(string $emailId, object $attachment, $content): int {
@@ -260,22 +261,26 @@ class ThreadEmailDatabaseSaver {
                 status_type, 
                 status_text,
                 content
-            ) VALUES (?, ?, ?, ?, ?, ?, ?, ?::bytea)
+            ) VALUES (:email_id, :name, :filename, :filetype, :location, :status_type, :status_text, :content)
             RETURNING id
         ";
         
         $params = [
-            $emailId,
-            $attachment->name,
-            $attachment->filename,
-            $attachment->filetype,
-            $attachment->location,
-            'unknown',
-            'uklassifisert-dok',
-            $content
+            ':email_id' => $emailId,
+            ':name' => $attachment->name,
+            ':filename' => $attachment->filename,
+            ':filetype' => $attachment->filetype,
+            ':location' => $attachment->location,
+            ':status_type' => 'unknown',
+            ':status_text' => 'uklassifisert-dok'
         ];
         
-        $result = Database::queryValue($query, $params);
+        // Handle binary content separately
+        $binaryParams = [
+            ':content' => $content
+        ];
+        
+        $result = Database::queryValueWithBinary($query, $params, $binaryParams);
         
         if (!$result) {
             throw new Exception('Failed to save attachment to database');

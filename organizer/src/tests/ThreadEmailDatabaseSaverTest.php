@@ -131,8 +131,8 @@ class ThreadEmailDatabaseSaverTest extends PHPUnit\Framework\TestCase {
         $attachment->filetype = 'pdf';
         $attachment->location = 'test-location';
         
-        // Create a binary test content
-        $testContent = "test-attachment-content";
+        // Create a test content with binary data (including 0xFF byte which is invalid in UTF-8)
+        $testContent = "test-attachment-content" . chr(0xFF) . chr(0x00) . chr(0x01);
         
         // Call the method
         $attachmentId = $reflectionMethod->invoke(
@@ -148,7 +148,7 @@ class ThreadEmailDatabaseSaverTest extends PHPUnit\Framework\TestCase {
         // Check that the attachment exists in the database
         $savedAttachment = Database::queryOne(
             "SELECT email_id, name, filename, filetype, location, status_type, status_text, 
-                    encode(content, 'escape') as content_encoded
+                    encode(content, 'hex') as content_hex
              FROM thread_email_attachments WHERE id = ?",
             [$attachmentId]
         );
@@ -160,8 +160,10 @@ class ThreadEmailDatabaseSaverTest extends PHPUnit\Framework\TestCase {
         $this->assertEquals($attachment->filetype, $savedAttachment['filetype'], 'Attachment should have the correct filetype');
         $this->assertEquals($attachment->location, $savedAttachment['location'], 'Attachment should have the correct location');
         
-        // For bytea content, we need to check the encoded value
-        $this->assertStringContainsString($testContent, $savedAttachment['content_encoded'], 'Attachment should have the correct content');
+        // For binary content, we need to check the hex-encoded value
+        // Convert our test content to hex for comparison
+        $testContentHex = bin2hex($testContent);
+        $this->assertEquals($testContentHex, $savedAttachment['content_hex'], 'Attachment should have the correct binary content');
     }
     
     public function testFinishThreadProcessing() {
