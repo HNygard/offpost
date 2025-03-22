@@ -154,7 +154,7 @@ class ThreadEmailDatabaseSaverTest extends PHPUnit\Framework\TestCase {
         $this->assertEquals($attachment->filename, $savedAttachment['filename'], 'Attachment should have the correct filename');
         $this->assertEquals($attachment->filetype, $savedAttachment['filetype'], 'Attachment should have the correct filetype');
         $this->assertEquals($attachment->location, $savedAttachment['location'], 'Attachment should have the correct location');
-        $this->assertEquals('test-attachment-content', $savedAttachment['content'], 'Attachment should have the correct content');
+        $this->assertEquals('test-attachment-content', stream_get_contents($savedAttachment['content']), 'Attachment should have the correct content');
     }
     
     public function testFinishThreadProcessing() {

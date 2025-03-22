@@ -1,6 +1,6 @@
 -- ******************************************************************
 -- AUTOMATICALLY GENERATED FILE - DO NOT MODIFY
--- Generated on: 2025-03-19 22:32:17
+-- Generated on: 2025-03-22 21:48:56
 -- 
 -- This file contains the current database schema after all migrations.
 -- It is NOT meant to be executed as a migration script.
@@ -36,7 +36,7 @@ CREATE TABLE thread_email_attachments (
     status_text text,
     created_at timestamp with time zone NOT NULL DEFAULT CURRENT_TIMESTAMP,
     size bigint,
-    content text
+    content bytea
 );
 
 ALTER TABLE thread_email_attachments ADD CONSTRAINT thread_email_attachments_pkey PRIMARY KEY (id);
