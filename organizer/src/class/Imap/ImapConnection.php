@@ -341,15 +341,10 @@ class ImapConnection {
     }
 
     /**
-     * Get the current IMAP connection resource
-     * 
-     * @return resource|null The IMAP stream or null if not connected
-     */
-    /**
-     * Get raw email content
+     * Get decoded raw email content with proper encoding handling
      * 
      * @param int $uid Message UID
-     * @return string Raw email content
+     * @return string Decoded raw email content in UTF-8
      * @throws \Exception if operation fails
      */
     public function getRawEmail(int $uid): string {
@@ -357,7 +352,25 @@ class ImapConnection {
             throw new \Exception('No active IMAP connection');
         }
 
-        return $this->wrapper->fetchbody($this->connection, $uid, "", FT_UID);
+        $content = $this->wrapper->fetchbody($this->connection, $uid, "", FT_UID);
+        $structure = $this->getFetchstructure($uid, FT_UID);
+        
+        // Check encoding of the main message
+        if (isset($structure->encoding)) {
+            if ($structure->encoding == 3) { // BASE64
+                $content = base64_decode($content);
+            } elseif ($structure->encoding == 4) { // QUOTED-PRINTABLE
+                $content = quoted_printable_decode($content);
+            }
+        }
+        
+        // Ensure content is valid UTF-8
+        if (!mb_check_encoding($content, 'UTF-8')) {
+            // Try to convert from ISO-8859-1 to UTF-8
+            $content = mb_convert_encoding($content, 'UTF-8', 'ISO-8859-1');
+        }
+        
+        return $content;
     }
 
     /**
