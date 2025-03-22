@@ -94,7 +94,7 @@ class ThreadEmailDatabaseSaver {
                                                  md5($attachment->name) . '.' . $attachment->filetype;
                             
                             // Save attachment file to disk
-                            $attachmentPath = joinPaths(THREADS_DIR, $thread->en, $thread->id, $attachment->location);
+                            $attachmentPath = joinPaths(THREADS_DIR, $thread->entity_id, $thread->id, $attachment->location);
                             $attachmentDir = dirname($attachmentPath);
                             
                             if (!file_exists($attachmentDir)) {
