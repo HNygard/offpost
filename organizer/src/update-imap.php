@@ -83,6 +83,7 @@ function processThreadFolder($connection, $folderManager, $emailProcessor, $atta
         $connection->logDebug('ERROR during thread email processing.');
         $connection->logDebug($e->getMessage());
         $connection->logDebug($e->getTraceAsString());
+        $connection->logDebug('----');
         throw $e;
     }
 }
