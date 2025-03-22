@@ -82,7 +82,7 @@ class ThreadEmailSaver {
                         }
                     }
                 } catch (Exception $e) {
-                    throw new Exception('Failed to process email: ' . $e->getMessage());
+                    throw new Exception('Failed to process email: ' . $e->getMessage(), 0, $e);
                 }
             
                 // Save email metadata

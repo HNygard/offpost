@@ -160,7 +160,7 @@ class ThreadEmailDatabaseSaver {
                     }
                 } catch (Exception $e) {
                     Database::rollBack();
-                    throw new Exception('Failed to process email: ' . $e->getMessage(), 0, $e);
+                    throw new Exception('Exception during processing of email [' . $email->uid . '][' . $email->subject . ']', 0, $e);
                 }
             }
             
