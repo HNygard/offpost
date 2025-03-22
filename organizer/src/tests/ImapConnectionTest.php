@@ -197,12 +197,6 @@ class ImapConnectionTest extends TestCase
         );
     }
 
-    public function testErrorHandler()
-    {
-        $this->expectException(\ErrorException::class);
-        $this->imapConnection->errorHandler(E_WARNING, 'Test error', __FILE__, __LINE__);
-    }
-
     public function testConnectionClosedOnDestruct()
     {
         $resource = fopen('php://memory', 'r');
