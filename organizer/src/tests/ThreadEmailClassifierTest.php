@@ -1,16 +1,19 @@
 <?php
 
 use PHPUnit\Framework\TestCase;
+use OpenAI\OpenAISummarizer;
 
 require_once(__DIR__ . '/bootstrap.php');
 require_once(__DIR__ . '/../class/ThreadEmailClassifier.php');
 
 class ThreadEmailClassifierTest extends TestCase {
     private $classifier;
+    private $mockSummarizer;
 
     protected function setUp(): void {
         parent::setUp();
         $this->classifier = new ThreadEmailClassifier();
+        $this->mockSummarizer = $this->createMock(OpenAISummarizer::class);
     }
 
     public function testClassifyFirstEmailWhenOutbound() {
@@ -147,5 +150,32 @@ class ThreadEmailClassifierTest extends TestCase {
 
         // Verify email remains unchanged
         $this->assertEquals($email, $result);
+    }
+
+    public function testProcessEmailsWithSummarizer() {
+        // Create test thread with emails
+        $thread = (object)[
+            'emails' => [
+                (object)[
+                    'email_type' => 'OUT',
+                    'status_type' => 'unknown',
+                    'status_text' => 'Uklassifisert',
+                    'body' => 'This is a test email body.'
+                ]
+            ]
+        ];
+
+        // Mock summarizer response
+        $this->mockSummarizer->method('summarizeEmail')
+            ->willReturn('This is a summary.');
+
+        // Process emails with summarizer
+        foreach ($thread->emails as $email) {
+            $summary = $this->mockSummarizer->summarizeEmail($email->body);
+            $email->summary = $summary;
+        }
+
+        // Verify email summary
+        $this->assertEquals('This is a summary.', $thread->emails[0]->summary);
     }
 }
