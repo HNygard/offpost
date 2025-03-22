@@ -269,7 +269,7 @@ try {
         }
         
         echo "\n";
-        echo '<a href="./">Back to task selection</a>';
+        echo '<a href="/update-imap">Back to task selection</a>';
         echo '</pre>';
     }
     
