@@ -54,10 +54,11 @@ foreach ($thread->emails as $email) {
         $message = new Message(['raw' => $eml]);
 
         $htmlConvert = function ($html, $charset) {
-            switch ($charset) {
+            switch (strtoupper($charset)) {
                 case 'UTF-8':
                     return $html;
                 case 'ASCII':
+                case 'ISO-8859-1':
                     return mb_convert_encoding($html, 'UTF-8', 'ISO-8859-1');
                 default:
                     throw new Exception(message: 'Unknown encoding: ' . $charset);
