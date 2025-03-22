@@ -68,11 +68,21 @@ foreach ($thread->emails as $email) {
         $message = new Message(['raw' => $eml]);
 
         $email_content = $email;
-        echo '<h1 id="email-subject">Subject: ' . htmlescape($message->getHeader('subject')->getFieldValue()) . '</h1>' . chr(10);
+        try {
+            $subject = $message->getHeader('subject')->getFieldValue();
+        }
+        catch (Exception $e) {
+            $subject = 'Error getting subject - ' . $e->getMessage();
+        }
+        echo '<h1 id="email-subject">Subject: ' . htmlescape($subject) . '</h1>' . chr(10);
         echo '<b>Date: ' . $email_content->datetime_received . '</b><br>' . chr(10);
         //echo '<b>Sender: ' . $email_content->senderAddress . '</b><br>'.chr(10);
 
         // Access the plain text content
+        echo '<pre>';
+        echo '-------------------' . chr(10);
+        echo "EMAIL BODY CONTENT:\n";
+        echo '</pre>';
         if ($message->isMultipart()) {
             $plainTextPart = false;
             $htmlPart = false;
@@ -103,7 +113,7 @@ foreach ($thread->emails as $email) {
 
         echo '<pre>';
         echo '-------------------' . chr(10);
-        echo "HEADERS:\n";
+        echo "EMAIL HEADERS (RAW):\n";
         echo $message->getHeaders()->toString();
         echo '</pre>';
         exit;
