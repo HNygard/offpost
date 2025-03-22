@@ -173,7 +173,7 @@ class ThreadEmailDatabaseSaver {
             if (Database::getInstance()->inTransaction()) {
                 Database::rollBack();
             }
-            throw $e;
+            throw new Exception('Rolling back DB transaction', 0, $e);
         }
     }
 

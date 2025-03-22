@@ -39,7 +39,7 @@ function openConnection($folder = 'INBOX') {
     }
     catch (Exception $e) {
         checkForImapError();
-        throw $e;
+        throw new Exception('Failed to open IMAP connection: ' . $server . $folder, 0, $e);
     }
 }
 

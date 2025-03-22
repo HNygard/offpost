@@ -294,7 +294,7 @@ startxref
         } catch (Exception $e) {
             // Ignore folder creation errors if they already exist
             if (strpos($e->getMessage(), 'already exists') === false) {
-                throw $e;
+                throw new Exception('Error creating folders.', 0, $e);
             }
         }
 
