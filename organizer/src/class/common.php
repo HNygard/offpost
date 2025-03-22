@@ -101,25 +101,17 @@ function is_uuid($string) {
  * @param $exception
  * @param $seen      - array passed to recursive calls to accumulate trace lines already seen
  *                     leave as NULL when calling this function
- * @return array of strings, one entry per trace line
+ * @return string
  */
-function jTraceEx($e, $seen=null) {
+function jTraceEx($e, $seen = null) {
     $starter = $seen ? 'Caused by: ' : '';
     $result = array();
-    if (!$seen) {
-        $seen = array();
-    }
     $trace  = $e->getTrace();
     $prev   = $e->getPrevious();
     $result[] = sprintf('%s%s: %s', $starter, get_class($e), $e->getMessage());
     $file = $e->getFile();
     $line = $e->getLine();
     while (true) {
-        $current = "$file:$line";
-        if (is_array($seen) && in_array($current, $seen)) {
-            $result[] = sprintf(' ... %d more', count($trace)+1);
-            //break;
-        }
         $result[] = sprintf(' at %s%s%s(%s%s%s)',
                                     count($trace) && array_key_exists('class', $trace[0]) ? str_replace('\\', '.', $trace[0]['class']) : '',
                                     count($trace) && array_key_exists('class', $trace[0]) && array_key_exists('function', $trace[0]) ? '.' : '',
@@ -127,9 +119,6 @@ function jTraceEx($e, $seen=null) {
                                     $line === null ? $file : basename($file),
                                     $line === null ? '' : ':',
                                     $line === null ? '' : $line);
-        if (is_array($seen)) {
-            $seen[] = "$file:$line";
-        }
         if (!count($trace)) {
             break;
         }
@@ -139,7 +128,7 @@ function jTraceEx($e, $seen=null) {
     }
     $result = join("\n", $result);
     if ($prev) {
-        $result  .= "\n" . jTraceEx($prev, $seen);
+        $result  .= "\n" . jTraceEx($prev, 'not-null');
     }
 
     return $result;
