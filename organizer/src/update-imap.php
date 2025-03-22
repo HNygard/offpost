@@ -225,37 +225,23 @@ try {
                     echo "Processing folder: $folder\n";
                     try {
                         // Find matching thread for this folder
-                        $found = false;
-                        foreach ($threads as $entityThreads) {
-                            foreach ($entityThreads->threads as $thread) {
-                                $threadFolderManager = new ThreadFolderManager($connection, $folderManager);
-                                $expectedFolder = $threadFolderManager->getThreadEmailFolder($entityThreads, $thread);
-                                if ($expectedFolder === $folder) {
-                                    $savedEmails = processThreadFolder(
-                                        $connection,
-                                        $folderManager,
-                                        $emailProcessor,
-                                        $attachmentHandler,
-                                        $folder
-                                    );
-                                    
-                                    if (!empty($savedEmails)) {
-                                        echo "  Saved emails:\n";
-                                        foreach ($savedEmails as $email) {
-                                            echo "  - $email\n";
-                                        }
-                                        echo "\n";
-                                    } else {
-                                        echo "  No new emails to save\n\n";
-                                    }
-                                    $found = true;
-                                    break 2;
-                                }
-                            }
-                        }
+                        $threadFolderManager = new ThreadFolderManager($connection, $folderManager);
+                        $savedEmails = processThreadFolder(
+                            $connection,
+                            $folderManager,
+                            $emailProcessor,
+                            $attachmentHandler,
+                            $folder
+                        );
                         
-                        if (!$found) {
-                            echo "  Warning: No matching thread found for folder $folder\n\n";
+                        if (!empty($savedEmails)) {
+                            echo "  Saved emails:\n";
+                            foreach ($savedEmails as $email) {
+                                echo "  - $email\n";
+                            }
+                            echo "\n";
+                        } else {
+                            echo "  No new emails to save\n\n";
                         }
                     } catch (Exception $e) {
                         echo "  Error processing folder $folder: " . $e->getMessage() . "\n\n";
