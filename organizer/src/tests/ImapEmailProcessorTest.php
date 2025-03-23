@@ -4,10 +4,12 @@ use PHPUnit\Framework\TestCase;
 use Imap\ImapEmailProcessor;
 use Imap\ImapConnection;
 use Imap\ImapWrapper;
+use Imap\ImapEmail;
 
 require_once __DIR__ . '/../class/Imap/ImapWrapper.php';
 require_once __DIR__ . '/../class/Imap/ImapConnection.php';
 require_once __DIR__ . '/../class/Imap/ImapEmailProcessor.php';
+require_once __DIR__ . '/../class/Imap/ImapEmail.php';
 
 class ImapEmailProcessorTest extends TestCase {
     private $mockWrapper;
