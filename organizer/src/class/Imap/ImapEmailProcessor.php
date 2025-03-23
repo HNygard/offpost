@@ -2,6 +2,8 @@
 
 namespace Imap;
 
+use Exception;
+
 require_once __DIR__ . '/ImapEmail.php';
 
 class ImapEmailProcessor {
@@ -65,6 +67,8 @@ class ImapEmailProcessor {
 
     /**
      * Process emails in a folder
+     * 
+     * @return ImapEmail[] List of emails
      */
     public function getEmails(string $folder): array {
         $imapStream = $this->connection->openConnection($folder);
@@ -82,10 +86,7 @@ class ImapEmailProcessor {
 
         foreach ($mailUIDs as $uid) {
             $this->connection->logDebug("Fetching email UID: $uid");
-            $email = $this->getEmail($uid);
-            if ($email) {
-                $emails[] = $email;
-            }
+            $emails[] = $this->getEmail($uid);
         }
 
         return $emails;
@@ -95,14 +96,14 @@ class ImapEmailProcessor {
      * Process a single email
      * 
      * @param int $uid Email UID
-     * @return ImapEmail|null Email object or null if not found
+     * @return ImapEmail Email object
      */
     private function getEmail(int $uid): ?ImapEmail {
         $msgNo = $this->connection->getMsgno($uid);
         $headers = $this->connection->getHeaderInfo($msgNo);
 
         if (!$headers) {
-            return null;
+            throw new Exception('Failed to get email headers');
         }
 
         // Get email body
