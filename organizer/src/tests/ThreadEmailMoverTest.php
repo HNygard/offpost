@@ -71,24 +71,19 @@ class ThreadEmailMoverTest extends TestCase {
 
     public function testProcessMailbox() {
         // Create test email data
-        $testEmail = (object)[
-            'uid' => 1,
-            'mailHeaders' => (object)[
-                'from' => 'test1@example.com',
-                'to' => 'entity@example.com'
-            ]
-        ];
-
+        // Create mock ImapEmail
+        $mockEmail = $this->createMock(\Imap\ImapEmail::class);
+        $mockEmail->uid = 1;
+        
         // Set up mock expectations
+        $mockEmail->expects($this->once())
+            ->method('getEmailAddresses')
+            ->willReturn(['test1@example.com']);
+            
         $this->mockEmailProcessor->expects($this->once())
             ->method('getEmails')
             ->with('INBOX')
-            ->willReturn([$testEmail]);
-
-        $this->mockEmailProcessor->expects($this->once())
-            ->method('getEmailAddresses')
-            ->with($testEmail->mailHeaders)
-            ->willReturn(['test1@example.com']);
+            ->willReturn([$mockEmail]);
 
         $this->mockFolderManager->expects($this->once())
             ->method('moveEmail')
@@ -106,31 +101,24 @@ class ThreadEmailMoverTest extends TestCase {
     }
 
     public function testProcessMailboxWithMultipleEmailAddresses() {
-        // Create test email with multiple addresses
-        $testEmail = (object)[
-            'uid' => 1,
-            'mailHeaders' => (object)[
-                'from' => 'sender1@example.com',
-                'to' => 'entity@example.com, sender2@example.com',
-                'cc' => 'sender3@example.com, sender4@example.com'
-            ]
-        ];
-
+        // Create mock ImapEmail with multiple addresses
+        $mockEmail = $this->createMock(\Imap\ImapEmail::class);
+        $mockEmail->uid = 1;
+        
         // Set up mock expectations
-        $this->mockEmailProcessor->expects($this->once())
-            ->method('getEmails')
-            ->with('INBOX')
-            ->willReturn([$testEmail]);
-
-        $this->mockEmailProcessor->expects($this->once())
+        $mockEmail->expects($this->once())
             ->method('getEmailAddresses')
-            ->with($testEmail->mailHeaders)
             ->willReturn([
                 'sender1@example.com',
                 'sender2@example.com',
                 'sender3@example.com',
                 'sender4@example.com'
             ]);
+            
+        $this->mockEmailProcessor->expects($this->once())
+            ->method('getEmails')
+            ->with('INBOX')
+            ->willReturn([$mockEmail]);
 
         $this->mockFolderManager->expects($this->once())
             ->method('moveEmail')
@@ -148,25 +136,19 @@ class ThreadEmailMoverTest extends TestCase {
     }
 
     public function testProcessMailboxWithDmarcEmail() {
-        // Create test email from DMARC
-        $testEmail = (object)[
-            'uid' => 1,
-            'mailHeaders' => (object)[
-                'from' => self::DMARC_EMAIL,
-                'to' => 'entity@example.com'
-            ]
-        ];
-
+        // Create mock ImapEmail from DMARC
+        $mockEmail = $this->createMock(\Imap\ImapEmail::class);
+        $mockEmail->uid = 1;
+        
         // Set up mock expectations
+        $mockEmail->expects($this->once())
+            ->method('getEmailAddresses')
+            ->willReturn([self::DMARC_EMAIL]);
+            
         $this->mockEmailProcessor->expects($this->once())
             ->method('getEmails')
             ->with('INBOX')
-            ->willReturn([$testEmail]);
-
-        $this->mockEmailProcessor->expects($this->once())
-            ->method('getEmailAddresses')
-            ->with($testEmail->mailHeaders)
-            ->willReturn([self::DMARC_EMAIL]);
+            ->willReturn([$mockEmail]);
 
         // DMARC emails should be left in INBOX
         $this->mockFolderManager->expects($this->once())
@@ -193,21 +175,18 @@ class ThreadEmailMoverTest extends TestCase {
     }
 
     public function testProcessMailboxWithMoveError() {
-        $testEmail = (object)[
-            'uid' => 1,
-            'mailHeaders' => (object)[
-                'from' => 'test@example.com',
-                'to' => 'entity@example.com'
-            ]
-        ];
-
-        $this->mockEmailProcessor->expects($this->once())
-            ->method('getEmails')
-            ->willReturn([$testEmail]);
-
-        $this->mockEmailProcessor->expects($this->once())
+        // Create mock ImapEmail
+        $mockEmail = $this->createMock(\Imap\ImapEmail::class);
+        $mockEmail->uid = 1;
+        
+        // Set up mock expectations
+        $mockEmail->expects($this->once())
             ->method('getEmailAddresses')
             ->willReturn(['test@example.com']);
+            
+        $this->mockEmailProcessor->expects($this->once())
+            ->method('getEmails')
+            ->willReturn([$mockEmail]);
 
         $this->mockFolderManager->expects($this->once())
             ->method('moveEmail')
@@ -221,25 +200,19 @@ class ThreadEmailMoverTest extends TestCase {
     }
 
     public function testProcessMailboxWithUnmatchedEmail() {
-        // Create test email data with unmatched address
-        $testEmail = (object)[
-            'uid' => 1,
-            'mailHeaders' => (object)[
-                'from' => 'unmatched@example.com',
-                'to' => 'entity@example.com'
-            ]
-        ];
-
+        // Create mock ImapEmail with unmatched address
+        $mockEmail = $this->createMock(\Imap\ImapEmail::class);
+        $mockEmail->uid = 1;
+        
         // Set up mock expectations
+        $mockEmail->expects($this->once())
+            ->method('getEmailAddresses')
+            ->willReturn(['unmatched@example.com']);
+            
         $this->mockEmailProcessor->expects($this->once())
             ->method('getEmails')
             ->with('INBOX')
-            ->willReturn([$testEmail]);
-
-        $this->mockEmailProcessor->expects($this->once())
-            ->method('getEmailAddresses')
-            ->with($testEmail->mailHeaders)
-            ->willReturn(['unmatched@example.com']);
+            ->willReturn([$mockEmail]);
 
         $this->mockFolderManager->expects($this->once())
             ->method('moveEmail')

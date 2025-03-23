@@ -128,28 +128,46 @@ class ImapEmailProcessorTest extends TestCase {
     public function testGetEmailDirection(): void {
         $myEmail = 'test@example.com';
         
-        // Test outgoing email
+        // Create ImapEmail instance with outgoing headers
         $outgoingHeaders = $this->createEmailHeaders('test@example.com');
-        $this->assertEquals('OUT', $this->processor->getEmailDirection($outgoingHeaders, $myEmail));
+        $outgoingEmail = new ImapEmail();
+        $outgoingEmail->mailHeaders = $outgoingHeaders;
+        
+        // Test outgoing email
+        $this->assertEquals('OUT', $outgoingEmail->getEmailDirection($myEmail));
+        
+        // Create ImapEmail instance with incoming headers
+        $incomingHeaders = $this->createEmailHeaders('sender@external.com');
+        $incomingEmail = new ImapEmail();
+        $incomingEmail->mailHeaders = $incomingHeaders;
         
         // Test incoming email
-        $incomingHeaders = $this->createEmailHeaders('sender@external.com');
-        $this->assertEquals('IN', $this->processor->getEmailDirection($incomingHeaders, $myEmail));
+        $this->assertEquals('IN', $incomingEmail->getEmailDirection($myEmail));
     }
 
     public function testGenerateEmailFilename(): void {
         $myEmail = 'test@example.com';
         $date = '2023-12-25 10:30:00';
         
-        // Test outgoing email filename
+        // Create ImapEmail instance with outgoing headers
         $outgoingHeaders = $this->createEmailHeaders('test@example.com', $date);
+        $outgoingEmail = new ImapEmail();
+        $outgoingEmail->mailHeaders = $outgoingHeaders;
+        $outgoingEmail->date = $date;
+        
+        // Test outgoing email filename
         $expectedOutgoing = '2023-12-25_103000 - OUT';
-        $this->assertEquals($expectedOutgoing, $this->processor->generateEmailFilename($outgoingHeaders, $myEmail));
+        $this->assertEquals($expectedOutgoing, $outgoingEmail->generateEmailFilename($myEmail));
+        
+        // Create ImapEmail instance with incoming headers
+        $incomingHeaders = $this->createEmailHeaders('sender@external.com', $date);
+        $incomingEmail = new ImapEmail();
+        $incomingEmail->mailHeaders = $incomingHeaders;
+        $incomingEmail->date = $date;
         
         // Test incoming email filename
-        $incomingHeaders = $this->createEmailHeaders('sender@external.com', $date);
         $expectedIncoming = '2023-12-25_103000 - IN';
-        $this->assertEquals($expectedIncoming, $this->processor->generateEmailFilename($incomingHeaders, $myEmail));
+        $this->assertEquals($expectedIncoming, $incomingEmail->generateEmailFilename($myEmail));
     }
 
     public function testGetEmailAddresses(): void {
@@ -161,7 +179,10 @@ class ImapEmailProcessorTest extends TestCase {
             'sender@example.com'
         ];
         
-        $addresses = $this->processor->getEmailAddresses($headers);
+        $email = new ImapEmail();
+        $email->mailHeaders = $headers;
+        
+        $addresses = $email->getEmailAddresses();
         sort($addresses);
         sort($expectedAddresses);
         

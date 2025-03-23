@@ -36,7 +36,7 @@ class ThreadEmailMover {
         $emails = $this->emailProcessor->getEmails($mailbox);
         
         foreach ($emails as $email) {
-            $addresses = $this->emailProcessor->getEmailAddresses($email->mailHeaders);
+            $addresses = $email->getEmailAddresses();
             $targetFolder = 'INBOX';
             
             foreach ($addresses as $address) {

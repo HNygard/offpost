@@ -92,40 +92,39 @@ class ThreadEmailSaverTest extends TestCase {
         );
         $folder = 'INBOX.Test';
 
-        // Create test email
-        $testEmail = (object)[
-            'uid' => 1,
-            'timestamp' => time(),
-            'mailHeaders' => (object)[
-                'subject' => 'Test Email',
-                'from' => 'sender@example.com'
-            ]
+        // Create mock ImapEmail
+        $mockEmail = $this->createMock(\Imap\ImapEmail::class);
+        $mockEmail->uid = 1;
+        $mockEmail->timestamp = time();
+        $mockEmail->mailHeaders = (object)[
+            'subject' => 'Test Email',
+            'from' => 'sender@example.com'
         ];
-
+        
         // Set up mock expectations
+        $mockEmail->expects($this->once())
+            ->method('getEmailDirection')
+            ->with($thread->my_email)
+            ->willReturn('incoming');
+            
+        $mockEmail->expects($this->once())
+            ->method('generateEmailFilename')
+            ->with($thread->my_email)
+            ->willReturn('test_email_1');
+            
         $this->mockEmailProcessor->expects($this->once())
             ->method('getEmails')
             ->with($folder)
-            ->willReturn([$testEmail]);
-
-        $this->mockEmailProcessor->expects($this->once())
-            ->method('getEmailDirection')
-            ->with($testEmail->mailHeaders, $thread->my_email)
-            ->willReturn('incoming');
-
-        $this->mockEmailProcessor->expects($this->once())
-            ->method('generateEmailFilename')
-            ->with($testEmail->mailHeaders, $thread->my_email)
-            ->willReturn('test_email_1');
+            ->willReturn([$mockEmail]);
 
         $this->mockConnection->expects($this->once())
             ->method('getRawEmail')
-            ->with($testEmail->uid)
+            ->with($mockEmail->uid)
             ->willReturn('Raw email content');
 
         $this->mockAttachmentHandler->expects($this->once())
             ->method('processAttachments')
-            ->with($testEmail->uid)
+            ->with($mockEmail->uid)
             ->willReturn([]);
 
         // Call method
@@ -160,48 +159,50 @@ class ThreadEmailSaverTest extends TestCase {
         );
         $folder = 'INBOX.Test';
 
-        // Create test email with attachment
-        $testEmail = (object)[
-            'uid' => 1,
-            'timestamp' => time(),
-            'mailHeaders' => (object)[
-                'subject' => 'Test Email with Attachment',
-                'from' => 'sender@example.com'
-            ]
+        // Create mock ImapEmail with attachment
+        $mockEmail = $this->createMock(\Imap\ImapEmail::class);
+        $mockEmail->uid = 1;
+        $mockEmail->timestamp = time();
+        $mockEmail->mailHeaders = (object)[
+            'subject' => 'Test Email with Attachment',
+            'from' => 'sender@example.com'
         ];
-
+        
         $testAttachment = (object)[
             'name' => 'test.pdf',
             'filetype' => 'pdf'
         ];
 
         // Set up mock expectations
+        $mockEmail->expects($this->once())
+            ->method('getEmailDirection')
+            ->with($thread->my_email)
+            ->willReturn('incoming');
+            
+        $mockEmail->expects($this->once())
+            ->method('generateEmailFilename')
+            ->with($thread->my_email)
+            ->willReturn('test_email_1');
+            
         $this->mockEmailProcessor->expects($this->once())
             ->method('getEmails')
-            ->willReturn([$testEmail]);
-
-        $this->mockEmailProcessor->expects($this->once())
-            ->method('getEmailDirection')
-            ->willReturn('incoming');
-
-        $this->mockEmailProcessor->expects($this->once())
-            ->method('generateEmailFilename')
-            ->willReturn('test_email_1');
+            ->with($folder)
+            ->willReturn([$mockEmail]);
 
         $this->mockConnection->expects($this->once())
             ->method('getRawEmail')
-            ->with($testEmail->uid)
+            ->with($mockEmail->uid)
             ->willReturn('Raw email content');
 
         $this->mockAttachmentHandler->expects($this->once())
             ->method('processAttachments')
-            ->with($testEmail->uid)
+            ->with($mockEmail->uid)
             ->willReturn([$testAttachment]);
 
         $this->mockAttachmentHandler->expects($this->once())
             ->method('saveAttachment')
             ->with(
-                $testEmail->uid,
+                $mockEmail->uid,
                 2,
                 $this->callback(function($att) {
                     return $att->name === 'test.pdf' && 
@@ -257,13 +258,13 @@ class ThreadEmailSaverTest extends TestCase {
         ];
         $folder = 'INBOX.Test';
 
-        $testEmail = (object)[
-            'uid' => 1,
-            'timestamp' => time(),
-            'mailHeaders' => (object)[
-                'subject' => 'Test Email',
-                'from' => 'sender@example.com'
-            ]
+        // Create mock ImapEmail
+        $mockEmail = $this->createMock(\Imap\ImapEmail::class);
+        $mockEmail->uid = 1;
+        $mockEmail->timestamp = time();
+        $mockEmail->mailHeaders = (object)[
+            'subject' => 'Test Email',
+            'from' => 'sender@example.com'
         ];
 
         // Expect exception due to permission error
@@ -310,27 +311,29 @@ class ThreadEmailSaverTest extends TestCase {
         ];
         $folder = 'INBOX.Test';
 
-        $testEmail = (object)[
-            'uid' => 1,
-            'timestamp' => time(),
-            'mailHeaders' => (object)[
-                'subject' => 'Test Email',
-                'from' => 'sender@example.com'
-            ]
+        // Create mock ImapEmail
+        $mockEmail = $this->createMock(\Imap\ImapEmail::class);
+        $mockEmail->uid = 1;
+        $mockEmail->timestamp = time();
+        $mockEmail->mailHeaders = (object)[
+            'subject' => 'Test Email',
+            'from' => 'sender@example.com'
         ];
-
+        
         // Set up mock expectations
+        $mockEmail->expects($this->once())
+            ->method('getEmailDirection')
+            ->with($thread->my_email)
+            ->willReturn('incoming');
+            
+        $mockEmail->expects($this->once())
+            ->method('generateEmailFilename')
+            ->with($thread->my_email)
+            ->willReturn('test_email_1');
+            
         $this->mockEmailProcessor->expects($this->once())
             ->method('getEmails')
-            ->willReturn([$testEmail]);
-
-        $this->mockEmailProcessor->expects($this->once())
-            ->method('getEmailDirection')
-            ->willReturn('incoming');
-
-        $this->mockEmailProcessor->expects($this->once())
-            ->method('generateEmailFilename')
-            ->willReturn('test_email_1');
+            ->willReturn([$mockEmail]);
 
         // Simulate connection failure
         $this->mockConnection->expects($this->once())

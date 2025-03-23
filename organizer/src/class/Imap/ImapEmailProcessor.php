@@ -110,45 +110,4 @@ class ImapEmailProcessor {
         
         return ImapEmail::fromImap($this->connection, $uid, $headers, $body);
     }
-
-    /**
-     * Get email direction (IN/OUT) based on sender
-     */
-    public function getEmailDirection(object $headers, string $myEmail): string {
-        $from = $headers->from[0]->mailbox . '@' . $headers->from[0]->host;
-        return ($from === $myEmail) ? 'OUT' : 'IN';
-    }
-
-    /**
-     * Generate unique filename for email based on date and direction
-     */
-    public function generateEmailFilename(object $headers, string $myEmail): string {
-        $datetime = date('Y-m-d_His', strtotime($headers->date));
-        $direction = $this->getEmailDirection($headers, $myEmail);
-        return $datetime . ' - ' . $direction;
-    }
-
-    /**
-     * Get addresses from email headers
-     */
-    public function getEmailAddresses(object $headers): array {
-        $addresses = [];
-        
-        if (isset($headers->to)) {
-            foreach ($headers->to as $email) {
-                $addresses[] = $email->mailbox . '@' . $email->host;
-            }
-        }
-        foreach ($headers->from as $email) {
-            $addresses[] = $email->mailbox . '@' . $email->host;
-        }
-        foreach ($headers->reply_to as $email) {
-            $addresses[] = $email->mailbox . '@' . $email->host;
-        }
-        foreach ($headers->sender as $email) {
-            $addresses[] = $email->mailbox . '@' . $email->host;
-        }
-
-        return array_unique($addresses);
-    }
 }

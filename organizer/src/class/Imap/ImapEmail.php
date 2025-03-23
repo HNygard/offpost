@@ -62,4 +62,45 @@ class ImapEmail {
         
         return $email;
     }
+
+    /**
+     * Get email direction (IN/OUT) based on sender
+     */
+    public function getEmailDirection(string $myEmail): string {
+        $from = $this->mailHeaders->from[0]->mailbox . '@' . $this->mailHeaders->from[0]->host;
+        return ($from === $myEmail) ? 'OUT' : 'IN';
+    }
+
+    /**
+     * Generate unique filename for email based on date and direction
+     */
+    public function generateEmailFilename(string $myEmail): string {
+        $datetime = date('Y-m-d_His', strtotime($this->date));
+        $direction = $this->getEmailDirection($myEmail);
+        return $datetime . ' - ' . $direction;
+    }
+
+    /**
+     * Get addresses from email headers
+     */
+    public function getEmailAddresses(): array {
+        $addresses = [];
+        
+        if (isset($this->mailHeaders->to)) {
+            foreach ($this->mailHeaders->to as $email) {
+                $addresses[] = $email->mailbox . '@' . $email->host;
+            }
+        }
+        foreach ($this->mailHeaders->from as $email) {
+            $addresses[] = $email->mailbox . '@' . $email->host;
+        }
+        foreach ($this->mailHeaders->reply_to as $email) {
+            $addresses[] = $email->mailbox . '@' . $email->host;
+        }
+        foreach ($this->mailHeaders->sender as $email) {
+            $addresses[] = $email->mailbox . '@' . $email->host;
+        }
+
+        return array_unique($addresses);
+    }
 }

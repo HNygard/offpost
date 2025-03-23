@@ -67,8 +67,8 @@ class ThreadEmailSaver {
 
                 try {
 
-                    $direction = $this->emailProcessor->getEmailDirection($email->mailHeaders, $thread->my_email);
-                    $filename = $this->emailProcessor->generateEmailFilename($email->mailHeaders, $thread->my_email);
+                    $direction = $email->getEmailDirection($thread->my_email);
+                    $filename = $email->generateEmailFilename($thread->my_email);
                 
                     // Save raw email
                     $emailRawFile = $folderJson . '/' . $filename . '.eml';
