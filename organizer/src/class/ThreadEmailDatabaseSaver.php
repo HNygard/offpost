@@ -53,7 +53,7 @@ class ThreadEmailDatabaseSaver {
                 }
 
                 # Figure out which thread this email is part of
-                $all_emails = $this->emailProcessor->getEmailAddresses($email->mailHeaders);
+                $all_emails = $email->getEmailAddresses();
                 $threads = Database::query(
                     "SELECT id, my_email FROM threads WHERE my_email IN (" . implode(',', array_fill(0, count($all_emails), '?')) . ")",
                     $all_emails
@@ -67,8 +67,8 @@ class ThreadEmailDatabaseSaver {
                 $thread = Thread::loadFromDatabase($threads[0]['id']);
 
                 try {
-                    $direction = $this->emailProcessor->getEmailDirection($email->mailHeaders, $thread->my_email);
-                    $filename = $this->emailProcessor->generateEmailFilename($email->mailHeaders, $thread->my_email);
+                    $direction = $email->getEmailDirection($thread->my_email);
+                    $filename = $email->generateEmailFilename($thread->my_email);
                     
                     // Check if email already exists in database
                     if ($this->emailExistsInDatabase($thread->id, $filename)) {
