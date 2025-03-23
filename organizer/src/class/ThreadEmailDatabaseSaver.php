@@ -84,7 +84,7 @@ class ThreadEmailDatabaseSaver {
                         }
                         
                         // Create new email record in database
-                        $emailId = $this->saveEmailToDatabase($thread->id, $email, $direction, $filename, $rawEmail, $email);
+                        $emailId = $this->saveEmailToDatabase($thread->id, $email, $direction, $filename, $rawEmail, $email->mailHeaders);
                         
                         // Process attachments
                         $attachments = $this->attachmentHandler->processAttachments($email->uid);
