@@ -13,6 +13,7 @@ class ImapEmail {
     public string $reply_toaddress;
     public string $body;
     public object $mailHeaders;
+    public array $attachments;
 
     /**
      * Create a new ImapEmail instance from IMAP headers and body
