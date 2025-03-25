@@ -20,6 +20,12 @@
         "name": "Arkivverket - Digitalarkivet",
         "type": "agency"
     },
+    "election-inbox": {
+        "entity_id": "election-inbox",
+        "name": "Election Inbox",
+        "type": "technical",
+        "email": "election-inbox@hnygard.no"
+    },
     "email-dmarc": {
         "entity_id": "email-dmarc",
         "name": "Technical - DMARC",
