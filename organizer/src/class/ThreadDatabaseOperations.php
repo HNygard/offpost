@@ -417,27 +417,32 @@ class ThreadDatabaseOperations {
             throw new Exception("Invalid request follup plan");
         }
         
-        Database::execute(
-            "INSERT INTO threads (id, id_old, entity_id, title, my_name, my_email, sent, archived, labels, sent_comment, public, sending_status, initial_request, request_law_basis, request_follow_up_plan) 
-            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)",
-            [
-                $uuid,
-                $thread->id_old ?? null, // Use existing id_old if set, otherwise null
-                $entity->entity_id,
-                $thread->title,
-                $thread->my_name,
-                $thread->my_email,
-                $thread->sending_status === Thread::SENDING_STATUS_SENT ? 't' : 'f', // Keep sent in sync with sending_status
-                $thread->archived ? 't' : 'f',
-                $this->formatLabelsForPostgres($thread->labels),
-                $thread->sentComment,
-                $thread->public ? 't' : 'f',
-                $thread->sending_status ?? Thread::SENDING_STATUS_STAGING,
-                $thread->initial_request,
-                $thread->request_law_basis,
-                $thread->request_follow_up_plan
-            ]
-        );
+        try {
+            Database::execute(
+                "INSERT INTO threads (id, id_old, entity_id, title, my_name, my_email, sent, archived, labels, sent_comment, public, sending_status, initial_request, request_law_basis, request_follow_up_plan) 
+                VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)",
+                [
+                    $uuid,
+                    $thread->id_old ?? null, // Use existing id_old if set, otherwise null
+                    $entity->entity_id,
+                    $thread->title,
+                    $thread->my_name,
+                    $thread->my_email,
+                    $thread->sending_status === Thread::SENDING_STATUS_SENT ? 't' : 'f', // Keep sent in sync with sending_status
+                    $thread->archived ? 't' : 'f',
+                    $this->formatLabelsForPostgres($thread->labels),
+                    $thread->sentComment,
+                    $thread->public ? 't' : 'f',
+                    $thread->sending_status ?? Thread::SENDING_STATUS_STAGING,
+                    $thread->initial_request,
+                    $thread->request_law_basis,
+                    $thread->request_follow_up_plan
+                ]
+            );
+        }
+        catch(Exception $e) {
+            throw new Exception("Failed to create thread for my_name=" . $thread->my_name . ", my_email=" . $thread->my_email . ": " . $e->getMessage(), 0, $e);
+        }
         
         // Set the UUID as the thread's ID
         $thread->id = $uuid;
