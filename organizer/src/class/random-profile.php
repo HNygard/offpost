@@ -20,9 +20,7 @@ function getNamesFromCsv($file1) {
     foreach ($file as $line) {
         $name = trim(explode(';', trim($line), 2)[0]);
         if (!empty($name)) {
-            $name = strtoupper(preg_replace('/^[0-9]* /', '', $name));
             $names[] = $name;
-            $names[] = mb_strtolower($name, 'UTF-8');
         }
     }
 
@@ -58,7 +56,7 @@ function getRandomNameAndEmail() {
     $middleShort = '';
     if ($middle != '') {
         // Random: Forkort mellomnavn
-        $middleShort = ' ' . profileRandom(70, $middle, substr($middle, 0, 1) . '.');
+        $middleShort = ' ' . profileRandom(70, $middle, mb_substr($middle, 0, 1, 'UTF-8') . '.');
     }
 
     $email = mb_strtolower($first, 'UTF-8');
