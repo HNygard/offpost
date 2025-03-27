@@ -21,16 +21,6 @@ class ThreadEmailSaverTest extends TestCase {
         // Start database transaction
         Database::beginTransaction();
         
-        // Clean database tables
-        $db = new Database();
-        $db->execute("DELETE FROM thread_email_history");
-        $db->execute("DELETE FROM thread_history");
-        $db->execute("DELETE FROM thread_authorizations");
-        $db->execute("DELETE FROM thread_email_attachments");
-        $db->execute("DELETE FROM thread_email_sendings");
-        $db->execute("DELETE FROM thread_email_extractions");
-        $db->execute("DELETE FROM threads");
-        
         // Create temp directory for test files
         $this->tempDir = sys_get_temp_dir() . '/thread_email_saver_test_' . uniqid();
         mkdir($this->tempDir);
