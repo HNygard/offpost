@@ -156,7 +156,7 @@ class ThreadEmailDatabaseSaver {
                             'system'
                         );
 
-                        $savedEmails[] = $filename;
+                        $savedEmails[] = $emailId;
                     }
                 } catch (Exception $e) {
                     Database::rollBack();

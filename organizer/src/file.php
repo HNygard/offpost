@@ -1,5 +1,8 @@
 <?php
 
+use Laminas\Mime\Decode;
+use Laminas\Mime\Mime;
+
 require_once __DIR__ . '/auth.php';
 require_once __DIR__ . '/vendor/autoload.php';
 require_once __DIR__ . '/class/ThreadStorageManager.php';
@@ -53,21 +56,57 @@ foreach ($thread->emails as $email) {
         $eml =  ThreadStorageManager::getInstance()->getThreadEmailContent($entityId, $thread, $email->id); 
         $message = new Message(['raw' => $eml]);
 
+        $htmlConvertPart = function ($html, $part) {
+            if (!$part || !($part instanceof Message)) {
+                return $html;
+            }
+            
+            $encoding = $part->getHeaderField('content-transfer-encoding');
+            
+            if ($encoding == 'base64') {
+                $html = base64_decode($html);
+            }   
+            if ($encoding == 'quoted-printable') {
+                // Use quoted-printable decoder with explicit charset
+                $charset = 'UTF-8';
+                
+                // Try to get charset from content-type
+                try {
+                    $contentType = $part->getHeaderField('content-type');
+                    if (is_array($contentType) && isset($contentType['charset'])) {
+                        $charset = $contentType['charset'];
+                    }
+                } catch (Exception $e) {
+                    // Ignore and use default charset
+                }
+                
+                $html = quoted_printable_decode($html);
+            }
+
+            return $html;
+        };
         $htmlConvert = function ($html, $charset) {
-            if (mb_check_encoding($html, 'UTF-8')) {
-                // Already UTF-8
+            if (empty($html)) {
                 return $html;
             }
 
-            switch (strtoupper($charset)) {
-                case 'UTF-8':
-                    return $html;
-                case 'ASCII':
-                case 'ISO-8859-1':
-                    return mb_convert_encoding($html, 'UTF-8', 'ISO-8859-1');
-                default:
-                    throw new Exception(message: 'Unknown encoding: ' . $charset);
+            // If already valid UTF-8, return as is
+            if (mb_check_encoding($html, 'UTF-8')) {
+                return $html;
             }
+
+            // Try multiple encodings, prioritizing those common in Norwegian content
+            $encodings = ['ISO-8859-1', 'Windows-1252', 'ISO-8859-15', 'UTF-8'];
+            
+            foreach ($encodings as $encoding) {
+                $converted = @mb_convert_encoding($html, 'UTF-8', $encoding);
+                if (mb_check_encoding($converted, 'UTF-8') && strpos($converted, '?') === false) {
+                    return $converted;
+                }
+            }
+
+            // Force ISO-8859-1 as a last resort
+            return mb_convert_encoding($html, 'UTF-8', 'ISO-8859-1');
         };
         header('Content-Type: text/html; charset=UTF-8');
 
@@ -105,11 +144,45 @@ foreach ($thread->emails as $email) {
             $plainText = $plainTextPart ? $plainTextPart->getContent() : '';
             $html = $htmlPart ? $htmlPart->getContent() : '';
 
+            // Get charset from content-type if available
+            $plainTextCharset = $message->getHeaders()->getEncoding();
+            $htmlCharset = $message->getHeaders()->getEncoding();
+            
+            if ($plainTextPart) {
+                try {
+                    $contentType = $plainTextPart->getHeaderField('content-type');
+                    if (is_array($contentType) && isset($contentType['charset'])) {
+                        $plainTextCharset = $contentType['charset'];
+                    }
+                } catch (Exception $e) {
+                    // Ignore and use default charset
+                }
+            }
+            
+            if ($htmlPart) {
+                try {
+                    $contentType = $htmlPart->getHeaderField('content-type');
+                    if (is_array($contentType) && isset($contentType['charset'])) {
+                        $htmlCharset = $contentType['charset'];
+                    }
+                } catch (Exception $e) {
+                    // Ignore and use default charset
+                }
+            }
+            
+            // First decode the content based on transfer encoding
+            $decodedPlainText = $htmlConvertPart($plainText, $plainTextPart);
+            $decodedHtml = $htmlConvertPart($html, $htmlPart);
+            
+            // Then convert charset to UTF-8
+            $convertedPlainText = $htmlConvert($decodedPlainText, $plainTextCharset);
+            $convertedHtml = $htmlConvert($decodedHtml, $htmlCharset);
+            
             echo '<b>Plain text version:</b><br>' . chr(10);
-            echo '<pre>' . $htmlConvert(base64_decode($plainText), $message->getHeaders()->getEncoding()) . '</pre><br><br>' . chr(10) . chr(10);
+            echo '<pre>' . $convertedPlainText . '</pre><br><br>' . chr(10) . chr(10);
 
             echo 'HTML version:<br>' . chr(10);
-            echo $htmlConvert(base64_decode($html), $message->getHeaders()->getEncoding()) . '<br><br>' . chr(10) . chr(10);
+            echo $convertedHtml . '<br><br>' . chr(10) . chr(10);
         }
         else {
             // If the message is not multipart, simply echo the content
