@@ -60,7 +60,7 @@ class ThreadStorageManager {
         // Get attachment from database
         $rows = Database::queryOne(
             "SELECT tea.name, tea.filename, tea.filetype, tea.location, tea.status_type, tea.status_text, 
-                    encode(tea.content, 'escape') as content
+                    tea.content
              FROM thread_email_attachments tea
              JOIN thread_emails te ON tea.email_id = te.id
              WHERE te.thread_id = ? AND tea.location = ?",
@@ -81,6 +81,9 @@ class ThreadStorageManager {
         
         // Handle the encoded bytea data
         $content = $rows['content'];
+        if (is_resource($content)) {
+            $content = stream_get_contents($content);
+        }
         if (substr($content, 0, 2) === '\\x') {
             // Convert hex format to binary
             $content = hex2bin(substr($content, 2));

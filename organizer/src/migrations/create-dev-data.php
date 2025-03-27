@@ -5,6 +5,16 @@ require_once __DIR__ . '/../class/ThreadEmail.php';
 require_once __DIR__ . '/../class/ThreadDatabaseOperations.php';
 require_once __DIR__ . '/../class/common.php';
 
+require_once __DIR__ . '/../class/ThreadEmailDatabaseSaver.php';
+require_once __DIR__ . '/../class/Imap/ImapConnection.php';
+require_once __DIR__ . '/../class/Imap/ImapEmailProcessor.php';
+require_once __DIR__ . '/../class/Imap/ImapAttachmentHandler.php';
+
+use Imap\ImapConnection;
+use Imap\ImapFolderManager;
+use Imap\ImapEmailProcessor;
+use Imap\ImapAttachmentHandler;
+
 // Only run in development environment
 if (getenv('ENVIRONMENT') !== 'development') {
     exit(0);
@@ -57,7 +67,11 @@ foreach ($threadsData['threads'] as $threadData) {
     }
 }
 function createThreadTestData($threadsData, $threadData, $sourceEntityId) {
-    global $threadOps;
+    global $threadOps, $sourceThreadsDir;
+    $connection = new ImapConnection('', '', '', true);
+    $emailProcessor = new ImapEmailProcessor($connection);
+    $attachmentHandler = new ImapAttachmentHandler($connection);
+    $saver = new ThreadEmailDatabaseSaver($connection, $emailProcessor, $attachmentHandler);
 
     // Create thread in database
     $thread = new Thread();
@@ -84,38 +98,49 @@ function createThreadTestData($threadsData, $threadData, $sourceEntityId) {
         $email->status_text = $emailData['status_text'];
         $email->id = $emailData['id'];
 
+        /*$email_content = file_get_contents($sourceThreadsDir . "/{$thread->id_old}/{$email->id}.eml");
+        if (!$email_content) {
+            throw new Exception("Email content not found for thread {$thread->id_old} email {$email->id}");
+        }
+        $email_content = mb_convert_encoding($email_content, 'UTF-8', 'UTF-8');
+        */
+
         // Insert email into database with original ID stored in id_old
         $sql = "INSERT INTO thread_emails (thread_id, id_old, timestamp_received, datetime_received, ignore, email_type, status_type, status_text, content) 
                 VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?) RETURNING id";
         
-        $emailId = Database::queryValue($sql, [
-            $thread->id,
-            $email->id,
-            $email->timestamp_received,
-            $email->datetime_received,
-            $email->ignore ? 't' : 'f',
-            $email->email_type,
-            $email->status_type,
-            $email->status_text,
-            'content not imported'
-        ]);
+        try {
+            $emailId = Database::queryValue($sql, [
+                $thread->id,
+                $email->id,
+                $email->timestamp_received,
+                $email->datetime_received,
+                $email->ignore ? 't' : 'f',
+                $email->email_type,
+                $email->status_type,
+                $email->status_text,
+                '' //$email_content
+            ]);
+        }
+        catch (Exception $e) {
+            //throw new Exception("Error inserting email: " . "/{$thread->id_old}/{$email->id}.eml", 0, $e);
+            throw $e;
+        }
 
         // Process attachments if any
         if (isset($emailData['attachments'])) {
             foreach ($emailData['attachments'] as $attachmentData) {
-                Database::execute(
-                    "INSERT INTO thread_email_attachments (email_id, name, filename, filetype, location, status_type, status_text)
-                     VALUES (?, ?, ?, ?, ?, ?, ?)",
-                    [
-                        $emailId,
-                        $attachmentData['name'],
-                        $attachmentData['filename'],
-                        $attachmentData['filetype'],
-                        $attachmentData['location'],
-                        $attachmentData['status_type'],
-                        $attachmentData['status_text']
-                    ]
-                );
+                $att_content = file_get_contents($sourceThreadsDir . "/{$thread->id_old}/{$attachmentData['location']}");
+                if (!$att_content) {
+                    throw new Exception("Attachment content not found for thread {$thread->id_old} email {$email->id} attachment {$attachmentData['location']}");
+                }
+                $att = new stdClass();
+                $att->name = $attachmentData['name'];
+                $att->filename = $attachmentData['filename'];
+                $att->filetype = $attachmentData['filetype'];
+                $att->location = $attachmentData['location'];
+
+                $saver->saveAttachmentToDatabase($emailId, $att, $att_content);
             }
         }
     }
