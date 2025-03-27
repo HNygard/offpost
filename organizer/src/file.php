@@ -110,6 +110,9 @@ foreach ($thread->emails as $email) {
         };
         header('Content-Type: text/html; charset=UTF-8');
 
+        // Set Content-Security-Policy header to prevent XSS somewhat
+        header("Content-Security-Policy: default-src 'none';   script-src 'self';   style-src 'self';   img-src 'self' data:;   frame-src 'none';   object-src 'none';   base-uri 'none';   form-action 'none';");
+
         $message = new Message(['raw' => $eml]);
 
         $email_content = $email;
