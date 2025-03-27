@@ -46,7 +46,7 @@ class ThreadStartPageTest extends E2EPageTestCase {
             'title' => 'Test Thread ' . uniqid(),
             'labels' => 'test e2e',
             'entity_ids[]' => $entity_id,
-            'body' => 'This is a test message body created by E2E test.',
+            'body' => 'This is a test message body created by E2E test ÆØÅ.',
             'public' => '1',
             'request_law_basis' => Thread::REQUEST_LAW_BASIS_OFFENTLEGLOVA,
             'request_follow_up_plan' => Thread::REQUEST_FOLLOW_UP_PLAN_SPEEDY
