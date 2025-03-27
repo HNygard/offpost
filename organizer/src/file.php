@@ -237,6 +237,21 @@ foreach ($thread->emails as $email) {
                 if ($att->filetype == 'pdf') {
                     header("Content-type:application/pdf");
                 }
+                elseif($att->filetype == 'png') {
+                    header("Content-type:image/png");
+                }
+                elseif($att->filetype == 'jpg' || $att->filetype == 'jpeg') {
+                    header("Content-type:image/jpeg");
+                }
+                elseif($att->filetype == 'gif') {
+                    header("Content-type:image/gif");
+                }
+                elseif($att->filetype == 'txt') {
+                    header("Content-type:text/plain");
+                }
+                else {
+                    header("Content-type:application/octet-stream");
+                }
                 echo $att->content;
                 exit;
             }
