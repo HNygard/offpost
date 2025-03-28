@@ -296,19 +296,31 @@ try {
                 
             case 'view-folder-status':
                 $records = ImapFolderStatus::getAll();
-                echo "IMAP Folder Status Records:\n\n";
+                echo "IMAP Folder Status Records:<br><br>";
                 
                 if (empty($records)) {
-                    echo "No records found. Run 'Create Folder Status Records' first.\n";
+                    echo "No records found. Run 'Create Folder Status Records' first.";
                 } else {
-                    echo "| Folder Name | Thread | Last Checked |\n";
-                    echo "|-------------|--------|-------------|\n";
+                    echo '<table border="1" cellpadding="5" cellspacing="0">';
+                    echo '<thead>';
+                    echo '<tr><th>Folder Name</th><th>Thread</th><th>Last Checked</th></tr>';
+                    echo '</thead>';
+                    echo '<tbody>';
                     
                     foreach ($records as $record) {
                         $lastChecked = $record['last_checked_at'] ? date('Y-m-d H:i:s', strtotime($record['last_checked_at'])) : 'Never';
-                        $threadInfo = $record['entity_id'] . ' - ' . $record['thread_title'];
-                        echo "| " . $record['folder_name'] . " | " . $threadInfo . " | " . $lastChecked . " |\n";
+                        $threadInfo = htmlspecialchars($record['entity_id'] . ' - ' . $record['thread_title']);
+                        $folderName = htmlspecialchars($record['folder_name']);
+                        
+                        echo '<tr>';
+                        echo '<td><a href="?task=process-folder&folder=' . urlencode($record['folder_name']) . '">' . $folderName . '</a></td>';
+                        echo '<td>' . $threadInfo . '</td>';
+                        echo '<td>' . $lastChecked . '</td>';
+                        echo '</tr>';
                     }
+                    
+                    echo '</tbody>';
+                    echo '</table>';
                 }
                 break;
                 
