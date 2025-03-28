@@ -17,7 +17,32 @@ Goal: make production usable
     - [x] Remove extra labels
     - [ ] Open some labels to public
     - [ ] Clean up old threads by archiving them
+- [ ] Update-imap - remake
+    - [x] Direct access should list folders
+    - [x] Read per folder
+    - [x] Database table with status for imap folders
+        - Fields
+            - Folder name
+            - Thread id
+            - Last checked successfully for emails
+        - [x] Create rows in update-imap.php
+        - [x] Update last checked when successfully reading emails (process-folder in update-imap.php)
+    - [x] Make sure update-imap logic works
+    - [ ] Create folder status in production
+    - [ ] Run a couple of folders and check that it works
+    - [ ] Schedule reading of folders
+        - [ ] Logging of outputs - own table?
+            - Table name: imap_folder_log
+            - Fields
+                - Folder name
+                - Status
+                - Message
+                - Created at
+        - [ ] Run on schedule, last attempted first
 - [ ] Update-imap - Run on schedule
+- [ ] Automatic handling
+    - Must have up-to-date ImapFolderStatus (DB table) to be allowed to run
+    - Purring - Next email expected date (based on plan or that we have received an expected date from public entity)
 
 - [ ] Views available for public
     - [ ] Public threads visible to non authenticated users
