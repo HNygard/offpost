@@ -4,6 +4,7 @@ require_once __DIR__ . '/ThreadAuthorization.php';
 require_once __DIR__ . '/Database.php';
 require_once __DIR__ . '/ThreadEmail.php';
 require_once __DIR__ . '/Entity.php';
+require_once __DIR__ . '/ImapFolderStatus.php';
 
 class Thread implements JsonSerializable {
     // Sending status constants
@@ -204,5 +205,47 @@ class Thread implements JsonSerializable {
         }
 
         return $thread;
+    }
+
+    /**
+     * @return ThreadEmail[]
+     */
+    public function getEmails() {
+        return $this->emails;
+    }
+
+    public function getThreadStatus() {
+        $status = new stdClass();
+
+        $imap_folder_status = ImapFolderStatus::getForThread($this->id);
+        if (count($imap_folder_status) == 0) {
+            $status->status_text = 'Email not synced';
+            return $status;
+        }
+        if (count($imap_folder_status) > 1) {
+            $status->error = true;
+            $status->status_text = 'Email synced to multiple folders';
+            return $status;
+        }
+        if ($imap_folder_status[0]['last_checked_at'] < time() - 60 * 60 * 6) {
+            $status->error = true;
+            $status->status_text = 'Email not synced in the last 6 hours';
+        }
+
+        if (count($this->getEmails()) == 0) {
+            $status->status_text = 'Email not sent';
+            return $status;
+        }
+        if (count($this->getEmails()) == 1) {
+            $status->status_text = 'Email sent, nothing received';
+            $status->last_activity = $this->getEmails()[0]->timestamp_received;
+            return $status;
+        }
+
+        foreach ($this->getEmails() as $email) {
+            $status->status_text = 'Unknown.';
+            $status->last_activity = $email->timestamp_received;
+        }
+        return $status;
     }
 }

@@ -194,6 +194,12 @@ function getIconClass($filetype) {
                 <strong>Follow-up Plan:</strong> <?= $thread->request_follow_up_plan === Thread::REQUEST_FOLLOW_UP_PLAN_SPEEDY ? 'Simple request, expecting speedy follow up' : ($thread->request_follow_up_plan === Thread::REQUEST_FOLLOW_UP_PLAN_SLOW ? 'Complex request, expecting slow follow up' : 'Not specified') ?>
             </p>
 
+            <p>
+                <?php $status = $thread->getThreadStatus(); ?>
+                <strong>Status:</strong> <?= $status->status_text; ?><br>
+                <strong>Error?</strong> <?= isset($status->error) && $status->error ? 'Yes' : 'No'; ?><br>
+            </p>
+
             <div class="status-labels">
                 <?php 
                 switch ($thread->sending_status) {
