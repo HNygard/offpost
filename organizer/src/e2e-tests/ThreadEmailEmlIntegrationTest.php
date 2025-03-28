@@ -322,9 +322,6 @@ class MockImapEmailProcessor extends ImapEmailProcessor {
             // Create ImapEmail object
             $email = ImapEmail::fromImap($this->imapConnection, $uid, $headers, $body);
             
-            // Store raw EML content for later use
-            $email->rawEml = $emlContent;
-            
             $emails[] = $email;
             $uid++;
         }
