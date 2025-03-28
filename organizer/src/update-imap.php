@@ -121,7 +121,7 @@ function createImapFolderStatusRecords(ImapFolderManager $folderManager, ThreadF
     return $count;
 }
 
-function displayTaskOptions($threads) {
+function displayTaskOptions() {
     require __DIR__ . '/head.php';
     ?>
     <h1>IMAP Tasks</h1>
@@ -152,14 +152,11 @@ try {
     $emailProcessor = new ImapEmailProcessor($connection);
     $attachmentHandler = new ImapAttachmentHandler($connection);
     
-    // Get threads
-    $threads = ThreadStorageManager::getInstance()->getThreads();
-    
     // Display task selection if no task specified
     $task = $_GET['task'] ?? null;
     
     if (!$task) {
-        displayTaskOptions($threads);
+        displayTaskOptions();
     } else {
         echo '<pre>';
         
@@ -170,6 +167,7 @@ try {
         
         switch ($task) {
             case 'create-folders':
+                $threads = ThreadStorageManager::getInstance()->getThreads();
                 $folders = createFolders($connection, $folderManager, $threads);
                 echo "Created folders:\n";
                 foreach ($folders as $folder) {
@@ -178,11 +176,13 @@ try {
                 break;
                 
             case 'archive-folders':
+                $threads = ThreadStorageManager::getInstance()->getThreads();
                 archiveFolders($connection, $folderManager, $threads);
                 echo "Archived folders for archived threads\n";
                 break;
                 
             case 'process-inbox':
+                $threads = ThreadStorageManager::getInstance()->getThreads();
                 $unmatchedAddresses = processInbox($connection, $folderManager, $emailProcessor, $threads);
                 $connection->closeConnection(CL_EXPUNGE);
                 
@@ -198,6 +198,8 @@ try {
                 break;
                 
             case 'process-sent':
+                $threads = ThreadStorageManager::getInstance()->getThreads();
+
                 $connection->closeConnection();
                 $connection = new ImapConnection($imapServer, $imap_username, $imap_password, true);
                 $connection->openConnection($imapSentFolder);
@@ -287,6 +289,7 @@ try {
                 break;
                 
             case 'create-folder-status':
+                $threads = ThreadStorageManager::getInstance()->getThreads();
                 $count = createImapFolderStatusRecords($folderManager, $threadFolderManager, $threads);
                 echo "Created/updated $count folder status records\n";
                 break;
