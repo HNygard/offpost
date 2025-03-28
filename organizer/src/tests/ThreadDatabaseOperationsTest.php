@@ -22,6 +22,7 @@ class ThreadDatabaseOperationsTest extends PHPUnit\Framework\TestCase {
         Database::execute("DELETE FROM thread_email_attachments WHERE email_id IN (SELECT id FROM thread_emails WHERE thread_id IN (SELECT id FROM threads WHERE entity_id = '000000000-test-entity-development'))");
         Database::execute("DELETE FROM thread_emails WHERE thread_id IN (SELECT id FROM threads WHERE entity_id = '000000000-test-entity-development')");
         Database::execute("DELETE FROM thread_email_sendings WHERE thread_id IN (SELECT id FROM threads WHERE entity_id = '000000000-test-entity-development')");
+        Database::execute("DELETE FROM imap_folder_status WHERE thread_id IN (SELECT id FROM threads WHERE entity_id = '000000000-test-entity-development')");
         Database::execute("DELETE FROM threads WHERE entity_id = '000000000-test-entity-development'");
     }
     

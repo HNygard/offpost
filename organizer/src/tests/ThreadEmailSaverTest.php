@@ -70,7 +70,7 @@ class ThreadEmailSaverTest extends TestCase {
         $folderJson = $this->tempDir . '/test_thread';
         $thread = (object)[
             'id' => '550e8400-e29b-41d4-a716-446655440000',
-            'my_email' => 'test@example.com',
+            'my_email' => 'test'.mt_rand(0, 20000) . '@example.com',
             'labels' => []
         ];
 
@@ -137,7 +137,7 @@ class ThreadEmailSaverTest extends TestCase {
         $folderJson = $this->tempDir . '/test_thread';
         $thread = (object)[
             'id' => '550e8400-e29b-41d4-a716-446655440001',
-            'my_email' => 'test@example.com',
+            'my_email' => 'test'.mt_rand(0, 20000) . '@example.com',
             'labels' => []
         ];
 
@@ -243,7 +243,7 @@ class ThreadEmailSaverTest extends TestCase {
         // Create test data with invalid permissions
         $folderJson = '/root/test_thread';
         $thread = (object)[
-            'my_email' => 'test@example.com',
+            'my_email' => 'test'.mt_rand(0, 20000) . '@example.com',
             'labels' => []
         ];
         $folder = 'INBOX.Test';
@@ -269,7 +269,7 @@ class ThreadEmailSaverTest extends TestCase {
         $folderJson = $this->tempDir . '/test_thread';
         mkdir($folderJson, 0777, true);
         $thread = (object)[
-            'my_email' => 'test@example.com',
+            'my_email' => 'test'.mt_rand(0, 20000) . '@example.com',
             'labels' => []
         ];
         $folder = 'INBOX.Test';
@@ -296,7 +296,7 @@ class ThreadEmailSaverTest extends TestCase {
         $folderJson = $this->tempDir . '/test_thread';
         mkdir($folderJson, 0777, true);
         $thread = (object)[
-            'my_email' => 'test@example.com',
+            'my_email' => 'test'.mt_rand(0, 20000) . '@example.com',
             'labels' => []
         ];
         $folder = 'INBOX.Test';
@@ -345,7 +345,7 @@ class ThreadEmailSaverTest extends TestCase {
         file_put_contents($folderJson . '/thread.lock', '');
         
         $thread = (object)[
-            'my_email' => 'test@example.com',
+            'my_email' => 'test'.mt_rand(0, 20000) . '@example.com',
             'labels' => []
         ];
         $folder = 'INBOX.Test';

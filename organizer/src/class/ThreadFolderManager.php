@@ -35,7 +35,7 @@ class ThreadFolderManager {
         
         foreach ($threads as $entityThreads) {
             foreach ($entityThreads->threads as $thread) {
-                $requiredFolders[] = $this->getThreadEmailFolder($entityThreads, $thread);
+                $requiredFolders[] = $this->getThreadEmailFolder($entityThreads->entity_id, $thread);
             }
         }
 
@@ -51,7 +51,7 @@ class ThreadFolderManager {
             return;
         }
 
-        $title = str_replace('INBOX.Archive.', '', $this->getThreadEmailFolder($entityThreads, $thread));
+        $title = str_replace('INBOX.Archive.', '', $this->getThreadEmailFolder($entityThreads->entity_id, $thread));
         $inboxFolder = 'INBOX.' . $title;
 
         if (in_array($inboxFolder, $this->folderManager->getExistingFolders())) {
@@ -62,12 +62,12 @@ class ThreadFolderManager {
     /**
      * Get the IMAP folder path for a thread
      * 
-     * @param object $entityThreads Entity threads object
+     * @param object $entity_id Entity threads object
      * @param object $thread Thread object
      * @return string IMAP folder path
      */
-    public function getThreadEmailFolder($entityThreads, $thread): string {
-        $title = $entityThreads->entity_id . ' - ' . $thread->title;
+    public function getThreadEmailFolder($entity_id, $thread): string {
+        $title = $entity_id . ' - ' . $thread->title;
         
         // Replace Nordic characters
         $title = str_replace(

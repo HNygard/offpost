@@ -70,7 +70,7 @@ class ThreadEmailMover {
         foreach ($threads as $entityThreads) {
             foreach ($entityThreads->threads as $thread) {
                 if (!$thread->archived && $thread->my_email != 'dmarc@offpost.no') {
-                    $emailToFolder[$thread->my_email] = $this->getThreadEmailFolder($entityThreads, $thread);
+                    $emailToFolder[$thread->my_email] = $this->getThreadEmailFolder($entityThreads->entity_id, $thread);
                 }
             }
         }
@@ -81,8 +81,8 @@ class ThreadEmailMover {
     /**
      * Get the IMAP folder path for a thread
      */
-    private function getThreadEmailFolder($entityThreads, $thread): string {
-        $title = $entityThreads->entity_id . ' - ' . str_replace('/', '-', $thread->title);
+    private function getThreadEmailFolder($entity_id, $thread): string {
+        $title = $entity_id . ' - ' . str_replace('/', '-', $thread->title);
         $title = str_replace(
             ['Æ', 'Ø', 'Å', 'æ', 'ø', 'å'],
             ['AE', 'OE', 'AA', 'ae', 'oe', 'aa'],

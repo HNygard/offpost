@@ -24,6 +24,8 @@ class UpdateImapPageTest extends E2EPageTestCase {
         $this->assertStringContainsString('<a href="?task=process-inbox">Process Inbox</a>', $response->body);
         $this->assertStringContainsString('<a href="?task=process-sent">Process Sent Folder</a>', $response->body);
         $this->assertStringContainsString('<a href="?task=process-all">Process All Thread Folders</a>', $response->body);
+        $this->assertStringContainsString('<a href="?task=create-folder-status">Create Folder Status Records</a>', $response->body);
+        $this->assertStringContainsString('<a href="?task=view-folder-status">View Folder Status</a>', $response->body);
     }
 
     public function testCreateFolders() {
@@ -111,6 +113,38 @@ class UpdateImapPageTest extends E2EPageTestCase {
         $this->assertNotErrorInResponse($response);
         $this->assertStringContainsString(':: IMAP setting', $response->body);
         $this->assertStringContainsString($testdata['entity_id'], $response->body);
+    }
+    
+    public function testCreateFolderStatus() {
+        // :: Setup
+        $testdata = E2ETestSetup::createTestThread();
+
+        // :: Act
+        $response = $this->renderPage('/update-imap?task=create-folder-status');
+
+        // :: Assert
+        $this->assertNotErrorInResponse($response);
+        $this->assertStringContainsString(':: IMAP setting', $response->body);
+        $this->assertStringContainsString('Created', $response->body);
+        $this->assertStringContainsString('folder status records', $response->body);
+    }
+    
+    public function testViewFolderStatus() {
+        // :: Setup
+        $testdata = E2ETestSetup::createTestThread();
+        // Create folder status records first
+        $this->renderPage('/update-imap?task=create-folder-status');
+
+        // :: Act
+        $response = $this->renderPage('/update-imap?task=view-folder-status');
+
+        // :: Assert
+        $this->assertNotErrorInResponse($response);
+        $this->assertStringContainsString(':: IMAP setting', $response->body);
+        $this->assertStringContainsString('IMAP Folder Status Records:', $response->body);
+        $this->assertStringContainsString('Folder Name', $response->body);
+        $this->assertStringContainsString('Thread', $response->body);
+        $this->assertStringContainsString('Last Checked', $response->body);
     }
 
     private function assertNotErrorInResponse($response) {

@@ -288,7 +288,7 @@ startxref
         
         // Create required folders
         $requiredFolders = ['INBOX.Archive'];
-        $requiredFolders[] = $threadFolderManager->getThreadEmailFolder($entityThreads, $createdThread);
+        $requiredFolders[] = $threadFolderManager->getThreadEmailFolder($entityThreads->entity_id, $createdThread);
         try {
             $threadFolderManager->createRequiredFolders([$entityThreads]);
         } catch (Exception $e) {
@@ -305,7 +305,7 @@ startxref
         $threadEmailMover->processMailbox('INBOX', $emailToFolder);
 
         // Get thread folder path
-        $threadFolder = $threadFolderManager->getThreadEmailFolder($entityThreads, $createdThread);
+        $threadFolder = $threadFolderManager->getThreadEmailFolder($entityThreads->entity_id, $createdThread);
         
         // Save thread emails
         $threadDir = THREADS_DIR . '/' . $entityThreads->entity_id . '/' . $createdThread->id;

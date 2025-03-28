@@ -15,6 +15,7 @@ require_once __DIR__ . '/class/ThreadEmailSaver.php';
 require_once __DIR__ . '/class/ThreadEmailDatabaseSaver.php';
 require_once __DIR__ . '/class/Threads.php';
 require_once __DIR__ . '/class/ThreadStorageManager.php';
+require_once __DIR__ . '/class/ImapFolderStatus.php';
 
 use Imap\ImapConnection;
 use Imap\ImapFolderManager;
@@ -77,7 +78,47 @@ function processThreadFolder($connection, $folderManager, $emailProcessor, $atta
     
     $threadEmailDbSaver = new ThreadEmailDatabaseSaver($connection, $emailProcessor, $attachmentHandler);
     $savedEmails = $threadEmailDbSaver->saveThreadEmails($folder);
+    
     return $savedEmails;
+}
+
+/**
+ * Create IMAP folder status records for all IMAP folders
+ * 
+ * @param ImapFolderManager $folderManager IMAP folder manager
+ * @param ThreadFolderManager $threadFolderManager
+ * @param array $threads Array of thread objects
+ * @return int Number of records created
+ */
+function createImapFolderStatusRecords(ImapFolderManager $folderManager, ThreadFolderManager $threadFolderManager, $threads) {
+    $count = 0;
+
+
+    // folder => $thread_id
+    $threadFolders = array();
+    foreach ($threads as $entityThreads) {
+        foreach ($entityThreads->threads as $thread) {
+            
+            $folder = $threadFolderManager->getThreadEmailFolder($entityThreads->entity_id, $thread);
+            $threadFolders[$folder] = $thread->id;
+        }
+    }
+    
+    // Get all folders from IMAP server
+    $folders = $folderManager->getExistingFolders();
+    
+    // Process each folder
+    foreach ($folders as $folderName) {
+        // Try to find thread ID for this folder
+        $threadId = isset($threadFolders[$folderName]) ? $threadFolders[$folderName] : null;
+        
+        // Create folder status record
+        if (ImapFolderStatus::createOrUpdate($folderName, $threadId)) {
+            $count++;
+        }
+    }
+    
+    return $count;
 }
 
 function displayTaskOptions($threads) {
@@ -93,6 +134,8 @@ function displayTaskOptions($threads) {
         <li><a href="?task=process-sent">Process Sent Folder</a></li>
         <li><a href="?task=process-all">Process All Thread Folders</a></li>
         <li><a href="?task=list-folders">List All Folders</a></li>
+        <li><a href="?task=create-folder-status">Create Folder Status Records</a></li>
+        <li><a href="?task=view-folder-status">View Folder Status</a></li>
     </ul>
     <?php
 }
@@ -105,6 +148,7 @@ try {
     
     $folderManager = new ImapFolderManager($connection);
     $folderManager->initialize();
+    $threadFolderManager = new ThreadFolderManager($connection, $folderManager);
     $emailProcessor = new ImapEmailProcessor($connection);
     $attachmentHandler = new ImapAttachmentHandler($connection);
     
@@ -218,7 +262,6 @@ try {
                     echo "Processing folder: $folder\n";
                     try {
                         // Find matching thread for this folder
-                        $threadFolderManager = new ThreadFolderManager($connection, $folderManager);
                         $savedEmails = processThreadFolder(
                             $connection,
                             $folderManager,
@@ -239,6 +282,29 @@ try {
                     } catch (Exception $e) {
                         echo "  Error processing folder $folder: " . $e->getMessage() . "\n\n";
                         continue;
+                    }
+                }
+                break;
+                
+            case 'create-folder-status':
+                $count = createImapFolderStatusRecords($folderManager, $threadFolderManager, $threads);
+                echo "Created/updated $count folder status records\n";
+                break;
+                
+            case 'view-folder-status':
+                $records = ImapFolderStatus::getAll();
+                echo "IMAP Folder Status Records:\n\n";
+                
+                if (empty($records)) {
+                    echo "No records found. Run 'Create Folder Status Records' first.\n";
+                } else {
+                    echo "| Folder Name | Thread | Last Checked |\n";
+                    echo "|-------------|--------|-------------|\n";
+                    
+                    foreach ($records as $record) {
+                        $lastChecked = $record['last_checked_at'] ? date('Y-m-d H:i:s', strtotime($record['last_checked_at'])) : 'Never';
+                        $threadInfo = $record['entity_id'] . ' - ' . $record['thread_title'];
+                        echo "| " . $record['folder_name'] . " | " . $threadInfo . " | " . $lastChecked . " |\n";
                     }
                 }
                 break;

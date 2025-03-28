@@ -8,6 +8,7 @@ require_once __DIR__ . '/Imap/ImapAttachmentHandler.php';
 require_once __DIR__ . '/Database.php';
 require_once __DIR__ . '/ThreadEmail.php';
 require_once __DIR__ . '/ThreadEmailAttachment.php';
+require_once __DIR__ . '/ImapFolderStatus.php';
 
 use Imap\ImapConnection;
 use Imap\ImapEmailProcessor;
@@ -33,8 +34,6 @@ class ThreadEmailDatabaseSaver {
     /**
      * Save emails for a thread to the database
      * 
-     * @param string $entityId Entity ID
-     * @param object $thread Thread object
      * @param string $folder IMAP folder to process
      * @return array Array of saved email IDs
      */
@@ -59,10 +58,10 @@ class ThreadEmailDatabaseSaver {
                     $all_emails
                 );
                 if (count($threads) == 0) {
-                    throw new Exception('Failed to process email: No matching thread found');
+                    throw new Exception('Failed to process email: No matching thread found for email(s): ' . implode(', ', $all_emails));
                 }
                 if (count($threads) > 1) {
-                    throw new Exception('Failed to process email: Multiple matching threads found');
+                    throw new Exception('Failed to process email: Multiple matching threads found for email(s): ' . implode(', ', $all_emails));
                 }
                 $thread = Thread::loadFromDatabase($threads[0]['id']);
 
@@ -72,10 +71,10 @@ class ThreadEmailDatabaseSaver {
                     
                     // Check if email already exists in database
                     if ($this->emailExistsInDatabase($thread->id, $filename)) {
-                        $this->connection->logDebug("Already existing email .. : $filename");
+                        $this->connection->logDebug("Already existing email .. thread_id[$thread->id][$thread->my_email]: $filename");
                     }
                     else {
-                        $this->connection->logDebug("Saving to database ...... : $filename");
+                        $this->connection->logDebug("Saving to database ...... thread_id[$thread->id][$thread->my_email]: $filename");
 
                         // Get raw email content
                         $rawEmail = $this->connection->getRawEmail($email->uid);
@@ -163,6 +162,9 @@ class ThreadEmailDatabaseSaver {
                     throw new Exception('Exception during processing of email [' . $email->uid . '][' . $email->subject . ']', 0, $e);
                 }
             }
+            
+            // Always update the last checked timestamp, even if no new emails were found
+            ImapFolderStatus::createOrUpdate($folder, null, true);
             
             // Commit the transaction
             Database::commit();
@@ -288,7 +290,7 @@ class ThreadEmailDatabaseSaver {
         
         return $result;
     }
-
+    
     /**
      * Update thread archiving status
      */

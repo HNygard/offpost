@@ -98,7 +98,7 @@ class ThreadFolderManagerTest extends TestCase {
             'archived' => false
         ];
 
-        $folder = $this->threadFolderManager->getThreadEmailFolder($entityThreads, $thread);
+        $folder = $this->threadFolderManager->getThreadEmailFolder($entityThreads->entity_id, $thread);
         
         // Verify special characters are replaced
         $this->assertEquals('INBOX.Test - AEble-OEre-AAre', $folder);
@@ -115,7 +115,7 @@ class ThreadFolderManagerTest extends TestCase {
             'archived' => true
         ];
 
-        $folder = $this->threadFolderManager->getThreadEmailFolder($entityThreads, $thread);
+        $folder = $this->threadFolderManager->getThreadEmailFolder($entityThreads->entity_id, $thread);
         $this->assertEquals('INBOX.Archive.Test - Thread 1', $folder);
     }
 
@@ -213,7 +213,7 @@ class ThreadFolderManagerTest extends TestCase {
             'archived' => false
         ];
 
-        $folder = $this->threadFolderManager->getThreadEmailFolder($entityThreads, $thread);
+        $folder = $this->threadFolderManager->getThreadEmailFolder($entityThreads->entity_id, $thread);
         
         // Verify invalid characters are replaced with dashes
         $this->assertEquals('INBOX.Test - Thread-With-Invalid-Characters------', $folder);
@@ -234,7 +234,7 @@ class ThreadFolderManagerTest extends TestCase {
             'archived' => false
         ];
 
-        $folder = $this->threadFolderManager->getThreadEmailFolder($entityThreads, $thread);
+        $folder = $this->threadFolderManager->getThreadEmailFolder($entityThreads->entity_id, $thread);
         
         // Verify folder name is truncated correctly
         $this->assertEquals('INBOX.Test - ' . $expectedTitle, $folder);

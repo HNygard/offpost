@@ -1,6 +1,6 @@
 -- ******************************************************************
 -- AUTOMATICALLY GENERATED FILE - DO NOT MODIFY
--- Generated on: 2025-03-22 21:48:56
+-- Generated on: 2025-03-28 18:46:54
 -- 
 -- This file contains the current database schema after all migrations.
 -- It is NOT meant to be executed as a migration script.
@@ -9,6 +9,21 @@
 -- ==========================================
 -- TABLES
 -- ==========================================
+
+CREATE TABLE imap_folder_status (
+    id integer NOT NULL DEFAULT nextval('imap_folder_status_id_seq'::regclass),
+    folder_name character varying(255) NOT NULL,
+    thread_id uuid,
+    last_checked_at timestamp with time zone,
+    created_at timestamp with time zone NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    updated_at timestamp with time zone NOT NULL DEFAULT CURRENT_TIMESTAMP
+);
+
+ALTER TABLE imap_folder_status ADD CONSTRAINT imap_folder_status_pkey PRIMARY KEY (id);
+ALTER TABLE imap_folder_status ADD CONSTRAINT imap_folder_status_thread_id_fkey FOREIGN KEY (thread_id) REFERENCES threads (id);
+CREATE INDEX imap_folder_status_folder_name_idx ON imap_folder_status USING btree (folder_name);
+CREATE INDEX imap_folder_status_folder_thread_unique ON imap_folder_status USING btree (folder_name, thread_id);
+CREATE INDEX imap_folder_status_thread_id_idx ON imap_folder_status USING btree (thread_id);
 
 CREATE TABLE thread_authorizations (
     id integer NOT NULL DEFAULT nextval('thread_authorizations_id_seq'::regclass),
@@ -184,6 +199,7 @@ BEGIN
 END;
  $$ LANGUAGE plpgsql;
 
+CREATE TRIGGER update_imap_folder_status_updated_at BEFORE UPDATE ON imap_folder_status FOR EACH ROW EXECUTE FUNCTION update_updated_at_column();
 CREATE TRIGGER update_thread_email_extractions_updated_at BEFORE UPDATE ON thread_email_extractions FOR EACH ROW EXECUTE FUNCTION update_updated_at_column();
 CREATE TRIGGER update_thread_email_sendings_updated_at BEFORE UPDATE ON thread_email_sendings FOR EACH ROW EXECUTE FUNCTION update_updated_at_column();
 CREATE TRIGGER update_threads_updated_at BEFORE UPDATE ON threads FOR EACH ROW EXECUTE FUNCTION update_updated_at_column();
