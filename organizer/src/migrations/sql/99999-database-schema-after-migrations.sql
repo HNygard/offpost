@@ -1,6 +1,6 @@
 -- ******************************************************************
 -- AUTOMATICALLY GENERATED FILE - DO NOT MODIFY
--- Generated on: 2025-03-28 18:46:54
+-- Generated on: 2025-03-29 07:50:40
 -- 
 -- This file contains the current database schema after all migrations.
 -- It is NOT meant to be executed as a migration script.
@@ -9,6 +9,19 @@
 -- ==========================================
 -- TABLES
 -- ==========================================
+
+CREATE TABLE imap_folder_log (
+    id integer NOT NULL DEFAULT nextval('imap_folder_log_id_seq'::regclass),
+    folder_name character varying(255) NOT NULL,
+    status character varying(50) NOT NULL,
+    message text,
+    created_at timestamp with time zone NOT NULL DEFAULT CURRENT_TIMESTAMP
+);
+
+ALTER TABLE imap_folder_log ADD CONSTRAINT imap_folder_log_pkey PRIMARY KEY (id);
+CREATE INDEX imap_folder_log_created_at_idx ON imap_folder_log USING btree (created_at);
+CREATE INDEX imap_folder_log_folder_name_idx ON imap_folder_log USING btree (folder_name);
+CREATE INDEX imap_folder_log_status_idx ON imap_folder_log USING btree (status);
 
 CREATE TABLE imap_folder_status (
     id integer NOT NULL DEFAULT nextval('imap_folder_status_id_seq'::regclass),

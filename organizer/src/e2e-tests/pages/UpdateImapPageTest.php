@@ -26,6 +26,7 @@ class UpdateImapPageTest extends E2EPageTestCase {
         $this->assertStringContainsString('<a href="?task=process-all">Process All Thread Folders</a>', $response->body);
         $this->assertStringContainsString('<a href="?task=create-folder-status">Create Folder Status Records</a>', $response->body);
         $this->assertStringContainsString('<a href="?task=view-folder-status">View Folder Status</a>', $response->body);
+        $this->assertStringContainsString('<a href="?task=view-folder-logs">View Folder Logs</a>', $response->body);
     }
 
     public function testCreateFolders() {
@@ -145,6 +146,25 @@ class UpdateImapPageTest extends E2EPageTestCase {
         $this->assertStringContainsString('Folder Name', $response->body);
         $this->assertStringContainsString('Thread', $response->body);
         $this->assertStringContainsString('Last Checked', $response->body);
+    }
+    
+    public function testViewFolderLogs() {
+        // :: Setup
+        $testdata = E2ETestSetup::createTestThread();
+        // Process a folder to generate logs
+        $this->renderPage('/update-imap?task=process-all');
+
+        // :: Act
+        $response = $this->renderPage('/update-imap?task=view-folder-logs');
+
+        // :: Assert
+        $this->assertNotErrorInResponse($response);
+        $this->assertStringContainsString(':: IMAP setting', $response->body);
+        $this->assertStringContainsString('All folder logs', $response->body);
+        $this->assertStringContainsString('Folder Name', $response->body);
+        $this->assertStringContainsString('Status', $response->body);
+        $this->assertStringContainsString('Message', $response->body);
+        $this->assertStringContainsString('Created At', $response->body);
     }
 
     private function assertNotErrorInResponse($response) {

@@ -16,6 +16,7 @@ require_once __DIR__ . '/class/ThreadEmailDatabaseSaver.php';
 require_once __DIR__ . '/class/Threads.php';
 require_once __DIR__ . '/class/ThreadStorageManager.php';
 require_once __DIR__ . '/class/ImapFolderStatus.php';
+require_once __DIR__ . '/class/ImapFolderLog.php';
 
 use Imap\ImapConnection;
 use Imap\ImapFolderManager;
@@ -28,37 +29,179 @@ require __DIR__ . '/username-password.php';
 // Task functions
 function createFolders($connection, $folderManager, $threads) {
     $connection->logDebug('---- CREATING FOLDERS ----');
-    $threadFolderManager = new ThreadFolderManager($connection, $folderManager);
-    $threadFolderManager->initialize();
-    return $threadFolderManager->createRequiredFolders($threads);
+    
+    // Start output buffering to capture debug output
+    ob_start();
+    
+    // Create a single log entry at the start
+    $logId = ImapFolderLog::createLog('SYSTEM', 'started', "Starting to create required folders");
+    
+    try {
+        $threadFolderManager = new ThreadFolderManager($connection, $folderManager);
+        $threadFolderManager->initialize();
+        $folders = $threadFolderManager->createRequiredFolders($threads);
+        
+        // Get the debug output
+        $debugOutput = ob_get_clean();
+        
+        // Update the log entry with the result and debug output
+        ImapFolderLog::updateLog(
+            $logId, 
+            'success', 
+            "Successfully created " . count($folders) . " folders.\n\nDebug log:\n$debugOutput"
+        );
+        
+        return $folders;
+    } catch (Exception $e) {
+        // Get the debug output even if there was an error
+        $debugOutput = ob_get_clean();
+        
+        // Update the log entry with the error and debug output
+        ImapFolderLog::updateLog(
+            $logId, 
+            'error', 
+            "Error creating folders: " . $e->getMessage() . "\n\nDebug log:\n$debugOutput"
+        );
+        
+        // Re-throw the exception to be handled by the caller
+        throw $e;
+    }
 }
 
 function archiveFolders($connection, $folderManager, $threads) {
     $connection->logDebug('---- ARCHIVING FOLDERS ----');
-    $threadFolderManager = new ThreadFolderManager($connection, $folderManager);
-    $threadFolderManager->initialize();
     
-    foreach ($threads as $entityThreads) {
-        foreach ($entityThreads->threads as $thread) {
-            $threadFolderManager->archiveThreadFolder($entityThreads, $thread);
+    // Start output buffering to capture debug output
+    ob_start();
+    
+    // Create a single log entry at the start
+    $logId = ImapFolderLog::createLog('SYSTEM', 'started', "Starting to archive folders for archived threads");
+    
+    try {
+        $threadFolderManager = new ThreadFolderManager($connection, $folderManager);
+        $threadFolderManager->initialize();
+        
+        $archivedCount = 0;
+        foreach ($threads as $entityThreads) {
+            foreach ($entityThreads->threads as $thread) {
+                if ($threadFolderManager->archiveThreadFolder($entityThreads, $thread)) {
+                    $archivedCount++;
+                }
+            }
         }
+        
+        // Get the debug output
+        $debugOutput = ob_get_clean();
+        
+        // Update the log entry with the result and debug output
+        ImapFolderLog::updateLog(
+            $logId, 
+            'success', 
+            "Successfully archived folders for $archivedCount threads.\n\nDebug log:\n$debugOutput"
+        );
+    } catch (Exception $e) {
+        // Get the debug output even if there was an error
+        $debugOutput = ob_get_clean();
+        
+        // Update the log entry with the error and debug output
+        ImapFolderLog::updateLog(
+            $logId, 
+            'error', 
+            "Error archiving folders: " . $e->getMessage() . "\n\nDebug log:\n$debugOutput"
+        );
+        
+        // Re-throw the exception to be handled by the caller
+        throw $e;
     }
 }
 
 function processInbox($connection, $folderManager, $emailProcessor, $threads) {
     $connection->logDebug('---- PROCESSING INBOX ----');
-    $threadEmailMover = new ThreadEmailMover($connection, $folderManager, $emailProcessor);
-    $emailToFolder = $threadEmailMover->buildEmailToFolderMapping($threads);
-    $unmatchedAddresses = $threadEmailMover->processMailbox('INBOX', $emailToFolder);
     
-    return $unmatchedAddresses;
+    // Start output buffering to capture debug output
+    ob_start();
+    
+    // Create a single log entry at the start
+    $logId = ImapFolderLog::createLog('INBOX', 'started', "Starting to process INBOX");
+    
+    try {
+        $threadEmailMover = new ThreadEmailMover($connection, $folderManager, $emailProcessor);
+        $emailToFolder = $threadEmailMover->buildEmailToFolderMapping($threads);
+        $unmatchedAddresses = $threadEmailMover->processMailbox('INBOX', $emailToFolder);
+        
+        // Get the debug output
+        $debugOutput = ob_get_clean();
+        
+        // Update the log entry with the result and debug output
+        $message = "Successfully processed INBOX. ";
+        if (!empty($unmatchedAddresses)) {
+            $message .= "Found " . count($unmatchedAddresses) . " unmatched email addresses.";
+        } else {
+            $message .= "No unmatched email addresses found.";
+        }
+        
+        ImapFolderLog::updateLog(
+            $logId, 
+            'success', 
+            $message . "\n\nDebug log:\n$debugOutput"
+        );
+        
+        return $unmatchedAddresses;
+    } catch (Exception $e) {
+        // Get the debug output even if there was an error
+        $debugOutput = ob_get_clean();
+        
+        // Update the log entry with the error and debug output
+        ImapFolderLog::updateLog(
+            $logId, 
+            'error', 
+            "Error processing INBOX: " . $e->getMessage() . "\n\nDebug log:\n$debugOutput"
+        );
+        
+        // Re-throw the exception to be handled by the caller
+        throw $e;
+    }
 }
 
 function processSentFolder($connection, $folderManager, $emailProcessor, $threads, $imapSentFolder) {
     $connection->logDebug('---- PROCESSING SENT FOLDER ----');
-    $threadEmailMover = new ThreadEmailMover($connection, $folderManager, $emailProcessor);
-    $emailToFolder = $threadEmailMover->buildEmailToFolderMapping($threads);
-    return $threadEmailMover->processMailbox($imapSentFolder, $emailToFolder);
+    
+    // Start output buffering to capture debug output
+    ob_start();
+    
+    // Create a single log entry at the start
+    $logId = ImapFolderLog::createLog($imapSentFolder, 'started', "Starting to process sent folder: $imapSentFolder");
+    
+    try {
+        $threadEmailMover = new ThreadEmailMover($connection, $folderManager, $emailProcessor);
+        $emailToFolder = $threadEmailMover->buildEmailToFolderMapping($threads);
+        $unmatchedAddresses = $threadEmailMover->processMailbox($imapSentFolder, $emailToFolder);
+        
+        // Get the debug output
+        $debugOutput = ob_get_clean();
+        
+        // Update the log entry with the result and debug output
+        ImapFolderLog::updateLog(
+            $logId, 
+            'success', 
+            "Successfully processed sent folder: $imapSentFolder\n\nDebug log:\n$debugOutput"
+        );
+        
+        return $unmatchedAddresses;
+    } catch (Exception $e) {
+        // Get the debug output even if there was an error
+        $debugOutput = ob_get_clean();
+        
+        // Update the log entry with the error and debug output
+        ImapFolderLog::updateLog(
+            $logId, 
+            'error', 
+            "Error processing sent folder: $imapSentFolder. " . $e->getMessage() . "\n\nDebug log:\n$debugOutput"
+        );
+        
+        // Re-throw the exception to be handled by the caller
+        throw $e;
+    }
 }
 
 /**
@@ -76,10 +219,49 @@ function getThreadFoldersFromImap($folderManager) {
 function processThreadFolder($connection, $folderManager, $emailProcessor, $attachmentHandler, $folder = null) {
     $connection->logDebug("-- $folder");
     
-    $threadEmailDbSaver = new ThreadEmailDatabaseSaver($connection, $emailProcessor, $attachmentHandler);
-    $savedEmails = $threadEmailDbSaver->saveThreadEmails($folder);
+    // Start output buffering to capture debug output
+    ob_start();
     
-    return $savedEmails;
+    // Create a single log entry at the start
+    $logId = ImapFolderLog::createLog($folder, 'started', "Starting to process folder: $folder");
+    
+    try {
+        $threadEmailDbSaver = new ThreadEmailDatabaseSaver($connection, $emailProcessor, $attachmentHandler);
+        $savedEmails = $threadEmailDbSaver->saveThreadEmails($folder);
+        
+        // Get the debug output
+        $debugOutput = ob_get_clean();
+        
+        // Update the log entry with the result and debug output
+        if (!empty($savedEmails)) {
+            ImapFolderLog::updateLog(
+                $logId, 
+                'success', 
+                "Successfully processed folder: $folder. Saved " . count($savedEmails) . " emails.\n\nDebug log:\n$debugOutput"
+            );
+        } else {
+            ImapFolderLog::updateLog(
+                $logId, 
+                'info', 
+                "No new emails to save in folder: $folder\n\nDebug log:\n$debugOutput"
+            );
+        }
+        
+        return $savedEmails;
+    } catch (Exception $e) {
+        // Get the debug output even if there was an error
+        $debugOutput = ob_get_clean();
+        
+        // Update the log entry with the error and debug output
+        ImapFolderLog::updateLog(
+            $logId, 
+            'error', 
+            "Error processing folder: $folder. " . $e->getMessage() . "\n\nDebug log:\n$debugOutput"
+        );
+        
+        // Re-throw the exception to be handled by the caller
+        throw $e;
+    }
 }
 
 /**
@@ -91,34 +273,64 @@ function processThreadFolder($connection, $folderManager, $emailProcessor, $atta
  * @return int Number of records created
  */
 function createImapFolderStatusRecords(ImapFolderManager $folderManager, ThreadFolderManager $threadFolderManager, $threads) {
-    $count = 0;
+    // Start output buffering to capture debug output
+    ob_start();
+    
+    // Create a single log entry at the start
+    $logId = ImapFolderLog::createLog('SYSTEM', 'started', "Starting to create folder status records");
+    
+    try {
+        $count = 0;
 
-
-    // folder => $thread_id
-    $threadFolders = array();
-    foreach ($threads as $entityThreads) {
-        foreach ($entityThreads->threads as $thread) {
-            
-            $folder = $threadFolderManager->getThreadEmailFolder($entityThreads->entity_id, $thread);
-            $threadFolders[$folder] = $thread->id;
+        // folder => $thread_id
+        $threadFolders = array();
+        foreach ($threads as $entityThreads) {
+            foreach ($entityThreads->threads as $thread) {
+                
+                $folder = $threadFolderManager->getThreadEmailFolder($entityThreads->entity_id, $thread);
+                $threadFolders[$folder] = $thread->id;
+            }
         }
-    }
-    
-    // Get all folders from IMAP server
-    $folders = $folderManager->getExistingFolders();
-    
-    // Process each folder
-    foreach ($folders as $folderName) {
-        // Try to find thread ID for this folder
-        $threadId = isset($threadFolders[$folderName]) ? $threadFolders[$folderName] : null;
         
-        // Create folder status record
-        if (ImapFolderStatus::createOrUpdate($folderName, $threadId)) {
-            $count++;
+        // Get all folders from IMAP server
+        $folders = $folderManager->getExistingFolders();
+        
+        // Process each folder
+        foreach ($folders as $folderName) {
+            // Try to find thread ID for this folder
+            $threadId = isset($threadFolders[$folderName]) ? $threadFolders[$folderName] : null;
+            
+            // Create folder status record
+            if (ImapFolderStatus::createOrUpdate($folderName, $threadId)) {
+                $count++;
+            }
         }
+        
+        // Get the debug output
+        $debugOutput = ob_get_clean();
+        
+        // Update the log entry with the result and debug output
+        ImapFolderLog::updateLog(
+            $logId, 
+            'success', 
+            "Successfully created/updated $count folder status records.\n\nDebug log:\n$debugOutput"
+        );
+        
+        return $count;
+    } catch (Exception $e) {
+        // Get the debug output even if there was an error
+        $debugOutput = ob_get_clean();
+        
+        // Update the log entry with the error and debug output
+        ImapFolderLog::updateLog(
+            $logId, 
+            'error', 
+            "Error creating folder status records: " . $e->getMessage() . "\n\nDebug log:\n$debugOutput"
+        );
+        
+        // Re-throw the exception to be handled by the caller
+        throw $e;
     }
-    
-    return $count;
 }
 
 function displayTaskOptions() {
@@ -136,6 +348,7 @@ function displayTaskOptions() {
         <li><a href="?task=list-folders">List All Folders</a></li>
         <li><a href="?task=create-folder-status">Create Folder Status Records</a></li>
         <li><a href="?task=view-folder-status">View Folder Status</a></li>
+        <li><a href="?task=view-folder-logs">View Folder Logs</a></li>
     </ul>
     <?php
 }
@@ -282,6 +495,7 @@ try {
                             echo "  No new emails to save\n\n";
                         }
                     } catch (Exception $e) {
+                        // Error is already logged in processThreadFolder
                         echo "  Error processing folder $folder: " . $e->getMessage() . "\n\n";
                         continue;
                     }
@@ -324,6 +538,46 @@ try {
                 }
                 break;
                 
+            case 'view-folder-logs':
+                $folder = $_GET['folder'] ?? null;
+                $limit = $_GET['limit'] ?? 100;
+                
+                if ($folder) {
+                    $logs = ImapFolderLog::getForFolder($folder, $limit);
+                    echo "Logs for folder: $folder<br><br>";
+                } else {
+                    $logs = ImapFolderLog::getAll($limit);
+                    echo "All folder logs<br><br>";
+                }
+                
+                if (empty($logs)) {
+                    echo "No logs found.";
+                } else {
+                    echo '<table border="1" cellpadding="5" cellspacing="0">';
+                    echo '<thead>';
+                    echo '<tr><th>Created At</th><th>Folder Name</th><th>Status</th><th>Message</th></tr>';
+                    echo '</thead>';
+                    echo '<tbody>';
+                    
+                    foreach ($logs as $log) {
+                        $createdAt = date('Y-m-d H:i:s', strtotime($log['created_at']));
+                        $folderName = htmlspecialchars($log['folder_name']);
+                        $status = htmlspecialchars($log['status']);
+                        $message = htmlspecialchars($log['message']);
+                        
+                        echo '<tr>';
+                        echo '<td>' . $createdAt . '</td>';
+                        echo '<td><a href="?task=process-folder&folder=' . urlencode($log['folder_name']) . '">' . $folderName . '</a></td>';
+                        echo '<td>' . $status . '</td>';
+                        echo '<td><pre>' . $message . '</pre></td>';
+                        echo '</tr>';
+                    }
+                    
+                    echo '</tbody>';
+                    echo '</table>';
+                }
+                break;
+                
             default:
                 echo "Error: Unknown task '$task'\n";
         }
@@ -334,6 +588,36 @@ try {
     }
     
 } catch(Exception $e) {
+    // Start output buffering to capture debug output if not already started
+    if (!ob_get_level()) {
+        ob_start();
+    }
+    
+    // Get any debug output
+    $debugOutput = ob_get_clean();
+    
+    // Log the error if we can determine which folder was being processed
+    if (isset($folder)) {
+        // Check if there's already a log entry for this folder
+        $log = ImapFolderLog::getMostRecentForFolder($folder);
+        
+        if ($log && $log['status'] === 'started') {
+            // Update the existing log entry
+            ImapFolderLog::updateLog(
+                $log['id'], 
+                'error', 
+                "Error processing folder: $folder. " . $e->getMessage() . "\n\nDebug log:\n$debugOutput"
+            );
+        } else {
+            // Create a new log entry
+            ImapFolderLog::createLog(
+                $folder, 
+                'error', 
+                "Error processing folder: $folder. " . $e->getMessage() . "\n\nDebug log:\n$debugOutput"
+            );
+        }
+    }
+    
     echo "\n\n";
     echo "Error updating imap:\n";
     echo jTraceEx($e);
