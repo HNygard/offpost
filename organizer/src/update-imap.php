@@ -42,7 +42,7 @@ function createFolders($connection, $folderManager, $threads) {
         $folders = $threadFolderManager->createRequiredFolders($threads);
         
         // Get the debug output
-        $debugOutput = ob_get_clean();
+        $debugOutput = ob_get_flush();
         
         // Update the log entry with the result and debug output
         ImapFolderLog::updateLog(
@@ -54,7 +54,7 @@ function createFolders($connection, $folderManager, $threads) {
         return $folders;
     } catch (Exception $e) {
         // Get the debug output even if there was an error
-        $debugOutput = ob_get_clean();
+        $debugOutput = ob_get_flush();
         
         // Update the log entry with the error and debug output
         ImapFolderLog::updateLog(
@@ -91,7 +91,7 @@ function archiveFolders($connection, $folderManager, $threads) {
         }
         
         // Get the debug output
-        $debugOutput = ob_get_clean();
+        $debugOutput = ob_get_flush();
         
         // Update the log entry with the result and debug output
         ImapFolderLog::updateLog(
@@ -101,7 +101,7 @@ function archiveFolders($connection, $folderManager, $threads) {
         );
     } catch (Exception $e) {
         // Get the debug output even if there was an error
-        $debugOutput = ob_get_clean();
+        $debugOutput = ob_get_flush();
         
         // Update the log entry with the error and debug output
         ImapFolderLog::updateLog(
@@ -130,7 +130,7 @@ function processInbox($connection, $folderManager, $emailProcessor, $threads) {
         $unmatchedAddresses = $threadEmailMover->processMailbox('INBOX', $emailToFolder);
         
         // Get the debug output
-        $debugOutput = ob_get_clean();
+        $debugOutput = ob_get_flush();
         
         // Update the log entry with the result and debug output
         $message = "Successfully processed INBOX. ";
@@ -149,7 +149,7 @@ function processInbox($connection, $folderManager, $emailProcessor, $threads) {
         return $unmatchedAddresses;
     } catch (Exception $e) {
         // Get the debug output even if there was an error
-        $debugOutput = ob_get_clean();
+        $debugOutput = ob_get_flush();
         
         // Update the log entry with the error and debug output
         ImapFolderLog::updateLog(
@@ -178,7 +178,7 @@ function processSentFolder($connection, $folderManager, $emailProcessor, $thread
         $unmatchedAddresses = $threadEmailMover->processMailbox($imapSentFolder, $emailToFolder);
         
         // Get the debug output
-        $debugOutput = ob_get_clean();
+        $debugOutput = ob_get_flush();
         
         // Update the log entry with the result and debug output
         ImapFolderLog::updateLog(
@@ -190,7 +190,7 @@ function processSentFolder($connection, $folderManager, $emailProcessor, $thread
         return $unmatchedAddresses;
     } catch (Exception $e) {
         // Get the debug output even if there was an error
-        $debugOutput = ob_get_clean();
+        $debugOutput = ob_get_flush();
         
         // Update the log entry with the error and debug output
         ImapFolderLog::updateLog(
@@ -230,7 +230,7 @@ function processThreadFolder($connection, $folderManager, $emailProcessor, $atta
         $savedEmails = $threadEmailDbSaver->saveThreadEmails($folder);
         
         // Get the debug output
-        $debugOutput = ob_get_clean();
+        $debugOutput = ob_get_flush();
         
         // Update the log entry with the result and debug output
         if (!empty($savedEmails)) {
@@ -250,7 +250,7 @@ function processThreadFolder($connection, $folderManager, $emailProcessor, $atta
         return $savedEmails;
     } catch (Exception $e) {
         // Get the debug output even if there was an error
-        $debugOutput = ob_get_clean();
+        $debugOutput = ob_get_flush();
         
         // Update the log entry with the error and debug output
         ImapFolderLog::updateLog(
@@ -307,7 +307,7 @@ function createImapFolderStatusRecords(ImapFolderManager $folderManager, ThreadF
         }
         
         // Get the debug output
-        $debugOutput = ob_get_clean();
+        $debugOutput = ob_get_flush();
         
         // Update the log entry with the result and debug output
         ImapFolderLog::updateLog(
@@ -319,7 +319,7 @@ function createImapFolderStatusRecords(ImapFolderManager $folderManager, ThreadF
         return $count;
     } catch (Exception $e) {
         // Get the debug output even if there was an error
-        $debugOutput = ob_get_clean();
+        $debugOutput = ob_get_flush();
         
         // Update the log entry with the error and debug output
         ImapFolderLog::updateLog(
@@ -594,7 +594,7 @@ try {
     }
     
     // Get any debug output
-    $debugOutput = ob_get_clean();
+    $debugOutput = ob_get_flush();
     
     // Log the error if we can determine which folder was being processed
     if (isset($folder)) {
