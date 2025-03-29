@@ -81,6 +81,7 @@ $allThreads = $filteredThreads;
                 <ul class="nav-links" style="display: inline;">
                     <li><a href="/email-sending-overview">Email sending overview</a></li>
                     <li><a href="/extraction-overview">Email extraction overview</a></li>
+                    <li><a href="/update-imap">Update IMAP</a></li>
                 </ul>
             </div>
         <?php } ?>
