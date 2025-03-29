@@ -6,6 +6,7 @@ require_once __DIR__ . '/Imap/ImapConnection.php';
 require_once __DIR__ . '/Imap/ImapEmailProcessor.php';
 require_once __DIR__ . '/Imap/ImapAttachmentHandler.php';
 require_once __DIR__ . '/Database.php';
+require_once __DIR__ . '/Thread.php';
 require_once __DIR__ . '/ThreadEmail.php';
 require_once __DIR__ . '/ThreadEmailAttachment.php';
 require_once __DIR__ . '/ImapFolderStatus.php';
