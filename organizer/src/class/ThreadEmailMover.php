@@ -36,6 +36,7 @@ class ThreadEmailMover {
         $unmatchedAddresses = [];
         $emails = $this->emailProcessor->getEmails($mailbox);
         
+        $i = 0;
         foreach ($emails as $email) {
             $addresses = $email->getEmailAddresses();
             $targetFolder = 'INBOX';
@@ -55,12 +56,18 @@ class ThreadEmailMover {
                     }
                 }
             }
-            
+
             // Move the email to the target folder
             $this->folderManager->moveEmail($email->uid, $targetFolder);
             
             // Request an update for the target folder
             ImapFolderStatus::createOrUpdate($targetFolder, null, false, true);
+
+            $i++;
+            if ($i == 100) {
+                $this->connection->logDebug('Processed 100 emails, breaking loop');
+                break;
+            }
         }
         
         return array_unique($unmatchedAddresses);

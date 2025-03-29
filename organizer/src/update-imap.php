@@ -355,7 +355,7 @@ function displayTaskOptions() {
         <li><a href="?task=create-folders">Create Required Folders</a></li>
         <li><a href="?task=archive-folders">Archive Folders</a></li>
         <li><a href="?task=process-inbox">Process Inbox</a></li>
-        <li><a href="?task=process-sent">Process Sent Folder</a></li>
+        <li><a href="?task=process-sent">Process Sent Folder</a> (Roundcube sending only)</li>
         <li><a href="?task=process-all">Process All Thread Folders</a> (now also available via <a href="/system-pages/scheduled-email-receiver.php">scheduled-email-receiver.php</a>)</li>
         <li><a href="?task=list-folders">List All Folders</a></li>
         <li><a href="?task=create-folder-status">Create Folder Status Records</a></li>
