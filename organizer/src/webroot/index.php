@@ -39,7 +39,7 @@ try {
             )
         )
     ) {
-        require __DIR__ . '/../system-pages/scheduled-email-scheduled-email-receiver.php';
+        require __DIR__ . '/../system-pages/scheduled-email-receiver.php';
     }
     elseif ($path == '/email-sending-overview') {
         require_once __DIR__ . '/../auth.php';
