@@ -9,9 +9,10 @@ class ImapFolderStatus {
      * @param string $folderName The IMAP folder name
      * @param string|null $threadId The thread UUID, or NULL if unknown
      * @param bool $updateLastChecked Whether to update the last_checked_at timestamp
+     * @param bool $requestUpdate Whether to set requested_update_time to current timestamp
      * @return bool Success status
      */
-    public static function createOrUpdate(string $folderName, $threadId = null, bool $updateLastChecked = false): bool {
+    public static function createOrUpdate(string $folderName, $threadId = null, bool $updateLastChecked = false, bool $requestUpdate = false): bool {
         // Check if record exists
         $exists = Database::queryValue(
             "SELECT COUNT(*) FROM imap_folder_status WHERE folder_name = ?",
@@ -20,25 +21,41 @@ class ImapFolderStatus {
         
         if ($exists) {
             // Update existing record
+            $updates = [];
+            $params = [];
+            
             if ($threadId != null) {
-                Database::execute(
-                    "UPDATE imap_folder_status SET thread_id = ? WHERE folder_name = ?",
-                    [$threadId, $folderName]
-                );
+                $updates[] = "thread_id = ?";
+                $params[] = $threadId;
             }
+            
             if ($updateLastChecked) {
-                Database::execute(
-                    "UPDATE imap_folder_status SET last_checked_at = CURRENT_TIMESTAMP WHERE folder_name = ?",
-                    [$folderName]
-                );
+                $updates[] = "last_checked_at = CURRENT_TIMESTAMP";
             }
-
-            return $updateLastChecked || $threadId != null;
+            
+            if ($requestUpdate) {
+                $updates[] = "requested_update_time = CURRENT_TIMESTAMP";
+            } else if ($requestUpdate === false) {
+                // Only explicitly set to NULL if $requestUpdate is false (not null)
+                $updates[] = "requested_update_time = NULL";
+            }
+            
+            if (!empty($updates)) {
+                $params[] = $folderName;
+                Database::execute(
+                    "UPDATE imap_folder_status SET " . implode(", ", $updates) . " WHERE folder_name = ?",
+                    $params
+                );
+                return true;
+            }
+            
+            return false;
         } else {
             // Create new record
             $lastCheckedAt = $updateLastChecked ? 'CURRENT_TIMESTAMP' : 'NULL';
+            $requestedUpdateTime = $requestUpdate ? 'CURRENT_TIMESTAMP' : 'NULL';
             return Database::execute(
-                "INSERT INTO imap_folder_status (folder_name, thread_id, last_checked_at) VALUES (?, ?, " . $lastCheckedAt . ")",
+                "INSERT INTO imap_folder_status (folder_name, thread_id, last_checked_at, requested_update_time) VALUES (?, ?, " . $lastCheckedAt . ", " . $requestedUpdateTime . ")",
                 [$folderName, $threadId]
             ) > 0;
         }
@@ -60,6 +77,32 @@ class ImapFolderStatus {
             error_log("Error in ImapFolderStatus::getLastChecked: " . $e->getMessage());
             return null;
         }
+    }
+    
+    /**
+     * Request an update for a folder
+     * 
+     * @param string $folderName The IMAP folder name
+     * @return bool Success status
+     */
+    public static function requestUpdate(string $folderName): bool {
+        return Database::execute(
+            "UPDATE imap_folder_status SET requested_update_time = CURRENT_TIMESTAMP WHERE folder_name = ?",
+            [$folderName]
+        ) > 0;
+    }
+    
+    /**
+     * Clear the requested update time for a folder
+     * 
+     * @param string $folderName The IMAP folder name
+     * @return bool Success status
+     */
+    public static function clearRequestedUpdate(string $folderName): bool {
+        return Database::execute(
+            "UPDATE imap_folder_status SET requested_update_time = NULL WHERE folder_name = ?",
+            [$folderName]
+        ) > 0;
     }
     
     /**

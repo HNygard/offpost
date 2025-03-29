@@ -86,6 +86,13 @@ class ImapFolderStatusTest extends PHPUnit\Framework\TestCase {
             [$this->testFolderName, $this->testThreadId]
         );
         $this->assertNull($lastChecked, "last_checked_at should be NULL for new record without updateLastChecked flag");
+        
+        // Verify requested_update_time is NULL
+        $requestedUpdateTime = Database::queryValue(
+            "SELECT requested_update_time FROM imap_folder_status WHERE folder_name = ? AND thread_id = ?",
+            [$this->testFolderName, $this->testThreadId]
+        );
+        $this->assertNull($requestedUpdateTime, "requested_update_time should be NULL for new record without requestUpdate flag");
     }
     
     public function testCreateOrUpdateWithLastChecked(): void {
@@ -154,6 +161,59 @@ class ImapFolderStatusTest extends PHPUnit\Framework\TestCase {
             }
         }
         $this->assertTrue($found, "Test record should be included in getAll() results");
+    }
+    
+    public function testCreateOrUpdateWithRequestUpdate(): void {
+        // :: Setup
+        
+        // :: Act
+        $result = ImapFolderStatus::createOrUpdate($this->testFolderName, $this->testThreadId, false, true);
+        
+        // :: Assert
+        $this->assertTrue($result, "Should successfully create a new record with requested_update_time");
+        
+        // Verify requested_update_time is not NULL
+        $requestedUpdateTime = Database::queryValue(
+            "SELECT requested_update_time FROM imap_folder_status WHERE folder_name = ? AND thread_id = ?",
+            [$this->testFolderName, $this->testThreadId]
+        );
+        $this->assertNotNull($requestedUpdateTime, "requested_update_time should not be NULL when requestUpdate is true");
+    }
+    
+    public function testRequestUpdate(): void {
+        // :: Setup
+        ImapFolderStatus::createOrUpdate($this->testFolderName, $this->testThreadId);
+        
+        // :: Act
+        $result = ImapFolderStatus::requestUpdate($this->testFolderName);
+        
+        // :: Assert
+        $this->assertTrue($result, "Should successfully update requested_update_time");
+        
+        // Verify requested_update_time is not NULL
+        $requestedUpdateTime = Database::queryValue(
+            "SELECT requested_update_time FROM imap_folder_status WHERE folder_name = ?",
+            [$this->testFolderName]
+        );
+        $this->assertNotNull($requestedUpdateTime, "requested_update_time should be updated when requestUpdate is called");
+    }
+    
+    public function testClearRequestedUpdate(): void {
+        // :: Setup
+        ImapFolderStatus::createOrUpdate($this->testFolderName, $this->testThreadId, false, true);
+        
+        // :: Act
+        $result = ImapFolderStatus::clearRequestedUpdate($this->testFolderName);
+        
+        // :: Assert
+        $this->assertTrue($result, "Should successfully clear requested_update_time");
+        
+        // Verify requested_update_time is NULL
+        $requestedUpdateTime = Database::queryValue(
+            "SELECT requested_update_time FROM imap_folder_status WHERE folder_name = ?",
+            [$this->testFolderName]
+        );
+        $this->assertNull($requestedUpdateTime, "requested_update_time should be NULL after clearRequestedUpdate is called");
     }
     
     public function testGetForThread(): void {

@@ -4,6 +4,7 @@ require_once __DIR__ . '/Imap/ImapWrapper.php';
 require_once __DIR__ . '/Imap/ImapConnection.php';
 require_once __DIR__ . '/Imap/ImapFolderManager.php';
 require_once __DIR__ . '/Imap/ImapEmailProcessor.php';
+require_once __DIR__ . '/ImapFolderStatus.php';
 
 use Imap\ImapConnection;
 use Imap\ImapFolderManager;
@@ -55,7 +56,11 @@ class ThreadEmailMover {
                 }
             }
             
+            // Move the email to the target folder
             $this->folderManager->moveEmail($email->uid, $targetFolder);
+            
+            // Request an update for the target folder
+            ImapFolderStatus::createOrUpdate($targetFolder, null, false, true);
         }
         
         return array_unique($unmatchedAddresses);

@@ -108,8 +108,8 @@ class ThreadScheduledEmailReceiver {
             // Get the debug output
             $debugOutput = $this->getOutputBuffer();
             
-            // Update the folder's last_checked_at timestamp
-            ImapFolderStatus::createOrUpdate($nextFolder['folder_name'], null, true);
+            // Update the folder's last_checked_at timestamp and clear requested_update_time
+            ImapFolderStatus::createOrUpdate($nextFolder['folder_name'], null, true, false);
             
             // Update the log entry with success
             if (!empty($savedEmails)) {
@@ -172,15 +172,29 @@ class ThreadScheduledEmailReceiver {
      * @return array|null Folder record or null if none found
      */
     protected function findNextFolderForProcessing() {
-        // Get all folder status records
+        // First, check if there are any folders with requested_update_time set
         $folders = Database::query(
             "SELECT fs.*
              FROM imap_folder_status fs
              WHERE fs.folder_name LIKE 'INBOX.%' 
                AND fs.folder_name NOT LIKE 'INBOX.Archive.%'
-             ORDER BY fs.last_checked_at ASC NULLS FIRST
+               AND fs.requested_update_time IS NOT NULL
+             ORDER BY fs.requested_update_time ASC
              LIMIT 1"
         );
+        
+        // If no folders with requested_update_time, fall back to the original logic
+        if (empty($folders)) {
+            $folders = Database::query(
+                "SELECT fs.*
+                 FROM imap_folder_status fs
+                 WHERE fs.folder_name LIKE 'INBOX.%' 
+                   AND fs.folder_name NOT LIKE 'INBOX.Archive.%'
+                   AND fs.requested_update_time IS NULL
+                 ORDER BY fs.last_checked_at ASC NULLS FIRST
+                 LIMIT 1"
+            );
+        }
         
         return !empty($folders) ? $folders[0] : null;
     }

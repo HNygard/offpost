@@ -1,6 +1,6 @@
 -- ******************************************************************
 -- AUTOMATICALLY GENERATED FILE - DO NOT MODIFY
--- Generated on: 2025-03-29 07:50:40
+-- Generated on: 2025-03-29 21:11:55
 -- 
 -- This file contains the current database schema after all migrations.
 -- It is NOT meant to be executed as a migration script.
@@ -29,13 +29,15 @@ CREATE TABLE imap_folder_status (
     thread_id uuid,
     last_checked_at timestamp with time zone,
     created_at timestamp with time zone NOT NULL DEFAULT CURRENT_TIMESTAMP,
-    updated_at timestamp with time zone NOT NULL DEFAULT CURRENT_TIMESTAMP
+    updated_at timestamp with time zone NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    requested_update_time timestamp with time zone
 );
 
 ALTER TABLE imap_folder_status ADD CONSTRAINT imap_folder_status_pkey PRIMARY KEY (id);
 ALTER TABLE imap_folder_status ADD CONSTRAINT imap_folder_status_thread_id_fkey FOREIGN KEY (thread_id) REFERENCES threads (id);
 CREATE INDEX imap_folder_status_folder_name_idx ON imap_folder_status USING btree (folder_name);
 CREATE INDEX imap_folder_status_folder_thread_unique ON imap_folder_status USING btree (folder_name, thread_id);
+CREATE INDEX imap_folder_status_requested_update_time_idx ON imap_folder_status USING btree (requested_update_time);
 CREATE INDEX imap_folder_status_thread_id_idx ON imap_folder_status USING btree (thread_id);
 
 CREATE TABLE thread_authorizations (
