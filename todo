@@ -39,6 +39,9 @@ Goal: make production usable
                 - Message
                 - Created at
         - [x] Run on schedule, last attempted first
+    - [ ] Scheduled run of new folders
+    - [ ] Scheduled run of inbox
+    - [ ] Scheduled run of sent
 - [x] Update-imap - Run on schedule
 - [ ] Automatic handling
     - Must have up-to-date ImapFolderStatus (DB table) to be allowed to run

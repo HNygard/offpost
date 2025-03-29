@@ -178,6 +178,8 @@ class ThreadScheduledEmailReceiver {
              FROM imap_folder_status fs
              WHERE fs.folder_name LIKE 'INBOX.%' 
                AND fs.folder_name NOT LIKE 'INBOX.Archive.%'
+               AND fs.folder_name != 'INBOX.Sent'
+               AND fs.folder_name != 'Sent'
                AND fs.requested_update_time IS NOT NULL
              ORDER BY fs.requested_update_time ASC
              LIMIT 1"
@@ -190,6 +192,8 @@ class ThreadScheduledEmailReceiver {
                  FROM imap_folder_status fs
                  WHERE fs.folder_name LIKE 'INBOX.%' 
                    AND fs.folder_name NOT LIKE 'INBOX.Archive.%'
+                   AND fs.folder_name != 'INBOX.Sent'
+                   AND fs.folder_name != 'Sent'
                    AND fs.requested_update_time IS NULL
                  ORDER BY fs.last_checked_at ASC NULLS FIRST
                  LIMIT 1"
