@@ -113,7 +113,10 @@ class ImapFolderStatus {
     public static function getAll(): array {
         try {
             return Database::query(
-                "SELECT fs.*, t.title as thread_title, t.entity_id 
+                "SELECT
+                    fs.*,
+                    t.title as thread_title,
+                    t.entity_id 
                  FROM imap_folder_status fs
                  LEFT JOIN threads t ON fs.thread_id = t.id
                  ORDER BY fs.folder_name"

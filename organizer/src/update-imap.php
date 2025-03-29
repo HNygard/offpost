@@ -535,12 +535,18 @@ try {
                 } else {
                     echo '<table border="1" cellpadding="5" cellspacing="0">';
                     echo '<thead>';
-                    echo '<tr><th>Folder Name</th><th>Thread</th><th>Last Checked</th></tr>';
+                    echo '<tr>';
+                    echo '<th>Folder Name</th>';
+                    echo '<th>Thread</th>';
+                    echo '<th>Last Checked</th>';
+                    echo '<th>Requested update</th>';
+                    echo '</tr>';
                     echo '</thead>';
                     echo '<tbody>';
                     
                     foreach ($records as $record) {
                         $lastChecked = $record['last_checked_at'] ? date('Y-m-d H:i:s', strtotime($record['last_checked_at'])) : 'Never';
+                        $requested_update_time = $record['requested_update_time'] ? date('Y-m-d H:i:s', strtotime($record['requested_update_time'])) : 'Not requested';
                         $threadInfo = htmlspecialchars($record['entity_id'] . ' - ' . $record['thread_title']);
                         $folderName = htmlspecialchars($record['folder_name']);
                         
@@ -548,6 +554,7 @@ try {
                         echo '<td><a href="?task=process-folder&folder=' . urlencode($record['folder_name']) . '">' . $folderName . '</a></td>';
                         echo '<td>' . $threadInfo . '</td>';
                         echo '<td>' . $lastChecked . '</td>';
+                        echo '<td>' . $requested_update_time . '</td>';
                         echo '</tr>';
                     }
                     
