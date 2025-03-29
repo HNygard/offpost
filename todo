@@ -28,18 +28,18 @@ Goal: make production usable
         - [x] Create rows in update-imap.php
         - [x] Update last checked when successfully reading emails (process-folder in update-imap.php)
     - [x] Make sure update-imap logic works
-    - [ ] Create folder status in production
-    - [ ] Run a couple of folders and check that it works
-    - [ ] Schedule reading of folders
-        - [ ] Logging of outputs - own table?
+    - [x] Create folder status in production
+    - [x] Run a couple of folders and check that it works
+    - [x] Schedule reading of folders
+        - [x] Processing of folder in update-imap - Logging of outputs in own table
             - Table name: imap_folder_log
             - Fields
                 - Folder name
                 - Status
                 - Message
                 - Created at
-        - [ ] Run on schedule, last attempted first
-- [ ] Update-imap - Run on schedule
+        - [x] Run on schedule, last attempted first
+- [x] Update-imap - Run on schedule
 - [ ] Automatic handling
     - Must have up-to-date ImapFolderStatus (DB table) to be allowed to run
     - Purring - Next email expected date (based on plan or that we have received an expected date from public entity)

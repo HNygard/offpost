@@ -29,6 +29,18 @@ try {
     ) {
         require __DIR__ . '/../system-pages/scheduled-email-sending.php';
     }
+    elseif ($path == '/scheduled-email-receiver'
+        && (
+            ($environment == 'development')
+            || (
+                $environment == 'production'
+                // Internal name - used by container 'cron'
+                && $_SERVER['HTTP_HOST'] == 'organizer'
+            )
+        )
+    ) {
+        require __DIR__ . '/../system-pages/scheduled-email-scheduled-email-receiver.php';
+    }
     elseif ($path == '/email-sending-overview') {
         require_once __DIR__ . '/../auth.php';
         requireAuth();

@@ -71,6 +71,7 @@ $allThreads = $filteredThreads;
                     <li><a href="/update-identities">Update identities into Roundcube</a></li>
 
                     <li><a href="/scheduled-email-sending">Scheduled email sending</a></li>
+                    <li><a href="/scheduled-email-receiver">Scheduled email receiver</a></li>
                 </ul>
             </div>
         <?php } ?>

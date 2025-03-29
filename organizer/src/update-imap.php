@@ -216,6 +216,18 @@ function getThreadFoldersFromImap($folderManager) {
     });
 }
 
+/**
+ * Process a thread folder - now handled by ThreadScheduledEmailReceiver
+ * This function is kept for backward compatibility but now delegates to the new class
+ * 
+ * @param ImapConnection $connection IMAP connection
+ * @param ImapFolderManager $folderManager IMAP folder manager
+ * @param ImapEmailProcessor $emailProcessor Email processor
+ * @param ImapAttachmentHandler $attachmentHandler Attachment handler
+ * @param string $folder Folder name
+ * @return array Array of saved email IDs
+ * @deprecated Use ThreadScheduledEmailReceiver instead
+ */
 function processThreadFolder($connection, $folderManager, $emailProcessor, $attachmentHandler, $folder = null) {
     $connection->logDebug("-- $folder");
     
@@ -344,7 +356,7 @@ function displayTaskOptions() {
         <li><a href="?task=archive-folders">Archive Folders</a></li>
         <li><a href="?task=process-inbox">Process Inbox</a></li>
         <li><a href="?task=process-sent">Process Sent Folder</a></li>
-        <li><a href="?task=process-all">Process All Thread Folders</a></li>
+        <li><a href="?task=process-all">Process All Thread Folders</a> (now also available via <a href="/system-pages/scheduled-email-receiver.php">scheduled-email-receiver.php</a>)</li>
         <li><a href="?task=list-folders">List All Folders</a></li>
         <li><a href="?task=create-folder-status">Create Folder Status Records</a></li>
         <li><a href="?task=view-folder-status">View Folder Status</a></li>
@@ -451,6 +463,9 @@ try {
                     break;
                 }
                 
+                echo "Note: This functionality is now handled by scheduled-email-receiver.php\n";
+                echo "Using legacy method for backward compatibility...\n\n";
+                
                 $savedEmails = processThreadFolder(
                     $connection, 
                     $folderManager, 
@@ -472,6 +487,9 @@ try {
                 
             case 'process-all':
                 $threadFolders = getThreadFoldersFromImap($folderManager);
+                echo "Note: This functionality is now handled by scheduled-email-receiver.php\n";
+                echo "Using legacy method for backward compatibility...\n\n";
+                
                 echo "Processing folders from IMAP server:\n";
                 foreach ($threadFolders as $folder) {
                     echo "Processing folder: $folder\n";
