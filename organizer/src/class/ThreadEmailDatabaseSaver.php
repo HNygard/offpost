@@ -54,10 +54,16 @@ class ThreadEmailDatabaseSaver {
 
                 # Figure out which thread this email is part of
                 $all_emails = $email->getEmailAddresses();
-                $threads = Database::query(
-                    "SELECT id, my_email FROM threads WHERE my_email IN (" . implode(',', array_fill(0, count($all_emails), '?')) . ")",
-                    $all_emails
-                );
+                try {
+                    $threads = Database::query(
+                        "SELECT id, my_email FROM threads WHERE my_email IN (" . implode(',', array_fill(0, count($all_emails), '?')) . ")",
+                        $all_emails
+                    );
+                }
+                catch (Exception $e) {
+                    throw new Exception('Failed checking for existing threads using emails.'
+                        . ' Emails: ' . print_r($all_emails, true), 0, $e);
+                }
                 if (count($threads) == 0) {
                     throw new Exception('Failed to process email: No matching thread found for email(s): ' . implode(', ', $all_emails));
                 }
