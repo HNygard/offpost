@@ -62,7 +62,7 @@ class ThreadEmailDatabaseSaver {
                 }
                 catch (Exception $e) {
                     throw new Exception('Failed checking for existing threads using emails.'
-                        . ' Emails: ' . print_r($all_emails, true), 0, $e);
+                        . ' Emails: ' . json_encode($all_emails, JSON_PRETTY_PRINT), 0, $e);
                 }
                 if (count($threads) == 0) {
                     throw new Exception('Failed to process email: No matching thread found for email(s): ' . implode(', ', $all_emails));
