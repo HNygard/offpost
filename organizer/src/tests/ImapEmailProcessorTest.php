@@ -188,6 +188,33 @@ class ImapEmailProcessorTest extends TestCase {
         
         $this->assertEquals($expectedAddresses, $addresses);
     }
+    
+    public function testGetEmailAddressesSequentialKeys(): void {
+        // :: Setup
+        // Create headers with duplicate addresses to trigger array_unique behavior
+        $headers = $this->createComplexEmailHeaders();
+        
+        // Add a duplicate address in the 'to' field
+        $duplicate = new stdClass();
+        $duplicate->mailbox = 'from'; // Same as from@example.com
+        $duplicate->host = 'example.com';
+        $headers->to[] = $duplicate;
+        
+        $email = new ImapEmail();
+        $email->mailHeaders = $headers;
+        
+        // :: Act
+        $addresses = $email->getEmailAddresses();
+        
+        // :: Assert
+        // Check that the keys are sequential (0, 1, 2, 3)
+        $expectedKeys = range(0, count($addresses) - 1);
+        $actualKeys = array_keys($addresses);
+        
+        $this->assertEquals($expectedKeys, $actualKeys, 
+            "Email addresses array should have sequential keys. Got: " . 
+            json_encode($addresses, JSON_PRETTY_PRINT));
+    }
 
     private function createTestHeaders($subject, $fromEmail): object {
         $headers = new stdClass();

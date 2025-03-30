@@ -102,6 +102,7 @@ class ImapEmail {
             $addresses[] = $email->mailbox . '@' . $email->host;
         }
 
-        return array_unique($addresses);
+        // Use array_values to reindex the array after removing duplicates
+        return array_values(array_unique($addresses));
     }
 }
