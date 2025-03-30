@@ -144,6 +144,9 @@ class ThreadScheduledEmailReceiver {
                 ];
             }
         } catch (Exception $e) {
+            echo "Error processing folder: {$nextFolder['folder_name']}. " . $e->getMessage() . "\n";
+            echo jTraceEx($e) . "\n\n";
+
             // Get the debug output even if there was an error
             $debugOutput = $this->getOutputBuffer();
             
@@ -161,7 +164,8 @@ class ThreadScheduledEmailReceiver {
                 'folder_name' => $nextFolder['folder_name'],
                 'thread_id' => $nextFolder['thread_id'],
                 'error' => $e->getMessage(),
-                'debug' => $debugOutput
+                'debug' => $debugOutput,
+                'stack_trace' => jTraceEx($e)
             ];
         }
     }
