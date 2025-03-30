@@ -68,7 +68,6 @@ $allThreads = $filteredThreads;
                 <h3 style="display: inline;">Dev tools:</h3>
                 <ul class="nav-links" style="display: inline;">
                     <li><a href="/update-imap?update-only-before=<?= date('Y-m-d H:i:s') ?>">Update email threads (folders) to IMAP</a></li>
-                    <li><a href="/update-identities">Update identities into Roundcube</a></li>
 
                     <li><a href="/scheduled-email-sending">Scheduled email sending</a></li>
                     <li><a href="/scheduled-email-receiver">Scheduled email receiver</a></li>
@@ -82,6 +81,7 @@ $allThreads = $filteredThreads;
                     <li><a href="/email-sending-overview">Email sending overview</a></li>
                     <li><a href="/extraction-overview">Email extraction overview</a></li>
                     <li><a href="/update-imap">Update IMAP</a></li>
+                    <li><a href="/update-identities">Update identities into Roundcube</a></li>
                 </ul>
             </div>
         <?php } ?>

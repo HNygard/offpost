@@ -11,13 +11,8 @@ try {
 
     require __DIR__ . '/../username-password.php';
 
-    // :: Development only
-    if ($environment == 'development' && $path == '/update-identities') {
-        require __DIR__ . '/../update-identities.php';
-    }
-
     // :: System pages (dev or cron in prod)
-    elseif ($path == '/scheduled-email-sending'
+    if ($path == '/scheduled-email-sending'
         && (
             ($environment == 'development')
             || (
@@ -40,6 +35,16 @@ try {
         )
     ) {
         require __DIR__ . '/../system-pages/scheduled-email-receiver.php';
+    }
+    elseif ($path == '/update-identities') {
+        require_once __DIR__ . '/../auth.php';
+        requireAuth();
+        if (in_array($_SESSION['user']['sub'], $admins)) {
+            require __DIR__ . '/../update-identities.php';
+        }
+        else {
+            throw new Exception("404 Not Found", 404);
+        }
     }
     elseif ($path == '/email-sending-overview') {
         require_once __DIR__ . '/../auth.php';
