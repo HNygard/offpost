@@ -101,6 +101,12 @@ class ImapEmail {
         foreach ($this->mailHeaders->sender as $email) {
             $addresses[] = $email->mailbox . '@' . $email->host;
         }
+        // Add CC addresses
+        if (isset($this->mailHeaders->cc)) {
+            foreach ($this->mailHeaders->cc as $email) {
+                $addresses[] = $email->mailbox . '@' . $email->host;
+            }
+        }
 
         // Use array_values to reindex the array after removing duplicates
         return array_values(array_unique($addresses));

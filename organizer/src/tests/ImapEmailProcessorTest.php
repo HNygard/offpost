@@ -216,6 +216,46 @@ class ImapEmailProcessorTest extends TestCase {
             json_encode($addresses, JSON_PRETTY_PRINT));
     }
 
+    public function testGetEmailAddressesWithCc(): void {
+        // :: Setup
+        // Create headers with CC addresses
+        $headers = $this->createComplexEmailHeaders();
+        
+        // Add CC addresses
+        $cc1 = new stdClass();
+        $cc1->mailbox = 'cc1';
+        $cc1->host = 'example.com';
+        
+        $cc2 = new stdClass();
+        $cc2->mailbox = 'cc2';
+        $cc2->host = 'example.com';
+        
+        $headers->cc = [$cc1, $cc2];
+        
+        $email = new ImapEmail();
+        $email->mailHeaders = $headers;
+        
+        // :: Act
+        $addresses = $email->getEmailAddresses();
+        
+        // :: Assert
+        $expectedAddresses = [
+            'to@example.com',
+            'from@example.com',
+            'reply@example.com',
+            'sender@example.com',
+            'cc1@example.com',
+            'cc2@example.com'
+        ];
+        
+        sort($addresses);
+        sort($expectedAddresses);
+        
+        $this->assertEquals($expectedAddresses, $addresses, 
+            "Email addresses should include CC addresses. Got: " . 
+            json_encode($addresses, JSON_PRETTY_PRINT));
+    }
+
     private function createTestHeaders($subject, $fromEmail): object {
         $headers = new stdClass();
         $headers->subject = $subject;
