@@ -144,7 +144,7 @@ class ThreadScheduledEmailReceiver {
                 ];
             }
         } catch (Exception $e) {
-            if (!constant('PHPUNIT_RUNNING')) {
+            if (!defined('PHPUNIT_RUNNING')) {
                 echo "Error processing folder: {$nextFolder['folder_name']}. " . $e->getMessage() . "\n";
                 echo jTraceEx($e) . "\n\n";
             }
