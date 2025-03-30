@@ -17,14 +17,12 @@ $emailReceiver = new ThreadScheduledEmailReceiver();
 // Note: We only process one folder at a time to avoid overloading the system
 $result = $emailReceiver->processNextFolder();
 
-/*
 if (!$result['success']) {
     // Output the result
     header('Content-Type: application/json');
     echo json_encode($result, JSON_PRETTY_PRINT);
     exit;
 }
-*/
 
 $result2 = $emailReceiver->processNextFolder();
 
