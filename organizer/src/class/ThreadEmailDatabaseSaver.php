@@ -54,12 +54,38 @@ class ThreadEmailDatabaseSaver {
 
                 # Figure out which thread this email is part of
                 $all_emails = $email->getEmailAddresses();
-                $threads = Database::query(
-                    "SELECT id, my_email FROM threads WHERE my_email IN (" . implode(',', array_fill(0, count($all_emails), '?')) . ")",
-                    $all_emails
+
+                $email_identifier = date('Y-m-d__His', $email->timestamp) . '__' . md5($email->subject);
+                
+                // First check if the email is manually mapped to a thread
+                $mapped_threads = Database::query(
+                    "SELECT t.id, t.my_email 
+                     FROM thread_email_mapping m 
+                     JOIN threads t ON m.thread_id = t.id 
+                     WHERE m.email_identifier = ?",
+                    [$email_identifier]
                 );
+                
+                // If we found mapped threads, use those
+                if (count($mapped_threads) > 0) {
+                    $threads = $mapped_threads;
+                } 
+                else {
+                    // Otherwise fall back to the default behavior of matching against my_email
+                    $threads = Database::query(
+                        "SELECT id, my_email FROM threads WHERE my_email IN (" . implode(',', array_fill(0, count($all_emails), '?')) . ")",
+                        $all_emails
+                    );
+                }
+
                 if (count($threads) == 0) {
-                    throw new Exception('Failed to process email: No matching thread found for email(s): ' . implode(', ', $all_emails));
+                    throw new Exception("Failed to process email:\n"
+                        . "No matching thread found for email(s): " . implode(', ', $all_emails) . "\n"
+                        . "Email subject: " . $email->subject . "\n"
+                        . "Email identifier: " . $email_identifier . "\n"
+                        . "Query to insert mapping: \n"
+                        . "INSERT INTO thread_email_mapping (email_identifier, thread_id, description) VALUES ('$email_identifier', ?, 'TODO description');"
+                    );
                 }
                 if (count($threads) > 1) {
                     throw new Exception('Failed to process email: Multiple matching threads found for email(s): ' . implode(', ', $all_emails));
