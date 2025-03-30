@@ -6,6 +6,10 @@ require_once __DIR__ . '/../class/ThreadScheduledEmailReceiver.php';
 error_reporting(E_ALL);
 ini_set('display_errors', 1);
 
+// Set up time and memory limits
+set_time_limit(0);
+ini_set('memory_limit', '768M');
+
 // Create the email receiver
 $emailReceiver = new ThreadScheduledEmailReceiver();
 
