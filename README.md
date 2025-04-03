@@ -113,3 +113,23 @@ http://localhost:25081/start-thread.php?my_email=asmund.visnes%40offpost.no&my_n
    - Update thread details:
      - Set sent = true
      - Update status_type and status_text
+
+### Extracting information from emails
+
+From an email there are multiple ways to extract text. The diagram below shows the different paths for text extraction from emails, including plain text conversion, HTML parsing, and handling of attachments like PDFs and images.
+
+```mermaid
+graph TD;
+    A[Email] -->|EML to plain Text| B(Plain Text)
+    A -->|EML to HTML| C(HTML)
+    A --> D(Attachments)
+    D --> E(PDF)
+    D --> F(Images)
+    E -->|pdftotext| G(PDF Text)
+    E -->|pdfimages| H(PDF Images)
+    H --> F
+    B --> I(Text)
+    C -->|HTML to text| I
+    G --> I
+    F -->|LLM describe| I
+```

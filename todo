@@ -43,6 +43,14 @@ Goal: make production usable
     - [ ] Scheduled run of inbox
     - [ ] Scheduled run of sent
 - [x] Update-imap - Run on schedule
+- [ ] Extract data from emails
+    - [ ] Extract plain text body from EML
+        - [ ] Make a scheduled task for extraction of information
+        - [ ] Make framework for what extractions to do - SQL based
+        - [ ] Extraction - use the code from file.php
+    - [ ] Extract HTML body from EML
+    - [ ] Extract PDF attachments as text
+    - [ ] Extract image attachements as text (OpenAI)
 - [ ] Automatic handling
     - Must have up-to-date ImapFolderStatus (DB table) to be allowed to run
     - Purring - Next email expected date (based on plan or that we have received an expected date from public entity)
