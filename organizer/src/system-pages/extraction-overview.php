@@ -12,7 +12,7 @@ requireAuth();
 
 // Get all extractions from the last 30 days
 $recentExtractionsQuery = "
-    SELECT e.*, te.status_type, te.status_text, te.datetime_received, t.id as thread_id, t.title as thread_title
+    SELECT e.*, te.status_type, te.status_text, te.datetime_received, t.id as thread_id, t.entity_id, t.title as thread_title
     FROM thread_email_extractions e
     JOIN thread_emails te ON e.email_id = te.id
     JOIN threads t ON te.thread_id = t.id
@@ -23,7 +23,7 @@ $recentExtractions = Database::query($recentExtractionsQuery, []);
 
 // Get all extractions for unclassified emails (status_type = 'unknown')
 $unclassifiedEmailsQuery = "
-    SELECT e.*, te.status_type, te.status_text, te.datetime_received, t.id as thread_id, t.title as thread_title
+    SELECT e.*, te.status_type, te.status_text, te.datetime_received, t.id as thread_id, t.entity_id, t.title as thread_title
     FROM thread_email_extractions e
     JOIN thread_emails te ON e.email_id = te.id
     JOIN threads t ON te.thread_id = t.id
@@ -35,7 +35,7 @@ $unclassifiedEmails = Database::query($unclassifiedEmailsQuery, []);
 // Get all extractions for unclassified attachments
 $unclassifiedAttachmentsQuery = "
     SELECT e.*, tea.status_type, tea.status_text, tea.name as attachment_name, tea.filetype, 
-           te.datetime_received, t.id as thread_id, t.title as thread_title
+           te.datetime_received, t.id as thread_id, t.entity_id, t.title as thread_title
     FROM thread_email_extractions e
     JOIN thread_email_attachments tea ON e.attachment_id = tea.id
     JOIN thread_emails te ON e.email_id = te.id
@@ -264,7 +264,7 @@ function getExtractionType($extraction) {
                         <?php else: ?>
                             | <a href="/file?threadId=<?= urlencode($extraction['thread_id']) ?>&body=<?= urlencode($extraction['email_id']) ?>" target="_blank">View Email</a>
                         <?php endif; ?>
-                        | <a href="/thread-classify?threadId=<?= urlencode($extraction['thread_id']) ?>&emailId=<?= urlencode($extraction['email_id']) ?>">Classify</a>
+                        | <a href="/thread-classify?entityId=<?= urlencode($extraction['entity_id']) ?>&threadId=<?= urlencode($extraction['thread_id']) ?>&emailId=<?= urlencode($extraction['email_id']) ?>">Classify</a>
                         
                         <dialog id="details-<?= $extraction['extraction_id'] ?>" class="extraction-details">
                             <div class="dialog-header">

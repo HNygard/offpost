@@ -237,7 +237,6 @@ function getIconClass($filetype) {
             </div>
 
             <div class="action-links">
-                <a href="/thread-classify?entityId=<?= htmlescape($entityId) ?>&threadId=<?= htmlescape($threadId) ?>">Classify</a>
                 <a href="/toggle-thread-archive?entityId=<?= htmlescape($entityId) ?>&threadId=<?= htmlescape($threadId) ?>&archive=<?= $thread->archived ? '0' : '1' ?>">
                     <?= $thread->archived ? 'Unarchive thread' : 'Archive thread' ?>
                 </a>
@@ -348,6 +347,9 @@ function getIconClass($filetype) {
                     <?php if (isset($email->id)): ?>
                         <div class="email-links">
                             <a href="/file?entityId=<?= htmlescape($entityId) ?>&threadId=<?= htmlescape($threadId) ?>&body=<?= htmlescape($email->id) ?>">View email</a> (text)
+                        </div>
+                        <div class="email-links">
+                            <a href="/thread-classify?entityId=<?= htmlescape($entityId) ?>&threadId=<?= htmlescape($threadId) ?>&emailId=<?= htmlescape($email->id) ?>">Classify</a>
                         </div>
                     <?php endif; ?>
 
