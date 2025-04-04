@@ -107,7 +107,6 @@ function getExtractionType($extraction) {
             border: 1px solid #dee2e6;
             border-radius: 4px;
             padding: 15px;
-            white-space: pre-wrap;
             font-family: monospace;
             max-width: 80%;
             max-height: 80vh;
@@ -195,9 +194,6 @@ function getExtractionType($extraction) {
         .error-message {
             color: #e74c3c;
             font-weight: bold;
-        }
-        .dialog-content p {
-            margin: 0;
         }
         /* Label styling */
         span.label {
