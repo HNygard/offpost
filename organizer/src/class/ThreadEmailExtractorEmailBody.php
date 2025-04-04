@@ -42,7 +42,12 @@ class ThreadEmailExtractorEmailBody {
             LIMIT 1
         ";
         
-        return Database::queryOne($query, []);
+        $row = Database::queryOneOrNone($query, []);
+        
+        if (!$row) {
+            return null;
+        }
+        return $row;
     }
     
     /**
@@ -106,7 +111,7 @@ class ThreadEmailExtractorEmailBody {
                 $this->extractionService->updateExtractionResults(
                     $extraction->extraction_id,
                     null,
-                    $e->getMessage()
+                    jTraceEx($e)
                 );
             }
             
