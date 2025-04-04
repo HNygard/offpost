@@ -76,6 +76,22 @@ class Database {
     }
 
     /**
+     * Execute a query and return a single row
+     */
+    public static function queryOneOrNone(string $sql, array $params = []): ?array {
+        $stmt = self::prepare($sql);
+        $stmt->execute($params);
+        if ($stmt->rowCount() > 1) {
+            throw new Exception("Expected 1 row, got {$stmt->rowCount()}");
+        }
+        if ($stmt->rowCount() == 0) {
+            return null;
+        }
+        $result = $stmt->fetch();
+        return $result === false ? null : $result;
+    }
+
+    /**
      * Execute a query and return a single value
      */
     public static function queryValue(string $sql, array $params = []): mixed {
