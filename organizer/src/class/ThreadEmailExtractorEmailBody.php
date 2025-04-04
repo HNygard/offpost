@@ -22,6 +22,28 @@ class ThreadEmailExtractorEmailBody {
     public function __construct(ThreadEmailExtractionService $extractionService = null) {
         $this->extractionService = $extractionService ?: new ThreadEmailExtractionService();
     }
+
+    /**
+     * Get the number of emails that need extraction
+     * 
+     * @return int Number of emails to process
+     */
+    public function getNumberOfEmailsToProcess() {
+        // Count the number of emails that need extraction
+        $query = "
+            SELECT COUNT(te.id) AS email_count
+            FROM thread_emails te
+            LEFT JOIN thread_email_extractions tee ON te.id = tee.email_id 
+                AND tee.attachment_id IS NULL 
+                AND tee.prompt_service = 'code'
+                AND tee.prompt_text = 'email_body'
+            WHERE tee.extraction_id IS NULL
+        ";
+        
+        $result = Database::queryOneOrNone($query, []);
+        
+        return $result ? (int)$result['email_count'] : 0;
+    }
     
     /**
      * Find the next email that needs extraction

@@ -6,6 +6,7 @@ require_once __DIR__ . '/../class/Thread.php';
 require_once __DIR__ . '/../class/ThreadEmail.php';
 require_once __DIR__ . '/../class/ThreadEmailAttachment.php';
 require_once __DIR__ . '/../class/Database.php';
+require_once __DIR__ . '/../class/ThreadEmailExtractorEmailBody.php';
 
 // Require authentication
 requireAuth();
@@ -224,6 +225,16 @@ function getExtractionType($extraction) {
                 <div class="summary-count"><?= $extractionCounts['UNCLASSIFIED_ATTACHMENTS'] ?></div>
                 <div class="summary-label">Unclassified Attachments</div>
             </div>
+        </div>
+
+        <div>
+            <li><b>Email body extractor:</b>
+            <?php
+            $emailExtractor = new ThreadEmailExtractorEmailBody();
+            $emailExtractor->getNumberOfEmailsToProcess();
+            echo $emailExtractor->getNumberOfEmailsToProcess() . ' emails to process';
+            ?></li>
+
         </div>
 
         <table>
