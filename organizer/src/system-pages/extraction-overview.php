@@ -196,6 +196,9 @@ function getExtractionType($extraction) {
             color: #e74c3c;
             font-weight: bold;
         }
+        .dialog-content p {
+            margin: 0;
+        }
         /* Label styling */
         span.label {
             font-size: 0.2em;
