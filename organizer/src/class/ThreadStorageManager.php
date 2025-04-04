@@ -43,15 +43,15 @@ class ThreadStorageManager {
             $this->fileOps->updateThread($thread, $userId);
     }
 
-    public function getThreadEmailContent($entityId, Thread $thread, $email_id) {
+    public function getThreadEmailContent($thread_id, $email_id) {
         // Get email content from database
         $content = Database::queryValue(
             "SELECT content FROM thread_emails WHERE thread_id = ? AND id = ?",
-            [$thread->id, $email_id]
+            [$thread_id, $email_id]
         );
         
         if (!$content) {
-            throw new Exception("Thread Email have no content [thread_id=$thread->id, email_id=$email_id]");
+            throw new Exception("Thread Email have no content [thread_id=$thread_id, email_id=$email_id]");
         }
         
         return $content;

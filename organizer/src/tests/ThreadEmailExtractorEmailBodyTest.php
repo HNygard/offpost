@@ -88,8 +88,13 @@ class ThreadEmailExtractorEmailBodyTest extends PHPUnit\Framework\TestCase {
         $extractor->method('findNextEmailForExtraction')
             ->willReturn($emailData);
         
+        // Create a mock ExtractedEmailBody object
+        $mockExtractedBody = new ExtractedEmailBody();
+        $mockExtractedBody->plain_text = 'Extracted text from email body';
+        $mockExtractedBody->html = '';
+        
         $extractor->method('extractTextFromEmailBody')
-            ->willReturn('Extracted text from email body');
+            ->willReturn($mockExtractedBody);
         
         $this->extractionService->expects($this->once())
             ->method('createExtraction')

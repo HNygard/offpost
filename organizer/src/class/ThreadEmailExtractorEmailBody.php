@@ -4,6 +4,7 @@ require_once __DIR__ . '/Database.php';
 require_once __DIR__ . '/ThreadEmailExtraction.php';
 require_once __DIR__ . '/ThreadEmailExtractionService.php';
 require_once __DIR__ . '/ThreadEmail.php';
+require_once __DIR__ . '/ThreadStorageManager.php';
 require_once __DIR__ . '/../error.php';
 
 /**
@@ -69,7 +70,16 @@ class ThreadEmailExtractorEmailBody {
             );
             
             // Extract text from email body
-            $extractedText = $this->extractTextFromEmailBody($email['id']);
+            $extractedTexts = $this->extractTextFromEmailBody($email['thread_id'], $email['id']);
+
+            $extractedText = '';
+            if (!empty($extractedTexts->plain_text)) {
+                $extractedText .= $extractedTexts->plain_text;
+            }
+            if (!empty($extractedTexts->html)) {
+                $extractedText = trim($extractedText . "\n\n" . $extractedTexts->html);
+            }
+
             
             // Update extraction with results
             $updatedExtraction = $this->extractionService->updateExtractionResults(
@@ -114,91 +124,145 @@ class ThreadEmailExtractorEmailBody {
      * Extract text from email body
      * 
      * @param string $emailId Email ID
-     * @return string Extracted text
+     * @return ExtractedEmailBody Extracted text
      */
-    protected function extractTextFromEmailBody($emailId) {
-        // Get email content
-        $query = "SELECT * FROM thread_emails WHERE id = ?";
-        $email = Database::queryOne($query, [$emailId]);
-        
-        if (!$email) {
-            throw new \Exception("Email not found: $emailId");
-        }
-        
-        // Get email file path
-        $threadId = $email['thread_id'];
-        $thread = Database::queryOne("SELECT * FROM threads WHERE id = ?", [$threadId]);
-        
-        if (!$thread) {
-            throw new \Exception("Thread not found: $threadId");
-        }
-        
-        $entityId = $thread['entity_id'];
-        $emailFilePath = "/organizer-data/threads/$entityId/thread_$threadId/$email[filename]";
-        
-        if (!file_exists($emailFilePath)) {
-            throw new \Exception("Email file not found: $emailFilePath");
-        }
-        
-        // Parse email file
-        $emailContent = file_get_contents($emailFilePath);
-        
-        // Extract text from email
-        $extractedText = $this->extractTextFromEmailContent($emailContent);
-        
-        return $extractedText;
+    protected function extractTextFromEmailBody($threadId, $emailId) {
+        $eml =  ThreadStorageManager::getInstance()->getThreadEmailContent($threadId, $emailId); 
+        $email_content = self::extractContentFromEmail($eml);
+        return $email_content;
     }
-    
-    /**
-     * Extract text from email content
-     * 
-     * @param string $emailContent Raw email content
-     * @return string Extracted text
-     */
-    protected function extractTextFromEmailContent($emailContent) {
-        // Parse email using Laminas Mail
-        $message = new \Laminas\Mail\Storage\Message(['raw' => $emailContent]);
-        
-        // Get body text
-        $body = '';
-        
-        // Check if message is multipart
-        if ($message->isMultipart()) {
-            // Try to find text/plain or text/html part
-            $plainTextPart = null;
-            $htmlPart = null;
+
+    public static function extractContentFromEmail($eml) {
+        $message = new \Laminas\Mail\Storage\Message(['raw' => $eml]);
+
+        $htmlConvertPart = function ($html, $part) {
+            if (!$part || !($part instanceof \Laminas\Mail\Storage\Message)) {
+                return $html;
+            }
             
-            foreach (new \RecursiveIteratorIterator($message) as $part) {
-                $contentType = $part->getHeaderField('content-type');
+            $encoding = $part->getHeaderField('content-transfer-encoding');
+            
+            if ($encoding == 'base64') {
+                $html = base64_decode($html);
+            }   
+            if ($encoding == 'quoted-printable') {
+                // Use quoted-printable decoder with explicit charset
+                $charset = 'UTF-8';
                 
-                if (strpos($contentType, 'text/plain') === 0) {
+                // Try to get charset from content-type
+                try {
+                    $contentType = $part->getHeaderField('content-type');
+                    if (is_array($contentType) && isset($contentType['charset'])) {
+                        $charset = $contentType['charset'];
+                    }
+                } catch (Exception $e) {
+                    // Ignore and use default charset
+                }
+                
+                $html = quoted_printable_decode($html);
+            }
+
+            return $html;
+        };
+        $fixEncoding = function ($html, $charset) {
+            if (empty($html)) {
+                return $html;
+            }
+
+            // If already valid UTF-8, return as is
+            if (mb_check_encoding($html, 'UTF-8')) {
+                return $html;
+            }
+
+            // Try multiple encodings, prioritizing those common in Norwegian content
+            $encodings = ['ISO-8859-1', 'Windows-1252', 'ISO-8859-15', 'UTF-8'];
+            
+            foreach ($encodings as $encoding) {
+                $converted = @mb_convert_encoding($html, 'UTF-8', $encoding);
+                if (mb_check_encoding($converted, 'UTF-8') && strpos($converted, '?') === false) {
+                    return $converted;
+                }
+            }
+
+            // Force ISO-8859-1 as a last resort
+            return mb_convert_encoding($html, 'UTF-8', 'ISO-8859-1');
+        };
+        
+        $email_content = new ExtractedEmailBody();
+        if ($message->isMultipart()) {
+            $plainTextPart = false;
+            $htmlPart = false;
+
+            foreach (new RecursiveIteratorIterator($message) as $part) {
+                if (strtok($part->contentType, ';') == 'text/plain') {
                     $plainTextPart = $part;
-                } elseif (strpos($contentType, 'text/html') === 0) {
+                }
+                if (strtok($part->contentType, ';') == 'text/html') {
                     $htmlPart = $part;
                 }
             }
+
+            $plainText = $plainTextPart ? $plainTextPart->getContent() : '';
+            $html = $htmlPart ? $htmlPart->getContent() : '';
+
+            // Get charset from content-type if available
+            $plainTextCharset = $message->getHeaders()->getEncoding();
+            $htmlCharset = $message->getHeaders()->getEncoding();
             
-            // Prefer plain text over HTML
             if ($plainTextPart) {
-                $body = $plainTextPart->getContent();
-            } elseif ($htmlPart) {
-                $body = $this->convertHtmlToText($htmlPart->getContent());
+                try {
+                    $contentType = $plainTextPart->getHeaderField('content-type');
+                    if (is_array($contentType) && isset($contentType['charset'])) {
+                        $plainTextCharset = $contentType['charset'];
+                    }
+                } catch (Exception $e) {
+                    // Ignore and use default charset
+                }
             }
-        } else {
-            // Single part message
-            $contentType = $message->getHeaderField('content-type');
             
-            if (strpos($contentType, 'text/plain') === 0) {
-                $body = $message->getContent();
-            } elseif (strpos($contentType, 'text/html') === 0) {
-                $body = $this->convertHtmlToText($message->getContent());
+            if ($htmlPart) {
+                try {
+                    $contentType = $htmlPart->getHeaderField('content-type');
+                    if (is_array($contentType) && isset($contentType['charset'])) {
+                        $htmlCharset = $contentType['charset'];
+                    }
+                } catch (Exception $e) {
+                    // Ignore and use default charset
+                }
             }
+            
+            // First decode the content based on transfer encoding
+            $decodedPlainText = $htmlConvertPart($plainText, $plainTextPart);
+            $decodedHtml = $htmlConvertPart($html, $htmlPart);
+            
+            // Then convert charset to UTF-8
+            $convertedPlainText = $fixEncoding($decodedPlainText, $plainTextCharset);
+            $convertedHtml =  $fixEncoding($decodedHtml, $htmlCharset);
+            
+            $email_content->plain_text = self::cleanText($convertedPlainText);
+            $email_content->html = self::convertHtmlToText($convertedHtml);
         }
-        
-        // Clean up the text
-        $body = $this->cleanText($body);
-        
-        return $body;
+        else {
+            // If the message is not multipart, simply echo the content
+
+            $charset = $message->getHeaders()->getEncoding();
+            if ($message->getHeaders()->get('content-type') !== false) {
+                // Example:
+                // Content-Type: text/plain;
+                //  charset="UTF-8";
+                //  format="flowed"
+                $content_type = $message->getHeaders()->get('content-type')->getFieldValue();
+                preg_match('/charset=["\']?([\w-]+)["\']?/i', $content_type, $matches);
+                if (isset($matches[1])) {
+                    $charset = $matches[1];
+                }
+            }
+            
+            $email_content->plain_text = self::cleanText($fixEncoding($message->getContent(), $charset));
+        }
+
+
+        return $email_content;
     }
     
     /**
@@ -207,7 +271,7 @@ class ThreadEmailExtractorEmailBody {
      * @param string $html HTML content
      * @return string Plain text
      */
-    protected function convertHtmlToText($html) {
+    protected static function convertHtmlToText($html) {
         // Remove scripts, styles, and comments
         $html = preg_replace('/<script\b[^>]*>(.*?)<\/script>/is', '', $html);
         $html = preg_replace('/<style\b[^>]*>(.*?)<\/style>/is', '', $html);
@@ -235,7 +299,7 @@ class ThreadEmailExtractorEmailBody {
      * @param string $text Text to clean
      * @return string Cleaned text
      */
-    protected function cleanText($text) {
+    protected static function cleanText($text) {
         // Normalize line endings
         $text = str_replace("\r\n", "\n", $text);
         $text = str_replace("\r", "\n", $text);
@@ -246,4 +310,9 @@ class ThreadEmailExtractorEmailBody {
         
         return $text;
     }
+}
+
+class ExtractedEmailBody {
+    public $plain_text;
+    public $html;
 }

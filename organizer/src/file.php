@@ -7,6 +7,7 @@ require_once __DIR__ . '/auth.php';
 require_once __DIR__ . '/vendor/autoload.php';
 require_once __DIR__ . '/class/ThreadStorageManager.php';
 require_once __DIR__ . '/class/ThreadAuthorization.php';
+require_once __DIR__ . '/class/ThreadEmailExtractorEmailBody.php';
 
 // Require authentication
 requireAuth();
@@ -53,69 +54,16 @@ if (!ThreadAuthorizationManager::canUserAccessThread($threadId, $_SESSION['user'
 
 foreach ($thread->emails as $email) {
     if (isset($_GET['body']) && $_GET['body'] == $email->id) {
-        $eml =  ThreadStorageManager::getInstance()->getThreadEmailContent($entityId, $thread, $email->id); 
-        $message = new Message(['raw' => $eml]);
+        $eml =  ThreadStorageManager::getInstance()->getThreadEmailContent($thread->id, $email->id); 
+        
 
-        $htmlConvertPart = function ($html, $part) {
-            if (!$part || !($part instanceof Message)) {
-                return $html;
-            }
-            
-            $encoding = $part->getHeaderField('content-transfer-encoding');
-            
-            if ($encoding == 'base64') {
-                $html = base64_decode($html);
-            }   
-            if ($encoding == 'quoted-printable') {
-                // Use quoted-printable decoder with explicit charset
-                $charset = 'UTF-8';
-                
-                // Try to get charset from content-type
-                try {
-                    $contentType = $part->getHeaderField('content-type');
-                    if (is_array($contentType) && isset($contentType['charset'])) {
-                        $charset = $contentType['charset'];
-                    }
-                } catch (Exception $e) {
-                    // Ignore and use default charset
-                }
-                
-                $html = quoted_printable_decode($html);
-            }
-
-            return $html;
-        };
-        $htmlConvert = function ($html, $charset) {
-            if (empty($html)) {
-                return $html;
-            }
-
-            // If already valid UTF-8, return as is
-            if (mb_check_encoding($html, 'UTF-8')) {
-                return $html;
-            }
-
-            // Try multiple encodings, prioritizing those common in Norwegian content
-            $encodings = ['ISO-8859-1', 'Windows-1252', 'ISO-8859-15', 'UTF-8'];
-            
-            foreach ($encodings as $encoding) {
-                $converted = @mb_convert_encoding($html, 'UTF-8', $encoding);
-                if (mb_check_encoding($converted, 'UTF-8') && strpos($converted, '?') === false) {
-                    return $converted;
-                }
-            }
-
-            // Force ISO-8859-1 as a last resort
-            return mb_convert_encoding($html, 'UTF-8', 'ISO-8859-1');
-        };
         header('Content-Type: text/html; charset=UTF-8');
 
         // Set Content-Security-Policy header to prevent XSS somewhat
         header("Content-Security-Policy: default-src 'none';   script-src 'self';   style-src 'self';   img-src 'self' data:;   frame-src 'none';   object-src 'none';   base-uri 'none';   form-action 'none';");
 
-        $message = new Message(['raw' => $eml]);
+        $email_content = ThreadEmailExtractorEmailBody::extractContentFromEmail($eml);
 
-        $email_content = $email;
         try {
             $subject = $message->getHeader('subject')->getFieldValue();
         }
@@ -123,92 +71,34 @@ foreach ($thread->emails as $email) {
             $subject = 'Error getting subject - ' . $e->getMessage();
         }
         echo '<h1 id="email-subject">Subject: ' . htmlescape($subject) . '</h1>' . chr(10);
-        echo '<b>Date: ' . $email_content->datetime_received . '</b><br>' . chr(10);
-        //echo '<b>Sender: ' . $email_content->senderAddress . '</b><br>'.chr(10);
+        echo '<b>Date: ' . $email->datetime_received . '</b><br>' . chr(10);
+        //echo '<b>Sender: ' . $email->senderAddress . '</b><br>'.chr(10);
 
         // Access the plain text content
         echo '<pre>';
         echo '-------------------' . chr(10);
         echo "EMAIL BODY CONTENT:\n";
         echo '</pre>';
-        if ($message->isMultipart()) {
-            $plainTextPart = false;
-            $htmlPart = false;
 
-            foreach (new RecursiveIteratorIterator($message) as $part) {
-                if (strtok($part->contentType, ';') == 'text/plain') {
-                    $plainTextPart = $part;
-                }
-                if (strtok($part->contentType, ';') == 'text/html') {
-                    $htmlPart = $part;
-                }
-            }
+        if (!empty($email_content->plain_text) && !empty($email_content->html)) {
 
-            $plainText = $plainTextPart ? $plainTextPart->getContent() : '';
-            $html = $htmlPart ? $htmlPart->getContent() : '';
-
-            // Get charset from content-type if available
-            $plainTextCharset = $message->getHeaders()->getEncoding();
-            $htmlCharset = $message->getHeaders()->getEncoding();
-            
-            if ($plainTextPart) {
-                try {
-                    $contentType = $plainTextPart->getHeaderField('content-type');
-                    if (is_array($contentType) && isset($contentType['charset'])) {
-                        $plainTextCharset = $contentType['charset'];
-                    }
-                } catch (Exception $e) {
-                    // Ignore and use default charset
-                }
-            }
-            
-            if ($htmlPart) {
-                try {
-                    $contentType = $htmlPart->getHeaderField('content-type');
-                    if (is_array($contentType) && isset($contentType['charset'])) {
-                        $htmlCharset = $contentType['charset'];
-                    }
-                } catch (Exception $e) {
-                    // Ignore and use default charset
-                }
-            }
-            
-            // First decode the content based on transfer encoding
-            $decodedPlainText = $htmlConvertPart($plainText, $plainTextPart);
-            $decodedHtml = $htmlConvertPart($html, $htmlPart);
-            
-            // Then convert charset to UTF-8
-            $convertedPlainText = $htmlConvert($decodedPlainText, $plainTextCharset);
-            $convertedHtml = $htmlConvert($decodedHtml, $htmlCharset);
-            
             echo '<b>Plain text version:</b><br>' . chr(10);
-            echo '<pre>' . $convertedPlainText . '</pre><br><br>' . chr(10) . chr(10);
+            echo '<pre>' . $email_content->plain_text . '</pre><br><br>' . chr(10) . chr(10);
 
             echo 'HTML version:<br>' . chr(10);
-            echo $convertedHtml . '<br><br>' . chr(10) . chr(10);
+            echo $email_content->html . '<br><br>' . chr(10) . chr(10);
         }
-        else {
-            // If the message is not multipart, simply echo the content
-
-            $charset = $message->getHeaders()->getEncoding();
-            if ($message->getHeaders()->get('content-type') !== false) {
-                // Example:
-                // Content-Type: text/plain;
-                //  charset="UTF-8";
-                //  format="flowed"
-                $content_type = $message->getHeaders()->get('content-type')->getFieldValue();
-                preg_match('/charset=["\']?([\w-]+)["\']?/i', $content_type, $matches);
-                if (isset($matches[1])) {
-                    $charset = $matches[1];
-                }
-            }
-            
-            echo '<pre>' . $htmlConvert($message->getContent(), $charset) . '</pre>';
+        elseif(!empty($email_content->plain_text)) {
+            echo '<pre>' . $email_content->plain_text . '</pre>';
         }
-
+        elseif(!empty($email_content->html)) {
+            echo '<pre>' . $email_content->html . '</pre>';
+        }
+        
         echo '<pre>';
         echo '-------------------' . chr(10);
         echo "EMAIL HEADERS (RAW):\n";
+        $message = new \Laminas\Mail\Storage\Message(['raw' => $eml]);
         echo $message->getHeaders()->toString();
         echo '</pre>';
         exit;
