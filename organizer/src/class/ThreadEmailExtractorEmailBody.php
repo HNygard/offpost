@@ -3,6 +3,7 @@
 require_once __DIR__ . '/Database.php';
 require_once __DIR__ . '/ThreadEmailExtraction.php';
 require_once __DIR__ . '/ThreadEmailExtractionService.php';
+require_once __DIR__ . '/ThreadEmailExtractor.php';
 require_once __DIR__ . '/ThreadEmail.php';
 require_once __DIR__ . '/ThreadStorageManager.php';
 require_once __DIR__ . '/../error.php';
@@ -11,17 +12,7 @@ require_once __DIR__ . '/../error.php';
  * Class for extracting text from email bodies
  * Used as foundation for automatic classification and follow up
  */
-class ThreadEmailExtractorEmailBody {
-    protected $extractionService;
-    
-    /**
-     * Constructor
-     * 
-     * @param ThreadEmailExtractionService $extractionService Extraction service instance
-     */
-    public function __construct(ThreadEmailExtractionService $extractionService = null) {
-        $this->extractionService = $extractionService ?: new ThreadEmailExtractionService();
-    }
+class ThreadEmailExtractorEmailBody extends ThreadEmailExtractor {
 
     /**
      * Get the number of emails that need extraction
@@ -72,79 +63,24 @@ class ThreadEmailExtractorEmailBody {
         return $row;
     }
     
-    /**
-     * Process the next email extraction
-     * 
-     * @return array Result of the operation
-     */
     public function processNextEmailExtraction() {
-        // Find the next email that needs extraction
-        $email = $this->findNextEmailForExtraction();
-        
-        if (!$email) {
-            return [
-                'success' => false,
-                'message' => 'No emails found that need extraction'
-            ];
-        }
-        
-        try {
-            // Create extraction record
-            $extraction = $this->extractionService->createExtraction(
-                $email['id'],
-                'email_body',
-                'code'
-            );
-            
-            // Extract text from email body
-            $extractedTexts = $this->extractTextFromEmailBody($email['thread_id'], $email['id']);
+        return $this->processNextEmailExtractionInternal(
+            'email_body',
+            'code',
+            function($email, $prompt_text, $prompt_service) {
+                // Extract text from email body
+                $extractedTexts = $this->extractTextFromEmailBody($email['thread_id'], $email['id']);
 
-            $extractedText = '';
-            if (!empty($extractedTexts->plain_text)) {
-                $extractedText .= $extractedTexts->plain_text;
+                $extractedText = '';
+                if (!empty($extractedTexts->plain_text)) {
+                    $extractedText .= $extractedTexts->plain_text;
+                }
+                if (!empty($extractedTexts->html)) {
+                    $extractedText = trim($extractedText . "\n\n" . $extractedTexts->html);
+                }
+                return $extractedText;
             }
-            if (!empty($extractedTexts->html)) {
-                $extractedText = trim($extractedText . "\n\n" . $extractedTexts->html);
-            }
-
-            
-            // Update extraction with results
-            $updatedExtraction = $this->extractionService->updateExtractionResults(
-                $extraction->extraction_id,
-                $extractedText
-            );
-            
-            return [
-                'success' => true,
-                'message' => 'Successfully extracted text from email body',
-                'email_id' => $email['id'],
-                'thread_id' => $email['thread_id'],
-                'extraction_id' => $extraction->extraction_id,
-                'extracted_text_length' => strlen($extractedText)
-            ];
-        } catch (\Exception $e) {
-            if (!defined('PHPUNIT_RUNNING')) {
-                echo "Error processing email: {$email['id']}. " . $e->getMessage() . "\n";
-                echo jTraceEx($e) . "\n\n";
-            }
-
-            // If extraction was created but failed to update, update with error
-            if (isset($extraction) && $extraction->extraction_id) {
-                $this->extractionService->updateExtractionResults(
-                    $extraction->extraction_id,
-                    null,
-                    jTraceEx($e)
-                );
-            }
-            
-            return [
-                'success' => false,
-                'message' => 'Failed to extract text from email body',
-                'email_id' => $email['id'],
-                'thread_id' => $email['thread_id'],
-                'error' => $e->getMessage()
-            ];
-        }
+        );
     }
     
     /**

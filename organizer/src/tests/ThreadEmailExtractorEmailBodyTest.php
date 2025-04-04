@@ -118,7 +118,7 @@ class ThreadEmailExtractorEmailBodyTest extends PHPUnit\Framework\TestCase {
         
         // Check the result
         $this->assertTrue($result['success']);
-        $this->assertEquals('Successfully extracted text from email body', $result['message']);
+        $this->assertEquals('Successfully extracted text from email', $result['message']);
         $this->assertEquals($emailData['id'], $result['email_id']);
         $this->assertEquals($emailData['thread_id'], $result['thread_id']);
         $this->assertEquals($extraction->extraction_id, $result['extraction_id']);
@@ -178,7 +178,7 @@ class ThreadEmailExtractorEmailBodyTest extends PHPUnit\Framework\TestCase {
         
         // Check the result
         $this->assertFalse($result['success']);
-        $this->assertEquals('Failed to extract text from email body', $result['message']);
+        $this->assertEquals('Failed to extract text from email.', $result['message']);
         $this->assertEquals($emailData['id'], $result['email_id']);
         $this->assertEquals($emailData['thread_id'], $result['thread_id']);
         $this->assertEquals('Test error', $result['error']);
