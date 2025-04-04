@@ -11,7 +11,38 @@ require_once __DIR__ . '/../class/ThreadEmailExtractorEmailBody.php';
 // Require authentication
 requireAuth();
 
-// Get all extractions from the last 30 days
+// Get total counts for all extractions from the last 30 days
+$recentExtractionsCountQuery = "
+    SELECT COUNT(*) as total
+    FROM thread_email_extractions e
+    JOIN thread_emails te ON e.email_id = te.id
+    JOIN threads t ON te.thread_id = t.id
+    WHERE e.created_at >= NOW() - INTERVAL '30 days'
+";
+$totalRecentExtractions = Database::queryValue($recentExtractionsCountQuery, []);
+
+// Get total counts for unclassified emails
+$unclassifiedEmailsCountQuery = "
+    SELECT COUNT(*) as total
+    FROM thread_email_extractions e
+    JOIN thread_emails te ON e.email_id = te.id
+    JOIN threads t ON te.thread_id = t.id
+    WHERE te.status_type = 'unknown'
+";
+$totalUnclassifiedEmails = Database::queryValue($unclassifiedEmailsCountQuery, []);
+
+// Get total counts for unclassified attachments
+$unclassifiedAttachmentsCountQuery = "
+    SELECT COUNT(*) as total
+    FROM thread_email_extractions e
+    JOIN thread_email_attachments tea ON e.attachment_id = tea.id
+    JOIN thread_emails te ON e.email_id = te.id
+    JOIN threads t ON te.thread_id = t.id
+    WHERE tea.status_type = 'unknown'
+";
+$totalUnclassifiedAttachments = Database::queryValue($unclassifiedAttachmentsCountQuery, []);
+
+// Get limited extractions from the last 30 days (100 items)
 $recentExtractionsQuery = "
     SELECT e.*, te.status_type, te.status_text, te.datetime_received, t.id as thread_id, t.entity_id, t.title as thread_title
     FROM thread_email_extractions e
@@ -19,10 +50,11 @@ $recentExtractionsQuery = "
     JOIN threads t ON te.thread_id = t.id
     WHERE e.created_at >= NOW() - INTERVAL '30 days'
     ORDER BY e.created_at DESC
+    LIMIT 100
 ";
 $recentExtractions = Database::query($recentExtractionsQuery, []);
 
-// Get all extractions for unclassified emails (status_type = 'unknown')
+// Get limited extractions for unclassified emails (status_type = 'unknown') (100 items)
 $unclassifiedEmailsQuery = "
     SELECT e.*, te.status_type, te.status_text, te.datetime_received, t.id as thread_id, t.entity_id, t.title as thread_title
     FROM thread_email_extractions e
@@ -30,10 +62,11 @@ $unclassifiedEmailsQuery = "
     JOIN threads t ON te.thread_id = t.id
     WHERE te.status_type = 'unknown'
     ORDER BY e.created_at DESC
+    LIMIT 100
 ";
 $unclassifiedEmails = Database::query($unclassifiedEmailsQuery, []);
 
-// Get all extractions for unclassified attachments
+// Get limited extractions for unclassified attachments (100 items)
 $unclassifiedAttachmentsQuery = "
     SELECT e.*, tea.status_type, tea.status_text, tea.name as attachment_name, tea.filetype, 
            te.datetime_received, t.id as thread_id, t.entity_id, t.title as thread_title
@@ -43,14 +76,23 @@ $unclassifiedAttachmentsQuery = "
     JOIN threads t ON te.thread_id = t.id
     WHERE tea.status_type = 'unknown'
     ORDER BY e.created_at DESC
+    LIMIT 100
 ";
 $unclassifiedAttachments = Database::query($unclassifiedAttachmentsQuery, []);
 
 // Combine all extractions for display
 $allExtractions = array_merge($unclassifiedEmails, $unclassifiedAttachments);
 
-// Count extractions by type
+// Set extraction counts using the total values from the database
 $extractionCounts = [
+    'TOTAL' => $totalRecentExtractions,
+    'UNCLASSIFIED_EMAILS' => $totalUnclassifiedEmails,
+    'UNCLASSIFIED_ATTACHMENTS' => $totalUnclassifiedAttachments,
+    'TOTAL_UNCLASSIFIED' => $totalUnclassifiedEmails + $totalUnclassifiedAttachments
+];
+
+// Count displayed items
+$displayedCounts = [
     'TOTAL' => count($recentExtractions),
     'UNCLASSIFIED_EMAILS' => count($unclassifiedEmails),
     'UNCLASSIFIED_ATTACHMENTS' => count($unclassifiedAttachments),
@@ -225,6 +267,14 @@ function getExtractionType($extraction) {
                 <div class="summary-count"><?= $extractionCounts['UNCLASSIFIED_ATTACHMENTS'] ?></div>
                 <div class="summary-label">Unclassified Attachments</div>
             </div>
+        </div>
+
+        <div class="alert alert-info">
+            <strong>Note:</strong> For performance reasons, only the most recent 100 items are displayed in each category below.
+            The summary counts above show the total number of items in the database.
+            <?php if ($displayedCounts['TOTAL_UNCLASSIFIED'] < $extractionCounts['TOTAL_UNCLASSIFIED']): ?>
+                <br>Displaying <?= $displayedCounts['TOTAL_UNCLASSIFIED'] ?> of <?= $extractionCounts['TOTAL_UNCLASSIFIED'] ?> total unclassified items.
+            <?php endif; ?>
         </div>
 
         <div>
