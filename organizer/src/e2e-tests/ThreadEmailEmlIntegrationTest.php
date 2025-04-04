@@ -505,7 +505,7 @@ class ThreadEmailEmlIntegrationTest extends E2EPageTestCase {
         }
         
         // Extract body from the EML content
-        $body = "";
+        $body = "Missing";
         $bodyStart = strpos($emlContent, "\r\n\r\n");
         if ($bodyStart !== false) {
             $body = substr($emlContent, $bodyStart + 4);
@@ -537,7 +537,10 @@ class ThreadEmailEmlIntegrationTest extends E2EPageTestCase {
             null
         );
         
-        return $result['success'];
+        if (!$result['success']) {
+            throw new Exception("Failed to send email: " . print_r($result, true));
+        }
+        return true;
     }
 
     /**
@@ -630,6 +633,10 @@ class ThreadEmailEmlIntegrationTest extends E2EPageTestCase {
             __DIR__ . '/../../../data/threads/964950768-nord-odal-kommune/thread_6772dad8005266.28491966/2021-09-29_135621 - IN.eml',
             'Vedlagt følger brev fra Nord-Odal kommune'
         );
+        $this->internalTest(
+            __DIR__ . '/../../../data/test-emails/dmarc-without-content-transfer-encoding.eml',
+            'This is a DMARC aggregate report for offpost.n'
+        );
     }
 
     public function internalTest($eml_file, $expected_text) {
@@ -655,6 +662,7 @@ class ThreadEmailEmlIntegrationTest extends E2EPageTestCase {
         }
 
         $emlContent = str_replace('valgprotokoll_2021_0418-nord-odal-kommune@offpost.no', $this->thread->my_email, $emlContent);
+        $emlContent = str_replace('dmarc@offpost.no', $this->thread->my_email, $emlContent);
         $emlContent = str_replace('Some.Person@nord-odal.kommune.no', $this->testEntityEmail, $emlContent);
         
         // Create thread in the system

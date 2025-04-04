@@ -7,6 +7,7 @@ data/*
 !data/threads/
 data/threads/db-migration.json
 !data/sql-scripts
+!data/test-emails
 data/threads/000000000-test-entity-development
 data/threads/test-entity-development
 !data/entities.json

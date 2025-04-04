@@ -145,7 +145,12 @@ class ThreadEmailExtractorEmailBody {
                 return $html;
             }
             
-            $encoding = $part->getHeaderField('content-transfer-encoding');
+            if ($part->getHeaders()->has('content-transfer-encoding') !== false) {
+                $encoding = $part->getHeaderField('content-transfer-encoding');
+            }
+            else {
+                $encoding = null;
+            }
             
             if ($encoding == 'base64') {
                 $html = base64_decode($html);
