@@ -151,8 +151,9 @@ class ThreadEmailExtractorEmailBodyTest extends PHPUnit\Framework\TestCase {
         $extractor->method('findNextEmailForExtraction')
             ->willReturn($emailData);
         
+        $exception = new \Exception('Test error');
         $extractor->method('extractTextFromEmailBody')
-            ->will($this->throwException(new \Exception('Test error')));
+            ->will($this->throwException($exception));
         
         $this->extractionService->expects($this->once())
             ->method('createExtraction')
@@ -168,7 +169,7 @@ class ThreadEmailExtractorEmailBodyTest extends PHPUnit\Framework\TestCase {
             ->with(
                 $this->equalTo($extraction->extraction_id),
                 $this->equalTo(null),
-                $this->equalTo('Test error')
+                $this->equalTo(jTraceEx($exception))
             )
             ->willReturn($extraction);
         
