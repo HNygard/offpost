@@ -5,7 +5,8 @@ RUN apt-get update && apt-get install -y \
     libcurl4-gnutls-dev \
     libpq-dev \
     git \
-    unzip
+    unzip \
+    poppler-utils
 
 RUN docker-php-ext-install curl
 RUN docker-php-ext-install pdo

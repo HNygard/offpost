@@ -7,6 +7,7 @@ require_once __DIR__ . '/../class/ThreadEmail.php';
 require_once __DIR__ . '/../class/ThreadEmailAttachment.php';
 require_once __DIR__ . '/../class/Database.php';
 require_once __DIR__ . '/../class/ThreadEmailExtractorEmailBody.php';
+require_once __DIR__ . '/../class/ThreadEmailExtractorAttachmentPdf.php';
 
 // Require authentication
 requireAuth();
@@ -278,13 +279,25 @@ function getExtractionType($extraction) {
         </div>
 
         <div>
-            <li><b>Email body extractor:</b>
-            <?php
-            $emailExtractor = new ThreadEmailExtractorEmailBody();
-            $emailExtractor->getNumberOfEmailsToProcess();
-            echo $emailExtractor->getNumberOfEmailsToProcess() . ' emails to process';
-            ?></li>
-
+            <h3>Extraction Queue Status</h3>
+            <ul>
+                <li><b>Email body extractor:</b>
+                <?php
+                $emailExtractor = new ThreadEmailExtractorEmailBody();
+                echo $emailExtractor->getNumberOfEmailsToProcess() . ' emails to process';
+                ?></li>
+                
+                <li><b>PDF attachment extractor:</b>
+                <?php
+                $pdfExtractor = new ThreadEmailExtractorAttachmentPdf();
+                echo $pdfExtractor->getNumberOfEmailsToProcess() . ' PDF attachments to process';
+                ?></li>
+            </ul>
+            
+            <p>
+                <a href="/system-pages/scheduled-email-extraction.php" class="btn btn-primary">Process Next Email Body</a>
+                <a href="/system-pages/scheduled-email-extraction.php?type=attachment_pdf" class="btn btn-primary">Process Next PDF Attachment</a>
+            </p>
         </div>
 
         <table>

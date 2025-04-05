@@ -8,6 +8,11 @@ networks:
 
 volumes:
   postgres_data:
+  pdf_tmpfs:
+    driver: local
+    driver_opts:
+      type: tmpfs
+      device: tmpfs
 
 services:
   roundcube:
@@ -66,6 +71,7 @@ services:
       - /opt/offpost/data/:/organizer-data
       - ./data/entities.json:/organizer-data/entities.json
       - /opt/offpost/secrets/postgres_password:/run/secrets/postgres_password:ro
+      - pdf_tmpfs:/tmp/pdf_extraction
     environment:
       - ENVIRONMENT=production
       - DB_HOST=postgres

@@ -8,6 +8,11 @@ networks:
 
 volumes:
   postgres_data_development:
+  pdf_tmpfs:
+    driver: local
+    driver_opts:
+      type: tmpfs
+      device: tmpfs
 
 services:
   greenmail:
@@ -100,6 +105,7 @@ services:
       - ./data/:/organizer-data
       - ./data/entities.json:/organizer-data/entities.json
       - ./secrets/postgres_password:/run/secrets/postgres_password:ro
+      - pdf_tmpfs:/tmp/pdf_extraction
     environment:
       - ENVIRONMENT=development
       - IMAP_SERVER={greenmail:3993/imap/ssl}
