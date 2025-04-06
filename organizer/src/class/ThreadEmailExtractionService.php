@@ -14,7 +14,7 @@ class ThreadEmailExtractionService {
      * @param string $emailId The UUID of the email
      * @param string $promptText The text of the prompt used for extraction
      * @param string $promptService The service used for the extraction (e.g., 'openai', 'azure')
-     * @param int|null $attachmentId The ID of the attachment (if applicable)
+     * @param string|null $attachmentId The UUID of the attachment (if applicable)
      * @param string|null $promptId An identifier for the prompt used
      * @return ThreadEmailExtraction The created extraction object
      * @throws Exception If the extraction could not be created
@@ -23,7 +23,7 @@ class ThreadEmailExtractionService {
         string $emailId, 
         string $promptText, 
         string $promptService, 
-        ?int $attachmentId = null, 
+        ?string $attachmentId = null, 
         ?string $promptId = null
     ): ThreadEmailExtraction {
         try {
@@ -192,11 +192,11 @@ class ThreadEmailExtractionService {
     /**
      * Get all ThreadEmailExtractions for a specific attachment
      * 
-     * @param int $attachmentId The ID of the attachment
+     * @param string $attachmentId The UUID of the attachment
      * @return array An array of ThreadEmailExtraction objects
      * @throws Exception If there was an error retrieving the extractions
      */
-    public function getExtractionsForAttachment(int $attachmentId): array {
+    public function getExtractionsForAttachment(string $attachmentId): array {
         try {
             $sql = "SELECT * FROM thread_email_extractions WHERE attachment_id = ? ORDER BY created_at DESC";
             $results = Database::query($sql, [$attachmentId]);

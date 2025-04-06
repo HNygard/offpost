@@ -286,7 +286,7 @@ class ThreadEmailExtractionServiceTest extends TestCase {
 
     public function testGetExtractionsForAttachmentWithNoExtractions() {
         // :: Setup
-        $attachmentId = 999; // No extractions for this attachment
+        $attachmentId = '00000000-0000-0000-0000-000000000000'; // No extractions for this attachment
         
         // :: Act
         $extractions = $this->service->getExtractionsForAttachment($attachmentId);

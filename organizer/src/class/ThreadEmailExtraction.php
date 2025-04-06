@@ -16,7 +16,7 @@ class ThreadEmailExtraction {
     var $email_id;
     
     /**
-     * @var int|null The ID of the attachment this extraction is associated with (if applicable)
+     * @var string|null The UUID of the attachment this extraction is associated with (if applicable)
      */
     var $attachment_id;
     

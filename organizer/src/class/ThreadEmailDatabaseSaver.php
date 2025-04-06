@@ -277,9 +277,9 @@ class ThreadEmailDatabaseSaver {
      * @param string $emailId Email ID
      * @param object $attachment Attachment object
      * @param mixed $content Binary content of the attachment
-     * @return int ID of the saved attachment
+     * @return string UUID of the saved attachment
      */
-    public function saveAttachmentToDatabase(string $emailId, object $attachment, $content): int {
+    public function saveAttachmentToDatabase(string $emailId, object $attachment, $content): string {
         $query = "
             INSERT INTO thread_email_attachments (
                 email_id, 

@@ -1,6 +1,6 @@
 -- ******************************************************************
 -- AUTOMATICALLY GENERATED FILE - DO NOT MODIFY
--- Generated on: 2025-03-30 19:53:36
+-- Generated on: 2025-04-06 00:19:10
 -- 
 -- This file contains the current database schema after all migrations.
 -- It is NOT meant to be executed as a migration script.
@@ -56,7 +56,6 @@ CREATE INDEX thread_authorizations_thread_user_unique ON thread_authorizations U
 CREATE INDEX thread_authorizations_user_id_idx ON thread_authorizations USING btree (user_id);
 
 CREATE TABLE thread_email_attachments (
-    id integer NOT NULL DEFAULT nextval('thread_email_attachments_id_seq'::regclass),
     email_id uuid NOT NULL,
     name character varying(255) NOT NULL,
     filename character varying(255) NOT NULL,
@@ -66,7 +65,8 @@ CREATE TABLE thread_email_attachments (
     status_text text,
     created_at timestamp with time zone NOT NULL DEFAULT CURRENT_TIMESTAMP,
     size bigint,
-    content bytea
+    content bytea,
+    id uuid NOT NULL DEFAULT gen_random_uuid()
 );
 
 ALTER TABLE thread_email_attachments ADD CONSTRAINT thread_email_attachments_pkey PRIMARY KEY (id);
@@ -74,25 +74,25 @@ ALTER TABLE thread_email_attachments ADD CONSTRAINT thread_email_attachments_ema
 CREATE INDEX thread_email_attachments_email_id_id_idx ON thread_email_attachments USING btree (email_id, id);
 CREATE INDEX thread_email_attachments_email_id_idx ON thread_email_attachments USING btree (email_id);
 CREATE INDEX thread_email_attachments_filetype_idx ON thread_email_attachments USING btree (filetype);
+CREATE INDEX thread_email_attachments_id_uuid_key ON thread_email_attachments USING btree (id);
 CREATE INDEX thread_email_attachments_status_type_idx ON thread_email_attachments USING btree (status_type);
 
 CREATE TABLE thread_email_extractions (
     extraction_id integer NOT NULL DEFAULT nextval('thread_email_extractions_id_seq'::regclass),
     email_id uuid NOT NULL,
-    attachment_id integer,
     prompt_id character varying(255),
     prompt_text text NOT NULL,
     prompt_service character varying(50) NOT NULL,
     extracted_text text,
     error_message text,
     created_at timestamp with time zone NOT NULL DEFAULT CURRENT_TIMESTAMP,
-    updated_at timestamp with time zone NOT NULL DEFAULT CURRENT_TIMESTAMP
+    updated_at timestamp with time zone NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    attachment_id uuid
 );
 
 ALTER TABLE thread_email_extractions ADD CONSTRAINT thread_email_extractions_pkey PRIMARY KEY (extraction_id);
 ALTER TABLE thread_email_extractions ADD CONSTRAINT thread_email_extractions_attachment_id_fkey FOREIGN KEY (attachment_id) REFERENCES thread_email_attachments (id);
 ALTER TABLE thread_email_extractions ADD CONSTRAINT thread_email_extractions_email_id_fkey FOREIGN KEY (email_id) REFERENCES thread_emails (id);
-CREATE INDEX thread_email_extractions_attachment_id_idx ON thread_email_extractions USING btree (attachment_id);
 CREATE INDEX thread_email_extractions_email_id_idx ON thread_email_extractions USING btree (email_id);
 CREATE INDEX thread_email_extractions_prompt_service_idx ON thread_email_extractions USING btree (prompt_service);
 
