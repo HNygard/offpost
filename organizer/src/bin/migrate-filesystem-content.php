@@ -136,7 +136,8 @@ class FilesystemContentMigration {
                 te.id, 
                 te.id_old, 
                 te.thread_id,
-                t.entity_id
+                t.entity_id,
+                t.id_old as thread_id_old
              FROM thread_emails te
              JOIN threads t ON te.thread_id = t.id
              WHERE (te.content IS NULL OR te.content = '')
@@ -215,6 +216,7 @@ class FilesystemContentMigration {
             $alternativeEntityId = $entity->entity_id_norske_postlister;
             $paths[] = "{$this->dataDir}/{$alternativeEntityId}/{$email['thread_id']}/{$email['id_old']}.eml";
             $paths[] = "{$this->dataDir}/{$alternativeEntityId}/thread_{$email['thread_id']}/{$email['id_old']}.eml";
+            $paths[] = "{$this->dataDir}/{$alternativeEntityId}/thread_{$email['thread_id_old']}/{$email['id_old']}.eml";
         }
         
         // Try with numeric part of entity_id if it's in format "number-name"
