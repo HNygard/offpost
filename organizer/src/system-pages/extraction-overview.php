@@ -103,10 +103,10 @@ $displayedCounts = [
 // Function to truncate text
 function truncateText($text, $length = 50) {
     if (!$text) return '';
-    if (strlen($text) <= $length) {
+    if (mb_strlen($text, 'UTF-8') <= $length) {
         return $text;
     }
-    return substr($text, 0, $length) . '...';
+    return mb_substr($text, 0, $length, 'UTF-8') . '...';
 }
 
 // Function to format status with appropriate styling
