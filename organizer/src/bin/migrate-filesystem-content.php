@@ -81,8 +81,7 @@ class FilesystemContentMigration {
     public function run() {
         try {
             if ($this->dryRun) {
-                $this->runDryRun();
-                return true;
+                echo "DRY RUN MODE: No changes will be made to the database\n\n";
             }
             
             echo "Starting migration...\n";
@@ -98,8 +97,14 @@ class FilesystemContentMigration {
             echo "\nProcessing attachments...\n";
             $this->migrateAttachments();
             
-            // Commit the transaction
-            Database::commit();
+            // Commit the transaction if not in dry run mode
+            if (!$this->dryRun) {
+                Database::commit();
+                echo "\nChanges committed to database.\n";
+            } else {
+                Database::rollBack();
+                echo "\nDRY RUN: Changes were rolled back, no modifications made to database.\n";
+            }
             
             // Print summary
             $this->printSummary();
@@ -118,73 +123,6 @@ class FilesystemContentMigration {
         }
     }
     
-    /**
-     * Run in dry-run mode
-     */
-    private function runDryRun() {
-        echo "DRY RUN MODE: No changes will be made to the database\n\n";
-        
-        // Count emails and attachments that would be migrated
-        $emailCount = Database::queryValue(
-            "SELECT COUNT(*) FROM thread_emails te
-             JOIN threads t ON te.thread_id = t.id
-             WHERE (te.content IS NULL OR te.content = '')
-             AND te.id_old IS NOT NULL
-             AND te.id_old != ''"
-        );
-        
-        $attachmentCount = Database::queryValue(
-            "SELECT COUNT(*) FROM thread_email_attachments tea
-             JOIN thread_emails te ON tea.email_id = te.id
-             JOIN threads t ON te.thread_id = t.id
-             WHERE tea.content IS NULL 
-             AND tea.location IS NOT NULL
-             AND tea.location != ''"
-        );
-        
-        echo "Found $emailCount emails and $attachmentCount attachments that would be migrated.\n\n";
-        
-        // Sample of emails that would be migrated
-        $emails = Database::query(
-            "SELECT te.id, te.id_old, t.entity_id, t.id as thread_id
-             FROM thread_emails te
-             JOIN threads t ON te.thread_id = t.id
-             WHERE (te.content IS NULL OR te.content = '')
-             AND te.id_old IS NOT NULL
-             AND te.id_old != ''
-             LIMIT 5"
-        );
-        
-        if (count($emails) > 0) {
-            echo "Sample emails that would be migrated:\n";
-            foreach ($emails as $email) {
-                echo "- Email ID: {$email['id']}, Path: {$this->dataDir}/{$email['entity_id']}/{$email['thread_id']}/{$email['id_old']}.eml\n";
-            }
-            echo "\n";
-        }
-        
-        // Sample of attachments that would be migrated
-        $attachments = Database::query(
-            "SELECT tea.id, tea.location, t.entity_id, t.id as thread_id
-             FROM thread_email_attachments tea
-             JOIN thread_emails te ON tea.email_id = te.id
-             JOIN threads t ON te.thread_id = t.id
-             WHERE tea.content IS NULL 
-             AND tea.location IS NOT NULL
-             AND tea.location != ''
-             LIMIT 5"
-        );
-        
-        if (count($attachments) > 0) {
-            echo "Sample attachments that would be migrated:\n";
-            foreach ($attachments as $attachment) {
-                echo "- Attachment ID: {$attachment['id']}, Path: {$this->dataDir}/{$attachment['entity_id']}/{$attachment['thread_id']}/{$attachment['location']}\n";
-            }
-            echo "\n";
-        }
-        
-        echo "To run the actual migration, run this script without the --dry-run option.\n";
-    }
     
     /**
      * Migrate emails from filesystem to database
@@ -229,14 +167,16 @@ class FilesystemContentMigration {
                 }
                 
                 // Update the email record with the file content
-                if (!$this->dryRun) {
-                    Database::execute(
-                        "UPDATE thread_emails SET content = ? WHERE id = ?",
-                        [$fileContent, $email['id']]
-                    );
-                }
+                Database::execute(
+                    "UPDATE thread_emails SET content = ? WHERE id = ?",
+                    [$fileContent, $email['id']]
+                );
                 
-                echo "  - Updated email content\n";
+                if ($this->dryRun) {
+                    echo "  - Would update email content (dry run)\n";
+                } else {
+                    echo "  - Updated email content\n";
+                }
                 $this->emailsUpdated++;
             } catch (Exception $e) {
                 echo "  - Error: " . $e->getMessage() . "\n";
@@ -289,16 +229,18 @@ class FilesystemContentMigration {
                 }
                 
                 // Update the attachment record with the file content
-                if (!$this->dryRun) {
-                    $stmt = Database::prepare(
-                        "UPDATE thread_email_attachments SET content = :content WHERE id = :id"
-                    );
-                    $stmt->bindValue(':content', $fileContent, PDO::PARAM_LOB);
-                    $stmt->bindValue(':id', $attachment['id']);
-                    $stmt->execute();
-                }
+                $stmt = Database::prepare(
+                    "UPDATE thread_email_attachments SET content = :content WHERE id = :id"
+                );
+                $stmt->bindValue(':content', $fileContent, PDO::PARAM_LOB);
+                $stmt->bindValue(':id', $attachment['id']);
+                $stmt->execute();
                 
-                echo "  - Updated attachment content\n";
+                if ($this->dryRun) {
+                    echo "  - Would update attachment content (dry run)\n";
+                } else {
+                    echo "  - Updated attachment content\n";
+                }
                 $this->attachmentsUpdated++;
             } catch (Exception $e) {
                 echo "  - Error: " . $e->getMessage() . "\n";
