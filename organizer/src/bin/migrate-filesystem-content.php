@@ -15,10 +15,10 @@
  * data to the new storage model.
  * 
  * Usage:
- *   php migrate-filesystem-content.php [--dry-run]
+ *   php migrate-filesystem-content.php [--execute]
  * 
  * Options:
- *   --dry-run  Show what would be migrated without making changes
+ *   --execute  Actually perform the migration (default is dry-run)
  * 
  * What the Migration Does:
  * 1. Finds email records with empty content but with a file path (id_old)
@@ -48,8 +48,8 @@ require_once __DIR__ . '/../class/Database.php';
 require_once __DIR__ . '/../error.php';
 
 // Parse command line arguments
-$options = getopt('', ['dry-run']);
-$dryRun = isset($options['dry-run']);
+$options = getopt('', ['execute']);
+$dryRun = !isset($options['execute']);
 
 // Display header
 echo "==========================================================\n";
@@ -82,6 +82,8 @@ class FilesystemContentMigration {
         try {
             if ($this->dryRun) {
                 echo "DRY RUN MODE: No changes will be made to the database\n\n";
+            } else {
+                echo "EXECUTE MODE: Changes will be committed to the database\n\n";
             }
             
             echo "Starting migration...\n";
@@ -123,7 +125,6 @@ class FilesystemContentMigration {
         }
     }
     
-    
     /**
      * Migrate emails from filesystem to database
      */
@@ -146,17 +147,29 @@ class FilesystemContentMigration {
             $this->emailsProcessed++;
             
             try {
-                // Construct the full path to the email file
-                $filePath = "{$this->dataDir}/{$email['entity_id']}/{$email['thread_id']}/{$email['id_old']}.eml";
+                // Try different path formats to find the email file
+                $possiblePaths = $this->getEmailPossiblePaths($email);
+                $filePath = null;
                 
-                echo "Processing email {$this->emailsProcessed}: {$email['id']} - {$filePath}\n";
+                foreach ($possiblePaths as $path) {
+                    if (file_exists($path)) {
+                        $filePath = $path;
+                        break;
+                    }
+                }
                 
-                // Check if file exists
-                if (!file_exists($filePath)) {
-                    echo "  - File not found, skipping\n";
+                echo "Processing email {$this->emailsProcessed}: {$email['id']}\n";
+                
+                if ($filePath === null) {
+                    echo "  - File not found in any of these locations:\n";
+                    foreach ($possiblePaths as $path) {
+                        echo "    - $path\n";
+                    }
                     $this->emailsSkipped++;
                     continue;
                 }
+                
+                echo "  - Found at: $filePath\n";
                 
                 // Read file content
                 $fileContent = file_get_contents($filePath);
@@ -167,15 +180,14 @@ class FilesystemContentMigration {
                 }
                 
                 // Update the email record with the file content
-                Database::execute(
-                    "UPDATE thread_emails SET content = ? WHERE id = ?",
-                    [$fileContent, $email['id']]
-                );
-                
-                if ($this->dryRun) {
-                    echo "  - Would update email content (dry run)\n";
-                } else {
+                if (!$this->dryRun) {
+                    Database::execute(
+                        "UPDATE thread_emails SET content = ? WHERE id = ?",
+                        [$fileContent, $email['id']]
+                    );
                     echo "  - Updated email content\n";
+                } else {
+                    echo "  - Would update email content (dry run)\n";
                 }
                 $this->emailsUpdated++;
             } catch (Exception $e) {
@@ -183,6 +195,31 @@ class FilesystemContentMigration {
                 $this->emailsError++;
             }
         }
+    }
+    
+    /**
+     * Get possible file paths for an email
+     */
+    private function getEmailPossiblePaths($email) {
+        $paths = [];
+        
+        // New format: entity_id/thread_uuid/id_old.eml
+        $paths[] = "{$this->dataDir}/{$email['entity_id']}/{$email['thread_id']}/{$email['id_old']}.eml";
+        
+        // Old format: entity_id/thread_thread_id/id_old.eml
+        $paths[] = "{$this->dataDir}/{$email['entity_id']}/thread_{$email['thread_id']}/{$email['id_old']}.eml";
+        
+        // Extract entity name from entity_id if possible (format: 123456789-entity-name)
+        $entityParts = explode('-', $email['entity_id'], 2);
+        $entityId = $entityParts[0];
+        
+        // Try alternative path format if entity_id contains a number followed by a name
+        if (count($entityParts) > 1 && is_numeric($entityId)) {
+            // Format: numeric_id-entity_name/thread_thread_id/id_old.eml
+            $paths[] = "{$this->dataDir}/{$entityId}-{$entityParts[1]}/thread_{$email['thread_id']}/{$email['id_old']}.eml";
+        }
+        
+        return $paths;
     }
     
     /**
@@ -208,8 +245,8 @@ class FilesystemContentMigration {
             $this->attachmentsProcessed++;
             
             try {
-                // Construct the full path to the attachment file
-                $filePath = "{$this->dataDir}/{$attachment['entity_id']}/{$attachment['thread_id']}/{$attachment['location']}";
+                // The location field should already contain the full path
+                $filePath = $attachment['location'];
                 
                 echo "Processing attachment {$this->attachmentsProcessed}: {$attachment['id']} - {$filePath}\n";
                 
@@ -229,17 +266,16 @@ class FilesystemContentMigration {
                 }
                 
                 // Update the attachment record with the file content
-                $stmt = Database::prepare(
-                    "UPDATE thread_email_attachments SET content = :content WHERE id = :id"
-                );
-                $stmt->bindValue(':content', $fileContent, PDO::PARAM_LOB);
-                $stmt->bindValue(':id', $attachment['id']);
-                $stmt->execute();
-                
-                if ($this->dryRun) {
-                    echo "  - Would update attachment content (dry run)\n";
-                } else {
+                if (!$this->dryRun) {
+                    $stmt = Database::prepare(
+                        "UPDATE thread_email_attachments SET content = :content WHERE id = :id"
+                    );
+                    $stmt->bindValue(':content', $fileContent, PDO::PARAM_LOB);
+                    $stmt->bindValue(':id', $attachment['id']);
+                    $stmt->execute();
                     echo "  - Updated attachment content\n";
+                } else {
+                    echo "  - Would update attachment content (dry run)\n";
                 }
                 $this->attachmentsUpdated++;
             } catch (Exception $e) {
