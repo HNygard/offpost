@@ -216,7 +216,7 @@ class FilesystemContentMigration {
             $alternativeEntityId = $entity->entity_id_norske_postlister;
             $paths[] = "{$this->dataDir}/{$alternativeEntityId}/{$email['thread_id']}/{$email['id_old']}.eml";
             $paths[] = "{$this->dataDir}/{$alternativeEntityId}/thread_{$email['thread_id']}/{$email['id_old']}.eml";
-            $paths[] = "{$this->dataDir}/{$alternativeEntityId}/thread_{$email['thread_id_old']}/{$email['id_old']}.eml";
+            $paths[] = "{$this->dataDir}/{$alternativeEntityId}/{$email['thread_id_old']}/{$email['id_old']}.eml";
         }
         
         // Try with numeric part of entity_id if it's in format "number-name"
