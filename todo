@@ -42,15 +42,23 @@ Goal: make production usable
     - [ ] Scheduled run of new folders
     - [ ] Scheduled run of inbox
     - [ ] Scheduled run of sent
-- [x] Update-imap - Run on schedule
 - [ ] Extract data from emails
     - [ ] Extract plain text body from EML
-        - [ ] Make a scheduled task for extraction of information
-        - [ ] Make framework for what extractions to do - SQL based
-        - [ ] Extraction - use the code from file.php
+        - [x] Make a scheduled task for extraction of information
+        - [x] Make framework for what extractions to do - SQL based
+        - [x] Extraction - use the code from file.php
+        - [x] Test new task in production
+        - [ ] Run scheduled task
     - [ ] Extract HTML body from EML
     - [ ] Extract PDF attachments as text
-    - [ ] Extract image attachements as text (OpenAI)
+        - [x] Make code
+        - [x] Test new task in production
+        - [ ] Run scheduled task
+    - [ ] Extract image attachements as text (OpenAI or something)
+        - [ ] Make code
+        - [ ] Test new task in production
+        - [ ] Run scheduled task
+    - [ ] Extract other attachments as text (OpenAI or something)
 - [ ] Automatic handling
     - Must have up-to-date ImapFolderStatus (DB table) to be allowed to run
     - Purring - Next email expected date (based on plan or that we have received an expected date from public entity)
@@ -58,6 +66,14 @@ Goal: make production usable
 - [ ] Views available for public
     - [ ] Public threads visible to non authenticated users
     - [ ] Front page with information
+
+- [ ] Basic AI service integrations
+    - [x] OpenAiIntegration class
+        - Input: Model, prompt
+    - [ ] Testing rig
+        - [ ] Run for many models, collect results
+        - [ ] Run for many prompts, collect results
+        - [ ] Make some test data
 
 - [ ] Email extractor
     - To be used as foundation for automatic classification and follow up
