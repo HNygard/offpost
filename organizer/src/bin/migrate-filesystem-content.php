@@ -266,13 +266,13 @@ class FilesystemContentMigration {
                 }
                 
                 // Update the attachment record with the file content
+                $stmt = Database::prepare(
+                    "UPDATE thread_email_attachments SET content = :content WHERE id = :id"
+                );
+                $stmt->bindValue(':content', $fileContent, PDO::PARAM_LOB);
+                $stmt->bindValue(':id', $attachment['id']);
+                $stmt->execute();
                 if (!$this->dryRun) {
-                    $stmt = Database::prepare(
-                        "UPDATE thread_email_attachments SET content = :content WHERE id = :id"
-                    );
-                    $stmt->bindValue(':content', $fileContent, PDO::PARAM_LOB);
-                    $stmt->bindValue(':id', $attachment['id']);
-                    $stmt->execute();
                     echo "  - Updated attachment content\n";
                 } else {
                     echo "  - Would update attachment content (dry run)\n";
