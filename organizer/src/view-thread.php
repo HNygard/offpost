@@ -365,7 +365,7 @@ function getIconClass($filetype) {
                                     <span class="<?= $label_type ?>"><?= htmlescape($att->status_text) ?></span>
                                     <?= htmlescape($att->filetype) ?> - 
                                     <?php if (isset($att->location)): ?>
-                                        <a href="/file?entityId=<?= htmlescape($entityId) ?>&threadId=<?= htmlescape($threadId) ?>&attachment=<?= urlencode($att->location) ?>">
+                                        <a href="/file?entityId=<?= htmlescape($entityId) ?>&threadId=<?= htmlescape($threadId) ?>&attachment=<?= urlencode($att->id) ?>">
                                             <?php if ($iconClass): ?>
                                                 <i class="<?= $iconClass ?>"></i>
                                             <?php endif; ?>

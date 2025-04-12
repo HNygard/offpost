@@ -422,7 +422,7 @@ function secondsToHumanReadable($seconds) {
                                                class="btn btn-open"
                                                data-url="<?= '/file?entityId=' . urlencode($threads->entity_id)
                                                . '&threadId=' . urlencode($thread->id)
-                                               . '&attachment=' . urlencode($att->location) ?>"
+                                               . '&attachment=' . urlencode($att->id) ?>"
                                                onclick="document.getElementById('viewer-iframe').src = this.getAttribute('data-url');" value="Open">
                                     </div>
                                     
