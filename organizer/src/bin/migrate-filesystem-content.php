@@ -70,9 +70,35 @@ class FilesystemContentMigration {
     private $attachmentsUpdated = 0;
     private $attachmentsSkipped = 0;
     private $attachmentsError = 0;
+    private $entityMappings = [];
     
     public function __construct($dryRun = false) {
         $this->dryRun = $dryRun;
+        $this->loadEntityMappings();
+    }
+    
+    /**
+     * Load entity mappings from entities.json
+     */
+    private function loadEntityMappings() {
+        $entitiesJsonPath = __DIR__ . '/../../../data/entities.json';
+        if (file_exists($entitiesJsonPath)) {
+            $entitiesJson = file_get_contents($entitiesJsonPath);
+            $entities = json_decode($entitiesJson, true);
+            
+            if ($entities) {
+                foreach ($entities as $entityId => $entity) {
+                    if (isset($entity['entity_id_norske_postlister'])) {
+                        $this->entityMappings[$entityId] = $entity['entity_id_norske_postlister'];
+                    }
+                }
+                echo "Loaded " . count($this->entityMappings) . " entity mappings from entities.json\n\n";
+            } else {
+                echo "Warning: Could not parse entities.json\n\n";
+            }
+        } else {
+            echo "Warning: entities.json not found at $entitiesJsonPath\n\n";
+        }
     }
     
     /**
@@ -202,21 +228,27 @@ class FilesystemContentMigration {
      */
     private function getEmailPossiblePaths($email) {
         $paths = [];
+        $entityId = $email['entity_id'];
         
-        // New format: entity_id/thread_uuid/id_old.eml
-        $paths[] = "{$this->dataDir}/{$email['entity_id']}/{$email['thread_id']}/{$email['id_old']}.eml";
+        // Try with the original entity_id
+        $paths[] = "{$this->dataDir}/{$entityId}/{$email['thread_id']}/{$email['id_old']}.eml";
+        $paths[] = "{$this->dataDir}/{$entityId}/thread_{$email['thread_id']}/{$email['id_old']}.eml";
         
-        // Old format: entity_id/thread_thread_id/id_old.eml
-        $paths[] = "{$this->dataDir}/{$email['entity_id']}/thread_{$email['thread_id']}/{$email['id_old']}.eml";
+        // Try with entity_id_norske_postlister if available
+        if (isset($this->entityMappings[$entityId])) {
+            $alternativeEntityId = $this->entityMappings[$entityId];
+            $paths[] = "{$this->dataDir}/{$alternativeEntityId}/{$email['thread_id']}/{$email['id_old']}.eml";
+            $paths[] = "{$this->dataDir}/{$alternativeEntityId}/thread_{$email['thread_id']}/{$email['id_old']}.eml";
+        }
         
-        // Extract entity name from entity_id if possible (format: 123456789-entity-name)
-        $entityParts = explode('-', $email['entity_id'], 2);
-        $entityId = $entityParts[0];
-        
-        // Try alternative path format if entity_id contains a number followed by a name
-        if (count($entityParts) > 1 && is_numeric($entityId)) {
-            // Format: numeric_id-entity_name/thread_thread_id/id_old.eml
-            $paths[] = "{$this->dataDir}/{$entityId}-{$entityParts[1]}/thread_{$email['thread_id']}/{$email['id_old']}.eml";
+        // Try with numeric part of entity_id if it's in format "number-name"
+        if (preg_match('/^(\d+)-(.+)$/', $entityId, $matches)) {
+            $numericId = $matches[1];
+            $name = $matches[2];
+            
+            $paths[] = "{$this->dataDir}/{$numericId}-{$name}/thread_{$email['thread_id']}/{$email['id_old']}.eml";
+            $paths[] = "{$this->dataDir}/{$numericId}/{$email['thread_id']}/{$email['id_old']}.eml";
+            $paths[] = "{$this->dataDir}/{$numericId}/thread_{$email['thread_id']}/{$email['id_old']}.eml";
         }
         
         return $paths;
