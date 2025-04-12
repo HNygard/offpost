@@ -29,6 +29,7 @@ $unclassifiedEmailsCountQuery = "
     JOIN thread_emails te ON e.email_id = te.id
     JOIN threads t ON te.thread_id = t.id
     WHERE te.status_type = 'unknown'
+        AND e.attachment_id is null
 ";
 $totalUnclassifiedEmails = Database::queryValue($unclassifiedEmailsCountQuery, []);
 
