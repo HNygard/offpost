@@ -109,6 +109,15 @@ function truncateText($text, $length = 50) {
     return mb_substr($text, 0, $length, 'UTF-8') . '...';
 }
 
+// Function to limit extracted text to approximately one A4 page
+function limitExtractedText($text, $length = 3000) {
+    if (!$text) return '';
+    if (mb_strlen($text, 'UTF-8') <= $length) {
+        return $text;
+    }
+    return mb_substr($text, 0, $length, 'UTF-8') . '... [Text truncated - showing approximately 1 page]';
+}
+
 // Function to format status with appropriate styling
 function formatStatus($status) {
     $class = '';
@@ -365,7 +374,7 @@ function getExtractionType($extraction) {
                                 
                                 <?php if ($extraction['extracted_text']): ?>
                                     <p><strong>Extracted Text:</strong></p>
-                                    <div class="extracted-text"><?= htmlspecialchars($extraction['extracted_text']) ?></div>
+                                    <div class="extracted-text"><?= htmlspecialchars(limitExtractedText($extraction['extracted_text'])) ?></div>
                                 <?php endif; ?>
                                 
                                 <p><strong>Created:</strong> <?= date('Y-m-d H:i:s', strtotime($extraction['created_at'])) ?></p>
