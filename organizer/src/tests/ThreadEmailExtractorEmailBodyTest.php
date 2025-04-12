@@ -65,7 +65,7 @@ class ThreadEmailExtractorEmailBodyTest extends PHPUnit\Framework\TestCase {
     public function testProcessNextEmailExtractionSuccess() {
         // Sample email data
         $emailData = [
-            'id' => 'test-email-id',
+            'email_id' => 'test-email-id',
             'thread_id' => 'test-thread-id',
             'status_type' => 'unknown',
             'status_text' => 'Test email'
@@ -74,7 +74,7 @@ class ThreadEmailExtractorEmailBodyTest extends PHPUnit\Framework\TestCase {
         // Sample extraction
         $extraction = new ThreadEmailExtraction();
         $extraction->extraction_id = 123;
-        $extraction->email_id = $emailData['id'];
+        $extraction->email_id = $emailData['email_id'];
         $extraction->prompt_text = 'email_body';
         $extraction->prompt_service = 'code';
         
@@ -99,7 +99,7 @@ class ThreadEmailExtractorEmailBodyTest extends PHPUnit\Framework\TestCase {
         $this->extractionService->expects($this->once())
             ->method('createExtraction')
             ->with(
-                $this->equalTo($emailData['id']),
+                $this->equalTo($emailData['email_id']),
                 $this->equalTo('email_body'),
                 $this->equalTo('code')
             )
@@ -119,7 +119,7 @@ class ThreadEmailExtractorEmailBodyTest extends PHPUnit\Framework\TestCase {
         // Check the result
         $this->assertTrue($result['success']);
         $this->assertEquals('Successfully extracted text from email', $result['message']);
-        $this->assertEquals($emailData['id'], $result['email_id']);
+        $this->assertEquals($emailData['email_id'], $result['email_id']);
         $this->assertEquals($emailData['thread_id'], $result['thread_id']);
         $this->assertEquals($extraction->extraction_id, $result['extraction_id']);
         $this->assertEquals(strlen('Extracted text from email body'), $result['extracted_text_length']);
@@ -128,7 +128,7 @@ class ThreadEmailExtractorEmailBodyTest extends PHPUnit\Framework\TestCase {
     public function testProcessNextEmailExtractionError() {
         // Sample email data
         $emailData = [
-            'id' => 'test-email-id',
+            'email_id' => 'test-email-id',
             'thread_id' => 'test-thread-id',
             'status_type' => 'unknown',
             'status_text' => 'Test email'
@@ -137,7 +137,7 @@ class ThreadEmailExtractorEmailBodyTest extends PHPUnit\Framework\TestCase {
         // Sample extraction
         $extraction = new ThreadEmailExtraction();
         $extraction->extraction_id = 123;
-        $extraction->email_id = $emailData['id'];
+        $extraction->email_id = $emailData['email_id'];
         $extraction->prompt_text = 'email_body';
         $extraction->prompt_service = 'code';
         
@@ -158,7 +158,7 @@ class ThreadEmailExtractorEmailBodyTest extends PHPUnit\Framework\TestCase {
         $this->extractionService->expects($this->once())
             ->method('createExtraction')
             ->with(
-                $this->equalTo($emailData['id']),
+                $this->equalTo($emailData['email_id']),
                 $this->equalTo('email_body'),
                 $this->equalTo('code')
             )
@@ -179,7 +179,7 @@ class ThreadEmailExtractorEmailBodyTest extends PHPUnit\Framework\TestCase {
         // Check the result
         $this->assertFalse($result['success']);
         $this->assertEquals('Failed to extract text from email.', $result['message']);
-        $this->assertEquals($emailData['id'], $result['email_id']);
+        $this->assertEquals($emailData['email_id'], $result['email_id']);
         $this->assertEquals($emailData['thread_id'], $result['thread_id']);
         $this->assertEquals('Test error', $result['error']);
     }

@@ -20,8 +20,8 @@ class ThreadAuthorizationTest extends PHPUnit\Framework\TestCase {
         $db->execute("DELETE FROM thread_email_history");
         $db->execute("DELETE FROM thread_history");
         $db->execute("DELETE FROM thread_authorizations");
-        $db->execute("DELETE FROM thread_email_attachments");
         $db->execute("DELETE FROM thread_email_extractions");
+        $db->execute("DELETE FROM thread_email_attachments");
         $db->execute("DELETE FROM thread_emails");
         $db->execute("DELETE FROM thread_email_sendings");
         $db->execute("DELETE FROM imap_folder_status");

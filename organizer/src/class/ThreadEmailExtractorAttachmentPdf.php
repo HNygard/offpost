@@ -45,7 +45,7 @@ class ThreadEmailExtractorAttachmentPdf extends ThreadEmailExtractor {
             FROM thread_email_attachments tea
             LEFT JOIN thread_email_extractions tee ON tea.email_id = tee.email_id 
                 AND tea.id = tee.attachment_id 
-                AND tee.prompt_service = 'pdftotext'
+                AND tee.prompt_service = 'code'
                 AND tee.prompt_text = 'attachment_pdf'
             WHERE tee.extraction_id IS NULL
             AND tea.filetype = 'pdf'
@@ -64,7 +64,7 @@ class ThreadEmailExtractorAttachmentPdf extends ThreadEmailExtractor {
     public function findNextEmailForExtraction() {
         // Find PDF attachments that don't have a text extraction yet
         $query = "
-            SELECT tea.id, tea.email_id, te.thread_id, tea.name, tea.filename, tea.filetype
+            SELECT tea.id as attachment_id, tea.email_id, te.thread_id, tea.name, tea.filename, tea.filetype
             FROM thread_email_attachments tea
             JOIN thread_emails te ON tea.email_id = te.id
             LEFT JOIN thread_email_extractions tee ON tea.email_id = tee.email_id 
@@ -111,10 +111,10 @@ class ThreadEmailExtractorAttachmentPdf extends ThreadEmailExtractor {
     protected function extractTextFromPdf($attachment) {
         // Get attachment content from database
         $query = "SELECT content FROM thread_email_attachments WHERE id = ?";
-        $result = Database::queryOneOrNone($query, [$attachment['id']]);
+        $result = Database::queryOneOrNone($query, [$attachment['attachment_id']]);
         
         if (!$result || empty($result['content'])) {
-            throw new Exception("Attachment content not found for ID: " . $attachment['id']);
+            throw new Exception("Attachment content not found for ID: " . $attachment['attachment_id']);
         }
         
         $pdfContent = $result['content'];

@@ -48,9 +48,10 @@ abstract class ThreadEmailExtractor {
         try {
             // Create extraction record
             $extraction = $this->extractionService->createExtraction(
-                $email['id'],
+                $email['email_id'],
                 $prompt_text,
-                $prompt_service
+                $prompt_service,
+                $email['attachment_id'] ?? null
             );
 
             $extractedText = $extract_text_function($email, $prompt_text, $prompt_service);
@@ -64,14 +65,15 @@ abstract class ThreadEmailExtractor {
             return [
                 'success' => true,
                 'message' => 'Successfully extracted text from email',
-                'email_id' => $email['id'],
+                'email_id' => $email['email_id'],
                 'thread_id' => $email['thread_id'],
+                'attachment_id' => $email['attachment_id'] ?? null,
                 'extraction_id' => $extraction->extraction_id,
                 'extracted_text_length' => strlen($extractedText)
             ];
         } catch (\Exception $e) {
             if (!defined('PHPUNIT_RUNNING')) {
-                echo "Error processing email: {$email['id']}. " . $e->getMessage() . "\n";
+                echo "Error processing email: [email_id={$email['email_id']}]. [attachment_id=" . ($email['attachment_id'] ?? null) . "] " . $e->getMessage() . "\n";
                 echo jTraceEx($e) . "\n\n";
             }
 
@@ -87,8 +89,10 @@ abstract class ThreadEmailExtractor {
             return [
                 'success' => false,
                 'message' => 'Failed to extract text from email.',
-                'email_id' => $email['id'],
+                'email_id' => $email['email_id'],
                 'thread_id' => $email['thread_id'],
+                'attachment_id' => $email['attachment_id'] ?? null,
+                'extraction_id' => $extraction->extraction_id ?? null,
                 'error' => $e->getMessage()
             ];
         }

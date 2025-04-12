@@ -44,7 +44,7 @@ class ThreadEmailExtractorEmailBody extends ThreadEmailExtractor {
     public function findNextEmailForExtraction() {
         // Find emails that don't have a body text extraction yet
         $query = "
-            SELECT te.id, te.thread_id, te.status_type, te.status_text
+            SELECT te.id as email_id, te.thread_id, te.status_type, te.status_text
             FROM thread_emails te
             LEFT JOIN thread_email_extractions tee ON te.id = tee.email_id 
                 AND tee.attachment_id IS NULL 
@@ -69,7 +69,7 @@ class ThreadEmailExtractorEmailBody extends ThreadEmailExtractor {
             'code',
             function($email, $prompt_text, $prompt_service) {
                 // Extract text from email body
-                $extractedTexts = $this->extractTextFromEmailBody($email['thread_id'], $email['id']);
+                $extractedTexts = $this->extractTextFromEmailBody($email['thread_id'], $email['email_id']);
 
                 $extractedText = '';
                 if (!empty($extractedTexts->plain_text)) {

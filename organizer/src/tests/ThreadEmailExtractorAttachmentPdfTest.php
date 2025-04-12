@@ -33,7 +33,6 @@ class ThreadEmailExtractorAttachmentPdfTest extends PHPUnit\Framework\TestCase {
         // without actually hitting the database
         $extractor = $this->getMockBuilder(ThreadEmailExtractorAttachmentPdf::class)
             ->setConstructorArgs([$this->extractionService])
-            ->onlyMethods(['findNextEmailForExtraction'])
             ->getMock();
             
         $extractor->method('findNextEmailForExtraction')
@@ -72,7 +71,7 @@ class ThreadEmailExtractorAttachmentPdfTest extends PHPUnit\Framework\TestCase {
     public function testProcessNextEmailExtractionSuccess() {
         // Sample attachment data
         $attachmentData = [
-            'id' => 123,
+            'attachment_id' => 123,
             'email_id' => 'test-email-id',
             'thread_id' => 'test-thread-id',
             'name' => 'test.pdf',
@@ -84,15 +83,21 @@ class ThreadEmailExtractorAttachmentPdfTest extends PHPUnit\Framework\TestCase {
         $extraction = new ThreadEmailExtraction();
         $extraction->extraction_id = 456;
         $extraction->email_id = $attachmentData['email_id'];
-        $extraction->attachment_id = $attachmentData['id'];
+        $extraction->attachment_id = $attachmentData['attachment_id'];
         $extraction->prompt_text = 'attachment_pdf';
         $extraction->prompt_service = 'pdftotext';
         
+        // Create a partial mock to override findNextEmailForExtraction
+        $extractor = $this->getMockBuilder(ThreadEmailExtractorAttachmentPdf::class)
+            ->setConstructorArgs([$this->extractionService])
+            ->onlyMethods(['findNextEmailForExtraction', 'extractTextFromPdf'])
+            ->getMock();
+            
         // Configure the mocks
-        $this->extractor->method('findNextEmailForExtraction')
+        $extractor->method('findNextEmailForExtraction')
             ->willReturn($attachmentData);
         
-        $this->extractor->method('extractTextFromPdf')
+        $extractor->method('extractTextFromPdf')
             ->willReturn('Extracted text from PDF');
         
         $this->extractionService->expects($this->once())
@@ -100,8 +105,8 @@ class ThreadEmailExtractorAttachmentPdfTest extends PHPUnit\Framework\TestCase {
             ->with(
                 $this->equalTo($attachmentData['email_id']),
                 $this->equalTo('attachment_pdf'),
-                $this->equalTo('pdftotext'),
-                $this->equalTo($attachmentData['id'])
+                $this->equalTo('code'),
+                $this->equalTo($attachmentData['attachment_id'])
             )
             ->willReturn($extraction);
         
@@ -114,7 +119,7 @@ class ThreadEmailExtractorAttachmentPdfTest extends PHPUnit\Framework\TestCase {
             ->willReturn($extraction);
         
         // Call the method
-        $result = $this->extractor->processNextEmailExtraction();
+        $result = $extractor->processNextEmailExtraction();
         
         // Check the result
         $this->assertTrue($result['success']);
@@ -128,7 +133,7 @@ class ThreadEmailExtractorAttachmentPdfTest extends PHPUnit\Framework\TestCase {
     public function testProcessNextEmailExtractionError() {
         // Sample attachment data
         $attachmentData = [
-            'id' => 123,
+            'attachment_id' => 123,
             'email_id' => 'test-email-id',
             'thread_id' => 'test-thread-id',
             'name' => 'test.pdf',
@@ -140,7 +145,7 @@ class ThreadEmailExtractorAttachmentPdfTest extends PHPUnit\Framework\TestCase {
         $extraction = new ThreadEmailExtraction();
         $extraction->extraction_id = 456;
         $extraction->email_id = $attachmentData['email_id'];
-        $extraction->attachment_id = $attachmentData['id'];
+        $extraction->attachment_id = $attachmentData['attachment_id'];
         $extraction->prompt_text = 'attachment_pdf';
         $extraction->prompt_service = 'pdftotext';
         
@@ -163,8 +168,8 @@ class ThreadEmailExtractorAttachmentPdfTest extends PHPUnit\Framework\TestCase {
             ->with(
                 $this->equalTo($attachmentData['email_id']),
                 $this->equalTo('attachment_pdf'),
-                $this->equalTo('pdftotext'),
-                $this->equalTo($attachmentData['id'])
+                $this->equalTo('code'),
+                $this->equalTo($attachmentData['attachment_id'])
             )
             ->willReturn($extraction);
         
