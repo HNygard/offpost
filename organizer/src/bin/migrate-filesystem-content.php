@@ -46,6 +46,7 @@
 require_once __DIR__ . '/../vendor/autoload.php';
 require_once __DIR__ . '/../class/Database.php';
 require_once __DIR__ . '/../error.php';
+require_once __DIR__ . '/../class/Entity.php';
 
 // Parse command line arguments
 $options = getopt('', ['execute']);
@@ -70,35 +71,9 @@ class FilesystemContentMigration {
     private $attachmentsUpdated = 0;
     private $attachmentsSkipped = 0;
     private $attachmentsError = 0;
-    private $entityMappings = [];
     
     public function __construct($dryRun = false) {
         $this->dryRun = $dryRun;
-        $this->loadEntityMappings();
-    }
-    
-    /**
-     * Load entity mappings from entities.json
-     */
-    private function loadEntityMappings() {
-        $entitiesJsonPath = __DIR__ . '/../../../data/entities.json';
-        if (file_exists($entitiesJsonPath)) {
-            $entitiesJson = file_get_contents($entitiesJsonPath);
-            $entities = json_decode($entitiesJson, true);
-            
-            if ($entities) {
-                foreach ($entities as $entityId => $entity) {
-                    if (isset($entity['entity_id_norske_postlister'])) {
-                        $this->entityMappings[$entityId] = $entity['entity_id_norske_postlister'];
-                    }
-                }
-                echo "Loaded " . count($this->entityMappings) . " entity mappings from entities.json\n\n";
-            } else {
-                echo "Warning: Could not parse entities.json\n\n";
-            }
-        } else {
-            echo "Warning: entities.json not found at $entitiesJsonPath\n\n";
-        }
     }
     
     /**
@@ -235,8 +210,9 @@ class FilesystemContentMigration {
         $paths[] = "{$this->dataDir}/{$entityId}/thread_{$email['thread_id']}/{$email['id_old']}.eml";
         
         // Try with entity_id_norske_postlister if available
-        if (isset($this->entityMappings[$entityId])) {
-            $alternativeEntityId = $this->entityMappings[$entityId];
+        $entity = Entity::getById($entityId);
+        if (!isset($entity->entity_id_norske_postlister)) {
+            $alternativeEntityId = $entity->entity_id_norske_postlister;
             $paths[] = "{$this->dataDir}/{$alternativeEntityId}/{$email['thread_id']}/{$email['id_old']}.eml";
             $paths[] = "{$this->dataDir}/{$alternativeEntityId}/thread_{$email['thread_id']}/{$email['id_old']}.eml";
         }
