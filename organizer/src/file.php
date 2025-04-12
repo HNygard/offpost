@@ -107,7 +107,7 @@ foreach ($thread->emails as $email) {
     if (!isset($email->attachments)) {
         continue;
     }
-    if (isset($_GET['attachment'])) {
+    if (isset($_GET['attachmentId'])) {
         foreach ($email->attachments as $att) {
             /* @var $att ThreadEmailAttachment */
             if ($att->id == $_GET['attachmentId']) {
