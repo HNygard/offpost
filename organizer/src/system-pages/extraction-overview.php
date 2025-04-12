@@ -333,9 +333,9 @@ function getExtractionType($extraction) {
                     <td class="actions-col">
                         <a href="#" class="toggle-details" data-id="<?= $extraction['extraction_id'] ?>">Show Extraction</a>
                         <?php if (isset($extraction['attachment_id']) && $extraction['attachment_id']): ?>
-                            | <a href="/file?threadId=<?= urlencode($extraction['thread_id']) ?>&attachment=<?= urlencode($extraction['attachment_id']) ?>" target="_blank">View Attachment</a>
+                            | <a href="/file?threadId=<?= urlencode($extraction['thread_id']) ?>&entityId=<?= urlencode($extraction['entity_id']) ?>&attachment=<?= urlencode($extraction['attachment_id']) ?>" target="_blank">View Attachment</a>
                         <?php else: ?>
-                            | <a href="/file?threadId=<?= urlencode($extraction['thread_id']) ?>&body=<?= urlencode($extraction['email_id']) ?>" target="_blank">View Email</a>
+                            | <a href="/file?threadId=<?= urlencode($extraction['thread_id']) ?>&entityId=<?= urlencode($extraction['entity_id']) ?>&body=<?= urlencode($extraction['email_id']) ?>" target="_blank">View Email</a>
                         <?php endif; ?>
                         | <a href="/thread-classify?entityId=<?= urlencode($extraction['entity_id']) ?>&threadId=<?= urlencode($extraction['thread_id']) ?>&emailId=<?= urlencode($extraction['email_id']) ?>">Classify</a>
                         
