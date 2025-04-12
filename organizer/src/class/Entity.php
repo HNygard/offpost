@@ -8,6 +8,7 @@
  */
 class Entity {
     public string $entity_id;
+    public string $entity_id_norske_postlister;
     public string $name;
     public string $email;
     public string $type;

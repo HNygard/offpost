@@ -211,7 +211,7 @@ class FilesystemContentMigration {
         
         // Try with entity_id_norske_postlister if available
         $entity = Entity::getById($entityId);
-        if (!isset($entity->entity_id_norske_postlister)) {
+        if (isset($entity->entity_id_norske_postlister)) {
             $alternativeEntityId = $entity->entity_id_norske_postlister;
             $paths[] = "{$this->dataDir}/{$alternativeEntityId}/{$email['thread_id']}/{$email['id_old']}.eml";
             $paths[] = "{$this->dataDir}/{$alternativeEntityId}/thread_{$email['thread_id']}/{$email['id_old']}.eml";
