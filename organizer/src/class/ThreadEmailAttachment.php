@@ -1,6 +1,7 @@
 <?php
 
 class ThreadEmailAttachment {
+    var $id;
     var $name;
     var $filename;
     var $filetype;

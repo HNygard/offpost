@@ -46,6 +46,7 @@ class ThreadDatabaseOperations {
                     e.status_text as email_status_text,
                     e.description,
                     e.ignore,
+                    a.id as attachment_id,
                     a.name as attachment_name,
                     a.filename as attachment_filename,
                     a.filetype as attachment_filetype,
@@ -150,6 +151,7 @@ class ThreadDatabaseOperations {
             // Add attachment if exists
             if ($row['attachment_name'] !== null) {
                 $attObj = new ThreadEmailAttachment();
+                $attObj->id = $row['attachment_id'];
                 $attObj->name = $row['attachment_name'];
                 $attObj->filename = $row['attachment_filename'];
                 $attObj->filetype = $row['attachment_filetype'];
@@ -196,6 +198,7 @@ class ThreadDatabaseOperations {
                     e.status_text as email_status_text,
                     e.description,
                     e.ignore,
+                    a.id as attachment_id,
                     a.name as attachment_name,
                     a.filename as attachment_filename,
                     a.filetype as attachment_filetype,
@@ -278,6 +281,7 @@ class ThreadDatabaseOperations {
             // Add attachment if exists
             if ($row['attachment_name'] !== null) {
                 $attObj = new ThreadEmailAttachment();
+                $attObj->id = $row['attachment_id'];
                 $attObj->name = $row['attachment_name'];
                 $attObj->filename = $row['attachment_filename'];
                 $attObj->filetype = $row['attachment_filetype'];

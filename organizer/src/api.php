@@ -45,10 +45,10 @@ foreach ($allThreads as $entityFile => $entityThreads) {
                     foreach($emails->attachments as $att) {
                         $att->link = 'http://localhost:25081/file?entityId=' . urlencode($entityThreads->entity_id)
                             . '&threadId='. urlencode($thread->id)
-                            . '&attachment=' . urlencode($att->id);
+                            . '&attachmentId=' . urlencode($att->id);
                         $att->linkText = 'http://localhost:25081/file?entityId=' . urlencode($entityThreads->entity_id)
                             . '&threadId='. urlencode($thread->id)
-                            . '&attachment=' . urlencode($att->id)
+                            . '&attachmentId=' . urlencode($att->id)
                             . '&text=true';
                     }
                 }

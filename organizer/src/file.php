@@ -110,7 +110,7 @@ foreach ($thread->emails as $email) {
     if (isset($_GET['attachment'])) {
         foreach ($email->attachments as $att) {
             /* @var $att ThreadEmailAttachment */
-            if ($att->id == $_GET['attachment']) {
+            if ($att->id == $_GET['attachmentId']) {
                 if (str_contains($att->location, '/')) {
                     // Strip last part of location to get the filename
                     $filename = substr($att->location, strrpos($att->location, '/') + 1);
@@ -121,7 +121,7 @@ foreach ($thread->emails as $email) {
                 }
                 $att = ThreadStorageManager::getInstance()->getThreadEmailAttachment($thread, $att->location);
                 if (empty($att->content)) {
-                    throw new Exception("Attachment content empty: threadId={$threadId}, entityId={$entityId}, attachment={$att->id}", 404);
+                    throw new Exception("Attachment content empty: threadId={$threadId}, entityId={$entityId}, attachmentId={$att->attachment_id}", 404);
                 }
 
                 if ($att->filetype == 'pdf') {
