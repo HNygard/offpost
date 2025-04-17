@@ -52,11 +52,13 @@ class ImapFolderStatus {
             return false;
         } else {
             // Create new record
-            $lastCheckedAt = $updateLastChecked ? 'CURRENT_TIMESTAMP' : 'NULL';
-            $requestedUpdateTime = $requestUpdate ? 'CURRENT_TIMESTAMP' : 'NULL';
+            $lastCheckedAt = $updateLastChecked ? date(DATE_ATOM) : null;
+            $requestedUpdateTime = $requestUpdate ? date(DATE_ATOM) : null;
+            
+            // Insert new record
             return Database::execute(
-                "INSERT INTO imap_folder_status (folder_name, thread_id, last_checked_at, requested_update_time) VALUES (?, ?, " . $lastCheckedAt . ", " . $requestedUpdateTime . ")",
-                [$folderName, $threadId]
+                "INSERT INTO imap_folder_status (folder_name, thread_id, last_checked_at, requested_update_time) VALUES (?, ?, ?, ?)",
+                [$folderName, $threadId, $lastCheckedAt, $requestedUpdateTime]
             ) > 0;
         }
     }
