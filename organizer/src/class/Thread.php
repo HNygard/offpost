@@ -5,6 +5,7 @@ require_once __DIR__ . '/Database.php';
 require_once __DIR__ . '/ThreadEmail.php';
 require_once __DIR__ . '/Entity.php';
 require_once __DIR__ . '/ImapFolderStatus.php';
+require_once __DIR__ . '/ThreadStatusRepository.php';
 
 class Thread implements JsonSerializable {
     // Sending status constants
@@ -214,38 +215,54 @@ class Thread implements JsonSerializable {
         return $this->emails;
     }
 
+    /**
+     * Get the status of this thread
+     * 
+     * @return stdClass Object with status information
+     */
     public function getThreadStatus() {
         $status = new stdClass();
-
-        $imap_folder_status = ImapFolderStatus::getForThread($this->id);
-        if (count($imap_folder_status) == 0) {
+        
+        // Use ThreadStatusRepository to get the thread status
+        $statusCode = ThreadStatusRepository::getThreadStatus($this->id);
+        
+        // Check IMAP folder status first for critical errors
+        if ($statusCode === ThreadStatusRepository::ERROR_NO_FOLDER_FOUND) {
             $status->status_text = 'Email not synced. Can\'t determine thread status / further action.';
             return $status;
         }
-        if (count($imap_folder_status) > 1) {
+        
+        if ($statusCode === ThreadStatusRepository::ERROR_MULTIPLE_FOLDERS) {
             $status->error = true;
             $status->status_text = 'Email synced to multiple folders. Can\'t determine thread status / further action.';
             return $status;
         }
-        if ($imap_folder_status[0]['last_checked_at'] < time() - 60 * 60 * 6) {
+        
+        // Set error flag if folder sync is old, but continue to check emails
+        if ($statusCode === ThreadStatusRepository::ERROR_OLD_SYNC) {
             $status->error = true;
             $status->status_text = 'Email not synced in the last 6 hours.';
         }
-
-        if (count($this->getEmails()) == 0) {
+        
+        // Check email status - this takes precedence over folder sync status for display
+        $emails = $this->getEmails();
+        
+        if (count($emails) === 0) {
             $status->status_text = 'Email not sent.';
             return $status;
         }
-        if (count($this->getEmails()) == 1) {
+        
+        if (count($emails) === 1) {
             $status->status_text = 'Email sent, nothing received';
-            $status->last_activity = $this->getEmails()[0]->timestamp_received;
+            $status->last_activity = $emails[0]->timestamp_received;
             return $status;
         }
-
-        foreach ($this->getEmails() as $email) {
-            $status->status_text = 'Unknown.';
-            $status->last_activity = $email->timestamp_received;
-        }
+        
+        // Multiple emails case
+        $status->status_text = 'Unknown.';
+        $lastEmail = end($emails);
+        $status->last_activity = $lastEmail->timestamp_received;
+        
         return $status;
     }
 }
