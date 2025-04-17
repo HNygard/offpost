@@ -81,7 +81,9 @@ class ThreadStatusRepository {
                     WHEN email_count_out = 0 AND email_count_in = 0 THEN 'NOT_SENT'
                     WHEN email_count_out = 1 AND email_count_in = 0 THEN 'EMAIL_SENT_NOTHING_RECEIVED'
                     ELSE 'UNKNOWN'
-                END AS status
+                END AS status,
+                email_count_in,
+                email_count_out
             FROM 
                 thread_data
         ";
