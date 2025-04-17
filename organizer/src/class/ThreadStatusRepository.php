@@ -12,7 +12,7 @@ class ThreadStatusRepository {
     const ERROR_OLD_SYNC = 'ERROR_OLD_SYNC';
     const NOT_SENT = 'NOT_SENT';
     const EMAIL_SENT_NOTHING_RECEIVED = 'EMAIL_SENT_NOTHING_RECEIVED';
-    const UNKNOWN = 'UNKNOWN';
+    const STATUS_OK = 'STATUS_OK';
     
     /**
      * Get status for a specific thread
@@ -24,8 +24,7 @@ class ThreadStatusRepository {
         // Use the more efficient method with thread ID filter
         $statuses = self::getAllThreadStatusesEfficient([$threadId]);
         
-        // Return the status if found, otherwise return UNKNOWN
-        return $statuses[$threadId]['status'] ?? self::UNKNOWN;
+        return $statuses[$threadId]['status'];
     }
     
     /**
@@ -80,7 +79,7 @@ class ThreadStatusRepository {
                     WHEN last_checked_at < NOW() - INTERVAL '6 hours' THEN 'ERROR_OLD_SYNC'
                     WHEN email_count_out = 0 AND email_count_in = 0 THEN 'NOT_SENT'
                     WHEN email_count_out = 1 AND email_count_in = 0 THEN 'EMAIL_SENT_NOTHING_RECEIVED'
-                    ELSE 'UNKNOWN'
+                    ELSE 'STATUS_OK'
                 END AS status,
                 email_count_in,
                 email_count_out
@@ -98,7 +97,7 @@ class ThreadStatusRepository {
                     WHEN last_checked_at < NOW() - INTERVAL '6 hours' THEN 'ERROR_OLD_SYNC'
                     WHEN email_count_out = 0 AND email_count_in = 0 THEN 'NOT_SENT'
                     WHEN email_count_out = 1 AND email_count_in = 0 THEN 'EMAIL_SENT_NOTHING_RECEIVED'
-                    ELSE 'UNKNOWN'
+                    ELSE 'STATUS_OK'
                 END = ?
             ";
             $params[] = $status;

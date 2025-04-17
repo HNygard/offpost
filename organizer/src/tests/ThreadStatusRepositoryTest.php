@@ -115,7 +115,7 @@ class ThreadStatusRepositoryTest extends PHPUnit\Framework\TestCase {
         $this->assertEquals('ERROR_OLD_SYNC', ThreadStatusRepository::ERROR_OLD_SYNC);
         $this->assertEquals('NOT_SENT', ThreadStatusRepository::NOT_SENT);
         $this->assertEquals('EMAIL_SENT_NOTHING_RECEIVED', ThreadStatusRepository::EMAIL_SENT_NOTHING_RECEIVED);
-        $this->assertEquals('UNKNOWN', ThreadStatusRepository::UNKNOWN);
+        $this->assertEquals('STATUS_OK', ThreadStatusRepository::STATUS_OK);
     }
     
     public function testGetThreadStatusWithNoImapFolder(): void {
@@ -203,7 +203,7 @@ class ThreadStatusRepositoryTest extends PHPUnit\Framework\TestCase {
         $status = ThreadStatusRepository::getThreadStatus($this->testThreadId);
         
         // :: Assert
-        $this->assertEquals(ThreadStatusRepository::UNKNOWN, $status, "Status should be UNKNOWN when multiple emails exist");
+        $this->assertEquals(ThreadStatusRepository::STATUS_OK, $status, "Status should be STATUS_OK when multiple emails exist");
     }
     
     public function testGetAllThreadStatusesEfficient(): void {
