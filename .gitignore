@@ -1,5 +1,8 @@
 .idea
 
+# Secret files
+secrets/openai_api_key
+
 # Ignore contents of data directory
 data/*
 # But don't ignore the data directory itself and threads directory
