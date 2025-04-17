@@ -226,8 +226,8 @@ class ThreadStatusRepositoryTest extends PHPUnit\Framework\TestCase {
         $this->assertIsArray($statuses, "getAllThreadStatusesEfficient should return an array");
         $this->assertArrayHasKey($this->testThreadId, $statuses, "Array should contain the test thread ID as a key");
         $this->assertArrayHasKey($secondThreadId, $statuses, "Array should contain the second thread ID as a key");
-        $this->assertEquals(ThreadStatusRepository::EMAIL_SENT_NOTHING_RECEIVED, $statuses[$this->testThreadId], "Status for test thread should be EMAIL_SENT_NOTHING_RECEIVED");
-        $this->assertEquals(ThreadStatusRepository::NOT_SENT, $statuses[$secondThreadId], "Status for second thread should be NOT_SENT");
+        $this->assertEquals(array('thread_id' => $this->testThreadId, 'status' => ThreadStatusRepository::EMAIL_SENT_NOTHING_RECEIVED), $statuses[$this->testThreadId], "Status for test thread should be EMAIL_SENT_NOTHING_RECEIVED");
+        $this->assertEquals(array('thread_id' => $secondThreadId, 'status' => ThreadStatusRepository::NOT_SENT), $statuses[$secondThreadId], "Status for second thread should be NOT_SENT");
     }
     
     public function testGetThreadsByStatus(): void {
@@ -294,8 +294,8 @@ class ThreadStatusRepositoryTest extends PHPUnit\Framework\TestCase {
         $this->assertArrayHasKey($this->testThreadId, $filteredStatuses, "Filtered statuses should contain the test thread ID");
         $this->assertArrayHasKey($thirdThreadId, $filteredStatuses, "Filtered statuses should contain the third thread ID");
         $this->assertArrayNotHasKey($secondThreadId, $filteredStatuses, "Filtered statuses should not contain the second thread ID");
-        $this->assertEquals(ThreadStatusRepository::EMAIL_SENT_NOTHING_RECEIVED, $filteredStatuses[$this->testThreadId], "Status for test thread should be EMAIL_SENT_NOTHING_RECEIVED");
-        $this->assertEquals(ThreadStatusRepository::NOT_SENT, $filteredStatuses[$thirdThreadId], "Status for third thread should be NOT_SENT");
+        $this->assertEquals(array('thread_id'  => $this->testThreadId, 'status' => ThreadStatusRepository::EMAIL_SENT_NOTHING_RECEIVED), $filteredStatuses[$this->testThreadId], "Status for test thread should be EMAIL_SENT_NOTHING_RECEIVED");
+        $this->assertEquals(array('thread_id' => $thirdThreadId, 'status' => ThreadStatusRepository::NOT_SENT), $filteredStatuses[$thirdThreadId], "Status for third thread should be NOT_SENT");
     }
     
     public function testGetAllThreadStatusesEfficientWithStatusFilter(): void {

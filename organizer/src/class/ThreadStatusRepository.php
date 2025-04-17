@@ -25,7 +25,7 @@ class ThreadStatusRepository {
         $statuses = self::getAllThreadStatusesEfficient([$threadId]);
         
         // Return the status if found, otherwise return UNKNOWN
-        return $statuses[$threadId] ?? self::UNKNOWN;
+        return $statuses[$threadId]['status'] ?? self::UNKNOWN;
     }
     
     /**
@@ -105,7 +105,7 @@ class ThreadStatusRepository {
         $statuses = Database::query($query, $params);
         
         foreach ($statuses as $status) {
-            $result[$status['thread_id']] = $status['status'];
+            $result[$status['thread_id']] = $status;
         }
         
         return $result;
