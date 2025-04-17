@@ -47,13 +47,16 @@ class ThreadStatusRepository {
                     t.id AS thread_id,
                     COUNT(DISTINCT ifs.id) AS folder_count,
                     MAX(ifs.last_checked_at) AS last_checked_at,
-                    COUNT(te.id) AS email_count
+                    COUNT(te_in.id) AS email_count_in,
+                    COUNT(te_out.id) AS email_count_out
                 FROM 
                     threads t
                 LEFT JOIN 
                     imap_folder_status ifs ON t.id = ifs.thread_id
                 LEFT JOIN 
-                    thread_emails te ON t.id = te.thread_id
+                    thread_emails te_in ON t.id = te_in.thread_id AND te_in.email_type = 'IN'
+                LEFT JOIN 
+                    thread_emails te_out ON t.id = te_out.thread_id AND te_out.email_type = 'OUT'
                 WHERE 
                     t.archived = false
         ";
@@ -75,8 +78,8 @@ class ThreadStatusRepository {
                     WHEN folder_count = 0 THEN 'ERROR_NO_FOLDER_FOUND'
                     WHEN folder_count > 1 THEN 'ERROR_MULTIPLE_FOLDERS'
                     WHEN last_checked_at < NOW() - INTERVAL '6 hours' THEN 'ERROR_OLD_SYNC'
-                    WHEN email_count = 0 THEN 'NOT_SENT'
-                    WHEN email_count = 1 THEN 'EMAIL_SENT_NOTHING_RECEIVED'
+                    WHEN email_count_out = 0 AND email_count_in = 0 THEN 'NOT_SENT'
+                    WHEN email_count_out = 1 AND email_count_in = 0 THEN 'EMAIL_SENT_NOTHING_RECEIVED'
                     ELSE 'UNKNOWN'
                 END AS status
             FROM 
@@ -91,8 +94,8 @@ class ThreadStatusRepository {
                     WHEN folder_count = 0 THEN 'ERROR_NO_FOLDER_FOUND'
                     WHEN folder_count > 1 THEN 'ERROR_MULTIPLE_FOLDERS'
                     WHEN last_checked_at < NOW() - INTERVAL '6 hours' THEN 'ERROR_OLD_SYNC'
-                    WHEN email_count = 0 THEN 'NOT_SENT'
-                    WHEN email_count = 1 THEN 'EMAIL_SENT_NOTHING_RECEIVED'
+                    WHEN email_count_out = 0 AND email_count_in = 0 THEN 'NOT_SENT'
+                    WHEN email_count_out = 1 AND email_count_in = 0 THEN 'EMAIL_SENT_NOTHING_RECEIVED'
                     ELSE 'UNKNOWN'
                 END = ?
             ";

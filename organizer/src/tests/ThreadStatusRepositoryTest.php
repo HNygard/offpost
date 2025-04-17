@@ -154,7 +154,7 @@ class ThreadStatusRepositoryTest extends PHPUnit\Framework\TestCase {
         );
         
         // Add an email to ensure we get past the "Email not sent" check
-        $this->addTestEmail('outgoing', 'sent');
+        $this->addTestEmail('OUT', 'sent');
         
         // :: Act
         $status = ThreadStatusRepository::getThreadStatus($this->testThreadId);
@@ -181,7 +181,7 @@ class ThreadStatusRepositoryTest extends PHPUnit\Framework\TestCase {
         ImapFolderStatus::createOrUpdate($this->testFolderName, $this->testThreadId, true);
         
         // Add one outgoing email
-        $this->addTestEmail('outgoing', 'sent');
+        $this->addTestEmail('OUT', 'sent');
         
         // :: Act
         $status = ThreadStatusRepository::getThreadStatus($this->testThreadId);
@@ -196,8 +196,8 @@ class ThreadStatusRepositoryTest extends PHPUnit\Framework\TestCase {
         ImapFolderStatus::createOrUpdate($this->testFolderName, $this->testThreadId, true);
         
         // Add multiple emails
-        $this->addTestEmail('outgoing', 'sent');
-        $this->addTestEmail('incoming', 'received');
+        $this->addTestEmail('OUT', 'sent');
+        $this->addTestEmail('IN', 'received');
         
         // :: Act
         $status = ThreadStatusRepository::getThreadStatus($this->testThreadId);
@@ -212,7 +212,7 @@ class ThreadStatusRepositoryTest extends PHPUnit\Framework\TestCase {
         ImapFolderStatus::createOrUpdate($this->testFolderName, $this->testThreadId, true);
         
         // Add one email
-        $this->addTestEmail('outgoing', 'sent');
+        $this->addTestEmail('OUT', 'sent');
         
         // Create a second thread
         $secondThreadId = $this->createTestThread();
@@ -236,13 +236,13 @@ class ThreadStatusRepositoryTest extends PHPUnit\Framework\TestCase {
         ImapFolderStatus::createOrUpdate($this->testFolderName, $this->testThreadId, true);
         
         // Add one email
-        $this->addTestEmail('outgoing', 'sent');
+        $this->addTestEmail('OUT', 'sent');
         
         // Create a second thread with the same status
         $secondThreadId = $this->createTestThread();
         $secondFolderName = $this->testFolderName . '-second';
         ImapFolderStatus::createOrUpdate($secondFolderName, $secondThreadId, true);
-        $this->addTestEmail('outgoing', 'sent', null, $secondThreadId);
+        $this->addTestEmail('OUT', 'sent', null, $secondThreadId);
         
         // Create a third thread with a different status
         $thirdThreadId = $this->createTestThread();
@@ -272,7 +272,7 @@ class ThreadStatusRepositoryTest extends PHPUnit\Framework\TestCase {
         ImapFolderStatus::createOrUpdate($this->testFolderName, $this->testThreadId, true);
         
         // Add one email
-        $this->addTestEmail('outgoing', 'sent');
+        $this->addTestEmail('OUT', 'sent');
         
         // Create a second thread
         $secondThreadId = $this->createTestThread();
@@ -304,13 +304,13 @@ class ThreadStatusRepositoryTest extends PHPUnit\Framework\TestCase {
         ImapFolderStatus::createOrUpdate($this->testFolderName, $this->testThreadId, true);
         
         // Add one email to first thread
-        $this->addTestEmail('outgoing', 'sent');
+        $this->addTestEmail('OUT', 'sent');
         
         // Create a second thread with the same status
         $secondThreadId = $this->createTestThread();
         $secondFolderName = $this->testFolderName . '-second';
         ImapFolderStatus::createOrUpdate($secondFolderName, $secondThreadId, true);
-        $this->addTestEmail('outgoing', 'sent', null, $secondThreadId);
+        $this->addTestEmail('OUT', 'sent', null, $secondThreadId);
         
         // Create a third thread with a different status
         $thirdThreadId = $this->createTestThread();
@@ -347,13 +347,13 @@ class ThreadStatusRepositoryTest extends PHPUnit\Framework\TestCase {
         ImapFolderStatus::createOrUpdate($this->testFolderName, $this->testThreadId, true);
         
         // Add one email to first thread
-        $this->addTestEmail('outgoing', 'sent');
+        $this->addTestEmail('OUT', 'sent');
         
         // Create a second thread with the same status
         $secondThreadId = $this->createTestThread();
         $secondFolderName = $this->testFolderName . '-second';
         ImapFolderStatus::createOrUpdate($secondFolderName, $secondThreadId, true);
-        $this->addTestEmail('outgoing', 'sent', null, $secondThreadId);
+        $this->addTestEmail('OUT', 'sent', null, $secondThreadId);
         
         // Create a third thread with a different status
         $thirdThreadId = $this->createTestThread();
