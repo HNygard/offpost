@@ -219,21 +219,21 @@ class Thread implements JsonSerializable {
 
         $imap_folder_status = ImapFolderStatus::getForThread($this->id);
         if (count($imap_folder_status) == 0) {
-            $status->status_text = 'Email not synced';
+            $status->status_text = 'Email not synced. Can\'t determine thread status / further action.';
             return $status;
         }
         if (count($imap_folder_status) > 1) {
             $status->error = true;
-            $status->status_text = 'Email synced to multiple folders';
+            $status->status_text = 'Email synced to multiple folders. Can\'t determine thread status / further action.';
             return $status;
         }
         if ($imap_folder_status[0]['last_checked_at'] < time() - 60 * 60 * 6) {
             $status->error = true;
-            $status->status_text = 'Email not synced in the last 6 hours';
+            $status->status_text = 'Email not synced in the last 6 hours.';
         }
 
         if (count($this->getEmails()) == 0) {
-            $status->status_text = 'Email not sent';
+            $status->status_text = 'Email not sent.';
             return $status;
         }
         if (count($this->getEmails()) == 1) {
