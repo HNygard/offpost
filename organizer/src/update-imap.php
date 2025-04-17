@@ -41,6 +41,23 @@ function createFolders($connection, $folderManager, $threads) {
         $threadFolderManager->initialize();
         $folders = $threadFolderManager->createRequiredFolders($threads);
         
+        // Create ImapFolderStatus records for newly created folders
+        $folderStatusCount = 0;
+        foreach ($threads as $entityThreads) {
+            foreach ($entityThreads->threads as $thread) {
+                $folder = $threadFolderManager->getThreadEmailFolder($entityThreads->entity_id, $thread);
+                
+                // Only create status records for folders that were just created
+                if (in_array($folder, $folders)) {
+                    // Connect folder to threadId in ImapFolderStatus
+                    if (ImapFolderStatus::createOrUpdate($folder, $thread->id)) {
+                        $folderStatusCount++;
+                        $connection->logDebug("Created folder status record for $folder (Thread ID: {$thread->id})");
+                    }
+                }
+            }
+        }
+        
         // Get the debug output
         $debugOutput = ob_get_flush();
         
@@ -48,7 +65,7 @@ function createFolders($connection, $folderManager, $threads) {
         ImapFolderLog::updateLog(
             $logId, 
             'success', 
-            "Successfully created " . count($folders) . " folders.\n\nDebug log:\n$debugOutput"
+            "Successfully created " . count($folders) . " folders and $folderStatusCount folder status records.\n\nDebug log:\n$debugOutput"
         );
         
         return $folders;
