@@ -197,7 +197,7 @@ function getIconClass($filetype) {
             <p>
                 <?php $status = $thread->getThreadStatus(); ?>
                 <strong>Status:</strong> <?= $status->status_text; ?><br>
-                <strong>Error?</strong> <?= isset($status->error) && $status->error ? 'Yes' : 'No'; ?><br>
+                <strong>Status error?</strong> <?= isset($status->error) && $status->error ? 'Yes' : 'No'; ?><br>
             </p>
 
             <div class="status-labels">
