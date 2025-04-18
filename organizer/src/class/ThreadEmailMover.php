@@ -5,6 +5,7 @@ require_once __DIR__ . '/Imap/ImapConnection.php';
 require_once __DIR__ . '/Imap/ImapFolderManager.php';
 require_once __DIR__ . '/Imap/ImapEmailProcessor.php';
 require_once __DIR__ . '/ImapFolderStatus.php';
+require_once __DIR__ . '/../vendor/autoload.php';
 
 use Imap\ImapConnection;
 use Imap\ImapFolderManager;
@@ -39,7 +40,8 @@ class ThreadEmailMover {
         $maxed_out = false;
         $i = 0;
         foreach ($emails as $email) {
-            $addresses = $email->getEmailAddresses();
+            $rawEmail = $this->connection->getRawEmail($email->uid);
+            $addresses = $email->getEmailAddresses($rawEmail);
             $targetFolder = 'INBOX';
             
             foreach ($addresses as $address) {

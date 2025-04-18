@@ -2,6 +2,8 @@
 
 namespace Imap;
 
+use Laminas\Mail\Storage\Message;
+
 class ImapEmail {
     public int $uid;
     public string $subject;
@@ -84,7 +86,7 @@ class ImapEmail {
     /**
      * Get addresses from email headers
      */
-    public function getEmailAddresses(): array {
+    public function getEmailAddresses($rawEmail = null): array {
         $addresses = [];
         
         if (isset($this->mailHeaders->to)) {
@@ -107,6 +109,21 @@ class ImapEmail {
         if (isset($this->mailHeaders->cc)) {
             foreach ($this->mailHeaders->cc as $email) {
                 $addresses[] = $email->mailbox . '@' . $email->host;
+            }
+        }
+
+        if ($rawEmail !== null) {
+            $message = new \Laminas\Mail\Storage\Message(['raw' => $rawEmail]);
+            $x_forwarded_for = $message->getHeaders()->get('x-forwarded-for');
+            if ($x_forwarded_for !== false ) {
+                if ($x_forwarded_for instanceof ArrayIterator) {
+                    foreach ($x_forwarded_for as $header) {
+                        $addresses[] = $header->getFieldValue();
+                    }
+                }
+                else {
+                    $addresses[] = $x_forwarded_for->getFieldValue();
+                }
             }
         }
 
