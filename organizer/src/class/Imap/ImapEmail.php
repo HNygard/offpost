@@ -113,18 +113,25 @@ class ImapEmail {
         }
 
         if ($rawEmail !== null) {
-            $message = new \Laminas\Mail\Storage\Message(['raw' => $rawEmail]);
-            $x_forwarded_for = $message->getHeaders()->get('x-forwarded-for');
-            if ($x_forwarded_for !== false ) {
-                if ($x_forwarded_for instanceof ArrayIterator) {
-                    foreach ($x_forwarded_for as $header) {
-                        $addresses[] = $header->getFieldValue();
+            try {
+                $message = new \Laminas\Mail\Storage\Message(['raw' => $rawEmail]);
+                $x_forwarded_for = $message->getHeaders()->get('x-forwarded-for');
+                if ($x_forwarded_for !== false ) {
+                    if ($x_forwarded_for instanceof ArrayIterator) {
+                        foreach ($x_forwarded_for as $header) {
+                            $addresses[] = $header->getFieldValue();
+                        }
+                    }
+                    else {
+                        $addresses[] = $x_forwarded_for->getFieldValue();
                     }
                 }
-                else {
-                    $addresses[] = $x_forwarded_for->getFieldValue();
-                }
             }
+            catch(Exception $e) {
+                // Handle exception if needed
+                $addresses[] = 'exception-during-getting-x-forwarded-for';
+            }
+
         }
 
         // Use array_values to reindex the array after removing duplicates
