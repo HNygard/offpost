@@ -44,6 +44,60 @@ foreach ($allThreads as $file => $threads) {
 
 $allThreads = $filteredThreads;
 
+// Get thread statuses for all threads
+$threadIds = [];
+foreach ($filteredThreads as $file => $threads) {
+    if (isset($threads->threads)) {
+        foreach ($threads->threads as $thread) {
+            $threadIds[] = $thread->id;
+        }
+    }
+}
+
+// Get all thread statuses efficiently
+$threadStatuses = ThreadStatusRepository::getAllThreadStatusesEfficient($threadIds);
+
+// Helper function to convert thread status to human-readable string
+function threadStatusToString($status) {
+    switch ($status) {
+        case ThreadStatusRepository::ERROR_THREAD_NOT_FOUND:
+            return 'ERROR: Thread not found';
+        case ThreadStatusRepository::ERROR_NO_FOLDER_FOUND:
+            return 'ERROR: Email not synced';
+        case ThreadStatusRepository::ERROR_MULTIPLE_FOLDERS:
+            return 'ERROR: Multiple folders found';
+        case ThreadStatusRepository::ERROR_OLD_SYNC:
+            return 'ERROR: Sync outdated';
+        case ThreadStatusRepository::NOT_SENT:
+            return 'Not sent';
+        case ThreadStatusRepository::EMAIL_SENT_NOTHING_RECEIVED:
+            return 'Sent, no response';
+        case ThreadStatusRepository::STATUS_OK:
+            return 'Email sync OK';
+        default:
+            return 'Unknown status';
+    }
+}
+
+// Helper function to get label class for thread status
+function getThreadStatusLabelClass($status) {
+    switch ($status) {
+        case ThreadStatusRepository::ERROR_NO_FOLDER_FOUND:
+        case ThreadStatusRepository::ERROR_MULTIPLE_FOLDERS:
+            return 'label_error';
+        case ThreadStatusRepository::ERROR_OLD_SYNC:
+            return 'label_warn';
+        case ThreadStatusRepository::NOT_SENT:
+            return 'label_info';
+        case ThreadStatusRepository::EMAIL_SENT_NOTHING_RECEIVED:
+            return 'label_warn';
+        case ThreadStatusRepository::STATUS_OK:
+            return 'label_ok';
+        default:
+            return 'label_info';
+    }
+}
+
 ?>
 <!DOCTYPE html>
 <html>
@@ -231,6 +285,33 @@ $allThreads = $filteredThreads;
                             }
                             ?><br>
                             <?= $thread->archived ? '<span class="label label_ok"><a href="?label_filter=archived">Archived</a></span>' : '<span class="label label_warn"><a href="?label_filter=not_archived">Not archived</a></span>' ?>
+                            
+                            <?php
+                            // Display thread status if available
+                            if (isset($threadStatuses[$thread->id])) {
+                                $statusData = $threadStatuses[$thread->id];
+                                $statusCode = $statusData['status'];
+                                $statusText = threadStatusToString($statusCode);
+                                $statusClass = getThreadStatusLabelClass($statusCode);
+
+                                $lastChecked = ($statusData['email_server_last_checked_at'] == null) 
+                                    ? 'NOT CHECKED'
+                                    : date('H:i:s d.m.Y', $statusData['email_server_last_checked_at']);
+                                
+                                echo '<br><span class="label ' . $statusClass . '"'
+                                    . ' title="Email server last checked at ' . $lastChecked . '"'
+                                    . '>' . htmlescape($statusText) . '</span>';
+                                
+                                // Display email counts if relevant
+                                if ($statusCode == ThreadStatusRepository::EMAIL_SENT_NOTHING_RECEIVED || 
+                                    $statusCode == ThreadStatusRepository::STATUS_OK) {
+                                    echo '<br><span style="font-size: 0.8em;">Emails: '
+                                         . $statusData['email_count_out'] . ' out, '
+                                         . $statusData['email_count_in'] . ' in'
+                                         . '</span>';
+                                }
+                            }
+                            ?>
                         </td>
                         <?php /* Labels */ ?>
                         <td>

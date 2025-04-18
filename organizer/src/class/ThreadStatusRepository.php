@@ -10,6 +10,7 @@ class ThreadStatusRepository {
     const ERROR_NO_FOLDER_FOUND = 'ERROR_NO_FOLDER_FOUND';
     const ERROR_MULTIPLE_FOLDERS = 'ERROR_MULTIPLE_FOLDERS';
     const ERROR_OLD_SYNC = 'ERROR_OLD_SYNC';
+    const ERROR_THREAD_NOT_FOUND = "ERROR_THREAD_NOT_FOUND";
     const NOT_SENT = 'NOT_SENT';
     const EMAIL_SENT_NOTHING_RECEIVED = 'EMAIL_SENT_NOTHING_RECEIVED';
     const STATUS_OK = 'STATUS_OK';
@@ -24,7 +25,7 @@ class ThreadStatusRepository {
         // Use the more efficient method with thread ID filter
         $statuses = self::getAllThreadStatusesEfficient([$threadId]);
         
-        return $statuses[$threadId]['status'];
+        return isset($statuses[$threadId]) ? $statuses[$threadId]['status'] : self::ERROR_THREAD_NOT_FOUND;
     }
     
     /**
@@ -82,7 +83,8 @@ class ThreadStatusRepository {
                     ELSE 'STATUS_OK'
                 END AS status,
                 email_count_in,
-                email_count_out
+                email_count_out,
+                last_checked_at as email_server_last_checked_at
             FROM 
                 thread_data
         ";
