@@ -129,7 +129,7 @@ class ImapEmail {
             }
             catch(\Throwable $e) {
                 // Handle exception if needed
-                $addresses[] = 'exception-during-getting-x-forwarded-for';
+                $addresses[] = 'exception-during-getting-x-forwarded-for (' . $e->getMessage() . ' B64 trace: ' . base64_encode(jTraceEx($e)) . ')';
             }
 
         }
