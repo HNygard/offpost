@@ -134,6 +134,8 @@ class ImapEmail {
 
         }
 
+        $addresses = array_map('strtolower', $addresses);
+
         // Use array_values to reindex the array after removing duplicates
         return array_values(array_unique($addresses));
     }
