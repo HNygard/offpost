@@ -50,7 +50,7 @@ class ThreadEmailMoverTest extends TestCase {
                     (object)[
                         'title' => 'Thread 3',
                         'my_email' => 'dmarc@offpost.no', // Should be skipped
-                        'archived' => false
+                        'archived' => true
                     ]
                 ]
             ]
@@ -65,8 +65,8 @@ class ThreadEmailMoverTest extends TestCase {
         // Archived threads should not be in mapping
         $this->assertArrayNotHasKey('test2@example.com', $mapping);
         
-        // Verify dmarc@offpost.no is not in mapping
-        $this->assertArrayNotHasKey('dmarc@offpost.no', $mapping);
+        // Verify dmarc@offpost.no is in mapping
+        $this->assertArrayHasKey('dmarc@offpost.no', $mapping);
     }
 
     public function testProcessMailbox() {

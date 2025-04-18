@@ -88,7 +88,7 @@ class ThreadEmailMover {
         
         foreach ($threads as $entityThreads) {
             foreach ($entityThreads->threads as $thread) {
-                if (!$thread->archived && $thread->my_email != 'dmarc@offpost.no') {
+                if (!$thread->archived || $thread->my_email == 'dmarc@offpost.no') {
                     $emailToFolder[$thread->my_email] = $this->getThreadEmailFolder($entityThreads->entity_id, $thread);
                 }
             }
