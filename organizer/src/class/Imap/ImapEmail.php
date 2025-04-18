@@ -127,7 +127,7 @@ class ImapEmail {
                     }
                 }
             }
-            catch(Throwable $e) {
+            catch(\Throwable $e) {
                 // Handle exception if needed
                 $addresses[] = 'exception-during-getting-x-forwarded-for';
             }
