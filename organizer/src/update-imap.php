@@ -156,6 +156,8 @@ function processInbox($connection, $folderManager, $emailProcessor, $threads) {
         } else {
             $message .= "No unmatched email addresses found.";
         }
+
+        ImapFolderStatus::createOrUpdate('INBOX', updateLastChecked: true);
         
         ImapFolderLog::updateLog(
             $logId, 
@@ -197,6 +199,9 @@ function processSentFolder($connection, $folderManager, $emailProcessor, $thread
         // Get the debug output
         $debugOutput = ob_get_flush();
         
+
+        ImapFolderStatus::createOrUpdate('INBOX.Sent', updateLastChecked: true);
+
         // Update the log entry with the result and debug output
         ImapFolderLog::updateLog(
             $logId, 

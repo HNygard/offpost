@@ -29,6 +29,9 @@ class ThreadStatusRepositoryTest extends PHPUnit\Framework\TestCase {
             "DELETE FROM thread_emails WHERE thread_id = ?",
             [$this->testThreadId]
         );
+
+        ImapFolderStatus::createOrUpdate('INBOX', updateLastChecked: true);
+        ImapFolderStatus::createOrUpdate('INBOX.Sent', updateLastChecked: true);
     }
     
     /**
@@ -112,7 +115,10 @@ class ThreadStatusRepositoryTest extends PHPUnit\Framework\TestCase {
         // :: Assert
         $this->assertEquals('ERROR_NO_FOLDER_FOUND', ThreadStatusRepository::ERROR_NO_FOLDER_FOUND);
         $this->assertEquals('ERROR_MULTIPLE_FOLDERS', ThreadStatusRepository::ERROR_MULTIPLE_FOLDERS);
+        $this->assertEquals('ERROR_NO_SYNC', ThreadStatusRepository::ERROR_NO_SYNC);
         $this->assertEquals('ERROR_OLD_SYNC', ThreadStatusRepository::ERROR_OLD_SYNC);
+        $this->assertEquals('ERROR_INBOX_SYNC', ThreadStatusRepository::ERROR_INBOX_SYNC);
+        $this->assertEquals('ERROR_SENT_SYNC', ThreadStatusRepository::ERROR_SENT_SYNC);
         $this->assertEquals('NOT_SENT', ThreadStatusRepository::NOT_SENT);
         $this->assertEquals('EMAIL_SENT_NOTHING_RECEIVED', ThreadStatusRepository::EMAIL_SENT_NOTHING_RECEIVED);
         $this->assertEquals('STATUS_OK', ThreadStatusRepository::STATUS_OK);
@@ -424,5 +430,108 @@ class ThreadStatusRepositoryTest extends PHPUnit\Framework\TestCase {
         
         // :: Assert
         $this->assertEquals(ThreadStatusRepository::ERROR_NO_SYNC, $status, "Status should be ERROR_NO_SYNC when last_checked_at is NULL");
+    }
+    
+    public function testGetThreadStatusWithMissingInboxFolder(): void {
+        // :: Setup
+        // Create IMAP folder status for the thread folder but not for INBOX
+        ImapFolderStatus::createOrUpdate($this->testFolderName, $this->testThreadId, true);
+
+        // Delete INBOX folder status to simulate missing folder
+        Database::execute(
+            "DELETE FROM imap_folder_status WHERE folder_name = ?",
+            ['INBOX']
+        );
+        
+        // Add an email to ensure we get past the "Email not sent" check
+        $this->addTestEmail('OUT', 'sent');
+        
+        // :: Act
+        $status = ThreadStatusRepository::getThreadStatus($this->testThreadId);
+        
+        // :: Assert
+        $this->assertEquals(ThreadStatusRepository::ERROR_INBOX_SYNC, $status, "Status should be ERROR_INBOX_SYNC when INBOX folder is missing");
+    }
+    
+    public function testGetThreadStatusWithMissingSentFolder(): void {
+        // :: Setup
+        // Create IMAP folder status for the thread folder and INBOX but not for INBOX.Sent
+        ImapFolderStatus::createOrUpdate($this->testFolderName, $this->testThreadId, true);
+        
+        // Delete INBOX.Sent folder status to simulate missing folder
+        Database::execute(
+            "DELETE FROM imap_folder_status WHERE folder_name = ?",
+            ['INBOX.Sent']
+        );
+        
+        
+        // Add an email to ensure we get past the "Email not sent" check
+        $this->addTestEmail('OUT', 'sent');
+        
+        // :: Act
+        $status = ThreadStatusRepository::getThreadStatus($this->testThreadId);
+        
+        // :: Assert
+        $this->assertEquals(ThreadStatusRepository::ERROR_SENT_SYNC, $status, "Status should be ERROR_SENT_SYNC when INBOX.Sent folder is missing");
+    }
+    
+    public function testGetThreadStatusWithOldInboxFolderCheck(): void {
+        // :: Setup
+        // Create IMAP folder status for all required folders
+        ImapFolderStatus::createOrUpdate($this->testFolderName, $this->testThreadId, true);
+        
+        // Set INBOX last_checked_at to 15 minutes ago (older than 10 minutes threshold)
+        $fifteenMinutesAgo = time() - (15 * 60);
+        Database::execute(
+            "UPDATE imap_folder_status SET last_checked_at = to_timestamp(?) WHERE folder_name = ?",
+            [$fifteenMinutesAgo, 'INBOX']
+        );
+        
+        // Add an email to ensure we get past the "Email not sent" check
+        $this->addTestEmail('OUT', 'sent');
+        
+        // :: Act
+        $status = ThreadStatusRepository::getThreadStatus($this->testThreadId);
+        
+        // :: Assert
+        $this->assertEquals(ThreadStatusRepository::ERROR_INBOX_SYNC, $status, "Status should be ERROR_INBOX_SYNC when INBOX folder was last checked more than 10 minutes ago");
+    }
+    
+    public function testGetThreadStatusWithOldSentFolderCheck(): void {
+        // :: Setup
+        // Create IMAP folder status for all required folders
+        ImapFolderStatus::createOrUpdate($this->testFolderName, $this->testThreadId, true);
+        
+        // Set INBOX.Sent last_checked_at to 15 minutes ago (older than 10 minutes threshold)
+        $fifteenMinutesAgo = time() - (15 * 60);
+        Database::execute(
+            "UPDATE imap_folder_status SET last_checked_at = to_timestamp(?) WHERE folder_name = ?",
+            [$fifteenMinutesAgo, 'INBOX.Sent']
+        );
+        
+        // Add an email to ensure we get past the "Email not sent" check
+        $this->addTestEmail('OUT', 'sent');
+        
+        // :: Act
+        $status = ThreadStatusRepository::getThreadStatus($this->testThreadId);
+        
+        // :: Assert
+        $this->assertEquals(ThreadStatusRepository::ERROR_SENT_SYNC, $status, "Status should be ERROR_SENT_SYNC when INBOX.Sent folder was last checked more than 10 minutes ago");
+    }
+    
+    public function testGetThreadStatusWithAllFoldersInSync(): void {
+        // :: Setup
+        // Create IMAP folder status for all required folders with recent timestamps
+        ImapFolderStatus::createOrUpdate($this->testFolderName, $this->testThreadId, true);
+        
+        // Add multiple emails to get STATUS_OK
+        $this->addTestEmail('OUT', 'sent');
+        $this->addTestEmail('IN', 'received');
+        
+        // :: Act
+        $status = ThreadStatusRepository::getThreadStatus($this->testThreadId);
+        
+        // :: Assert
+        $this->assertEquals(ThreadStatusRepository::STATUS_OK, $status, "Status should be STATUS_OK when all folders are in sync and multiple emails exist");
     }
 }

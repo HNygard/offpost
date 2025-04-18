@@ -12,6 +12,8 @@ class ThreadStatusRepository {
     const ERROR_NO_SYNC = 'ERROR_NO_SYNC';
     const ERROR_OLD_SYNC = 'ERROR_OLD_SYNC';
     const ERROR_THREAD_NOT_FOUND = "ERROR_THREAD_NOT_FOUND";
+    const ERROR_INBOX_SYNC = 'ERROR_INBOX_SYNC';
+    const ERROR_SENT_SYNC = 'ERROR_SENT_SYNC';
     const NOT_SENT = 'NOT_SENT';
     const EMAIL_SENT_NOTHING_RECEIVED = 'EMAIL_SENT_NOTHING_RECEIVED';
     const STATUS_OK = 'STATUS_OK';
@@ -49,7 +51,11 @@ class ThreadStatusRepository {
                     COUNT(DISTINCT ifs.id) AS folder_count,
                     MAX(ifs.last_checked_at) AS last_checked_at,
                     COUNT(te_in.id) AS email_count_in,
-                    COUNT(te_out.id) AS email_count_out
+                    COUNT(te_out.id) AS email_count_out,
+                    (SELECT MAX(ifs_inbox.last_checked_at) FROM imap_folder_status ifs_inbox WHERE ifs_inbox.folder_name = 'INBOX')
+                        AS last_checked_at_inbox,
+                    (SELECT MAX(ifs_sent.last_checked_at) FROM imap_folder_status ifs_sent WHERE ifs_sent.folder_name = 'INBOX.Sent')
+                        AS last_checked_at_sent
                 FROM 
                     threads t
                 LEFT JOIN 
@@ -82,9 +88,18 @@ class ThreadStatusRepository {
             SELECT 
                 thread_id,
                 CASE
+                    -- Technical checks for this thread
                     WHEN folder_count = 0 THEN 'ERROR_NO_FOLDER_FOUND'
                     WHEN folder_count > 1 THEN 'ERROR_MULTIPLE_FOLDERS'
                     WHEN last_checked_at IS NULL THEN 'ERROR_NO_SYNC'
+
+                    -- Check status for sync of inbox and sent folders
+                    WHEN last_checked_at_inbox IS NULL THEN 'ERROR_INBOX_SYNC'
+                    WHEN last_checked_at_sent IS NULL THEN 'ERROR_SENT_SYNC'
+                    WHEN last_checked_at_inbox < NOW() - INTERVAL '10 minutes' THEN 'ERROR_INBOX_SYNC'
+                    WHEN last_checked_at_sent < NOW() - INTERVAL '10 minutes' THEN 'ERROR_SENT_SYNC'
+                    
+                    -- Up-to-date checks for this thread
                     WHEN last_checked_at < NOW() - INTERVAL '6 hours' THEN 'ERROR_OLD_SYNC'
                     WHEN email_count_out = 0 AND email_count_in = 0 THEN 'NOT_SENT'
                     WHEN email_count_out = 1 AND email_count_in = 0 THEN 'EMAIL_SENT_NOTHING_RECEIVED'
@@ -102,9 +117,18 @@ class ThreadStatusRepository {
             $query .= "
             WHERE
                 CASE
+                    -- Technical checks for this thread
                     WHEN folder_count = 0 THEN 'ERROR_NO_FOLDER_FOUND'
                     WHEN folder_count > 1 THEN 'ERROR_MULTIPLE_FOLDERS'
                     WHEN last_checked_at IS NULL THEN 'ERROR_NO_SYNC'
+
+                    -- Check status for sync of inbox and sent folders
+                    WHEN last_checked_at_inbox IS NULL THEN 'ERROR_INBOX_SYNC'
+                    WHEN last_checked_at_sent IS NULL THEN 'ERROR_SENT_SYNC'
+                    WHEN last_checked_at_inbox < NOW() - INTERVAL '10 minutes' THEN 'ERROR_INBOX_SYNC'
+                    WHEN last_checked_at_sent < NOW() - INTERVAL '10 minutes' THEN 'ERROR_SENT_SYNC'
+                    
+                    -- Up-to-date checks for this thread
                     WHEN last_checked_at < NOW() - INTERVAL '6 hours' THEN 'ERROR_OLD_SYNC'
                     WHEN email_count_out = 0 AND email_count_in = 0 THEN 'NOT_SENT'
                     WHEN email_count_out = 1 AND email_count_in = 0 THEN 'EMAIL_SENT_NOTHING_RECEIVED'
