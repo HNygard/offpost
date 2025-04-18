@@ -420,7 +420,7 @@ class MockImapEmailProcessor extends ImapEmailProcessor {
         if (count($parts) === 2) {
             return [$parts[0], $parts[1]];
         }
-        throw new Exception("Invalid email address: $email");
+        return [$email, null];
     }
     
     /**
@@ -637,6 +637,10 @@ class ThreadEmailEmlIntegrationTest extends E2EPageTestCase {
             __DIR__ . '/../../../data/test-emails/dmarc-without-content-transfer-encoding.eml',
             'This is a DMARC aggregate report for offpost.n'
         );
+        $this->internalTest(
+            __DIR__ . '/../../../data/test-emails/bcc-with-x-forwarded-for-header.eml',
+            'Vedlagt ligger offentlig journal'
+        );
     }
 
     public function internalTest($eml_file, $expected_text) {
@@ -663,6 +667,7 @@ class ThreadEmailEmlIntegrationTest extends E2EPageTestCase {
 
         $emlContent = str_replace('valgprotokoll_2021_0418-nord-odal-kommune@offpost.no', $this->thread->my_email, $emlContent);
         $emlContent = str_replace('dmarc@offpost.no', $this->thread->my_email, $emlContent);
+        $emlContent = str_replace('x-forwarded-for-header@offpost.no', $this->thread->my_email, $emlContent);
         $emlContent = str_replace('Some.Person@nord-odal.kommune.no', $this->testEntityEmail, $emlContent);
         
         // Create thread in the system

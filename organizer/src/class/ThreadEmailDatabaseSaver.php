@@ -1,5 +1,6 @@
 <?php
 
+require_once __DIR__ . '/../vendor/autoload.php';
 require_once __DIR__ . '/ThreadEmailHistory.php';
 require_once __DIR__ . '/Imap/ImapWrapper.php';
 require_once __DIR__ . '/Imap/ImapConnection.php';
@@ -14,6 +15,7 @@ require_once __DIR__ . '/ImapFolderStatus.php';
 use Imap\ImapConnection;
 use Imap\ImapEmailProcessor;
 use Imap\ImapAttachmentHandler;
+use Laminas\Mail\Storage\Message;
 
 class ThreadEmailDatabaseSaver {
     private \Imap\ImapConnection $connection;
@@ -54,6 +56,24 @@ class ThreadEmailDatabaseSaver {
 
                 # Figure out which thread this email is part of
                 $all_emails = $email->getEmailAddresses();
+
+                // Get raw email content
+                $rawEmail = $this->connection->getRawEmail($email->uid);
+                if (!$rawEmail) {
+                    throw new Exception('Connection lost');
+                }
+                $message = new \Laminas\Mail\Storage\Message(['raw' => $rawEmail]);
+                $x_forwarded_for = $message->getHeaders()->get('x-forwarded-for');
+                if ($x_forwarded_for !== false ) {
+                    if ($x_forwarded_for instanceof ArrayIterator) {
+                        foreach ($x_forwarded_for as $header) {
+                            $all_emails[] = $header->getFieldValue();
+                        }
+                    }
+                    else {
+                        $all_emails[] = $x_forwarded_for->getFieldValue();
+                    }
+                }
 
                 $email_identifier = date('Y-m-d__His', $email->timestamp) . '__' . md5($email->subject);
                 
@@ -102,12 +122,6 @@ class ThreadEmailDatabaseSaver {
                     }
                     else {
                         $this->connection->logDebug("Saving to database ...... thread_id[$thread->id][$thread->my_email]: $filename");
-
-                        // Get raw email content
-                        $rawEmail = $this->connection->getRawEmail($email->uid);
-                        if (!$rawEmail) {
-                            throw new Exception('Connection lost');
-                        }
                         
                         // Create new email record in database
                         $emailId = $this->saveEmailToDatabase($thread->id, $email, $direction, $filename, $rawEmail, $email->mailHeaders);
