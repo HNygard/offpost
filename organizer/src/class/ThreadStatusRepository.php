@@ -36,7 +36,7 @@ class ThreadStatusRepository {
      * @param string|null $status Optional status to filter by (one of the class constants)
      * @return array Array of thread statuses with thread_id as key
      */
-    public static function getAllThreadStatusesEfficient(array $threadIds = null, string $status = null): array {
+    public static function getAllThreadStatusesEfficient(array $threadIds = null, string $status = null, $archived = false): array {
         $result = [];
         $params = [];
         
@@ -58,8 +58,14 @@ class ThreadStatusRepository {
                 LEFT JOIN 
                     thread_emails te_out ON t.id = te_out.thread_id AND te_out.email_type = 'OUT'
                 WHERE 
-                    t.archived = false
+                    1 = 1
         ";
+
+        if (!$archived) {
+            $query .= " AND t.archived = false";
+        } else {
+            $query .= " AND t.archived = true";
+        }
         
         // Add thread IDs filter if provided
         if ($threadIds !== null && count($threadIds) > 0) {
