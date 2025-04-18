@@ -117,6 +117,9 @@ class ThreadStatusRepository {
         $statuses = Database::query($query, $params);
         
         foreach ($statuses as $status) {
+            if ($status['email_server_last_checked_at'] != null) {
+                $status['email_server_last_checked_at'] = strtotime($status['email_server_last_checked_at']);
+            }
             $result[$status['thread_id']] = $status;
         }
         

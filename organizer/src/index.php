@@ -55,7 +55,9 @@ foreach ($filteredThreads as $file => $threads) {
 }
 
 // Get all thread statuses efficiently
-$threadStatuses = ThreadStatusRepository::getAllThreadStatusesEfficient($threadIds);
+$threadStatuses =
+ ThreadStatusRepository::getAllThreadStatusesEfficient($threadIds, archived: false)
++ ThreadStatusRepository::getAllThreadStatusesEfficient($threadIds, archived: true);
 
 // Helper function to convert thread status to human-readable string
 function threadStatusToString($status) {
