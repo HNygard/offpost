@@ -70,8 +70,14 @@ function threadStatusToString($status) {
             return 'ERROR: Multiple folders found';
         case ThreadStatusRepository::ERROR_NO_SYNC:
             return 'ERROR: No sync';
+        case ThreadStatusRepository::ERROR_OLD_SYNC_REQUESTED_UPDATE:
+            return 'ERROR: Update requested';
         case ThreadStatusRepository::ERROR_OLD_SYNC:
             return 'ERROR: Sync outdated';
+        case ThreadStatusRepository::ERROR_INBOX_SYNC:
+            return 'ERROR: Inbox sync needed';
+        case ThreadStatusRepository::ERROR_SENT_SYNC:
+            return 'ERROR: Sent folder sync needed';
         case ThreadStatusRepository::NOT_SENT:
             return 'Not sent';
         case ThreadStatusRepository::EMAIL_SENT_NOTHING_RECEIVED:
@@ -88,17 +94,20 @@ function getThreadStatusLabelClass($status) {
     switch ($status) {
         case ThreadStatusRepository::ERROR_NO_FOLDER_FOUND:
         case ThreadStatusRepository::ERROR_MULTIPLE_FOLDERS:
-            return 'label_error';
+        case ThreadStatusRepository::ERROR_NO_SYNC:
         case ThreadStatusRepository::ERROR_OLD_SYNC:
-            return 'label_warn';
+        case ThreadStatusRepository::ERROR_INBOX_SYNC:
+        case ThreadStatusRepository::ERROR_SENT_SYNC:
+            return 'label_error';
         case ThreadStatusRepository::NOT_SENT:
             return 'label_info';
+        case ThreadStatusRepository::ERROR_OLD_SYNC_REQUESTED_UPDATE:
         case ThreadStatusRepository::EMAIL_SENT_NOTHING_RECEIVED:
             return 'label_warn';
         case ThreadStatusRepository::STATUS_OK:
             return 'label_ok';
         default:
-            return 'label_info';
+            throw new Exception('Unknown status: ' . $status);
     }
 }
 
@@ -269,7 +278,7 @@ function getThreadStatusLabelClass($status) {
                             <?php 
                             switch ($thread->sending_status) {
                                 case Thread::SENDING_STATUS_STAGING:
-                                    echo '<span class="label label_info"><a href="?label_filter=staging">' 
+                                    echo '<span class="label label_warn"><a href="?label_filter=staging">' 
                                         . ThreadHistory::sendingStatusToString($thread->sending_status) . '</a></span>';
                                     break;
                                 case Thread::SENDING_STATUS_READY_FOR_SENDING:
@@ -288,7 +297,9 @@ function getThreadStatusLabelClass($status) {
                                     throw new Exception('Unknown sending status: ' . $thread->sending_status);
                             }
                             ?><br>
-                            <?= $thread->archived ? '<span class="label label_ok"><a href="?label_filter=archived">Archived</a></span>' : '<span class="label label_warn"><a href="?label_filter=not_archived">Not archived</a></span>' ?>
+                            <?= $thread->archived 
+                                ? '<span class="label label_ok"><a href="?label_filter=archived">Archived</a></span>' 
+                                : '<span class="label label_info"><a href="?label_filter=not_archived">Not archived</a></span>' ?>
                             
                             <?php
                             // Display thread status if available
@@ -304,7 +315,7 @@ function getThreadStatusLabelClass($status) {
                                 
                                 echo '<br><span class="label ' . $statusClass . '"'
                                     . ' title="Email server last checked at ' . $lastChecked . '"'
-                                    . '>' . htmlescape($statusText) . '</span>';
+                                    . '><a href="#" onclick="return false;">' . htmlescape($statusText) . '</a></span>';
                                 
                                 // Display email counts if relevant
                                 if ($statusCode == ThreadStatusRepository::EMAIL_SENT_NOTHING_RECEIVED || 

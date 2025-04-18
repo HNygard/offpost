@@ -182,6 +182,11 @@ span.label.label_warn a {
     border-color: #724f30;
 }
 
+span.label.label_error a {
+    background-color: #f88383;
+    border-color: #c0392b;
+}
+
 span.label.label_pending a {
     background-color: #f8f883;
     border-color: #b0b84f;

@@ -10,6 +10,7 @@ class ThreadStatusRepository {
     const ERROR_NO_FOLDER_FOUND = 'ERROR_NO_FOLDER_FOUND';
     const ERROR_MULTIPLE_FOLDERS = 'ERROR_MULTIPLE_FOLDERS';
     const ERROR_NO_SYNC = 'ERROR_NO_SYNC';
+    const ERROR_OLD_SYNC_REQUESTED_UPDATE = 'ERROR_OLD_SYNC_REQUESTED_UPDATE';
     const ERROR_OLD_SYNC = 'ERROR_OLD_SYNC';
     const ERROR_THREAD_NOT_FOUND = "ERROR_THREAD_NOT_FOUND";
     const ERROR_INBOX_SYNC = 'ERROR_INBOX_SYNC';
@@ -50,6 +51,7 @@ class ThreadStatusRepository {
                     t.id AS thread_id,
                     COUNT(DISTINCT ifs.id) AS folder_count,
                     MAX(ifs.last_checked_at) AS last_checked_at,
+                    MAX(ifs.requested_update_time) AS requested_update_time,
                     COUNT(te_in.id) AS email_count_in,
                     COUNT(te_out.id) AS email_count_out,
                     (SELECT MAX(ifs_inbox.last_checked_at) FROM imap_folder_status ifs_inbox WHERE ifs_inbox.folder_name = 'INBOX')
@@ -100,6 +102,7 @@ class ThreadStatusRepository {
                     WHEN last_checked_at_sent < NOW() - INTERVAL '10 minutes' THEN 'ERROR_SENT_SYNC'
                     
                     -- Up-to-date checks for this thread
+                    WHEN requested_update_time IS NOT NULL THEN 'ERROR_OLD_SYNC_REQUESTED_UPDATE'
                     WHEN last_checked_at < NOW() - INTERVAL '6 hours' THEN 'ERROR_OLD_SYNC'
                     WHEN email_count_out = 0 AND email_count_in = 0 THEN 'NOT_SENT'
                     WHEN email_count_out = 1 AND email_count_in = 0 THEN 'EMAIL_SENT_NOTHING_RECEIVED'

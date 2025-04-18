@@ -116,6 +116,7 @@ class ThreadStatusRepositoryTest extends PHPUnit\Framework\TestCase {
         $this->assertEquals('ERROR_NO_FOLDER_FOUND', ThreadStatusRepository::ERROR_NO_FOLDER_FOUND);
         $this->assertEquals('ERROR_MULTIPLE_FOLDERS', ThreadStatusRepository::ERROR_MULTIPLE_FOLDERS);
         $this->assertEquals('ERROR_NO_SYNC', ThreadStatusRepository::ERROR_NO_SYNC);
+        $this->assertEquals('ERROR_OLD_SYNC_REQUESTED_UPDATE', ThreadStatusRepository::ERROR_OLD_SYNC_REQUESTED_UPDATE);
         $this->assertEquals('ERROR_OLD_SYNC', ThreadStatusRepository::ERROR_OLD_SYNC);
         $this->assertEquals('ERROR_INBOX_SYNC', ThreadStatusRepository::ERROR_INBOX_SYNC);
         $this->assertEquals('ERROR_SENT_SYNC', ThreadStatusRepository::ERROR_SENT_SYNC);
@@ -167,6 +168,28 @@ class ThreadStatusRepositoryTest extends PHPUnit\Framework\TestCase {
         
         // :: Assert
         $this->assertEquals(ThreadStatusRepository::ERROR_OLD_SYNC, $status, "Status should be ERROR_OLD_SYNC when IMAP folder was last checked more than 6 hours ago");
+    }
+    
+    public function testGetThreadStatusWithRequestedUpdateTime(): void {
+        // :: Setup
+        // Create IMAP folder status with recent timestamp
+        ImapFolderStatus::createOrUpdate($this->testFolderName, $this->testThreadId, true);
+        
+        // Set requested_update_time to current time
+        Database::execute(
+            "UPDATE imap_folder_status SET requested_update_time = NOW() WHERE folder_name = ? AND thread_id = ?",
+            [$this->testFolderName, $this->testThreadId]
+        );
+        
+        // Add an email to ensure we get past the "Email not sent" check
+        $this->addTestEmail('OUT', 'sent');
+        
+        // :: Act
+        $status = ThreadStatusRepository::getThreadStatus($this->testThreadId);
+        
+        // :: Assert
+        $this->assertEquals(ThreadStatusRepository::ERROR_OLD_SYNC_REQUESTED_UPDATE, $status, 
+            "Status should be ERROR_OLD_SYNC_REQUESTED_UPDATE when requested_update_time is not null");
     }
     
     public function testGetThreadStatusWithNoEmails(): void {
