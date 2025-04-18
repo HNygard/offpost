@@ -2,6 +2,8 @@
 
 namespace Imap;
 
+require_once __DIR__ . '/../vendor/autoload.php';
+
 use Laminas\Mail\Storage\Message;
 
 class ImapEmail {
