@@ -68,6 +68,8 @@ function threadStatusToString($status) {
             return 'ERROR: Email not synced';
         case ThreadStatusRepository::ERROR_MULTIPLE_FOLDERS:
             return 'ERROR: Multiple folders found';
+        case ThreadStatusRepository::ERROR_NO_SYNC:
+            return 'ERROR: No sync';
         case ThreadStatusRepository::ERROR_OLD_SYNC:
             return 'ERROR: Sync outdated';
         case ThreadStatusRepository::NOT_SENT:
