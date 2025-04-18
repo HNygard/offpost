@@ -9,6 +9,7 @@ class ThreadStatusRepository {
     // Thread status constants
     const ERROR_NO_FOLDER_FOUND = 'ERROR_NO_FOLDER_FOUND';
     const ERROR_MULTIPLE_FOLDERS = 'ERROR_MULTIPLE_FOLDERS';
+    const ERROR_NO_SYNC = 'ERROR_NO_SYNC';
     const ERROR_OLD_SYNC = 'ERROR_OLD_SYNC';
     const ERROR_THREAD_NOT_FOUND = "ERROR_THREAD_NOT_FOUND";
     const NOT_SENT = 'NOT_SENT';
@@ -83,6 +84,7 @@ class ThreadStatusRepository {
                 CASE
                     WHEN folder_count = 0 THEN 'ERROR_NO_FOLDER_FOUND'
                     WHEN folder_count > 1 THEN 'ERROR_MULTIPLE_FOLDERS'
+                    WHEN last_checked_at IS NULL THEN 'ERROR_NO_SYNC'
                     WHEN last_checked_at < NOW() - INTERVAL '6 hours' THEN 'ERROR_OLD_SYNC'
                     WHEN email_count_out = 0 AND email_count_in = 0 THEN 'NOT_SENT'
                     WHEN email_count_out = 1 AND email_count_in = 0 THEN 'EMAIL_SENT_NOTHING_RECEIVED'
@@ -102,6 +104,7 @@ class ThreadStatusRepository {
                 CASE
                     WHEN folder_count = 0 THEN 'ERROR_NO_FOLDER_FOUND'
                     WHEN folder_count > 1 THEN 'ERROR_MULTIPLE_FOLDERS'
+                    WHEN last_checked_at IS NULL THEN 'ERROR_NO_SYNC'
                     WHEN last_checked_at < NOW() - INTERVAL '6 hours' THEN 'ERROR_OLD_SYNC'
                     WHEN email_count_out = 0 AND email_count_in = 0 THEN 'NOT_SENT'
                     WHEN email_count_out = 1 AND email_count_in = 0 THEN 'EMAIL_SENT_NOTHING_RECEIVED'

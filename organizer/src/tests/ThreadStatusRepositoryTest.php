@@ -374,4 +374,27 @@ class ThreadStatusRepositoryTest extends PHPUnit\Framework\TestCase {
         $this->assertArrayHasKey($secondThreadId, $filteredStatuses, "Filtered statuses should contain the second thread ID");
         $this->assertArrayNotHasKey($thirdThreadId, $filteredStatuses, "Filtered statuses should not contain the third thread ID");
     }
+    
+    public function testGetThreadStatusWithNullLastCheckedAt(): void {
+        // :: Setup
+        // Create IMAP folder status with NULL last_checked_at
+        // By default, createOrUpdate sets last_checked_at to NULL when $updateLastChecked is false
+        ImapFolderStatus::createOrUpdate($this->testFolderName, $this->testThreadId, false);
+        
+        // Add an email to ensure we get past the "Email not sent" check
+        $this->addTestEmail('OUT', 'sent');
+        
+        // Verify that last_checked_at is NULL
+        $lastCheckedAt = Database::queryValue(
+            "SELECT last_checked_at FROM imap_folder_status WHERE folder_name = ? AND thread_id = ?",
+            [$this->testFolderName, $this->testThreadId]
+        );
+        $this->assertNull($lastCheckedAt, "last_checked_at should be NULL for this test");
+        
+        // :: Act
+        $status = ThreadStatusRepository::getThreadStatus($this->testThreadId);
+        
+        // :: Assert
+        $this->assertEquals(ThreadStatusRepository::ERROR_NO_SYNC, $status, "Status should be ERROR_NO_SYNC when last_checked_at is NULL");
+    }
 }
