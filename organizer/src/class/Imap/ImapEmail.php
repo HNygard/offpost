@@ -89,7 +89,7 @@ class ImapEmail {
         
         if (isset($this->mailHeaders->to)) {
             foreach ($this->mailHeaders->to as $email) {
-                $addresses[] = $email->mailbox . '@' . ($email->host ? $email->host : 'NULL');
+                $addresses[] = $email->mailbox . '@' . (isset($email->host) ? $email->host : 'NULL');
             }
         }
         foreach ($this->mailHeaders->from as $email) {
