@@ -752,7 +752,7 @@ class ThreadEmailEmlIntegrationTest extends E2EPageTestCase {
         // :: Act - Step 5: Run update-imap process-folder
         $threadEmailMover = new ThreadEmailMover($this->imapConnection, $folderManager, $emailProcessor);
         $emailToFolder = $threadEmailMover->buildEmailToFolderMapping($threads);
-        $unmatchedAddresses = $threadEmailMover->processMailbox('INBOX', $emailToFolder);
+        $threadEmailMover->processMailbox('INBOX', $emailToFolder);
         
         // Get the thread folder name
         $threadFolderName = 'INBOX.' . $this->thread->id;

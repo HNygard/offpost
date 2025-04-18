@@ -36,6 +36,7 @@ class ThreadEmailMover {
         $unmatchedAddresses = [];
         $emails = $this->emailProcessor->getEmails($mailbox);
         
+        $maxed_out = false;
         $i = 0;
         foreach ($emails as $email) {
             $addresses = $email->getEmailAddresses();
@@ -66,11 +67,15 @@ class ThreadEmailMover {
             $i++;
             if ($i == 100) {
                 $this->connection->logDebug('Processed 100 emails, breaking loop');
+                $maxed_out = true;
                 break;
             }
         }
         
-        return array_unique($unmatchedAddresses);
+        return array(
+            'unmatched' => array_unique($unmatchedAddresses),
+            'maxed_out' => $maxed_out,
+        );
     }
 
     /**

@@ -144,7 +144,8 @@ function processInbox($connection, $folderManager, $emailProcessor, $threads) {
     try {
         $threadEmailMover = new ThreadEmailMover($connection, $folderManager, $emailProcessor);
         $emailToFolder = $threadEmailMover->buildEmailToFolderMapping($threads);
-        $unmatchedAddresses = $threadEmailMover->processMailbox('INBOX', $emailToFolder);
+        $proccess = $threadEmailMover->processMailbox('INBOX', $emailToFolder);
+        $unmatchedAddresses = $proccess['unmatched'];
         
         // Get the debug output
         $debugOutput = ob_get_flush();
@@ -157,7 +158,13 @@ function processInbox($connection, $folderManager, $emailProcessor, $threads) {
             $message .= "No unmatched email addresses found.";
         }
 
-        ImapFolderStatus::createOrUpdate('INBOX', updateLastChecked: true);
+        if ($proccess['maxed_out']) {
+            $message .= " Processing of emails maxed out. Not marking INBOX as updated.";
+        }
+        else {
+            $message .= " Marking INBOX as updated.";
+            ImapFolderStatus::createOrUpdate('INBOX', updateLastChecked: true);
+        }
         
         ImapFolderLog::updateLog(
             $logId, 
@@ -194,13 +201,19 @@ function processSentFolder($connection, $folderManager, $emailProcessor, $thread
     try {
         $threadEmailMover = new ThreadEmailMover($connection, $folderManager, $emailProcessor);
         $emailToFolder = $threadEmailMover->buildEmailToFolderMapping($threads);
-        $unmatchedAddresses = $threadEmailMover->processMailbox($imapSentFolder, $emailToFolder);
+        $proccess = $threadEmailMover->processMailbox($imapSentFolder, $emailToFolder);
+        $unmatchedAddresses = $proccess['unmatched'];
         
         // Get the debug output
         $debugOutput = ob_get_flush();
         
-
-        ImapFolderStatus::createOrUpdate('INBOX.Sent', updateLastChecked: true);
+        if ($proccess['maxed_out']) {
+            $debugOutput .= " Processing of emails maxed out. Not marking INBOX.Sent as updated.";
+        }
+        else {
+            $debugOutput .= " Marking INBOX.Sent as updated.";
+            ImapFolderStatus::createOrUpdate('INBOX.Sent', updateLastChecked: true);
+        }
 
         // Update the log entry with the result and debug output
         ImapFolderLog::updateLog(

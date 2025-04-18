@@ -94,7 +94,7 @@ class ThreadEmailMoverTest extends TestCase {
             'test1@example.com' => 'INBOX.Test - Thread 1'
         ];
 
-        $unmatchedAddresses = $this->threadEmailMover->processMailbox('INBOX', $emailToFolder);
+        $unmatchedAddresses = $this->threadEmailMover->processMailbox('INBOX', $emailToFolder)['unmatched'];
 
         // Verify no unmatched addresses
         $this->assertEmpty($unmatchedAddresses);
@@ -129,7 +129,7 @@ class ThreadEmailMoverTest extends TestCase {
             'sender2@example.com' => 'INBOX.Test - Thread 1'
         ];
 
-        $unmatchedAddresses = $this->threadEmailMover->processMailbox('INBOX', $emailToFolder);
+        $unmatchedAddresses = $this->threadEmailMover->processMailbox('INBOX', $emailToFolder)['unmatched'];
 
         // Only addresses not in emailToFolder should be returned as unmatched
         $this->assertCount(0, $unmatchedAddresses, 'No addresses should be unmatched since email was moved to a thread folder');
@@ -156,7 +156,7 @@ class ThreadEmailMoverTest extends TestCase {
             ->with(1, 'INBOX');
 
         $emailToFolder = ['other@example.com' => 'INBOX.Test - Thread 1'];
-        $unmatchedAddresses = $this->threadEmailMover->processMailbox('INBOX', $emailToFolder);
+        $unmatchedAddresses = $this->threadEmailMover->processMailbox('INBOX', $emailToFolder)['unmatched'];
 
         // DMARC emails should not be included in unmatched addresses
         $this->assertEmpty($unmatchedAddresses);
@@ -221,7 +221,7 @@ class ThreadEmailMoverTest extends TestCase {
         // Empty email-to-folder mapping
         $emailToFolder = [];
 
-        $unmatchedAddresses = $this->threadEmailMover->processMailbox('INBOX', $emailToFolder);
+        $unmatchedAddresses = $this->threadEmailMover->processMailbox('INBOX', $emailToFolder)['unmatched'];
 
         // Verify unmatched address is returned
         $this->assertCount(1, $unmatchedAddresses);
