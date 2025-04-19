@@ -5,10 +5,12 @@ require_once __DIR__ . '/../class/ImapFolderLog.php';
 require_once __DIR__ . '/../class/Database.php';
 
 class ImapFolderLogTest extends PHPUnit\Framework\TestCase {
-    private $testFolderName = 'INBOX.test-folder';
+    private $testFolderName;
     
     protected function setUp(): void {
         parent::setUp();
+
+        $this->testFolderName = 'INBOX.test-folder-' . mt_rand(0, 100000);
         
         // Start database transaction
         Database::beginTransaction();

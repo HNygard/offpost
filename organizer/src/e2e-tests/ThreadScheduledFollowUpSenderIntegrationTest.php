@@ -33,7 +33,7 @@ class ThreadScheduledFollowUpSenderIntegrationTest extends TestCase {
 
         // Our thread should have updated status
         ImapFolderStatus::createOrUpdate(
-            'INBOX.test-folder',
+            'INBOX.test-folder-' . mt_rand(0, 100000),
             $testData['thread']->id,
             updateLastChecked: true,
         );
@@ -71,78 +71,7 @@ class ThreadScheduledFollowUpSenderIntegrationTest extends TestCase {
         $this->assertEquals($testData['thread']->my_email, $emailSending->email_from);
         $this->assertEquals('public-entity@dev.offpost.no', $emailSending->email_to);
     }
-    
-    /**
-     * Create a test thread with status EMAIL_SENT_NOTHING_RECEIVED
-     * 
-     * @return string The thread ID
-     */
-    private function createTestThread() {
-        // Generate a UUID for the thread
-        $threadId = sprintf('%04x%04x-%04x-%04x-%04x-%04x%04x%04x',
-            mt_rand(0, 0xffff), mt_rand(0, 0xffff),
-            mt_rand(0, 0xffff),
-            mt_rand(0, 0x0fff) | 0x4000,
-            mt_rand(0, 0x3fff) | 0x8000,
-            mt_rand(0, 0xffff), mt_rand(0, 0xffff), mt_rand(0, 0xffff)
-        );
-        
-        // Insert a test thread directly into the database
-        Database::execute(
-            "INSERT INTO threads (id, entity_id, title, my_name, my_email, sending_status, sent) 
-             VALUES (?, ?, ?, ?, ?, ?, ?)",
-            [
-                $threadId,
-                $this->entityId,
-                'Test Thread for Follow-up',
-                'Test User',
-                'test-user@example.com',
-                Thread::SENDING_STATUS_SENT,
-                true
-            ]
-        );
-        
-        // Insert a test email for this thread (outgoing email)
-        Database::execute(
-            "INSERT INTO thread_emails (thread_id, email_type, timestamp_received) 
-             VALUES (?, ?, ?)",
-            [
-                $threadId,
-                'OUT',
-                '2025-04-19 10:21:00'
-            ]
-        );
-        
-        // Create an IMAP folder status record for this thread
-        Database::execute(
-            "INSERT INTO imap_folder_status (thread_id, folder_name, last_checked_at) 
-             VALUES (?, ?, NOW())",
-            [
-                $threadId,
-                'INBOX.test-folder'
-            ]
-        );
-        
-        // Create IMAP folder status records for INBOX and INBOX.Sent
-        if (!$this->checkInboxFolderExists('INBOX')) {
-            Database::execute(
-                "INSERT INTO imap_folder_status (folder_name, last_checked_at) 
-                 VALUES (?, NOW())",
-                ['INBOX']
-            );
-        }
-        
-        if (!$this->checkInboxFolderExists('INBOX.Sent')) {
-            Database::execute(
-                "INSERT INTO imap_folder_status (folder_name, last_checked_at) 
-                 VALUES (?, NOW())",
-                ['INBOX.Sent']
-            );
-        }
-        
-        return $threadId;
-    }
-    
+
     /**
      * Check if an INBOX folder exists
      * 

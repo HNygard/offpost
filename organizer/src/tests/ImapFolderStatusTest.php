@@ -5,12 +5,14 @@ require_once __DIR__ . '/../class/ImapFolderStatus.php';
 require_once __DIR__ . '/../class/Database.php';
 
 class ImapFolderStatusTest extends PHPUnit\Framework\TestCase {
-    private $testFolderName = 'INBOX.test-folder';
+    private $testFolderName;
     private $testThreadId;
     private $testEntityId = 'test-entity';
     
     protected function setUp(): void {
         parent::setUp();
+        
+        $this->testFolderName = 'INBOX.test-folder-' . mt_rand(0, 100000);
         
         // Start database transaction
         Database::beginTransaction();
