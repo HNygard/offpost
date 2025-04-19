@@ -15,6 +15,7 @@ try {
         '/scheduled-email-sending' => '/../system-pages/scheduled-email-sending.php',
         '/scheduled-email-receiver' => '/../system-pages/scheduled-email-receiver.php',
         '/scheduled-email-extraction' => '/../system-pages/scheduled-email-extraction.php',
+        '/scheduled-thread-follow-up' => '/../system-pages/scheduled-thread-follow-up.php',
     ];
 
     // Define admin-only pages that require authentication
