@@ -45,7 +45,7 @@ class ThreadScheduledFollowUpSender {
             $entity->email,
             $thread->my_email,
             $thread->my_name,
-            ThreadEmailSending::STATUS_READY_FOR_SENDING
+            ThreadEmailSending::STATUS_STAGING
         );
         
         if (!$emailSending) {

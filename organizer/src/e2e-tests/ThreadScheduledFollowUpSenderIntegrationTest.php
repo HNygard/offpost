@@ -65,7 +65,7 @@ class ThreadScheduledFollowUpSenderIntegrationTest extends TestCase {
         $this->assertCount(1, $emailSendings, 'One email sending record should be created');
         
         $emailSending = $emailSendings[0];
-        $this->assertEquals(ThreadEmailSending::STATUS_READY_FOR_SENDING, $emailSending->status);
+        $this->assertEquals(ThreadEmailSending::STATUS_STAGING, $emailSending->status);
         $this->assertEquals('Purring - ' . $testData['thread']->title, $emailSending->email_subject);
         $this->assertStringContainsString($testData['thread']->title, $emailSending->email_content);
         $this->assertEquals($testData['thread']->my_email, $emailSending->email_from);
