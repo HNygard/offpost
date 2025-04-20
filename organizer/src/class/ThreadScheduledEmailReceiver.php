@@ -207,7 +207,7 @@ class ThreadScheduledEmailReceiver {
                           -- Exclude folders with recent errors, but do try to run again
                           SELECT folder_name
                           FROM imap_folder_log
-                          WHERE status = 'error'
+                          WHERE (status = 'error' OR status = 'started')
                           AND created_at > (NOW() - INTERVAL '2 hour')
                    )
                  ORDER BY fs.last_checked_at ASC NULLS FIRST
