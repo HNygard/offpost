@@ -301,8 +301,8 @@ class ThreadStatusRepositoryTest extends PHPUnit\Framework\TestCase {
         ImapFolderStatus::createOrUpdate($thirdFolderName, $thirdThreadId, true);
         
         // :: Act
-        $emailSentThreads = ThreadStatusRepository::getThreadsByStatus(ThreadStatusRepository::EMAIL_SENT_NOTHING_RECEIVED);
-        $notSentThreads = ThreadStatusRepository::getThreadsByStatus(ThreadStatusRepository::NOT_SENT);
+        $emailSentThreads = array_keys(ThreadStatusRepository::getThreadsByStatus(ThreadStatusRepository::EMAIL_SENT_NOTHING_RECEIVED));
+        $notSentThreads = array_keys(ThreadStatusRepository::getThreadsByStatus(ThreadStatusRepository::NOT_SENT));
         
         // :: Assert
         $this->assertIsArray($emailSentThreads, "getThreadsByStatus should return an array");

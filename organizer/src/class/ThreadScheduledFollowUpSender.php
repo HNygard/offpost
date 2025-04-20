@@ -76,9 +76,38 @@ class ThreadScheduledFollowUpSender {
         if (empty($threadIds)) {
             return null;
         }
-        
-        // Get the first thread
-        return Thread::loadFromDatabase($threadIds[0]);
+
+        foreach ($threadIds as $thread_status) {
+            if ($thread_status->request_law_basis != Thread::REQUEST_LAW_BASIS_OFFENTLEGLOVA) {
+                // Skip threads that are not under the law basis for follow-up
+                continue;
+            }
+            if (empty($thread_status->request_follow_up_plan)) {
+                // Skip threads that are not under the follow-up plan
+                continue;
+            }
+
+            // TODO: check last sent email
+
+            if ($thread_status->request_follow_up_plan == Thread::REQUEST_FOLLOW_UP_PLAN_SPEEDY) {
+                $days = 5;
+            }
+            elseif($thread_status->request_follow_up_plan == Thread::REQUEST_FOLLOW_UP_PLAN_SLOW) {
+                $days = 14;
+            }
+            else {
+                throw new Exception("Unknown follow-up plan: " . $thread_status->request_follow_up_plan);
+            }
+
+            if ($thread_status->email_last_activity + ($days * 86400) > time()) {
+                // Skip threads that are not due for follow-up
+                continue;
+            }
+
+            return Thread::loadFromDatabase($thread_status->thread_id);
+        }
+
+        return null;
     }
     
     /**

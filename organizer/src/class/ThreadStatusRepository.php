@@ -201,9 +201,7 @@ class ThreadStatusRepository {
      */
     public static function getThreadsByStatus(string $status): array {
         // Use the new status filter parameter for better efficiency
-        $filteredStatuses = self::getAllThreadStatusesEfficient(null, $status);
-        
-        return array_keys($filteredStatuses);
+        return self::getAllThreadStatusesEfficient(null, $status);
     }
 }
 

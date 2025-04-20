@@ -25,6 +25,14 @@ class ThreadScheduledFollowUpSenderIntegrationTest extends TestCase {
         $followUpSender = new ThreadScheduledFollowUpSender();
         $testData = E2ETestSetup::createTestThread();
 
+        // Set that thread is a "Offentleglova" follow up thread
+        Database::execute(
+            "UPDATE threads SET request_law_basis = '" . Thread::REQUEST_LAW_BASIS_OFFENTLEGLOVA . "',
+            request_follow_up_plan = '" . Thread::REQUEST_FOLLOW_UP_PLAN_SPEEDY . "'
+            WHERE id = ?",
+            [$testData['thread']->id]
+        );
+
         // Set up that no other threads are up to date with IMAP
         Database::execute(
             "UPDATE imap_folder_status SET last_checked_at = NULL WHERE thread_id != ?",
@@ -51,7 +59,27 @@ class ThreadScheduledFollowUpSenderIntegrationTest extends TestCase {
             "UPDATE thread_emails SET email_type = 'OUT' WHERE thread_id = ? AND email_type = 'IN'",
             [$testData['thread']->id]
         );
+
+        // Set up that the thread is not due for follow-up
+        Database::execute(
+            "UPDATE thread_emails SET timestamp_received = '" . date('Y-m-d H:i:s') . "' WHERE thread_id = ?",
+            [$testData['thread']->id]
+        );
         
+        // :: Act
+        $result = $followUpSender->sendNextFollowUpEmail();
+
+        // :: Assert that nothing happend since we are not due
+        $this->assertFalse($result['success'], 'No threads should be ready for follow-up');
+        $this->assertEquals('No threads ready for follow-up', $result['message']);
+
+        // :: Setup
+        // Set up that the thread is now due for follow-up
+        Database::execute(
+            "UPDATE thread_emails SET timestamp_received = '2025-04-01 00:00:00' WHERE thread_id = ?",
+            [$testData['thread']->id]
+        );
+
         // :: Act
         $result = $followUpSender->sendNextFollowUpEmail();
         
