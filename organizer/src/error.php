@@ -10,9 +10,7 @@ function displayErrorPage($error) {
     if (isset($_SERVER['HTTP_USER_AGENT']) && str_starts_with($_SERVER['HTTP_USER_AGENT'], 'Offpost E2E Test')) {
         header('Content-Type: text/plain');
         echo 'Error during rendering of page ' . htmlescape($_SERVER['REQUEST_URI']) . "\n\n"
-            . htmlescape($error->getMessage()
-            . "\n\nStack trace:\n"
-            . htmlescape($error->getTraceAsString()));
+            . htmlescape(jTraceEx($error));
         exit;
     }
     header('Content-Type: text/html');
@@ -21,7 +19,7 @@ function displayErrorPage($error) {
     echo '<style>
         body { font-family: Arial, sans-serif; margin: 40px; }
         .error-container { max-width: 800px; margin: 0 auto; }
-        .header { display: flex; align-items: center; justify-content: center; gap: 10px; margin-bottom: 20px; }
+        .header { display: flex; align-items: center; justify-content: center; gap: 10px; margin-bottom: 0; }
         .header img { width: 32px; height: 32px; }
         .error-details {
             position: relative;
@@ -52,6 +50,19 @@ function displayErrorPage($error) {
             border-color: #ccc;
         }
         a { color: #0366d6; }
+
+        .nav-back {
+            text-align: left;
+        }
+
+        .nav-back a {
+            color: #3498db;
+            text-decoration: none;
+        }
+
+        .nav-back a:hover {
+            text-decoration: underline;
+        }
     </style>';
     echo '<script>
         document.addEventListener("DOMContentLoaded", function() {
@@ -81,6 +92,7 @@ function displayErrorPage($error) {
     echo '<img src="/images/offpost-icon.webp" alt="Offpost Logo">';
     echo '<h1>Offpost - Error</h1>';
     echo '</div>';
+    echo '<div class="nav-back"><a href="/">← Back to application</a></div>';
     echo '<p>An error occurred while processing your request. Please report this issue on our GitHub page:</p>';
     echo '<p><a href="https://github.com/HNygard/offpost/issues">https://github.com/HNygard/offpost/issues</a></p>';
     echo '<p>Error details:</p>';

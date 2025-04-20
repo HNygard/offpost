@@ -41,7 +41,8 @@ foreach ($allThreads as $file => $threads) {
 }
 
 if (!$thread) {
-    die('Thread not found');
+    displayErrorPage(new Exception('Thread not found.'));
+    exit;
 }
 
 // Handle public toggle
