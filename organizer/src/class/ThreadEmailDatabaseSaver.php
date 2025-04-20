@@ -10,6 +10,7 @@ require_once __DIR__ . '/Thread.php';
 require_once __DIR__ . '/ThreadEmail.php';
 require_once __DIR__ . '/ThreadEmailAttachment.php';
 require_once __DIR__ . '/ImapFolderStatus.php';
+require_once __DIR__ . '/ThreadFolderManager.php';
 
 use Imap\ImapConnection;
 use Imap\ImapEmailProcessor;
@@ -85,12 +86,22 @@ class ThreadEmailDatabaseSaver {
                 }
 
                 if (count($threads) == 0) {
+                    // Try to figure out the thread id based on folder
+                    $threads = ThreadStorageManager::getInstance()->getThreads();
+                    $thread_id = '?';
+                    foreach ($threads as $thread) {
+                        if (ThreadFolderManager::getThreadEmailFolder($thread->entity_id, $thread) == $folder) {
+                            $thread_id = $thread->id;
+                            break;
+                        }
+                    }
+
                     throw new Exception("Failed to process email:\n"
                         . "No matching thread found for email(s): " . implode(', ', $all_emails) . "\n"
                         . "Email subject: " . $email->subject . "\n"
                         . "Email identifier: " . $email_identifier . "\n"
                         . "Query to insert mapping: \n"
-                        . "INSERT INTO thread_email_mapping (email_identifier, thread_id, description) VALUES ('$email_identifier', ?, 'TODO description');"
+                        . "INSERT INTO thread_email_mapping (email_identifier, thread_id, description) VALUES ('$email_identifier', '$thread_id', 'TODO description');"
                     );
                 }
                 if (count($threads) > 1) {
