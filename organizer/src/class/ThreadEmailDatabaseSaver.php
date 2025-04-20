@@ -42,6 +42,7 @@ class ThreadEmailDatabaseSaver {
     public function saveThreadEmails(string $folder): array {
         try {
             $savedEmails = [];
+            $last_thread_id = '?';
             
             // Use a database transaction for concurrency control
             Database::beginTransaction();
@@ -88,7 +89,7 @@ class ThreadEmailDatabaseSaver {
                 if (count($threads) == 0) {
                     // Try to figure out the thread id based on folder
                     $threads = ThreadStorageManager::getInstance()->getThreads();
-                    $thread_id = '?';
+                    $thread_id = $last_thread_id;
                     foreach ($threads as $entityThreads) {
                         foreach ($entityThreads->threads as $thread) {
                             if (ThreadFolderManager::getThreadEmailFolder($thread->entity_id, $thread) == $folder) {
@@ -110,6 +111,7 @@ class ThreadEmailDatabaseSaver {
                     throw new Exception('Failed to process email: Multiple matching threads found for email(s): ' . implode(', ', $all_emails));
                 }
                 $thread = Thread::loadFromDatabase($threads[0]['id']);
+                $last_thread_id = $thread->id;
 
                 try {
                     $direction = $email->getEmailDirection($thread->my_email);
