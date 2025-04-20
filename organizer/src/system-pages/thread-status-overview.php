@@ -81,7 +81,7 @@ function formatStatus($status) {
 // Function to format timestamp
 function formatTimestamp($timestamp) {
     if (!$timestamp) return 'N/A';
-    return date('Y-m-d H:i', strtotime($timestamp));
+    return date('Y-m-d H:i', $timestamp);
 }
 
 // Get thread titles for display
@@ -248,7 +248,7 @@ if (!empty($threadIds)) {
                         <?= isset($threadStatus->email_server_last_checked_at) ? date('Y-m-d H:i', $threadStatus->email_server_last_checked_at) : 'N/A' ?>
                     </td>
                     <td class="actions-col">
-                        <a href="/thread-view?threadId=<?= htmlspecialchars($threadId) ?>&entityId=<?= urlencode($threadStatus->entity_id) ?></a>">View Thread</a> | 
+                        <a href="/thread-view?threadId=<?= htmlspecialchars($threadId) ?>&entityId=<?= urlencode($threadStatus->entity_id) ?>">View Thread</a> | 
                         <a href="#" class="toggle-details" data-id="<?= $threadId ?>">Show Details</a>
                         
                         <dialog id="details-<?= $threadId ?>" class="thread-details">
