@@ -213,19 +213,17 @@ if (!empty($threadIds)) {
 
         <table>
             <tr>
-                <th class="id-col">ID</th>
                 <th class="thread-col">Thread</th>
                 <th class="status-col">Status</th>
                 <th class="emails-col">Emails (In/Out)</th>
-                <th class="activity-col">Last Activity</th>
-                <th class="sync-col">Last Sync</th>
+                <th class="activity-col">Last email Activity</th>
+                <th class="sync-col">Last IMAP Sync</th>
                 <th class="actions-col">Actions</th>
             </tr>
             <?php foreach ($threadStatuses as $threadId => $threadStatus): ?>
                 <tr>
-                    <td class="id-col"><?= substr($threadId, 0, 8) ?>...</td>
                     <td class="thread-col">
-                        <?= isset($threadTitles[$threadId]) ? htmlspecialchars(truncateText($threadTitles[$threadId], 30)) : 'Unknown Thread' ?>
+                        <?= isset($threadTitles[$threadId]) ? htmlspecialchars(truncateText($threadTitles[$threadId], 50)) : 'Unknown Thread' ?>
                     </td>
                     <td class="status-col"><?= formatStatus($threadStatus['status']) ?></td>
                     <td class="emails-col">
@@ -239,7 +237,7 @@ if (!empty($threadIds)) {
                         <?= isset($threadStatus['email_server_last_checked_at']) ? date('Y-m-d H:i', $threadStatus['email_server_last_checked_at']) : 'N/A' ?>
                     </td>
                     <td class="actions-col">
-                        <a href="/thread-view?id=<?= htmlspecialchars($threadId) ?>">View Thread</a> | 
+                        <a href="/thread-view?threadId=<?= htmlspecialchars($threadId) ?>&entityId=<?= urlencode($threadStatus['entity_id']) ?></a>">View Thread</a> | 
                         <a href="#" class="toggle-details" data-id="<?= $threadId ?>">Show Details</a>
                         
                         <dialog id="details-<?= $threadId ?>" class="thread-details">

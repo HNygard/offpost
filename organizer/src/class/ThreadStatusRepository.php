@@ -49,11 +49,18 @@ class ThreadStatusRepository {
             WITH thread_data AS (
                 SELECT 
                     t.id AS thread_id,
+                    t.entity_id AS entity_id,
                     COUNT(DISTINCT ifs.id) AS folder_count,
                     MAX(ifs.last_checked_at) AS last_checked_at,
                     MAX(ifs.requested_update_time) AS requested_update_time,
                     COUNT(te_in.id) AS email_count_in,
                     COUNT(te_out.id) AS email_count_out,
+                    MAX(te_in.timestamp_received) AS email_last_received,
+                    MAX(te_out.timestamp_received) AS email_last_sent,
+                    GREATEST(
+                        MAX(te_in.timestamp_received),
+                        MAX(te_out.timestamp_received)
+                    ) AS email_last_activity,
                     (SELECT MAX(ifs_inbox.last_checked_at) FROM imap_folder_status ifs_inbox WHERE ifs_inbox.folder_name = 'INBOX')
                         AS last_checked_at_inbox,
                     (SELECT MAX(ifs_sent.last_checked_at) FROM imap_folder_status ifs_sent WHERE ifs_sent.folder_name = 'INBOX.Sent')
@@ -87,8 +94,9 @@ class ThreadStatusRepository {
                 GROUP BY 
                     t.id
             )
-            SELECT 
+            SELECT
                 thread_id,
+                entity_id,
                 CASE
                     -- Technical checks for this thread
                     WHEN folder_count = 0 THEN 'ERROR_NO_FOLDER_FOUND'
@@ -110,7 +118,10 @@ class ThreadStatusRepository {
                 END AS status,
                 email_count_in,
                 email_count_out,
-                last_checked_at as email_server_last_checked_at
+                last_checked_at as email_server_last_checked_at,
+                email_last_activity,
+                email_last_received,
+                email_last_sent
             FROM 
                 thread_data
         ";
@@ -140,6 +151,9 @@ class ThreadStatusRepository {
             ";
             $params[] = $status;
         }
+
+        $query .= '
+            ORDER BY email_last_activity ASC';
         
         $statuses = Database::query($query, $params);
         
