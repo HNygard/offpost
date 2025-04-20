@@ -24,16 +24,21 @@ if (!$result['success']) {
     exit;
 }
 
-$result2 = $emailReceiver->processNextFolder();
+$results = array($result);
 
-$results = array(
-    $result,
-    $result2
-);
+$result = $emailReceiver->processNextFolder();
 
-if ($result2['success']) {
-    $result3 = $emailReceiver->processNextFolder();
-    $results[] = $result3;
+$results[] = $result;
+
+if ($result['success']) {
+    for($i = 0; $i < 10; $i++) {
+        $result = $emailReceiver->processNextFolder();
+        $results[] = $result;
+
+        if (!$result['success']) {
+            break;
+        }
+    }
 }
 
 // Output the result
