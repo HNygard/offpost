@@ -5,6 +5,7 @@ require_once __DIR__ . '/Imap/ImapConnection.php';
 require_once __DIR__ . '/Imap/ImapFolderManager.php';
 require_once __DIR__ . '/Imap/ImapEmailProcessor.php';
 require_once __DIR__ . '/ImapFolderStatus.php';
+require_once __DIR__ . '/ThreadFolderManager.php';
 require_once __DIR__ . '/../vendor/autoload.php';
 
 use Imap\ImapConnection;
@@ -89,25 +90,11 @@ class ThreadEmailMover {
         foreach ($threads as $entityThreads) {
             foreach ($entityThreads->threads as $thread) {
                 if (!$thread->archived || $thread->my_email == 'dmarc@offpost.no') {
-                    $emailToFolder[$thread->my_email] = $this->getThreadEmailFolder($entityThreads->entity_id, $thread);
+                    $emailToFolder[$thread->my_email] = ThreadFolderManager::getThreadEmailFolder($entityThreads->entity_id, $thread);
                 }
             }
         }
         
         return $emailToFolder;
-    }
-
-    /**
-     * Get the IMAP folder path for a thread
-     */
-    private function getThreadEmailFolder($entity_id, $thread): string {
-        $title = $entity_id . ' - ' . str_replace('/', '-', $thread->title);
-        $title = str_replace(
-            ['Æ', 'Ø', 'Å', 'æ', 'ø', 'å'],
-            ['AE', 'OE', 'AA', 'ae', 'oe', 'aa'],
-            $title
-        );
-        
-        return $thread->archived ? 'INBOX.Archive.' . $title : 'INBOX.' . $title;
     }
 }
