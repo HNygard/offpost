@@ -86,6 +86,10 @@ class ThreadScheduledFollowUpSender {
                 // Skip threads that are not under the follow-up plan
                 continue;
             }
+            if (date('Y', $thread_status->email_last_activity) < 2024) {
+                // Skip threads that are not sent in 2025 or later
+                continue;
+            }
 
             // TODO: check last sent email
 
