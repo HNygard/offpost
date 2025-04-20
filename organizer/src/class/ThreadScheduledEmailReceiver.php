@@ -203,6 +203,13 @@ class ThreadScheduledEmailReceiver {
                    AND fs.folder_name != 'INBOX.Sent'
                    AND fs.folder_name != 'Sent'
                    AND fs.requested_update_time IS NULL
+                   AND fs.folder_name NOT IN (
+                          -- Exclude folders with recent errors, but do try to run again
+                          SELECT folder_name
+                          FROM imap_folder_log
+                          WHERE status = 'error'
+                          AND created_at > (NOW() - INTERVAL '2 hour')
+                   )
                  ORDER BY fs.last_checked_at ASC NULLS FIRST
                  LIMIT 1"
             );
