@@ -36,7 +36,7 @@ foreach ($statusConstants as $status) {
 
 // Count threads by status
 foreach ($threadStatuses as $threadStatus) {
-    $status = $threadStatus['status'];
+    $status = $threadStatus->status;
     if (isset($statusCounts[$status])) {
         $statusCounts[$status]++;
     }
@@ -224,31 +224,31 @@ if (!empty($threadIds)) {
                 <tr>
                     <td class="thread-col">
                         <?php
-                        if (!empty($threadStatus['request_law_basis'])) {
-                            echo '<span class="label label_ok"><a href="#" onclick="return false;">' . $threadStatus['request_law_basis'] . '</a></span>';
+                        if (!empty($threadStatus->request_law_basis)) {
+                            echo '<span class="label label_ok"><a href="#" onclick="return false;">' . $threadStatus->request_law_basis . '</a></span>';
                         }
-                        if (!empty($threadStatus['request_follow_up_plan'])) {
-                            echo '<span class="label label_info"><a href="#" onclick="return false;">' . $threadStatus['request_follow_up_plan'] . '</a></span>';
+                        if (!empty($threadStatus->request_follow_up_plan)) {
+                            echo '<span class="label label_info"><a href="#" onclick="return false;">' . $threadStatus->request_follow_up_plan . '</a></span>';
                         }
-                        if (!empty($threadStatus['request_law_basis']) || !empty($threadStatus['request_follow_up_plan'])) {
+                        if (!empty($threadStatus->request_law_basis) || !empty($threadStatus->request_follow_up_plan)) {
                             echo '<br>';
                         }
                         ?>
                         <?= isset($threadTitles[$threadId]) ? htmlspecialchars(truncateText($threadTitles[$threadId], 50)) : 'Unknown Thread' ?>
                     </td>
-                    <td class="status-col"><?= formatStatus($threadStatus['status']) ?></td>
+                    <td class="status-col"><?= formatStatus($threadStatus->status) ?></td>
                     <td class="emails-col">
-                        <?= isset($threadStatus['email_count_in']) ? $threadStatus['email_count_in'] : 0 ?> / 
-                        <?= isset($threadStatus['email_count_out']) ? $threadStatus['email_count_out'] : 0 ?>
+                        <?= isset($threadStatus->email_count_in) ? $threadStatus->email_count_in : 0 ?> / 
+                        <?= isset($threadStatus->email_count_out) ? $threadStatus->email_count_out : 0 ?>
                     </td>
                     <td class="activity-col">
-                        <?= isset($threadStatus['email_last_activity']) ? formatTimestamp($threadStatus['email_last_activity']) : 'N/A' ?>
+                        <?= isset($threadStatus->email_last_activity) ? formatTimestamp($threadStatus->email_last_activity) : 'N/A' ?>
                     </td>
                     <td class="sync-col">
-                        <?= isset($threadStatus['email_server_last_checked_at']) ? date('Y-m-d H:i', $threadStatus['email_server_last_checked_at']) : 'N/A' ?>
+                        <?= isset($threadStatus->email_server_last_checked_at) ? date('Y-m-d H:i', $threadStatus->email_server_last_checked_at) : 'N/A' ?>
                     </td>
                     <td class="actions-col">
-                        <a href="/thread-view?threadId=<?= htmlspecialchars($threadId) ?>&entityId=<?= urlencode($threadStatus['entity_id']) ?></a>">View Thread</a> | 
+                        <a href="/thread-view?threadId=<?= htmlspecialchars($threadId) ?>&entityId=<?= urlencode($threadStatus->entity_id) ?></a>">View Thread</a> | 
                         <a href="#" class="toggle-details" data-id="<?= $threadId ?>">Show Details</a>
                         
                         <dialog id="details-<?= $threadId ?>" class="thread-details">
@@ -259,23 +259,23 @@ if (!empty($threadIds)) {
                             <div class="dialog-content">
                                 <p><strong>Thread ID:</strong> <?= $threadId ?></p>
                                 <p><strong>Title:</strong> <?= isset($threadTitles[$threadId]) ? htmlspecialchars($threadTitles[$threadId]) : 'Unknown Thread' ?></p>
-                                <p><strong>Status:</strong> <?= $threadStatus['status'] ?></p>
+                                <p><strong>Status:</strong> <?= $threadStatus->status ?></p>
                                 
-                                <p><strong>Email Count (In):</strong> <?= isset($threadStatus['email_count_in']) ? $threadStatus['email_count_in'] : 0 ?></p>
-                                <p><strong>Email Count (Out):</strong> <?= isset($threadStatus['email_count_out']) ? $threadStatus['email_count_out'] : 0 ?></p>
+                                <p><strong>Email Count (In):</strong> <?= isset($threadStatus->email_count_in) ? $threadStatus->email_count_in : 0 ?></p>
+                                <p><strong>Email Count (Out):</strong> <?= isset($threadStatus->email_count_out) ? $threadStatus->email_count_out : 0 ?></p>
                                 
                                 <p><strong>Last Email Received:</strong> 
-                                    <?= isset($threadStatus['email_last_received']) ? formatTimestamp($threadStatus['email_last_received']) : 'N/A' ?>
+                                    <?= isset($threadStatus->email_last_received) ? formatTimestamp($threadStatus->email_last_received) : 'N/A' ?>
                                 </p>
                                 <p><strong>Last Email Sent:</strong> 
-                                    <?= isset($threadStatus['email_last_sent']) ? formatTimestamp($threadStatus['email_last_sent']) : 'N/A' ?>
+                                    <?= isset($threadStatus->email_last_sent) ? formatTimestamp($threadStatus->email_last_sent) : 'N/A' ?>
                                 </p>
                                 <p><strong>Last Activity:</strong> 
-                                    <?= isset($threadStatus['email_last_activity']) ? formatTimestamp($threadStatus['email_last_activity']) : 'N/A' ?>
+                                    <?= isset($threadStatus->email_last_activity) ? formatTimestamp($threadStatus->email_last_activity) : 'N/A' ?>
                                 </p>
                                 
                                 <p><strong>Last Sync:</strong> 
-                                    <?= isset($threadStatus['email_server_last_checked_at']) ? date('Y-m-d H:i:s', $threadStatus['email_server_last_checked_at']) : 'N/A' ?>
+                                    <?= isset($threadStatus->email_server_last_checked_at) ? date('Y-m-d H:i:s', $threadStatus->email_server_last_checked_at) : 'N/A' ?>
                                 </p>
                             </div>
                         </dialog>

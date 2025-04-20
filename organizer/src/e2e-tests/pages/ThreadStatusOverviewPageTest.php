@@ -72,16 +72,14 @@ class ThreadStatusOverviewPageTest extends E2EPageTestCase {
         $this->assertStringContainsString('<div class="summary-label">Total Threads</div>', $response->body);
         
         // Assert that the table headers are present
-        $this->assertStringContainsString('<th class="id-col">ID</th>', $response->body);
         $this->assertStringContainsString('<th class="thread-col">Thread</th>', $response->body);
         $this->assertStringContainsString('<th class="status-col">Status</th>', $response->body);
         $this->assertStringContainsString('<th class="emails-col">Emails (In/Out)</th>', $response->body);
-        $this->assertStringContainsString('<th class="activity-col">Last Activity</th>', $response->body);
-        $this->assertStringContainsString('<th class="sync-col">Last Sync</th>', $response->body);
+        $this->assertStringContainsString('<th class="activity-col">Last email Activity</th>', $response->body);
+        $this->assertStringContainsString('<th class="sync-col">Last IMAP Sync</th>', $response->body);
         $this->assertStringContainsString('<th class="actions-col">Actions</th>', $response->body);
         
         // Assert that the table has our test thread
-        $this->assertStringContainsString(substr($this->testThreadId, 0, 8), $response->body);
         $this->assertStringContainsString('Test Thread for Status Overview', $response->body);
         $this->assertStringContainsString('View Thread', $response->body);
         $this->assertStringContainsString('Show Details', $response->body);

@@ -255,22 +255,30 @@ class ThreadStatusRepositoryTest extends PHPUnit\Framework\TestCase {
         $this->assertIsArray($statuses, "getAllThreadStatusesEfficient should return an array");
         $this->assertArrayHasKey($this->testThreadId, $statuses, "Array should contain the test thread ID as a key");
         $this->assertArrayHasKey($secondThreadId, $statuses, "Array should contain the second thread ID as a key");
-        $this->assertTrue((time() - $statuses[$this->testThreadId]['email_server_last_checked_at']) < 20);
-        $this->assertTrue((time() - $statuses[$secondThreadId]['email_server_last_checked_at']) < 20);
-        unset($statuses[$this->testThreadId]['email_server_last_checked_at']);
-        unset($statuses[$secondThreadId]['email_server_last_checked_at']);
-        $this->assertEquals(array(
-            'email_count_in' => 0,
-            'email_count_out' => 1,
-            'thread_id' => $this->testThreadId,
-            'status' => ThreadStatusRepository::EMAIL_SENT_NOTHING_RECEIVED,
-        ), $statuses[$this->testThreadId], "Status for test thread should be EMAIL_SENT_NOTHING_RECEIVED");
-        $this->assertEquals(array(
-            'email_count_in' => 0,
-            'email_count_out' => 0,
-            'thread_id' => $secondThreadId,
-            'status' => ThreadStatusRepository::NOT_SENT
-        ), $statuses[$secondThreadId], "Status for second thread should be NOT_SENT");
+        $this->assertTrue((time() - $statuses[$this->testThreadId]->email_last_sent) < 20);
+        $this->assertTrue((time() - $statuses[$this->testThreadId]->email_server_last_checked_at) < 20);
+        $this->assertTrue((time() - $statuses[$secondThreadId]->email_server_last_checked_at) < 20);
+        $expected_status = new ThreadStatus();
+        $expected_status->thread_id = $this->testThreadId;
+        $expected_status->entity_id = 'test-entity-status-repo';
+        $expected_status->email_count_in = 0;
+        $expected_status->email_count_out = 1;
+        $expected_status->status = ThreadStatusRepository::EMAIL_SENT_NOTHING_RECEIVED;
+        $expected_status->email_server_last_checked_at = $statuses[$this->testThreadId]->email_server_last_checked_at;
+        $expected_status->email_last_activity = $statuses[$this->testThreadId]->email_last_activity;
+        $expected_status->email_last_sent = $statuses[$this->testThreadId]->email_last_activity;
+        $expected_status->email_last_received = null;
+        $this->assertEquals($expected_status, $statuses[$this->testThreadId], "Status for test thread should be EMAIL_SENT_NOTHING_RECEIVED");
+        $expected_status2 = new ThreadStatus();
+        $expected_status2->thread_id = $secondThreadId;
+        $expected_status2->entity_id = 'test-entity-status-repo';
+        $expected_status2->email_count_in = 0;
+        $expected_status2->email_count_out = 0;
+        $expected_status2->status = ThreadStatusRepository::NOT_SENT;
+        $expected_status2->email_server_last_checked_at = $statuses[$this->testThreadId]->email_server_last_checked_at;
+        #$expected_status2->email_last_activity = $statuses[$this->testThreadId]->email_last_activity;
+        #$expected_status2->email_last_sent = $statuses[$this->testThreadId]->email_last_activity;
+        $this->assertEquals($expected_status2, $statuses[$secondThreadId], "Status for second thread should be NOT_SENT");
     }
     
     public function testGetThreadsByStatus(): void {
@@ -337,22 +345,31 @@ class ThreadStatusRepositoryTest extends PHPUnit\Framework\TestCase {
         $this->assertArrayHasKey($this->testThreadId, $filteredStatuses, "Filtered statuses should contain the test thread ID");
         $this->assertArrayHasKey($thirdThreadId, $filteredStatuses, "Filtered statuses should contain the third thread ID");
         $this->assertArrayNotHasKey($secondThreadId, $filteredStatuses, "Filtered statuses should not contain the second thread ID");
-        $this->assertTrue((time() - $filteredStatuses[$this->testThreadId]['email_server_last_checked_at']) < 20);
-        $this->assertTrue((time() - $filteredStatuses[$thirdThreadId]['email_server_last_checked_at']) < 20);
-        unset($filteredStatuses[$this->testThreadId]['email_server_last_checked_at']);
-        unset($filteredStatuses[$thirdThreadId]['email_server_last_checked_at']);
-        $this->assertEquals(array(
-            'email_count_in' => 0,
-            'email_count_out' => 1,
-            'thread_id'  => $this->testThreadId,
-            'status' => ThreadStatusRepository::EMAIL_SENT_NOTHING_RECEIVED
-        ), $filteredStatuses[$this->testThreadId], "Status for test thread should be EMAIL_SENT_NOTHING_RECEIVED");
-        $this->assertEquals(array(
-            'email_count_in' => 0,
-            'email_count_out' => 0,
-            'thread_id' => $thirdThreadId,
-            'status' => ThreadStatusRepository::NOT_SENT
-        ), $filteredStatuses[$thirdThreadId], "Status for third thread should be NOT_SENT");
+        $this->assertTrue((time() - $filteredStatuses[$this->testThreadId]->email_last_activity) < 20);
+        $this->assertTrue((time() - $filteredStatuses[$this->testThreadId]->email_server_last_checked_at) < 20);
+        $this->assertTrue((time() - $filteredStatuses[$thirdThreadId]->email_server_last_checked_at) < 20);
+        $expected_status = new ThreadStatus();
+        $expected_status->thread_id = $this->testThreadId;
+        $expected_status->entity_id = 'test-entity-status-repo';
+        $expected_status->email_count_in = 0;
+        $expected_status->email_count_out = 1;
+        $expected_status->status = ThreadStatusRepository::EMAIL_SENT_NOTHING_RECEIVED;
+        $expected_status->email_server_last_checked_at = $filteredStatuses[$this->testThreadId]->email_server_last_checked_at;
+        $expected_status->email_last_activity = $filteredStatuses[$this->testThreadId]->email_last_activity;
+        $expected_status->email_last_sent = $filteredStatuses[$this->testThreadId]->email_last_activity;
+        $expected_status->email_last_received = null;
+        $this->assertEquals($expected_status, $filteredStatuses[$this->testThreadId], "Status for test thread should be EMAIL_SENT_NOTHING_RECEIVED");
+        $expected_status2 = new ThreadStatus();
+        $expected_status2->thread_id = $thirdThreadId;
+        $expected_status2->entity_id = 'test-entity-status-repo';
+        $expected_status2->email_count_in = 0;
+        $expected_status2->email_count_out = 0;
+        $expected_status2->status = ThreadStatusRepository::NOT_SENT;
+        $expected_status2->email_server_last_checked_at = $filteredStatuses[$this->testThreadId]->email_server_last_checked_at;
+        $expected_status2->email_last_activity = null;
+        $expected_status2->email_last_sent = null;
+        $expected_status2->email_last_received = null;
+        $this->assertEquals($expected_status2, $filteredStatuses[$thirdThreadId], "Status for third thread should be NOT_SENT");
     }
     
     public function testGetAllThreadStatusesEfficientWithStatusFilter(): void {

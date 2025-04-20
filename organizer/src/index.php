@@ -306,13 +306,13 @@ function getThreadStatusLabelClass($status) {
                             // Display thread status if available
                             if (isset($threadStatuses[$thread->id])) {
                                 $statusData = $threadStatuses[$thread->id];
-                                $statusCode = $statusData['status'];
+                                $statusCode = $statusData->status;
                                 $statusText = threadStatusToString($statusCode);
                                 $statusClass = getThreadStatusLabelClass($statusCode);
 
-                                $lastChecked = ($statusData['email_server_last_checked_at'] == null) 
+                                $lastChecked = ($statusData->email_server_last_checked_at == null) 
                                     ? 'NOT CHECKED'
-                                    : date('H:i:s d.m.Y', $statusData['email_server_last_checked_at']);
+                                    : date('H:i:s d.m.Y', $statusData->email_server_last_checked_at);
                                 
                                 echo '<br><span class="label ' . $statusClass . '"'
                                     . ' title="Email server last checked at ' . $lastChecked . '"'
@@ -322,8 +322,8 @@ function getThreadStatusLabelClass($status) {
                                 if ($statusCode == ThreadStatusRepository::EMAIL_SENT_NOTHING_RECEIVED || 
                                     $statusCode == ThreadStatusRepository::STATUS_OK) {
                                     echo '<br><span style="font-size: 0.8em;">Emails: '
-                                         . $statusData['email_count_out'] . ' out, '
-                                         . $statusData['email_count_in'] . ' in'
+                                         . $statusData->email_count_out . ' out, '
+                                         . $statusData->email_count_in . ' in'
                                          . '</span>';
                                 }
                             }

@@ -29,7 +29,7 @@ class ThreadStatusRepository {
         // Use the more efficient method with thread ID filter
         $statuses = self::getAllThreadStatusesEfficient([$threadId]);
         
-        return isset($statuses[$threadId]) ? $statuses[$threadId]['status'] : self::ERROR_THREAD_NOT_FOUND;
+        return isset($statuses[$threadId]) ? $statuses[$threadId]->status : self::ERROR_THREAD_NOT_FOUND;
     }
     
     /**
@@ -38,10 +38,9 @@ class ThreadStatusRepository {
      * 
      * @param array|null $threadIds Optional array of thread IDs to filter by
      * @param string|null $status Optional status to filter by (one of the class constants)
-     * @return array Array of thread statuses with thread_id as key
+     * @return ThreadStatus[] Statuses with thread_id as key
      */
     public static function getAllThreadStatusesEfficient(array $threadIds = null, string $status = null, $archived = false): array {
-        $result = [];
         $params = [];
         
         // Build the base query
@@ -161,11 +160,34 @@ class ThreadStatusRepository {
         
         $statuses = Database::query($query, $params);
         
+        $result = [];
         foreach ($statuses as $status) {
             if ($status['email_server_last_checked_at'] != null) {
                 $status['email_server_last_checked_at'] = strtotime($status['email_server_last_checked_at']);
             }
-            $result[$status['thread_id']] = $status;
+            if ($status['email_last_activity'] != null) {
+                $status['email_last_activity'] = strtotime($status['email_last_activity']);
+            }
+            if ($status['email_last_received'] != null) {
+                $status['email_last_received'] = strtotime($status['email_last_received']);
+            }
+            if ($status['email_last_sent'] != null) {
+                $status['email_last_sent'] = strtotime($status['email_last_sent']);
+            }
+
+            $thread_status = new ThreadStatus();
+            $thread_status->thread_id = $status['thread_id'];
+            $thread_status->entity_id = $status['entity_id'];
+            $thread_status->request_law_basis = $status['request_law_basis'];
+            $thread_status->request_follow_up_plan = $status['request_follow_up_plan'];
+            $thread_status->status = $status['status'];
+            $thread_status->email_count_in = $status['email_count_in'];
+            $thread_status->email_count_out = $status['email_count_out'];
+            $thread_status->email_server_last_checked_at = $status['email_server_last_checked_at'];
+            $thread_status->email_last_activity = $status['email_last_activity'];
+            $thread_status->email_last_received = $status['email_last_received'];
+            $thread_status->email_last_sent = $status['email_last_sent'];
+            $result[$status['thread_id']] = $thread_status;
         }
         
         return $result;
@@ -175,7 +197,7 @@ class ThreadStatusRepository {
      * Get threads with a specific status
      * 
      * @param string $status The status to filter by (one of the class constants)
-     * @return array Array of thread IDs with the specified status
+     * @return ThreadStatus[] Array of thread IDs with the specified status
      */
     public static function getThreadsByStatus(string $status): array {
         // Use the new status filter parameter for better efficiency
@@ -183,4 +205,18 @@ class ThreadStatusRepository {
         
         return array_keys($filteredStatuses);
     }
+}
+
+class ThreadStatus {
+    var $thread_id;
+    var $entity_id;
+    var $request_law_basis;
+    var $request_follow_up_plan;
+    var $status;
+    var $email_count_in;
+    var $email_count_out;
+    var $email_server_last_checked_at;
+    var $email_last_activity;
+    var $email_last_received;
+    var $email_last_sent;
 }
