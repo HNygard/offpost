@@ -23,6 +23,7 @@ try {
         '/update-identities' => '/../update-identities.php',
         '/email-sending-overview' => '/../system-pages/email-sending-overview.php',
         '/extraction-overview' => '/../system-pages/extraction-overview.php',
+        '/thread-status-overview' => '/../system-pages/thread-status-overview.php',
         '/update-imap' => '/../update-imap.php', // Temporary while we wait for new imap integration
     ];
 
