@@ -104,7 +104,7 @@ class ThreadEmailDatabaseSaver {
                         . "Email subject: " . $email->subject . "\n"
                         . "Email identifier: " . $email_identifier . "\n"
                         . "Query to insert mapping: \n"
-                        . "INSERT INTO thread_email_mapping (email_identifier, thread_id, description) VALUES ('$email_identifier', '$thread_id', 'TODO description');"
+                        . "INSERT INTO thread_email_mapping (email_identifier, thread_id, description) VALUES ('$email_identifier', '$thread_id', '');"
                     );
                 }
                 if (count($threads) > 1) {
