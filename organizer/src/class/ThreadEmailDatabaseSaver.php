@@ -89,10 +89,12 @@ class ThreadEmailDatabaseSaver {
                     // Try to figure out the thread id based on folder
                     $threads = ThreadStorageManager::getInstance()->getThreads();
                     $thread_id = '?';
-                    foreach ($threads as $thread) {
-                        if (ThreadFolderManager::getThreadEmailFolder($thread->entity_id, $thread) == $folder) {
-                            $thread_id = $thread->id;
-                            break;
+                    foreach ($threads as $entityThreads) {
+                        foreach ($entityThreads->threads as $thread) {
+                            if (ThreadFolderManager::getThreadEmailFolder($thread->entity_id, $thread) == $folder) {
+                                $thread_id = $thread->id;
+                                break;
+                            }
                         }
                     }
 
