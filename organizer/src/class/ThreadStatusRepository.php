@@ -50,6 +50,8 @@ class ThreadStatusRepository {
                 SELECT 
                     t.id AS thread_id,
                     t.entity_id AS entity_id,
+                    request_law_basis,
+                    request_follow_up_plan,
                     COUNT(DISTINCT ifs.id) AS folder_count,
                     MAX(ifs.last_checked_at) AS last_checked_at,
                     MAX(ifs.requested_update_time) AS requested_update_time,
@@ -97,6 +99,8 @@ class ThreadStatusRepository {
             SELECT
                 thread_id,
                 entity_id,
+                request_law_basis,
+                request_follow_up_plan,
                 CASE
                     -- Technical checks for this thread
                     WHEN folder_count = 0 THEN 'ERROR_NO_FOLDER_FOUND'

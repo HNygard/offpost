@@ -223,6 +223,17 @@ if (!empty($threadIds)) {
             <?php foreach ($threadStatuses as $threadId => $threadStatus): ?>
                 <tr>
                     <td class="thread-col">
+                        <?php
+                        if (!empty($threadStatus['request_law_basis'])) {
+                            echo '<span class="label label_ok"><a href="#" onclick="return false;">' . $threadStatus['request_law_basis'] . '</a></span>';
+                        }
+                        if (!empty($threadStatus['request_follow_up_plan'])) {
+                            echo '<span class="label label_info"><a href="#" onclick="return false;">' . $threadStatus['request_follow_up_plan'] . '</a></span>';
+                        }
+                        if (!empty($threadStatus['request_law_basis']) || !empty($threadStatus['request_follow_up_plan'])) {
+                            echo '<br>';
+                        }
+                        ?>
                         <?= isset($threadTitles[$threadId]) ? htmlspecialchars(truncateText($threadTitles[$threadId], 50)) : 'Unknown Thread' ?>
                     </td>
                     <td class="status-col"><?= formatStatus($threadStatus['status']) ?></td>

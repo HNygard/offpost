@@ -166,11 +166,11 @@ if (!isset($_POST['entity_ids']) || empty($_POST['entity_ids'])) {
                 <label>Request Law Basis</label>
                 <div>
                     <label style="display: inline-block; margin-right: 15px;">
-                        <input type="radio" name="request_law_basis" value="offentleglova" checked>
+                        <input type="radio" name="request_law_basis" value="<?=Thread::REQUEST_LAW_BASIS_OFFENTLEGLOVA ?>" checked>
                         Offentlegova
                     </label>
                     <label style="display: inline-block;">
-                        <input type="radio" name="request_law_basis" value="other">
+                        <input type="radio" name="request_law_basis" value="<?=Thread::REQUEST_LAW_BASIS_OTHER ?>">
                         Other type of request
                     </label>
                 </div>
@@ -184,11 +184,11 @@ if (!isset($_POST['entity_ids']) || empty($_POST['entity_ids'])) {
                         No follow up
                     </label>
                     <label style="display: inline-block; margin-right: 15px;">
-                        <input type="radio" name="request_follow_up_plan" value="speedy" checked>
+                        <input type="radio" name="request_follow_up_plan" value="<?=Thread::REQUEST_FOLLOW_UP_PLAN_SPEEDY?>" checked>
                         Simple request, expecting speedy follow up
                     </label>
                     <label style="display: inline-block;">
-                        <input type="radio" name="request_follow_up_plan" value="slow">
+                        <input type="radio" name="request_follow_up_plan" value="<?=Thread::REQUEST_FOLLOW_UP_PLAN_SLOW?>">
                         Complex request, expecting slow follow up
                     </label>
                 </div>
