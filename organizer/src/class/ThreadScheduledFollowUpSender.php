@@ -91,8 +91,6 @@ class ThreadScheduledFollowUpSender {
                 continue;
             }
 
-            // TODO: check last sent email
-
             if ($thread_status->request_follow_up_plan == Thread::REQUEST_FOLLOW_UP_PLAN_SPEEDY) {
                 $days = 5;
             }
@@ -108,7 +106,14 @@ class ThreadScheduledFollowUpSender {
                 continue;
             }
 
-            return Thread::loadFromDatabase($thread_status->thread_id);
+            $thread = Thread::loadFromDatabase($thread_status->thread_id);
+
+            // Just an extra check that the thread is not archived.
+            if ($thread->archived) {
+                throw new Exception("Thread is archived: " . $thread->id . '. Archived threads should already have been excluded in query.');
+            }
+
+            return $thread;
         }
 
         return null;
