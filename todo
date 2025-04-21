@@ -40,8 +40,17 @@ Goal: make production usable
                 - Created at
         - [x] Run on schedule, last attempted first
     - [ ] Scheduled run of new folders
+        - [ ] Move update-imap code to service class
+        - [ ] Test service class
+        - [ ] Add to cron job
     - [ ] Scheduled run of inbox
+        - [ ] Move update-imap code to service class
+        - [ ] Test service class
+        - [ ] Add to cron job
     - [ ] Scheduled run of sent
+        - [ ] Move update-imap code to service class
+        - [ ] Test service class
+        - [ ] Add to cron job
 - [ ] Extract data from emails
     - [ ] Extract plain text body from EML
         - [x] Make a scheduled task for extraction of information
