@@ -1,12 +1,12 @@
 <?php
 
-require_once __DIR__ . '/Database.php';
-require_once __DIR__ . '/ThreadEmailExtraction.php';
-require_once __DIR__ . '/ThreadEmailExtractionService.php';
-require_once __DIR__ . '/ThreadEmailExtractor.php';
-require_once __DIR__ . '/ThreadEmail.php';
-require_once __DIR__ . '/ThreadStorageManager.php';
-require_once __DIR__ . '/../error.php';
+require_once __DIR__ . '/../Database.php';
+require_once __DIR__ . '/../Extraction/ThreadEmailExtraction.php';
+require_once __DIR__ . '/../Extraction/ThreadEmailExtractionService.php';
+require_once __DIR__ . '/../Extraction/ThreadEmailExtractor.php';
+require_once __DIR__ . '/../ThreadEmail.php';
+require_once __DIR__ . '/../ThreadStorageManager.php';
+require_once __DIR__ . '/../../error.php';
 
 /**
  * Class for extracting text from PDF attachments

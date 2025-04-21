@@ -1,8 +1,8 @@
 <?php
 
 require_once __DIR__ . '/common/E2EPageTestCase.php';
-require_once __DIR__ . '/../../class/ThreadEmailExtraction.php';
-require_once __DIR__ . '/../../class/ThreadEmailExtractionService.php';
+require_once __DIR__ . '/../../class/Extraction/ThreadEmailExtraction.php';
+require_once __DIR__ . '/../../class/Extraction/ThreadEmailExtractionService.php';
 require_once __DIR__ . '/../../class/Database.php';
 
 class ExtractionOverviewPageTest extends E2EPageTestCase {

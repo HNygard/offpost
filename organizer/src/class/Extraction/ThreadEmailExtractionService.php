@@ -1,7 +1,7 @@
 <?php
 
-require_once __DIR__ . '/ThreadEmailExtraction.php';
-require_once __DIR__ . '/Database.php';
+require_once __DIR__ . '/../Extraction/ThreadEmailExtraction.php';
+require_once __DIR__ . '/../Database.php';
 
 /**
  * Service class for creating and updating ThreadEmailExtraction records

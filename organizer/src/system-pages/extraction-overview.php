@@ -1,13 +1,13 @@
 <?php
 require_once __DIR__ . '/../auth.php';
-require_once __DIR__ . '/../class/ThreadEmailExtraction.php';
-require_once __DIR__ . '/../class/ThreadEmailExtractionService.php';
+require_once __DIR__ . '/../class/Extraction/ThreadEmailExtraction.php';
+require_once __DIR__ . '/../class/Extraction/ThreadEmailExtractionService.php';
+require_once __DIR__ . '/../class/Extraction/ThreadEmailExtractorEmailBody.php';
+require_once __DIR__ . '/../class/Extraction/ThreadEmailExtractorAttachmentPdf.php';
 require_once __DIR__ . '/../class/Thread.php';
 require_once __DIR__ . '/../class/ThreadEmail.php';
 require_once __DIR__ . '/../class/ThreadEmailAttachment.php';
 require_once __DIR__ . '/../class/Database.php';
-require_once __DIR__ . '/../class/ThreadEmailExtractorEmailBody.php';
-require_once __DIR__ . '/../class/ThreadEmailExtractorAttachmentPdf.php';
 
 // Require authentication
 requireAuth();

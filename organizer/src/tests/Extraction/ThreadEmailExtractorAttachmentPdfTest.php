@@ -1,7 +1,7 @@
 <?php
 
-require_once __DIR__ . '/../class/ThreadEmailExtractorAttachmentPdf.php';
-require_once __DIR__ . '/../class/ThreadEmailExtractionService.php';
+require_once __DIR__ . '/../../class/Extraction/ThreadEmailExtractorAttachmentPdf.php';
+require_once __DIR__ . '/../../class/Extraction/ThreadEmailExtractionService.php';
 
 class ThreadEmailExtractorAttachmentPdfTest extends PHPUnit\Framework\TestCase {
     private $extractionService;

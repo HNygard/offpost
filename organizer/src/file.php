@@ -7,7 +7,7 @@ require_once __DIR__ . '/auth.php';
 require_once __DIR__ . '/vendor/autoload.php';
 require_once __DIR__ . '/class/ThreadStorageManager.php';
 require_once __DIR__ . '/class/ThreadAuthorization.php';
-require_once __DIR__ . '/class/ThreadEmailExtractorEmailBody.php';
+require_once __DIR__ . '/class/Extraction/ThreadEmailExtractorEmailBody.php';
 
 // Require authentication
 requireAuth();

@@ -1,8 +1,8 @@
 <?php
 
 require_once __DIR__ . '/../vendor/autoload.php';
-require_once __DIR__ . '/../class/ThreadEmailExtractorEmailBody.php';
-require_once __DIR__ . '/../class/ThreadEmailExtractorAttachmentPdf.php';
+require_once __DIR__ . '/../class/Extraction/ThreadEmailExtractorEmailBody.php';
+require_once __DIR__ . '/../class/Extraction/ThreadEmailExtractorAttachmentPdf.php';
 
 // Set up error reporting
 error_reporting(E_ALL);

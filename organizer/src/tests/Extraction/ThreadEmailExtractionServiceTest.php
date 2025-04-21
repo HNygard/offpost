@@ -2,9 +2,9 @@
 
 use PHPUnit\Framework\TestCase;
 
-require_once(__DIR__ . '/bootstrap.php');
-require_once(__DIR__ . '/../class/ThreadEmailExtractionService.php');
-require_once(__DIR__ . '/../class/Thread.php');
+require_once(__DIR__ . '/../bootstrap.php');
+require_once(__DIR__ . '/../../class/Extraction/ThreadEmailExtractionService.php');
+require_once(__DIR__ . '/../../class/Thread.php');
 
 class ThreadEmailExtractionServiceTest extends TestCase {
     private $service;
