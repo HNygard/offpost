@@ -137,7 +137,7 @@ class ThreadScheduledFollowUpSender {
 
         // Hardcoded template for follow-up email
         return "Hei,\n\n"
-            . "Vi sendte et innsynskrav til dere angående \"" . $thread->title . "\" og har ikke mottatt svar."
+            . "Vi sendte et innsynskrav til dere med tittel \"" . $thread->title . "\" og har ikke mottatt svar."
             . " Vår hendvendelse ble sendt " . date('H:i:s d.m.Y', strtotime($email_sent->timestamp_received)) . ".\n\n"
             . "Vennligst gi meg en oppdatering på status for vår henvendelse.\n\n"
             . "Med vennlig hilsen,\n" . $thread->my_name;
