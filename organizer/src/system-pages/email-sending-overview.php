@@ -9,37 +9,50 @@ requireAuth();
 
 // Get email sendings from the last 5 days with status SENT
 $sentEmailsQuery = "
-    SELECT * FROM thread_email_sendings 
+    SELECT tes.*, t.entity_id FROM thread_email_sendings tes
+    LEFT JOIN threads t ON tes.thread_id = t.id
     WHERE status = ? 
-    AND created_at >= NOW() - INTERVAL '5 days'
-    ORDER BY created_at DESC
+    AND tes.created_at >= NOW() - INTERVAL '5 days'
+    ORDER BY tes.created_at DESC
 ";
 $sentEmails = Database::query($sentEmailsQuery, [ThreadEmailSending::STATUS_SENT]);
 
 // Get all emails with status READY_FOR_SENDING
 $readyEmailsQuery = "
-    SELECT * FROM thread_email_sendings 
-    WHERE status = ? 
-    ORDER BY created_at DESC
+    SELECT tes.*, t.entity_id FROM thread_email_sendings tes
+    LEFT JOIN threads t ON tes.thread_id = t.id
+    WHERE status = ?
+    ORDER BY tes.created_at DESC
 ";
 $readyEmails = Database::query($readyEmailsQuery, [ThreadEmailSending::STATUS_READY_FOR_SENDING]);
 
 // Get all emails with status SENDING
 $sendingEmailsQuery = "
-    SELECT * FROM thread_email_sendings 
-    WHERE status = ? 
-    ORDER BY created_at DESC
+    SELECT tes.*, t.entity_id FROM thread_email_sendings tes
+    LEFT JOIN threads t ON tes.thread_id = t.id
+    WHERE status = ?
+    ORDER BY tes.created_at DESC
 ";
 $sendingEmails = Database::query($sendingEmailsQuery, [ThreadEmailSending::STATUS_SENDING]);
 
+// Get all emails with status STAGING
+$stagingEmailsQuery = "
+    SELECT tes.*, t.entity_id FROM thread_email_sendings tes
+    LEFT JOIN threads t ON tes.thread_id = t.id
+    WHERE status = ?
+    ORDER BY tes.created_at DESC
+";
+$stagingEmails = Database::query($stagingEmailsQuery, [ThreadEmailSending::STATUS_STAGING]);
+
 // Combine all emails
-$allEmails = array_merge($sendingEmails, $readyEmails, $sentEmails);
+$allEmails = array_merge($stagingEmails, $sendingEmails, $readyEmails, $sentEmails);
 
 // Count emails by status
 $statusCounts = [
     'SENT' => count($sentEmails),
     'READY_FOR_SENDING' => count($readyEmails),
     'SENDING' => count($sendingEmails),
+    'STAGING' => count($stagingEmails),
     'TOTAL' => count($allEmails)
 ];
 
@@ -69,6 +82,9 @@ function formatStatus($status) {
             break;
         case ThreadEmailSending::STATUS_SENDING:
             $class = 'label_warn';
+            break;
+        case ThreadEmailSending::STATUS_STAGING:
+            $class = 'label_disabled';
             break;
         default:
             $class = 'label_disabled';
@@ -180,8 +196,8 @@ function formatStatus($status) {
                 <div class="summary-label">Total</div>
             </div>
             <div class="summary-item">
-                <div class="summary-count"><?= $statusCounts['SENT'] ?></div>
-                <div class="summary-label">Sent (Last 5 Days)</div>
+                <div class="summary-count"><?= $statusCounts['STAGING'] ?></div>
+                <div class="summary-label">Staging</div>
             </div>
             <div class="summary-item">
                 <div class="summary-count"><?= $statusCounts['READY_FOR_SENDING'] ?></div>
@@ -190,6 +206,10 @@ function formatStatus($status) {
             <div class="summary-item">
                 <div class="summary-count"><?= $statusCounts['SENDING'] ?></div>
                 <div class="summary-label">Currently Sending</div>
+            </div>
+            <div class="summary-item">
+                <div class="summary-count"><?= $statusCounts['SENT'] ?></div>
+                <div class="summary-label">Sent (Last 5 Days)</div>
             </div>
         </div>
 
@@ -206,7 +226,7 @@ function formatStatus($status) {
                 <tr>
                     <td class="id-col"><?= $email['id'] ?></td>
                     <td class="thread-col">
-                        <a href="/thread-view?id=<?= htmlspecialchars($email['thread_id']) ?>">
+                        <a href="/thread-view?threadId=<?= htmlspecialchars($email['thread_id']) ?>&entityId=<?= urlencode($email['entity_id']) ?>">
                             <?= htmlspecialchars(getThreadTitle($email['thread_id'])) ?>
                         </a><br>
                         <?= htmlspecialchars(truncateText($email['email_subject'], 20)) ?>
