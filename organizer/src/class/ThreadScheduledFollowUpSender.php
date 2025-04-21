@@ -108,6 +108,16 @@ class ThreadScheduledFollowUpSender {
 
             $thread = Thread::loadFromDatabase($thread_status->thread_id);
 
+            $sendings = ThreadEmailSending::getByThreadId($thread->id);
+            foreach ($sendings as $sending) {
+                if ($sending->status == ThreadEmailSending::STATUS_SENT) {
+                    continue;
+                }
+
+                // Skip threads that already have some email in progress
+                continue 2;
+            }
+
             // Just an extra check that the thread is not archived.
             if ($thread->archived) {
                 throw new Exception("Thread is archived: " . $thread->id . '. Archived threads should already have been excluded in query.');

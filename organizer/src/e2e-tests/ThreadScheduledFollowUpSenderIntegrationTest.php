@@ -98,6 +98,14 @@ class ThreadScheduledFollowUpSenderIntegrationTest extends TestCase {
         $this->assertStringContainsString($testData['thread']->title, $emailSending->email_content);
         $this->assertEquals($testData['thread']->my_email, $emailSending->email_from);
         $this->assertEquals('public-entity@dev.offpost.no', $emailSending->email_to);
+
+
+        // :: Act - follow-up email is scheduled, so no new should be made
+        $result = $followUpSender->sendNextFollowUpEmail();
+
+        // :: Assert that nothing happend since we are not due
+        $this->assertFalse($result['success'], 'No threads should be ready for follow-up');
+        $this->assertEquals('No threads ready for follow-up', $result['message']);
     }
 
     /**
