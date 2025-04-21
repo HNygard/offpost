@@ -1,8 +1,17 @@
+set -e
+echo "=============================="
+
 echo "$(date) Scheduled sending of EMAIL"
 curl "http://organizer/scheduled-email-sending" -s 2>&1
 echo ""
 echo "$(date) Scheduled receiving of EMAIL"
 curl "http://organizer/scheduled-email-receiver" -s 2>&1
+echo ""
+echo "$(date) Scheduled extraction from email BODY"
+curl "http://organizer/scheduled-email-extraction" -s 2>&1
+echo ""
+echo "$(date) Scheduled extraction from email ATTACHMENT PDF"
+curl "http://organizer/scheduled-email-extraction?type=attachment_pdf" -s 2>&1
 echo ""
 echo "DONE"
 echo ""

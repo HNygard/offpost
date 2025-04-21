@@ -52,17 +52,17 @@ Goal: make production usable
         - [ ] Test service class
         - [ ] Add to cron job
 - [ ] Extract data from emails
-    - [ ] Extract plain text body from EML
+    - [x] Extract plain text body from EML
         - [x] Make a scheduled task for extraction of information
         - [x] Make framework for what extractions to do - SQL based
         - [x] Extraction - use the code from file.php
         - [x] Test new task in production
-        - [ ] Run scheduled task
+        - [x] Run scheduled task
     - [ ] Extract HTML body from EML
-    - [ ] Extract PDF attachments as text
+    - [x] Extract PDF attachments as text
         - [x] Make code
         - [x] Test new task in production
-        - [ ] Run scheduled task
+        - [x] Run scheduled task
     - [ ] Extract image attachements as text (OpenAI or something)
         - [ ] Make code
         - [ ] Test new task in production
