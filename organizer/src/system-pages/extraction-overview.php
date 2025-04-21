@@ -305,8 +305,9 @@ function getExtractionType($extraction) {
             </ul>
             
             <p>
-                <a href="/system-pages/scheduled-email-extraction.php" class="btn btn-primary">Process Next Email Body</a>
-                <a href="/system-pages/scheduled-email-extraction.php?type=attachment_pdf" class="btn btn-primary">Process Next PDF Attachment</a>
+                DEVELOPMENT ONLY:
+                <a href="/system-pages/scheduled-email-extraction" class="btn btn-primary">Process Next Email Body</a>
+                <a href="/system-pages/scheduled-email-extraction?type=attachment_pdf" class="btn btn-primary">Process Next PDF Attachment</a>
             </p>
         </div>
 
