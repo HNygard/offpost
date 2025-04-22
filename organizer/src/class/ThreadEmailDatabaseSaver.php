@@ -86,7 +86,7 @@ class ThreadEmailDatabaseSaver {
                     );
                 }
 
-                if (count($threads) == 0) {
+                if (count($threads) == 0 || count($threads) > 1) {
                     // Try to figure out the thread id based on folder
                     $threads = ThreadStorageManager::getInstance()->getThreads();
                     $thread_id = $last_thread_id;
@@ -99,16 +99,18 @@ class ThreadEmailDatabaseSaver {
                         }
                     }
 
+                    $message = (count($threads) == 0 ? 
+                        'No matching thread found for email(s): ' . implode(', ', $all_emails) :
+                        'Multiple matching threads found for email(s): ' . implode(', ', $all_emails)
+                    );
+
                     throw new Exception("Failed to process email:\n"
-                        . "No matching thread found for email(s): " . implode(', ', $all_emails) . "\n"
+                        . $message . "\n"
                         . "Email subject: " . $email->subject . "\n"
                         . "Email identifier: " . $email_identifier . "\n"
                         . "Query to insert mapping: \n"
                         . "INSERT INTO thread_email_mapping (email_identifier, thread_id, description) VALUES ('$email_identifier', '$thread_id', '');"
                     );
-                }
-                if (count($threads) > 1) {
-                    throw new Exception('Failed to process email: Multiple matching threads found for email(s): ' . implode(', ', $all_emails));
                 }
                 $thread = Thread::loadFromDatabase($threads[0]['id']);
                 $last_thread_id = $thread->id;
