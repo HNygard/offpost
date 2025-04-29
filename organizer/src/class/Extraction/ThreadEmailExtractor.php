@@ -34,7 +34,7 @@ abstract class ThreadEmailExtractor {
      * @return array Result of the operation
      */
     protected function processNextEmailExtractionInternal($prompt_text,
-    $prompt_service, $extract_text_function) {
+    $prompt_service, $extract_text_function, $prompt_id = null) {
         // Find the next email that needs extraction
         $email = $this->findNextEmailForExtraction();
         
@@ -51,7 +51,8 @@ abstract class ThreadEmailExtractor {
                 $email['email_id'],
                 $prompt_text,
                 $prompt_service,
-                $email['attachment_id'] ?? null
+                $email['attachment_id'] ?? null,
+                $prompt_id
             );
 
             $extractedText = $extract_text_function($email, $prompt_text, $prompt_service);
