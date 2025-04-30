@@ -33,6 +33,16 @@ class PromptService {
             $prompt->getModel($emailInput),
             'prompt_' . $prompt->getPromptId()
         );
-        return $response;
+
+        $return = null;
+        foreach($response['output'] as $key => $value) {
+            if ($value['status'] == 'completed') {
+                if ($return != null) {
+                    throw new Exception("Multiple completions found in response");
+                }
+                $return = $value['content'][0]['text'];
+            }
+        }
+        return $return;
     }
 }
