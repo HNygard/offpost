@@ -100,9 +100,12 @@ Goal: make production usable
     - [x] Service class for creating and updating ThreadEmailExtraction
     - [x] Overview page for admin to see all unclassified emails and attachments
     - [ ] Manually trigger extration prompts from overview page
-    - [ ] Integration with OpenAI for extraction using prompts
+    - [x] Integration with OpenAI for extraction using prompts
         - One prompt can depend on another.
-        - Some prompts depend on the type of request
+        - Some prompts depend on the type of request (e.g. offentleglova, or custom election stuff)
+        - [x] Map OpenAI response to text/JSON for saving as extraction
+        - [x] Log usage of OpenAI. Token in/out, prompt, response
+        - [x] Show case number in thread view
 
 - [ ] Update-imap - folder creation should be done in class so that logic is the same in tests and update-imap.php
 - [ ] GUI for replying to threads

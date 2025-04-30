@@ -5,6 +5,7 @@ require_once __DIR__ . '/class/ThreadEmailClassifier.php';
 require_once __DIR__ . '/class/ThreadStorageManager.php';
 require_once __DIR__ . '/class/ThreadHistory.php';
 require_once __DIR__ . '/class/ThreadEmailSending.php';
+require_once __DIR__ . '/class/Extraction/ThreadEmailExtractionService.php';
 
 // Require authentication
 requireAuth();
@@ -155,6 +156,9 @@ if ($thread->isUserOwner($userId)) {
     $authorizedUsers = ThreadAuthorizationManager::getThreadUsers($thread->id);
 }
 
+// Get thread email extractions
+$extraction_service = new ThreadEmailExtractionService();
+
 // Get thread history
 $history = new ThreadHistory();
 $historyEntries = $history->getHistoryForThread($thread->id);
@@ -172,6 +176,52 @@ function getIconClass($filetype) {
             return '';
     }
 }
+
+function print_extraction ($extraction) {
+    $text = '';
+    $style = '';
+
+    if (!empty($extraction->error_message)) {
+        $style = 'background-color: #f8d7da; color: #721c24;';
+        $text = 'Error extracting info.';
+    }
+    elseif ($extraction->prompt_service == 'code' && $extraction->prompt_text == 'email_body') {
+        $text = 'Email body extracted.';
+        $style = 'background-color: #d1ecf1; color: #0c5460;';
+    }
+    elseif ($extraction->prompt_service == 'code' && $extraction->prompt_text == 'attachment_pdf') {
+        $text = 'PDF attachment text extracted.';
+        $style = 'background-color: #d1ecf1; color: #0c5460;';
+    }
+    elseif ($extraction->prompt_service == 'openai' && $extraction->prompt_id == 'saksnummer') {
+        if (empty($extraction->extracted_text)) {
+            return;
+        }
+        $obj = json_decode($extraction->extracted_text);
+        foreach($obj as $case_numer) {
+            if (!empty($case_numer->document_number)) {
+                $text .= "Document number: " . htmlescape($case_numer->document_number);
+            }
+            elseif (!empty($case_numer->case_number)) {
+                $text .= " Case number: " . htmlescape($case_numer->case_number);
+            }
+            if (!empty($case_numer->entity_name)) {
+                $text .= " (" . htmlescape($case_numer->entity_name) . ")";
+            }
+        }
+        $style = 'background-color: #d4edda; color: #155724;';
+    }
+    else {
+        global $admins;
+        $text = 'Unknown extraction.';
+        if (in_array($_SESSION['user']['sub'], $admins)) {
+            $text .= "\nJSON: " . json_encode($extraction);
+        }
+        throw new Exception($text);
+    }
+    echo '<span class="email-extraction" style="border: 1px solid gray; padding: 5px; border-radius: 4px; margin-right: 6px; ' . $style . '">' . trim($text) . '</span>';
+}
+
 ?>
 <!DOCTYPE html>
 <html>
@@ -322,6 +372,8 @@ function getIconClass($filetype) {
             }
             foreach ($thread->emails as $email):
                 $label_type = getLabelType('email', $email->status_type);
+
+                $extractions = $extraction_service->getExtractionsForEmail($email->id);
             ?>
                 <div class="email-item<?= $email->ignore ? ' ignored' : '' ?>">
                     <div class="email-header">
@@ -344,6 +396,18 @@ function getIconClass($filetype) {
                             <?= htmlescape($email->description) ?>
                         </div>
                     <?php endif; ?>
+
+                    <div class="email-extractions">
+                        <?php
+                        foreach ($extractions as $extraction) {
+                            if (!empty($extraction->attachment_id)) {
+                                continue;
+                            }
+                            print_extraction($extraction);
+
+                        }
+                        ?>
+                    </div>
 
                     <?php if (isset($email->id)): ?>
                         <div class="email-links">
@@ -378,6 +442,16 @@ function getIconClass($filetype) {
                                         <?php endif; ?>
                                         <?= htmlescape($att->name) ?>
                                     <?php endif; ?>
+
+                                    <div class="email-extractions" style="margin-top: 5px;">
+                                        <?php
+                                        foreach ($extractions as $extraction) {
+                                            if ($extraction->attachment_id == $att->id) {
+                                                print_extraction($extraction);
+                                            }
+                                        }
+                                        ?>
+                                    </div>
                                 </div>
                                 <?php endforeach; ?>
                             </div>
