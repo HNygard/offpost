@@ -39,8 +39,12 @@ abstract class ThreadEmailExtractorPrompt extends ThreadEmailExtractor {
         // If no prompt service is provided, create one with the API key from environment
         if ($promptService === null) {
             $openai_api_key = getenv('OPENAI_API_KEY');
+            if (file_exists('/run/secrets/openai_api_key')) {
+                $openai_api_key = trim(explode("\n", file_get_contents('/run/secrets/openai_api_key'))[1]);
+            }
             if (!$openai_api_key) {
-                throw new Exception("OPENAI_API_KEY environment variable is required");
+                throw new Exception("OPENAI_API_KEY environment variable is required,"
+                . " or the file /run/secrets/openai_api_key must exist (mounted by docker compose)");
             }
             $this->promptService = new PromptService($openai_api_key);
         } else {
@@ -92,11 +96,11 @@ abstract class ThreadEmailExtractorPrompt extends ThreadEmailExtractor {
         // Find emails that have existing extractions but don't have an extraction for this prompt yet
         $query = "
             SELECT 
-                te.id as email_id, 
-                te.thread_id, 
+                te.id as email_id,
+                te.thread_id,
                 te.email_type,
                 te.datetime_received,
-                
+
                 tee_source.extraction_id as source_extraction_id,
                 tee_source.extracted_text as source_extracted_text,
                 tee_source.prompt_text as source_prompt_text,
@@ -108,13 +112,17 @@ abstract class ThreadEmailExtractorPrompt extends ThreadEmailExtractor {
                 t.my_email as thread_my_email
 
             FROM thread_emails te
+
             JOIN threads t ON te.thread_id = t.id
-            JOIN thread_email_extractions tee_source ON te.id = tee_source.email_id 
+
+            JOIN thread_email_extractions tee_source
+                ON te.id = tee_source.email_id
                 AND tee_source.prompt_service = 'code'
                 AND tee_source.prompt_text IN ('email_body', 'attachment_pdf')
             
             -- Check if the target extraction already exists
-            LEFT JOIN thread_email_extractions tee_target ON te.id = tee_target.email_id 
+            LEFT JOIN thread_email_extractions tee_target
+                ON te.id = tee_target.email_id
                 AND tee_target.prompt_service = ?
                 AND tee_target.prompt_id = ?
             WHERE tee_target.extraction_id IS NULL

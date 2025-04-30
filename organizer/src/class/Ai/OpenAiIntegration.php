@@ -46,14 +46,16 @@ class OpenAiIntegration
             'Content-Type: application/json',
             'Authorization: Bearer ' . $this->apiKey
         ]);
+        curl_setopt($ch, CURLOPT_HTTP_VERSION, CURL_HTTP_VERSION_1_1);
         
         $response = curl_exec($ch);
         $httpCode = curl_getinfo($ch, CURLINFO_HTTP_CODE);
-        $error = 'Curl error: ' . curl_error($ch);
+        $error = curl_error($ch);
         
         curl_close($ch);
         
         if ($error) {
+            $error = 'Curl error: ' . $error;
             throw new Exception("OpenAI API error: $error");
         }
         if ($httpCode >= 400) {

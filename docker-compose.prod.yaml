@@ -51,6 +51,7 @@ services:
     volumes:
       - postgres_data:/var/lib/postgresql/data
       - /opt/offpost/secrets/postgres_password:/run/secrets/postgres_password:ro
+      - /opt/offpost/secrets/openai_api_key:/run/secrets/openai_api_key:ro
     restart: unless-stopped
 
   organizer:

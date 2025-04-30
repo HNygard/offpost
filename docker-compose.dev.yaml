@@ -105,6 +105,7 @@ services:
       - ./data/:/organizer-data
       - ./data/entities.json:/organizer-data/entities.json
       - ./secrets/postgres_password:/run/secrets/postgres_password:ro
+      - ./secrets/openai_api_key:/run/secrets/openai_api_key:ro
       - pdf_tmpfs:/tmp/pdf_extraction
     environment:
       - ENVIRONMENT=development
