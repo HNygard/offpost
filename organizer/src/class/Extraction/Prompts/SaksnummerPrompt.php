@@ -24,6 +24,12 @@ class SaksnummerPrompt extends OpenAiPrompt {
     }
 
     public function getInput(String $input_from_email): array {
+        // Limit the input to approximate 1 page of text
+        $length = 3000;
+        if (mb_strlen($input_from_email, 'UTF-8') > $length) {
+            $input_from_email = mb_substr($input_from_email, 0, $length, 'UTF-8') . '... [Text truncated - showing approximately 1 page]';
+        }
+
         return [
             ['role' => 'system', 'content' => $this->getPromptText()],
             ['role' => 'user', 'content' => $input_from_email]
