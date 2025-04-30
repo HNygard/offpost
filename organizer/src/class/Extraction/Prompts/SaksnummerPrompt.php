@@ -29,4 +29,36 @@ class SaksnummerPrompt extends OpenAiPrompt {
             ['role' => 'user', 'content' => $input_from_email]
         ];
     }
+
+    public function getStructuredOutput() { 
+        return json_decode('{
+            "name": "case_number_schema",
+            "type": "json_schema",
+            "schema": {
+                "type": "object",
+                "properties": {
+                    "found_case_number": {"type": "boolean"},
+                    "case_number": {"type": "string"},
+                    "document_number": {"type": "string"},
+                    "entity_name": {"type": "string"}
+                },
+                "required": ["found_case_number", "case_number", "document_number", "entity_name"],
+                "additionalProperties": false
+            },
+            "strict": true
+        }');
+    }
+
+    public function filterOutput($output): string {
+        $obj = json_decode($output);
+        if (!$obj->found_case_number) {
+            if (!empty($obj->case_number) || !empty($obj->entity_name)) {
+                throw new Exception("Found case number or entity name, but found_case_number is false");
+            }
+            // No case number found.
+            return '';
+        }
+        unset($obj->found_case_number);
+        return json_encode($obj, JSON_UNESCAPED_SLASHES ^ JSON_UNESCAPED_UNICODE);
+    }
 }

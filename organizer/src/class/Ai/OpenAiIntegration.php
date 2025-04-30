@@ -51,11 +51,12 @@ class OpenAiIntegration
      * Send a request to OpenAI API
      * 
      * @param array $input Array of input messages
+     * @param object $structured_output Structured output object
      * @param string $model Model to use (defaults to gpt-4o)
      * @param string $source Source of the request (for logging)
      * @return array|null Response from OpenAI or null on error
      */
-    public function sendRequest(array $input, string $model, string $source = null): ?array
+    public function sendRequest(array $input, object $structured_output, string $model, string $source = null): ?array
     {
         if ($source == null) {
             $source = 'unknown';
@@ -66,6 +67,11 @@ class OpenAiIntegration
             'model' => $model,
             'input' => $input
         ];
+        if ($structured_output) {
+            $requestData['text'] = [
+                'format' => $structured_output
+            ];
+        }
         
         // Log the request before sending
         $logId = OpenAiRequestLog::log(

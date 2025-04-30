@@ -19,5 +19,12 @@ abstract class OpenAiPrompt {
             ['role' => 'user', 'content' => 'What is the capital of France?']
         ];
     }
-    
+
+    public function getStructuredOutput() {
+        return null;
+    }
+
+    public function filterOutput($output): string {
+        return $output;
+    }
 }

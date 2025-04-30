@@ -337,6 +337,7 @@ function getExtractionType($extraction) {
                     </td>
                     <td class="type-col"><?= getExtractionType($extraction) ?></td>
                     <td class="prompt-col">
+                        <b><?= htmlspecialchars($extraction['prompt_id'] ?: 'N/A') ?></b><br>
                         <?= htmlspecialchars(truncateText($extraction['prompt_text'], 20)) ?><br>
                         <small><?= htmlspecialchars($extraction['prompt_service']) ?></small>
                     </td>

@@ -30,6 +30,7 @@ class PromptService {
         $openai = new OpenAiIntegration($this->openai_api_key);
         $response = $openai->sendRequest(
             $prompt->getInput($emailInput),
+            $prompt->getStructuredOutput(),
             $prompt->getModel($emailInput),
             'prompt_' . $prompt->getPromptId()
         );
@@ -43,6 +44,10 @@ class PromptService {
                 $return = $value['content'][0]['text'];
             }
         }
-        return $return;
+
+        if ($return == null) {
+            return '';
+        }
+        return $prompt->filterOutput($return);
     }
 }
