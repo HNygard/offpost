@@ -148,6 +148,7 @@ function getThreadStatusLabelClass($status) {
                     <li><a href="/email-sending-overview">Email sending overview</a></li>
                     <li><a href="/extraction-overview">Email extraction overview</a></li>
                     <li><a href="/thread-status-overview">Thread status overview</a></li>
+                    <li><a href="/openai-request-log-overview">OpenAI request log</a></li>
                     <li><a href="/update-imap">Update IMAP</a></li>
                     <li><a href="/update-identities">Update identities into Roundcube</a></li>
                 </ul>

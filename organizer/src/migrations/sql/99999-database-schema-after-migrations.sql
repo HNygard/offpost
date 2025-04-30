@@ -1,6 +1,6 @@
 -- ******************************************************************
 -- AUTOMATICALLY GENERATED FILE - DO NOT MODIFY
--- Generated on: 2025-04-06 00:19:10
+-- Generated on: 2025-04-30 08:24:21
 -- 
 -- This file contains the current database schema after all migrations.
 -- It is NOT meant to be executed as a migration script.
@@ -39,6 +39,23 @@ CREATE INDEX imap_folder_status_folder_name_idx ON imap_folder_status USING btre
 CREATE INDEX imap_folder_status_folder_thread_unique ON imap_folder_status USING btree (folder_name, thread_id);
 CREATE INDEX imap_folder_status_requested_update_time_idx ON imap_folder_status USING btree (requested_update_time);
 CREATE INDEX imap_folder_status_thread_id_idx ON imap_folder_status USING btree (thread_id);
+
+CREATE TABLE openai_request_log (
+    id integer NOT NULL DEFAULT nextval('openai_request_log_id_seq'::regclass),
+    source character varying(255) NOT NULL,
+    time timestamp with time zone NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    endpoint character varying(255) NOT NULL,
+    request text NOT NULL,
+    response text,
+    response_code integer,
+    tokens_input integer,
+    tokens_output integer
+);
+
+ALTER TABLE openai_request_log ADD CONSTRAINT openai_request_log_pkey PRIMARY KEY (id);
+CREATE INDEX openai_request_log_endpoint_idx ON openai_request_log USING btree (endpoint);
+CREATE INDEX openai_request_log_source_idx ON openai_request_log USING btree (source);
+CREATE INDEX openai_request_log_time_idx ON openai_request_log USING btree ("time");
 
 CREATE TABLE thread_authorizations (
     id integer NOT NULL DEFAULT nextval('thread_authorizations_id_seq'::regclass),

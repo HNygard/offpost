@@ -59,7 +59,8 @@ if (isset($options['test'])) {
         [
             ['role' => 'user', 'content' => 'What is the capital of France?']
         ],
-        'gpt-4o'
+        'gpt-4o',
+        'ai_check_models_test'
     );
     echo "Request:\n" . json_encode($request, JSON_PRETTY_PRINT ^ JSON_UNESCAPED_SLASHES ^ JSON_UNESCAPED_UNICODE) . "\n";
 }

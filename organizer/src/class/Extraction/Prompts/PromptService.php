@@ -30,7 +30,8 @@ class PromptService {
         $openai = new OpenAiIntegration($this->openai_api_key);
         $response = $openai->sendRequest(
             $prompt->getInput($emailInput),
-            $prompt->getModel($emailInput)
+            $prompt->getModel($emailInput),
+            'prompt_' . $prompt->getPromptId()
         );
         return $response;
     }

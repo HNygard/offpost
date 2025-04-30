@@ -24,6 +24,7 @@ try {
         '/email-sending-overview' => '/../system-pages/email-sending-overview.php',
         '/extraction-overview' => '/../system-pages/extraction-overview.php',
         '/thread-status-overview' => '/../system-pages/thread-status-overview.php',
+        '/openai-request-log-overview' => '/../system-pages/openai-request-log-overview.php',
         '/update-imap' => '/../update-imap.php', // Temporary while we wait for new imap integration
     ];
 

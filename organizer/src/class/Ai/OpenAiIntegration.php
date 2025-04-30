@@ -3,6 +3,7 @@
 namespace Offpost\Ai;
 
 use Exception;
+require_once __DIR__ . '/OpenAiRequestLog.php';
 
 /**
  * Integration with OpenAI API for AI-powered features
@@ -26,16 +27,27 @@ class OpenAiIntegration
      * 
      * @param array $input Array of input messages
      * @param string $model Model to use (defaults to gpt-4o)
+     * @param string $source Source of the request (for logging)
      * @return array|null Response from OpenAI or null on error
      */
-    public function sendRequest(array $input, string $model): ?array
+    public function sendRequest(array $input, string $model, string $source = null): ?array
     {
+        if ($source == null) {
+            $source = 'unknown';
+        }
         $apiEndpoint = 'https://api.openai.com/v1/responses';
         
         $requestData = [
             'model' => $model,
             'input' => $input
         ];
+        
+        // Log the request before sending
+        $logId = OpenAiRequestLog::log(
+            $source,
+            $apiEndpoint,
+            $requestData
+        );
         
         $ch = curl_init($apiEndpoint);
         
@@ -56,13 +68,32 @@ class OpenAiIntegration
         
         if ($error) {
             $error = 'Curl error: ' . $error;
+            // Log the error response
+            OpenAiRequestLog::updateWithResponse($logId, $error, 0);
             throw new Exception("OpenAI API error: $error");
         }
         if ($httpCode >= 400) {
+            // Log the error response
+            OpenAiRequestLog::updateWithResponse($logId, $response, $httpCode);
             throw new Exception("OpenAI API error: HTTP code $httpCode\n$response");
         }
         
-        return json_decode($response, true);
+        $responseData = json_decode($response, true);
+        
+        // Extract token counts if available in the response
+        $tokensInput = $responseData['usage']['input_tokens'] ?? null;
+        $tokensOutput = $responseData['usage']['output_tokens'] ?? null;
+        
+        // Update the log with the response data
+        OpenAiRequestLog::updateWithResponse(
+            $logId,
+            $response,
+            $httpCode,
+            $tokensInput,
+            $tokensOutput
+        );
+        
+        return $responseData;
     }
 
     /**
@@ -106,15 +137,16 @@ class OpenAiIntegration
      * @param string $imageUrl URL of the image to analyze
      * @param string $question Question to ask about the image
      * @param string $model Model to use (defaults to class default)
+     * @param string $source Source of the request (for logging)
      * @return array|null Response from OpenAI or null on error
      */
-    public function analyzeImage(string $imageUrl, string $question, string $model = null): ?array
+    public function analyzeImage(string $imageUrl, string $question, string $model = null, string $source = null): ?array
     {
         $input = [
             $this->createTextMessage($question),
             $this->createImageMessage($imageUrl)
         ];
         
-        return $this->sendRequest($input, $model);
+        return $this->sendRequest($input, $model, $source);
     }
 }
