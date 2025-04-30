@@ -82,6 +82,9 @@ class OpenAiIntegration
         
         if ($error) {
             $error = 'Curl error: ' . $error;
+            if ($response) {
+                $error .= "\nResponse: $response";
+            }
             // Log the error response
             OpenAiRequestLog::updateWithResponse($logId, $error, 0);
             throw new Exception("OpenAI API error: $error");
@@ -97,6 +100,8 @@ class OpenAiIntegration
         // Extract token counts if available in the response
         $tokensInput = $responseData['usage']['input_tokens'] ?? null;
         $tokensOutput = $responseData['usage']['output_tokens'] ?? null;
+        $model = $responseData['model'] ?? null;
+        $status = $responseData['status'] ?? null;
         
         // Update the log with the response data
         OpenAiRequestLog::updateWithResponse(
@@ -104,7 +109,9 @@ class OpenAiIntegration
             $response,
             $httpCode,
             $tokensInput,
-            $tokensOutput
+            $tokensOutput,
+            $model,
+            $status
         );
         
         return $responseData;

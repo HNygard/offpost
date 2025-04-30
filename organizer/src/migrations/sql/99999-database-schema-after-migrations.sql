@@ -1,6 +1,6 @@
 -- ******************************************************************
 -- AUTOMATICALLY GENERATED FILE - DO NOT MODIFY
--- Generated on: 2025-04-30 08:24:21
+-- Generated on: 2025-04-30 18:42:22
 -- 
 -- This file contains the current database schema after all migrations.
 -- It is NOT meant to be executed as a migration script.
@@ -49,7 +49,9 @@ CREATE TABLE openai_request_log (
     response text,
     response_code integer,
     tokens_input integer,
-    tokens_output integer
+    tokens_output integer,
+    model character varying(255),
+    status character varying(50)
 );
 
 ALTER TABLE openai_request_log ADD CONSTRAINT openai_request_log_pkey PRIMARY KEY (id);

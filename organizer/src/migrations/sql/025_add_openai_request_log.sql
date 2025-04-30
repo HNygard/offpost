@@ -11,7 +11,9 @@ CREATE TABLE openai_request_log (
     response TEXT,
     response_code INTEGER,
     tokens_input INTEGER,
-    tokens_output INTEGER
+    tokens_output INTEGER,
+    model VARCHAR(255),
+    status VARCHAR(50)
 );
 
 -- Add indexes for efficient querying

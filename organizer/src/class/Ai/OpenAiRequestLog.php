@@ -21,6 +21,8 @@ class OpenAiRequestLog {
      * @param int|null $responseCode HTTP response code
      * @param int|null $tokensInput Number of input tokens
      * @param int|null $tokensOutput Number of output tokens
+     * @param string|null $model Model used for the request
+     * @param string|null $status Status of the request
      * @return int ID of the created log entry
      */
     public static function log(
@@ -30,7 +32,9 @@ class OpenAiRequestLog {
         $response = null,
         ?int $responseCode = null,
         ?int $tokensInput = null,
-        ?int $tokensOutput = null
+        ?int $tokensOutput = null,
+        ?string $model = null,
+        ?string $status = null
     ): int {
         // Convert request/response to JSON if they are arrays
         $requestJson = is_array($request) ? json_encode($request, JSON_PRETTY_PRINT) : $request;
@@ -38,8 +42,9 @@ class OpenAiRequestLog {
         
         $result = Database::queryOne(
             "INSERT INTO openai_request_log (
-                source, endpoint, request, response, response_code, tokens_input, tokens_output
-            ) VALUES (?, ?, ?, ?, ?, ?, ?) RETURNING id",
+                source, endpoint, request, response, response_code, tokens_input, tokens_output,
+                model, status
+            ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?) RETURNING id",
             [
                 $source,
                 $endpoint,
@@ -47,7 +52,9 @@ class OpenAiRequestLog {
                 $responseJson,
                 $responseCode,
                 $tokensInput,
-                $tokensOutput
+                $tokensOutput,
+                $model,
+                $status
             ]
         );
         
@@ -62,6 +69,8 @@ class OpenAiRequestLog {
      * @param int $responseCode HTTP response code
      * @param int|null $tokensInput Number of input tokens
      * @param int|null $tokensOutput Number of output tokens
+     * @param string|null $model Model used for the request
+     * @param string|null $status Status of the request
      * @return bool Success status
      */
     public static function updateWithResponse(
@@ -69,7 +78,9 @@ class OpenAiRequestLog {
         $response,
         int $responseCode,
         ?int $tokensInput = null,
-        ?int $tokensOutput = null
+        ?int $tokensOutput = null,
+        ?string $model = null,
+        ?string $status = null
     ): bool {
         if ($logId <= 0) {
             throw new Exception("Invalid log ID: $logId");
@@ -79,9 +90,12 @@ class OpenAiRequestLog {
         
         return Database::execute(
             "UPDATE openai_request_log 
-            SET response = ?, response_code = ?, tokens_input = ?, tokens_output = ? 
+            SET response = ?, response_code = ?, tokens_input = ?, tokens_output = ?,
+            model = ?, status = ?
             WHERE id = ?",
-            [$responseJson, $responseCode, $tokensInput, $tokensOutput, $logId]
+            [$responseJson, $responseCode, $tokensInput, $tokensOutput, 
+            $model, $status,
+            $logId]
         ) > 0;
     }
     
