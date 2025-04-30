@@ -38,11 +38,21 @@ class SaksnummerPrompt extends OpenAiPrompt {
                 "type": "object",
                 "properties": {
                     "found_case_number": {"type": "boolean"},
-                    "case_number": {"type": "string"},
-                    "document_number": {"type": "string"},
-                    "entity_name": {"type": "string"}
+                    "case_numbers": {
+                        "type": "array",
+                        "items": {
+                            "type": "object",
+                            "properties": {
+                                "case_number": {"type": "string"},
+                                "document_number": {"type": "string"},
+                                "entity_name": {"type": "string"}
+                            },
+                            "required": ["case_number", "document_number", "entity_name"],
+                            "additionalProperties": false
+                        }
+                    }
                 },
-                "required": ["found_case_number", "case_number", "document_number", "entity_name"],
+                "required": ["found_case_number", "case_numbers"],
                 "additionalProperties": false
             },
             "strict": true
@@ -58,7 +68,20 @@ class SaksnummerPrompt extends OpenAiPrompt {
             // No case number found.
             return '';
         }
+
+        // Clean up the output
         unset($obj->found_case_number);
-        return json_encode($obj, JSON_UNESCAPED_SLASHES ^ JSON_UNESCAPED_UNICODE);
+        foreach($obj->case_numbers as $key => $obj2) {
+            if (empty($obj2->case_number)) {
+                unset($obj2->case_number);
+            }
+            if (empty($obj2->document_number)) {
+                unset($obj2->document_number);
+            }
+            if (empty($obj2->entity_name)) {
+                unset($obj2->entity_name);
+            }
+        }
+        return json_encode($obj->case_numbers, JSON_UNESCAPED_SLASHES ^ JSON_UNESCAPED_UNICODE);
     }
 }
