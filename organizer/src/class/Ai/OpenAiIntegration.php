@@ -22,6 +22,31 @@ class OpenAiIntegration
         $this->apiKey = $apiKey;
     }
 
+    protected function internalSendRequest($apiEndpoint, $requestData) {
+        $ch = curl_init($apiEndpoint);
+        
+        curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
+        curl_setopt($ch, CURLOPT_POST, true);
+        curl_setopt($ch, CURLOPT_POSTFIELDS, json_encode($requestData));
+        curl_setopt($ch, CURLOPT_HTTPHEADER, [
+            'Content-Type: application/json',
+            'Authorization: Bearer ' . $this->apiKey
+        ]);
+        curl_setopt($ch, CURLOPT_HTTP_VERSION, CURL_HTTP_VERSION_1_1);
+        
+        $response = curl_exec($ch);
+        $httpCode = curl_getinfo($ch, CURLINFO_HTTP_CODE);
+        $error = curl_error($ch);
+        
+        curl_close($ch);
+
+        return array(
+            'response' => $response,
+            'httpCode' => $httpCode,
+            'error' => $error
+        );
+    }
+
     /**
      * Send a request to OpenAI API
      * 
@@ -49,22 +74,11 @@ class OpenAiIntegration
             $requestData
         );
         
-        $ch = curl_init($apiEndpoint);
-        
-        curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
-        curl_setopt($ch, CURLOPT_POST, true);
-        curl_setopt($ch, CURLOPT_POSTFIELDS, json_encode($requestData));
-        curl_setopt($ch, CURLOPT_HTTPHEADER, [
-            'Content-Type: application/json',
-            'Authorization: Bearer ' . $this->apiKey
-        ]);
-        curl_setopt($ch, CURLOPT_HTTP_VERSION, CURL_HTTP_VERSION_1_1);
-        
-        $response = curl_exec($ch);
-        $httpCode = curl_getinfo($ch, CURLINFO_HTTP_CODE);
-        $error = curl_error($ch);
-        
-        curl_close($ch);
+        // Send the request
+        $responseData = $this->internalSendRequest($apiEndpoint, $requestData);
+        $response = $responseData['response'];
+        $httpCode = $responseData['httpCode'];
+        $error = $responseData['error'];
         
         if ($error) {
             $error = 'Curl error: ' . $error;
