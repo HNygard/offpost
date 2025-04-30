@@ -51,12 +51,12 @@ class OpenAiIntegration
      * Send a request to OpenAI API
      * 
      * @param array $input Array of input messages
-     * @param object $structured_output Structured output object
+     * @param $structured_output Structured output object
      * @param string $model Model to use (defaults to gpt-4o)
      * @param string $source Source of the request (for logging)
      * @return array|null Response from OpenAI or null on error
      */
-    public function sendRequest(array $input, object $structured_output, string $model, string $source = null): ?array
+    public function sendRequest(array $input, $structured_output, string $model, string $source = null): ?array
     {
         if ($source == null) {
             $source = 'unknown';
@@ -163,17 +163,18 @@ class OpenAiIntegration
      * 
      * @param string $imageUrl URL of the image to analyze
      * @param string $question Question to ask about the image
+     * @param $structured_output Structured output object
      * @param string $model Model to use (defaults to class default)
      * @param string $source Source of the request (for logging)
      * @return array|null Response from OpenAI or null on error
      */
-    public function analyzeImage(string $imageUrl, string $question, string $model = null, string $source = null): ?array
+    public function analyzeImage(string $imageUrl, string $question, $structured_output = null, string $model = null, string $source = null): ?array
     {
         $input = [
             $this->createTextMessage($question),
             $this->createImageMessage($imageUrl)
         ];
         
-        return $this->sendRequest($input, $model, $source);
+        return $this->sendRequest($input, $structured_output, $model, $source);
     }
 }

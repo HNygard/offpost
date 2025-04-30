@@ -73,7 +73,7 @@ class OpenAiIntegrationTest extends PHPUnit\Framework\TestCase {
         ]);
 
         // :: Act
-        $this->integration->sendRequest($input, $model, $this->testSource);
+        $this->integration->sendRequest($input, null, $model, $this->testSource);
         
         // :: Assert
         $logs = OpenAiRequestLog::getBySource($this->testSource);
@@ -108,7 +108,7 @@ class OpenAiIntegrationTest extends PHPUnit\Framework\TestCase {
         ]);
         
         // :: Act
-        $this->integration->analyzeImage($imageUrl, $question, $model, $source);
+        $this->integration->analyzeImage($imageUrl, $question, null, $model, $source);
         
         // :: Assert
         $logs = OpenAiRequestLog::getBySource($source);
@@ -148,7 +148,7 @@ class OpenAiIntegrationTest extends PHPUnit\Framework\TestCase {
         ]);
         
         // :: Act
-        $this->integration->sendRequest($input, $model, $this->testSource);
+        $this->integration->sendRequest($input, null, $model, $this->testSource);
         
         // :: Assert
         $logs = OpenAiRequestLog::getBySource($this->testSource);
