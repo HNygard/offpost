@@ -81,7 +81,7 @@ class SaksnummerPrompt extends OpenAiPrompt {
             if (empty($obj2->case_number)) {
                 unset($obj2->case_number);
             }
-            if (empty($obj2->document_number)) {
+            if (empty($obj2->document_number) || $obj2->document_number == '-') {
                 unset($obj2->document_number);
             }
             if (empty($obj2->entity_name)) {
