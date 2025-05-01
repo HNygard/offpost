@@ -1,0 +1,25 @@
+### TEST INPUT ###
+
+Thread Details:
+- Thread title: Innsynskrav eksempel
+- Thread entity ID: 983999999-nordland-politidistrikt
+- Thread my name: Tobias S
+- Thread my email: tobias.s@offpost.no
+Email Details:
+- Date: 2021-07-23 14:08:28+00
+- Direction: IN
+- Source: Email body
+
+Saksnummer: 2021/41
+
+Some email title
+
+
+### EXPECTED OUTPUT ###
+[{"case_number":"2021/41","entity_name":"Nordland politidistrikt"}]
+[{"case_number":"2021/41","entity_name":"Nordland Politidistrikt"}]
+[{"case_number":"2021/41","entity_name":"nordland-politidistrikt"}]
+
+
+### COMMENT ###
+Entity name is inferred from the thread and that it's incoming.

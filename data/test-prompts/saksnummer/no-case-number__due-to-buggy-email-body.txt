@@ -1,0 +1,29 @@
+### TEST INPUT ###
+Thread Details:
+- Thread title: Kontrollsanksjoner 2020 og 2021
+- Thread entity ID: 963296746-kristiansand-kommune
+- Thread my name: Malene W. B
+- Thread my email: malene.w.b@offpost.no
+Email Details:
+- Date: 2021-08-20 15:30:51+00
+- Direction: IN
+- Source: Email body
+
+SGVpLg0KDQpWaXNlciB0aWwgZGluIGlubnN5bnNiZWdqw6ZyaW5nIGV0dGVyIE9mZmwuIMKnOS4N
+Cg0KU29tIG5ldm50IGkgdsOlciBlcG9zdCAxNi4wOC4yMSwgaGFyIHZpIGlra2UgYW5sZWRuaW5n
+IHRpbCBzZWx2IMOlIGhlbnRlIHV0IGRlIGV0dGVyc3B1cnRlIG9wcGx5c25pbmdlciBmcmEgdsOl
+IFR5cGUNCi0gS2rDuHJldMO4eSAtIEZhYnJpa2ttZXJrZQ0KLSBLasO4cmV0w7h5IC0gTmFzam9u
+c2tvZGUNCi0gw4Vyc2Frc2tvZGVyDQotIFN0ZWQNCg0KRGVubmUgbGlzdGVuIG1lZCBmZWx0IGVy
+IHR5cGlza2UgZmVsdCBmb3Iga29udHJvbGxzYW5rc2pvbmVyLiBTaSBmcmEgZGVyc29tIGRldHRl
+IGlra2UgbWF0Y2hlciBkZXJlcyBvcHBzZXR0LiBGZWx0ZXIgc29tIGRpcmVrdGUgaWRlbnRpZmlz
+ZXJlciBiaWxlbi9wZXJzb25lbiBlciB0YXR0IGJvcnQgKEYuZWtzLiBuYXZuLCByZWduciBvZyBr
+aWlkKSBkYSBkZXQgaWtrZSBlciBhdiBpbnRlcmVzc2UuDQoNCkRhdGFlbmUgbcOlIGxldmVyZXMg
+bWFza2lubGVzYmFyZSBvZyBrYW4... [Text truncated - showing approximately 1 page]
+
+
+
+### EXPECTED OUTPUT ###
+
+
+### COMMENT ###
+Entity name is inferred from the thread and that it's incoming.
