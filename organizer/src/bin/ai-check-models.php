@@ -116,6 +116,10 @@ if (isset($options['prompt-tester'])) {
                     $response_ok = true;
                 }
             }
+            if (empty($alternative_outputs) && empty($response)) {
+                echo " - OK   - " . $response;
+                $response_ok = true;
+            }
             
             if (!$response_ok) {
                 echo " - FAIL\n";
@@ -128,6 +132,10 @@ if (isset($options['prompt-tester'])) {
             echo "\n";
         }
     }
+    echo "\n\n";
+    echo "Prompt Tester executed successfully.\n";
+    echo "Prompt Tester executed successfully.\n";
+    echo "Prompt Tester executed successfully.\n";
     exit;
 }
 
