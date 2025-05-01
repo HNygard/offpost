@@ -77,12 +77,12 @@ abstract class ThreadEmailExtractorPrompt extends ThreadEmailExtractor {
                 AND tee_source.prompt_service = 'code'
                 AND tee_source.prompt_text IN ('email_body', 'attachment_pdf')
             LEFT JOIN thread_email_extractions tee_target ON te.id = tee_target.email_id 
-                AND tee_target.prompt_service = 'openai'
+                AND tee_target.prompt_service = ?
                 AND tee_target.prompt_id = ?
             WHERE tee_target.extraction_id IS NULL
         ";
         
-        $result = Database::queryOneOrNone($query, [$this->getPromptId()]);
+        $result = Database::queryOneOrNone($query, [$this->prompt->getPromptService(), $this->prompt->getPromptId()]);
         
         return $result ? (int)$result['email_count'] : 0;
     }
@@ -131,7 +131,7 @@ abstract class ThreadEmailExtractorPrompt extends ThreadEmailExtractor {
             LIMIT 1
         ";
         
-        $row = Database::queryOneOrNone($query, [$this->prompt->getPromptService(), $this->getPromptId()]);
+        $row = Database::queryOneOrNone($query, [$this->prompt->getPromptService(), $this->prompt->getPromptId()]);
         
         if (!$row) {
             return null;

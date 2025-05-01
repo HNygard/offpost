@@ -4,6 +4,7 @@ require_once __DIR__ . '/../class/Extraction/ThreadEmailExtraction.php';
 require_once __DIR__ . '/../class/Extraction/ThreadEmailExtractionService.php';
 require_once __DIR__ . '/../class/Extraction/ThreadEmailExtractorEmailBody.php';
 require_once __DIR__ . '/../class/Extraction/ThreadEmailExtractorAttachmentPdf.php';
+require_once __DIR__ . '/../class/Extraction/ThreadEmailExtractorPromptSaksnummer.php';
 require_once __DIR__ . '/../class/Thread.php';
 require_once __DIR__ . '/../class/ThreadEmail.php';
 require_once __DIR__ . '/../class/ThreadEmailAttachment.php';
@@ -301,6 +302,12 @@ function getExtractionType($extraction) {
                 <?php
                 $pdfExtractor = new ThreadEmailExtractorAttachmentPdf();
                 echo $pdfExtractor->getNumberOfEmailsToProcess() . ' PDF attachments to process';
+                ?></li>
+                
+                <li><b>Prompt - Saksnummer:</b>
+                <?php
+                $extractor = new ThreadEmailExtractorPromptSaksnummer();
+                echo $extractor->getNumberOfEmailsToProcess() . ' PDF attachments to process';
                 ?></li>
             </ul>
             
