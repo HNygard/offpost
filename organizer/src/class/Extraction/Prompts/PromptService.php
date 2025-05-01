@@ -28,6 +28,10 @@ class PromptService {
 
     public function run(OpenAiPrompt $prompt, String $emailInput) {
         $openai = new OpenAiIntegration($this->openai_api_key);
+
+        // Filter out any base64 looking strings as they might trigger content filters at OpenAI
+        $emailInput = preg_replace('/(?:[A-Za-z0-9+\/=]{40,})/', '[Base64 looking string removed]', $emailInput);
+
         $response = $openai->sendRequest(
             $prompt->getInput($emailInput),
             $prompt->getStructuredOutput(),
