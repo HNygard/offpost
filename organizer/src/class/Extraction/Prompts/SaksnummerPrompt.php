@@ -16,6 +16,7 @@ class SaksnummerPrompt extends OpenAiPrompt {
                 . "\n\n"
                 . "The number is connected to a public entity. In the structured response, also include the entity name.\n\n"
                 . "If you are unsure about the name of the public entity, including just the case number is fine.\n"
+                . "Same if the document number is not available, don't make anything up.\n"
                 ;
     }
 
