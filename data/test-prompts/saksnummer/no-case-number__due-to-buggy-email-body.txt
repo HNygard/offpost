@@ -26,4 +26,6 @@ bWFza2lubGVzYmFyZSBvZyBrYW4... [Text truncated - showing approximately 1 page]
 
 
 ### COMMENT ###
-Entity name is inferred from the thread and that it's incoming.
+This request had some issues with fictiuous case numbers.
+
+Base64 content should be filtered out before sending and should not interferr with the prompt.
