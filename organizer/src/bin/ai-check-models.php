@@ -76,6 +76,7 @@ if (isset($options['prompt-tester'])) {
 
     // Get test data
     $files = getDirContentsRecursive(__DIR__ . '/../../../data/test-prompts/' . $prompt_id);
+    sort($files);
     foreach ($files as $file) {
         $content = file_get_contents($file);
 
