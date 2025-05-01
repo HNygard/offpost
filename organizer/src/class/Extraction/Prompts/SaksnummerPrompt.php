@@ -7,14 +7,19 @@ class SaksnummerPrompt extends OpenAiPrompt {
 
     public function getPromptText(): string {
         return 'You are a system for analyzing emails.'
-                . ' The task is to find the saksnummer (case number) in the email.'
-                . ' You must only respond witha a case number if you are very sure it is correct.'
+                . ' The task is to find the case number in the email.'
+                . ' "You must only respond with a case number if it is **explicitly** present in the input text and in one of the listed formats.'
+                . ' Do not infer or guess based on nearby numbers or context.'
                 . "\n\n"
-                . "Typical formats for saksnummer are:\n"
+                . ' Do not make up any case numbers.'
+                . ' It is **extremely important** that any result is correct and extracted **literally** from the input.'
+                . "\n\n"
+                . "Typical formats for case numbers are:\n"
                 . "- 2025/123 - Case number only. Case 123 in year 2025.\n"
-                . "- 2025/123-2 - Case number and document numer. Document number 2 in case 123 in year 2025.\n"
+                . "Typcial formats for document numbers are:\n"
+                . "- 2025/123-2 - Document number. Includes case number plus internal number in the case. In this example number 2 in case 123 in year 2025.\n"
                 . "\n\n"
-                . "The number is connected to a public entity. In the structured response, also include the entity name.\n\n"
+                . "The numbers are connected to a public entity. In the structured response, also include the entity name.\n\n"
                 . "If you are unsure about the name of the public entity, including just the case number is fine.\n"
                 . "Same if the document number is not available, don't make anything up.\n"
                 ;
