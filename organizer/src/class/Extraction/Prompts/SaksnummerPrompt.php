@@ -26,7 +26,9 @@ class SaksnummerPrompt extends OpenAiPrompt {
     }
 
     public function getModel(String $input_from_email): string {
-        return 'gpt-4o';
+        // gpt-4o worked good
+        // gpt-4o-mini looks good to, but fraction of the cost
+        return 'gpt-4o-mini-2024-07-18';
     }
 
     public function getInput(String $input_from_email): array {
