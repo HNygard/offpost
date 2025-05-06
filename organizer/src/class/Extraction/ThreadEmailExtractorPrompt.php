@@ -135,7 +135,9 @@ abstract class ThreadEmailExtractorPrompt extends ThreadEmailExtractor {
                 AND tee_target.prompt_id = ?
             WHERE tee_target.extraction_id IS NULL
                 AND tee_source.extracted_text IS NOT NULL
-            ORDER BY te.datetime_received ASC
+            ORDER BY 
+                CASE WHEN te.datetime_received >= '2025-01-01' THEN 0 ELSE 1 END,
+                te.datetime_received ASC
             LIMIT 1
         ";
         
