@@ -73,7 +73,7 @@ foreach ($thread->emails as $email) {
         }
         echo '<h1 id="email-subject">Subject: ' . htmlescape($subject) . '</h1>' . chr(10);
         // Convert datetime to local timezone (Europe/Oslo)
-        $utcDateTime = new DateTime($email->datetime_received, new DateTimeZone('UTC'));
+        $utcDateTime = new DateTime($email->datetime_received);
         $utcDateTime->setTimezone(new DateTimeZone('Europe/Oslo'));
         $localDateTime = $utcDateTime->format('Y-m-d H:i:s');
         
