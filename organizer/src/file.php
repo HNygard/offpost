@@ -72,7 +72,12 @@ foreach ($thread->emails as $email) {
             $subject = 'Error getting subject - ' . $e->getMessage();
         }
         echo '<h1 id="email-subject">Subject: ' . htmlescape($subject) . '</h1>' . chr(10);
-        echo '<b>Date: ' . $email->datetime_received . '</b><br>' . chr(10);
+        // Convert datetime to local timezone (Europe/Oslo)
+        $utcDateTime = new DateTime($email->datetime_received, new DateTimeZone('UTC'));
+        $utcDateTime->setTimezone(new DateTimeZone('Europe/Oslo'));
+        $localDateTime = $utcDateTime->format('Y-m-d H:i:s');
+        
+        echo '<b>Date: ' . $localDateTime . '</b><br>' . chr(10);
         //echo '<b>Sender: ' . $email->senderAddress . '</b><br>'.chr(10);
 
         // Access the plain text content
