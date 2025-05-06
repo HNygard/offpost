@@ -31,12 +31,36 @@ if ($extractor === null) {
 $extractor = $extractor();
 
 // Process the next extraction
-// Note: We only process one at a time to avoid overloading the system
 $result = $extractor->processNextEmailExtraction();
 
 // Add the extraction type to the result
 $result['extraction_type'] = $extractionType;
 
+if (!$result['success']) {
+    // Output the result
+    header('Content-Type: application/json');
+    echo json_encode($result, JSON_PRETTY_PRINT);
+    exit;
+}
+
+$results = array($result);
+
+$result = $extractor->processNextEmailExtraction();
+$result['extraction_type'] = $extractionType;
+$results[] = $result;
+
+if ($result['success']) {
+    for($i = 0; $i < 10; $i++) {
+        $result = $extractor->processNextEmailExtraction();
+        $result['extraction_type'] = $extractionType;
+        $results[] = $result;
+
+        if (!$result['success']) {
+            break;
+        }
+    }
+}
+
 // Output the result
 header('Content-Type: application/json');
-echo json_encode($result, JSON_PRETTY_PRINT);
+echo json_encode($results, JSON_PRETTY_PRINT);
