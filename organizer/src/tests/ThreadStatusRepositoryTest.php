@@ -12,6 +12,10 @@ class ThreadStatusRepositoryTest extends PHPUnit\Framework\TestCase {
     
     protected function setUp(): void {
         parent::setUp();
+
+        // Clean database tables
+        $db = new Database();
+        $db->execute("DELETE FROM imap_folder_status");
         
         // Start database transaction
         Database::beginTransaction();

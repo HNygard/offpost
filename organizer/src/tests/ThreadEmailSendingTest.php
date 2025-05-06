@@ -16,6 +16,10 @@ class ThreadEmailSendingTest extends PHPUnit\Framework\TestCase {
     private $entityId;
     
     protected function setUp(): void {
+         // Clean database tables
+        $db = new Database();
+        $db->execute("DELETE FROM thread_email_sendings");
+        
         // Set up test data
         $this->emailContent = 'Test email content';
         $this->emailSubject = 'Test email subject';

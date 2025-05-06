@@ -8,30 +8,16 @@ require_once __DIR__ . '/../class/ThreadHistory.php';
 
 class ThreadAuthorizationTest extends PHPUnit\Framework\TestCase {
     private $testThread;
-    private $testUserId = 'test_user';
-    private $otherUserId = 'other_user';
+    private $testUserId;
+    private $otherUserId;
     private $storageManager;
 
     protected function setUp(): void {
         parent::setUp();
         
-        // Clean database tables
-        $db = new Database();
-        $db->execute("DELETE FROM thread_email_history");
-        $db->execute("DELETE FROM thread_history");
-        $db->execute("DELETE FROM thread_authorizations");
-        $db->execute("DELETE FROM thread_email_extractions");
-        $db->execute("DELETE FROM thread_email_attachments");
-        $db->execute("DELETE FROM thread_emails");
-        $db->execute("DELETE FROM thread_email_sendings");
-        $db->execute("DELETE FROM imap_folder_status");
-        $db->execute("DELETE FROM thread_email_mapping");
-        $db->execute("DELETE FROM threads");
-        
-        // Clean any existing test files
-        $this->cleanDirectory(THREAD_AUTH_DIR);
-        
         $this->storageManager = ThreadStorageManager::getInstance();
+        $this->testUserId = 'test_user' . uniqid();
+        $this->otherUserId = 'other_user' . uniqid();
         
         // Create test thread with unique email
         $this->testThread = new Thread();
