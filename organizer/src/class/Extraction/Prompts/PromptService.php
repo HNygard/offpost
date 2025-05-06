@@ -2,6 +2,7 @@
 require_once __DIR__ . '/../../../class/Ai/OpenAiIntegration.php';
 require_once __DIR__ . '/../../../class/Extraction/Prompts/OpenAiPrompt.php';
 require_once __DIR__ . '/../../../class/Extraction/Prompts/SaksnummerPrompt.php';
+require_once __DIR__ . '/../../../class/Extraction/Prompts/EmailLatestReplyPrompt.php';
 
 use Offpost\Ai\OpenAiIntegration;
 
@@ -20,6 +21,9 @@ class PromptService {
 
         $saksnummer = new SaksnummerPrompt();
         $this->available_prompts[$saksnummer->getPromptId()] = $saksnummer;
+
+        $email_latest_reply = new EmailLatestReplyPrompt();
+        $this->available_prompts[$email_latest_reply->getPromptId()] = $email_latest_reply;
     }
 
     public function getAvailablePrompts(): array {
