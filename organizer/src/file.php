@@ -65,6 +65,7 @@ foreach ($thread->emails as $email) {
         $email_content = ThreadEmailExtractorEmailBody::extractContentFromEmail($eml);
 
         try {
+            $message = new Message(['raw' => $eml]);
             $subject = $message->getHeader('subject')->getFieldValue();
         }
         catch (Exception $e) {
