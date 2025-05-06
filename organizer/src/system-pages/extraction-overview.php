@@ -5,6 +5,7 @@ require_once __DIR__ . '/../class/Extraction/ThreadEmailExtractionService.php';
 require_once __DIR__ . '/../class/Extraction/ThreadEmailExtractorEmailBody.php';
 require_once __DIR__ . '/../class/Extraction/ThreadEmailExtractorAttachmentPdf.php';
 require_once __DIR__ . '/../class/Extraction/ThreadEmailExtractorPromptSaksnummer.php';
+require_once __DIR__ . '/../class/Extraction/ThreadEmailExtractorPromptEmailLatestReply.php';
 require_once __DIR__ . '/../class/Thread.php';
 require_once __DIR__ . '/../class/ThreadEmail.php';
 require_once __DIR__ . '/../class/ThreadEmailAttachment.php';
@@ -307,7 +308,13 @@ function getExtractionType($extraction) {
                 <li><b>Prompt - Saksnummer:</b>
                 <?php
                 $extractor = new ThreadEmailExtractorPromptSaksnummer();
-                echo $extractor->getNumberOfEmailsToProcess() . ' PDF attachments to process';
+                echo $extractor->getNumberOfEmailsToProcess() . ' emails/attachements to process';
+                ?></li>
+
+                <li><b>Prompt - Email latest reply:</b>
+                <?php
+                $extractor = new ThreadEmailExtractorPromptEmailLatestReply();
+                echo $extractor->getNumberOfEmailsToProcess() . ' emails to process';
                 ?></li>
             </ul>
             
@@ -316,6 +323,7 @@ function getExtractionType($extraction) {
                 <a href="/scheduled-email-extraction" class="btn btn-primary">Process Next Email Body</a>
                 <a href="/scheduled-email-extraction?type=attachment_pdf" class="btn btn-primary">Process Next PDF Attachment</a>
                 <a href="/scheduled-email-extraction?type=prompt_saksnummer" class="btn btn-primary">Process Next Prompt saksnummer</a>
+                <a href="/scheduled-email-extraction?type=prompt_email_latest_reply" class="btn btn-primary">Process Next Prompt email latest reply</a>
             </p>
         </div>
 
