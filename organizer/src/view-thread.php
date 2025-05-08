@@ -211,6 +211,13 @@ function print_extraction ($extraction) {
         }
         $style = 'background-color: #d4edda; color: #155724;';
     }
+    elseif ($extraction->prompt_service == 'openai' && $extraction->prompt_id == 'email-latest-reply') {
+        if (empty($extraction->extracted_text)) {
+            return;
+        }
+        $text = 'Latest reply extracted.';
+        $style = 'background-color: #d1ecf1; color:rgb(19, 204, 236);';
+    }
     else {
         global $admins;
         $text = 'Unknown extraction.';
