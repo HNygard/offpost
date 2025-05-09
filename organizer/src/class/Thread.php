@@ -228,6 +228,7 @@ class Thread implements JsonSerializable {
         
         // Check IMAP folder status first for critical errors
         if ($statusCode === ThreadStatusRepository::ERROR_NO_FOLDER_FOUND) {
+            $status->error = true;
             $status->status_text = 'Email not synced. Can\'t determine thread status / further action.';
             return $status;
         }

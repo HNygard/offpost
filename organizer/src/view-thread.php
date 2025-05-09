@@ -374,6 +374,12 @@ function print_extraction ($extraction) {
         <h2>Emails in Thread</h2>
         <div class="emails-list">
             <?php
+            if ($status->error) {
+                echo '<div class="alert-error" style="margin: 1em; padding: 1em;"><b>Email sync error:</b><br>'
+                    . htmlescape($status->status_text) . '<br><br>'
+                    . '<i>This can affect the email list below.</i></div>';
+            }
+
             if (!isset($thread->emails)) {
                 $thread->emails = array();
             }
