@@ -216,7 +216,7 @@ function print_extraction ($extraction) {
             return;
         }
         $text = 'Latest reply extracted.';
-        $style = 'background-color: #d1ecf1; color:rgb(19, 204, 236);';
+        $style = 'background-color: #86cff1; color: rgb(11, 96, 111);';
     }
     else {
         global $admins;
