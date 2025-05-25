@@ -25,5 +25,9 @@ echo "$(date) Scheduled extraction from email PROMPT EMAIL LATEST REPLY"
 curl "http://organizer/scheduled-email-extraction?type=prompt_email_latest_reply" -s 2>&1
 echo ""
 
+echo "$(date) Scheduled thread FOLLOW-UP"
+curl "http://organizer/scheduled-thread-follow-up" -s 2>&1
+echo ""
+
 echo "DONE"
 echo ""
