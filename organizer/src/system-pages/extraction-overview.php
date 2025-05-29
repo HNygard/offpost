@@ -1,4 +1,5 @@
 <?php
+require_once __DIR__ . '/../class/Enums/ThreadEmailStatusType.php';
 require_once __DIR__ . '/../auth.php';
 require_once __DIR__ . '/../class/Extraction/ThreadEmailExtraction.php';
 require_once __DIR__ . '/../class/Extraction/ThreadEmailExtractionService.php';
@@ -30,7 +31,7 @@ $unclassifiedEmailsCountQuery = "
     FROM thread_email_extractions e
     JOIN thread_emails te ON e.email_id = te.id
     JOIN threads t ON te.thread_id = t.id
-    WHERE te.status_type = 'unknown'
+    WHERE te.status_type = '" . \App\Enums\ThreadEmailStatusType::UNKNOWN->value . "'
         AND e.attachment_id is null
 ";
 $totalUnclassifiedEmails = Database::queryValue($unclassifiedEmailsCountQuery, []);
@@ -42,7 +43,7 @@ $unclassifiedAttachmentsCountQuery = "
     JOIN thread_email_attachments tea ON e.attachment_id = tea.id
     JOIN thread_emails te ON e.email_id = te.id
     JOIN threads t ON te.thread_id = t.id
-    WHERE tea.status_type = 'unknown'
+    WHERE tea.status_type = '" . \App\Enums\ThreadEmailStatusType::UNKNOWN->value . "'
 ";
 $totalUnclassifiedAttachments = Database::queryValue($unclassifiedAttachmentsCountQuery, []);
 
@@ -64,7 +65,7 @@ $unclassifiedEmailsQuery = "
     FROM thread_email_extractions e
     JOIN thread_emails te ON e.email_id = te.id
     JOIN threads t ON te.thread_id = t.id
-    WHERE te.status_type = 'unknown'
+    WHERE te.status_type = '" . \App\Enums\ThreadEmailStatusType::UNKNOWN->value . "'
     ORDER BY e.created_at DESC
     LIMIT 100
 ";
@@ -78,7 +79,7 @@ $unclassifiedAttachmentsQuery = "
     JOIN thread_email_attachments tea ON e.attachment_id = tea.id
     JOIN thread_emails te ON e.email_id = te.id
     JOIN threads t ON te.thread_id = t.id
-    WHERE tea.status_type = 'unknown'
+    WHERE tea.status_type = '" . \App\Enums\ThreadEmailStatusType::UNKNOWN->value . "'
     ORDER BY e.created_at DESC
     LIMIT 100
 ";

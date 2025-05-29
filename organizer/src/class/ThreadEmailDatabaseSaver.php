@@ -1,5 +1,6 @@
 <?php
 
+use App\Enums\ThreadEmailStatusType;
 require_once __DIR__ . '/ThreadEmailHistory.php';
 require_once __DIR__ . '/Imap/ImapWrapper.php';
 require_once __DIR__ . '/Imap/ImapConnection.php';
@@ -170,13 +171,13 @@ class ThreadEmailDatabaseSaver {
                         $newEmail->id = $emailId;
                         $newEmail->id_old = $filename;
                         $newEmail->email_type = $direction;
-                        $newEmail->status_type = 'unknown';
+                        $newEmail->status_type = ThreadEmailStatusType::UNKNOWN;
                         $newEmail->status_text = 'Uklassifisert';
                         $newEmail->ignore = false;
                         
                         if (!empty($attachments)) {
                             $newEmail->attachments = array_map(function($att) {
-                                $att->status_type = 'unknown';
+                                $att->status_type = ThreadEmailStatusType::UNKNOWN;
                                 $att->status_text = 'uklassifisert-dok';
                                 return $att;
                             }, $attachments);
@@ -272,7 +273,7 @@ class ThreadEmailDatabaseSaver {
             date('Y-m-d H:i:s', $email->timestamp),
             'f', // PostgreSQL boolean false
             $direction,
-            'unknown',
+            ThreadEmailStatusType::UNKNOWN->value,
             'Uklassifisert',
             $rawEmail,
             json_encode($imap_headers, JSON_UNESCAPED_UNICODE ^ JSON_UNESCAPED_SLASHES),
@@ -317,7 +318,7 @@ class ThreadEmailDatabaseSaver {
             ':filename' => $attachment->filename,
             ':filetype' => $attachment->filetype,
             ':location' => $attachment->location,
-            ':status_type' => 'unknown',
+            ':status_type' => ThreadEmailStatusType::UNKNOWN->value,
             ':status_text' => 'uklassifisert-dok'
         ];
         

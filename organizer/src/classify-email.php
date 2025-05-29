@@ -1,5 +1,7 @@
 <?php
 
+require_once __DIR__ . '/class/Enums/ThreadEmailStatusType.php';
+use App\Enums\ThreadEmailStatusType;
 require_once __DIR__ . '/auth.php';
 require_once __DIR__ . '/class/Threads.php';
 require_once __DIR__ . '/class/ThreadEmailClassifier.php';
@@ -83,7 +85,7 @@ if ($thread !== null) {
                 'auto_classified',
                 null,
                 [
-                    'status_type' => $email->status_type,
+                    'status_type' => ($email->status_type instanceof ThreadEmailStatusType ? $email->status_type->value : $email->status_type),
                     'status_text' => $email->status_text
                 ]
             );
@@ -98,11 +100,13 @@ if (isset($_POST['submit'])) {
         $emailId = str_replace(' ', '_', str_replace('.', '_', $email->id));
         $newIgnore = isset($_POST[$emailId . '-ignore']) && $_POST[$emailId . '-ignore'] == 'true';
         $newStatusText = $_POST[$emailId . '-status_text'];
-        $newStatusType = $_POST[$emailId . '-status_type'];
+        $newStatusTypeString = $_POST[$emailId . '-status_type'];
+        $newStatusType = ThreadEmailStatusType::tryFrom($newStatusTypeString) ?? ThreadEmailStatusType::UNKNOWN; // Fallback to UNKNOWN
         
         // Check if status was actually changed
-        if ($email->status_type !== $newStatusType || 
-            $email->status_text !== $newStatusText || 
+        $currentStatusValue = ($email->status_type instanceof ThreadEmailStatusType ? $email->status_type->value : $email->status_type);
+        if ($currentStatusValue !== $newStatusType->value ||
+            $email->status_text !== $newStatusText ||
             $email->ignore !== $newIgnore) {
             // Remove auto classification since status was manually changed
             $email = $classifier->removeAutoClassification($email);
@@ -114,7 +118,7 @@ if (isset($_POST['submit'])) {
                 'classified',
                 $_SESSION['user']['sub'],
                 [
-                    'status_type' => $newStatusType,
+                    'status_type' => $newStatusType->value,
                     'status_text' => $newStatusText
                 ]
             );
@@ -133,16 +137,17 @@ if (isset($_POST['submit'])) {
         
         $email->ignore = $newIgnore;
         $email->status_text = $newStatusText;
-        $email->status_type = $newStatusType;
+        $email->status_type = $newStatusType; // Assign the enum instance
         $email->answer = $_POST[$emailId . '-answer'];
         if (isset($email->attachments)) {
             foreach ($email->attachments as $att) {
                 $attId = str_replace(' ', '_', str_replace('.', '_', $att->location));
+                $attNewStatusTypeString = $_POST[$emailId . '-att-' . $attId . '-status_type'];
                 $att->status_text = $_POST[$emailId . '-att-' . $attId . '-status_text'];
-                $att->status_type = $_POST[$emailId . '-att-' . $attId . '-status_type'];
+                $att->status_type = ThreadEmailStatusType::tryFrom($attNewStatusTypeString) ?? ThreadEmailStatusType::UNKNOWN;
             }
         }
-        if ($email->status_type == 'unknown') {
+        if ($email->status_type == ThreadEmailStatusType::UNKNOWN) {
             $anyUnknown = true;
         }
     }
@@ -164,23 +169,15 @@ if (isset($_POST['submit'])) {
     exit;
 }
 
-function labelSelect($currentType, $id) {
-    if ($currentType != 'info'
-        && $currentType != 'disabled'
-        && $currentType != 'danger'
-        && $currentType != 'success'
-        && $currentType != 'unknown'
-    ) {
-        throw new Exception('Unknown type: ' . $currentType);
-    }
-
+function labelSelect($currentTypeInput, $id) {
+    $currentTypeValue = $currentTypeInput instanceof ThreadEmailStatusType ? $currentTypeInput->value : $currentTypeInput;
     ?>
     <select name="<?= $id ?>">
-        <option value="info" <?= $currentType == 'info' ? ' selected="selected"' : '' ?>>info</option>
-        <option value="disabled" <?= $currentType == 'disabled' ? ' selected="selected"' : '' ?>>disabled</option>
-        <option value="danger" <?= $currentType == 'danger' ? ' selected="selected"' : '' ?>>danger</option>
-        <option value="success" <?= $currentType == 'success' ? ' selected="selected"' : '' ?>>success</option>
-        <option value="unknown" <?= $currentType == 'unknown' ? ' selected="selected"' : '' ?>>unknown</option>
+        <?php foreach (ThreadEmailStatusType::cases() as $case): ?>
+            <option value="<?= $case->value ?>" <?= $currentTypeValue == $case->value ? ' selected="selected"' : '' ?>>
+                <?= htmlspecialchars($case->label()) ?> (<?= htmlspecialchars($case->value) ?>)
+            </option>
+        <?php endforeach; ?>
     </select>
     <?php
 }

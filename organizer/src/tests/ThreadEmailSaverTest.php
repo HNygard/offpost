@@ -128,7 +128,7 @@ class ThreadEmailSaverTest extends TestCase {
         $this->assertCount(1, $thread->emails);
         $this->assertEquals('test_email_1', $thread->emails[0]->id);
         $this->assertEquals('incoming', $thread->emails[0]->email_type);
-        $this->assertEquals('unknown', $thread->emails[0]->status_type);
+        $this->assertEquals(\App\Enums\ThreadEmailStatusType::UNKNOWN, $thread->emails[0]->status_type);
         $this->assertContains('uklassifisert-epost', $thread->labels);
     }
 
@@ -212,7 +212,7 @@ class ThreadEmailSaverTest extends TestCase {
         // Verify thread was updated with attachment info
         $this->assertCount(1, $thread->emails);
         $this->assertCount(1, $thread->emails[0]->attachments);
-        $this->assertEquals('unknown', $thread->emails[0]->attachments[0]->status_type);
+        $this->assertEquals(\App\Enums\ThreadEmailStatusType::UNKNOWN, $thread->emails[0]->attachments[0]->status_type);
         $this->assertEquals('uklassifisert-dok', $thread->emails[0]->attachments[0]->status_text);
     }
 

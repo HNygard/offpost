@@ -20,7 +20,7 @@ class ThreadEmailHistoryTest extends PHPUnit\Framework\TestCase {
             [
                 'action' => 'classified',
                 'details' => json_encode([
-                    'status_type' => 'success',
+                    'status_type' => \App\Enums\ThreadEmailStatusType::SUCCESS->value,
                     'status_text' => 'Approved'
                 ]),
                 'expected' => 'Classified as success: Approved'
@@ -28,7 +28,7 @@ class ThreadEmailHistoryTest extends PHPUnit\Framework\TestCase {
             [
                 'action' => 'auto_classified',
                 'details' => json_encode([
-                    'status_type' => 'info',
+                    'status_type' => \App\Enums\ThreadEmailStatusType::INFO->value,
                     'status_text' => 'Auto-response'
                 ]),
                 'expected' => 'Auto-classified as info: Auto-response'
@@ -62,7 +62,7 @@ class ThreadEmailHistoryTest extends PHPUnit\Framework\TestCase {
         $entry = [
             'action' => 'classified',
             'details' => json_encode([
-                'status_type' => 'success',
+                'status_type' => \App\Enums\ThreadEmailStatusType::SUCCESS->value,
                 'status_text' => 'Approved'
             ]),
             'user_id' => 'test_user',

@@ -20,7 +20,7 @@ class ThreadEmailExtractorEmailBodyTest extends PHPUnit\Framework\TestCase {
         $mockResult = [
             'id' => 'test-email-id',
             'thread_id' => 'test-thread-id',
-            'status_type' => 'unknown',
+            'status_type' => \App\Enums\ThreadEmailStatusType::UNKNOWN->value,
             'status_text' => 'Test email'
         ];
         
@@ -67,7 +67,7 @@ class ThreadEmailExtractorEmailBodyTest extends PHPUnit\Framework\TestCase {
         $emailData = [
             'email_id' => 'test-email-id',
             'thread_id' => 'test-thread-id',
-            'status_type' => 'unknown',
+            'status_type' => \App\Enums\ThreadEmailStatusType::UNKNOWN->value,
             'status_text' => 'Test email'
         ];
         
@@ -130,7 +130,7 @@ class ThreadEmailExtractorEmailBodyTest extends PHPUnit\Framework\TestCase {
         $emailData = [
             'email_id' => 'test-email-id',
             'thread_id' => 'test-thread-id',
-            'status_type' => 'unknown',
+            'status_type' => \App\Enums\ThreadEmailStatusType::UNKNOWN->value,
             'status_text' => 'Test email'
         ];
         

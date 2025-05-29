@@ -1,4 +1,5 @@
 <?php
+require_once __DIR__ . '/class/Enums/ThreadEmailStatusType.php';
 require_once __DIR__ . '/auth.php';
 require_once __DIR__ . '/class/ThreadUtils.php';
 require_once __DIR__ . '/class/ThreadEmailService.php';

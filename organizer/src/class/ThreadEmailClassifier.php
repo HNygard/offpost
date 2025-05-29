@@ -1,5 +1,7 @@
 <?php
 
+use App\Enums\ThreadEmailStatusType;
+
 class ThreadEmailClassifier {
     /**
      * Automatically classifies emails in a thread based on rules
@@ -15,9 +17,13 @@ class ThreadEmailClassifier {
         }
 
         // Only check first email if it's outbound and status is unknown
-        if ($thread->emails[0]->email_type === 'OUT' && 
-            $thread->emails[0]->status_type === 'unknown') {
-            $thread->emails[0]->status_type = 'info';
+        if ($thread->emails[0]->email_type === 'OUT' &&
+            (
+                $thread->emails[0]->status_type === ThreadEmailStatusType::UNKNOWN->value ||
+                $thread->emails[0]->status_type === 'unknown' // Keep for existing string data
+            )
+        ) {
+            $thread->emails[0]->status_type = ThreadEmailStatusType::OUR_REQUEST;
             $thread->emails[0]->status_text = 'Initiell henvendelse';
             $thread->emails[0]->auto_classification = 'algo';
         }
@@ -45,7 +51,11 @@ class ThreadEmailClassifier {
      * @return string The classification label
      */
     public static function getClassificationLabel($email) {
-        if ($email->status_type === 'unknown') {
+        if (
+            $email->status_type === 'unknown' || // Keep for existing string data
+            $email->status_type === ThreadEmailStatusType::UNKNOWN->value ||
+            $email->status_type === ThreadEmailStatusType::UNKNOWN
+        ) {
             return null;
         }
 

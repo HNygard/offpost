@@ -40,7 +40,7 @@ class ExtractionOverviewPageTest extends E2EPageTestCase {
             [
                 $this->emailId,
                 $this->threadId,
-                'unknown',
+                \App\Enums\ThreadEmailStatusType::UNKNOWN->value,
                 'Unclassified',
                 date('Y-m-d H:i:s'),
                 date('Y-m-d H:i:s'), // timestamp_received

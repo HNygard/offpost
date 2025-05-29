@@ -123,13 +123,13 @@ class ThreadEmailSaver {
                     $newEmail->datetime_first_seen = date('Y-m-d H:i:s');
                     $newEmail->id = $filename;
                     $newEmail->email_type = $direction;
-                    $newEmail->status_type = 'unknown';
+                    $newEmail->status_type = \App\Enums\ThreadEmailStatusType::UNKNOWN;
                     $newEmail->status_text = 'Uklassifisert';
                     $newEmail->ignore = false;
                     
                     if (!empty($email->attachments)) {
                         $newEmail->attachments = array_map(function($att) {
-                            $att->status_type = 'unknown';
+                            $att->status_type = \App\Enums\ThreadEmailStatusType::UNKNOWN;
                             $att->status_text = 'uklassifisert-dok';
                             return $att;
                         }, $email->attachments);

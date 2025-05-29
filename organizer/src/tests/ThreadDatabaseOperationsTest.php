@@ -123,7 +123,7 @@ class ThreadDatabaseOperationsTest extends PHPUnit\Framework\TestCase {
         $now = new DateTime();
         $emailId = Database::queryValue(
             "INSERT INTO thread_emails (thread_id, timestamp_received, datetime_received, email_type, status_type, status_text, description, content) 
-            VALUES (?, ?, ?, 'incoming', 'received', 'Test status', 'Test description', ?) RETURNING id",
+            VALUES (?, ?, ?, 'incoming', '" . \App\Enums\ThreadEmailStatusType::INFO->value . "', 'Test status', 'Test description', ?) RETURNING id",
             [
                 $createdThread->id,
                 $now->format('Y-m-d H:i:s'),
@@ -135,7 +135,7 @@ class ThreadDatabaseOperationsTest extends PHPUnit\Framework\TestCase {
         // Add an attachment to the email
         Database::execute(
             "INSERT INTO thread_email_attachments (email_id, name, filename, filetype, status_type, status_text, location) 
-            VALUES (?, 'test.pdf', 'test.pdf', 'application/pdf', 'success', 'Test attachment status', '/test/path/test.pdf')",
+            VALUES (?, 'test.pdf', 'test.pdf', 'application/pdf', '" . \App\Enums\ThreadEmailStatusType::SUCCESS->value . "', 'Test attachment status', '/test/path/test.pdf')",
             [$emailId]
         );
         
@@ -148,13 +148,13 @@ class ThreadDatabaseOperationsTest extends PHPUnit\Framework\TestCase {
         
         $email = $retrievedThread->emails[0];
         $this->assertEquals('incoming', $email->email_type);
-        $this->assertEquals('received', $email->status_type);
+        $this->assertEquals(\App\Enums\ThreadEmailStatusType::INFO->value, $email->status_type);
         
         $this->assertNotEmpty($email->attachments, "Email should have attachments");
         $attachment = $email->attachments[0];
         $this->assertEquals('test.pdf', $attachment->name);
         $this->assertEquals('application/pdf', $attachment->filetype);
-        $this->assertEquals('success', $attachment->status_type);
+        $this->assertEquals(\App\Enums\ThreadEmailStatusType::SUCCESS->value, $attachment->status_type);
         $this->assertEquals('Test attachment status', $attachment->status_text);
     }
 

@@ -19,17 +19,17 @@ class ThreadEmailClassifierTest extends TestCase {
             'emails' => [
                 (object)[
                     'email_type' => 'OUT',
-                    'status_type' => 'unknown',
+                    'status_type' => \App\Enums\ThreadEmailStatusType::UNKNOWN->value,
                     'status_text' => 'Uklassifisert'
                 ],
                 (object)[
                     'email_type' => 'IN',
-                    'status_type' => 'unknown',
+                    'status_type' => \App\Enums\ThreadEmailStatusType::UNKNOWN->value,
                     'status_text' => 'Uklassifisert'
                 ],
                 (object)[
                     'email_type' => 'OUT',
-                    'status_type' => 'unknown',
+                    'status_type' => \App\Enums\ThreadEmailStatusType::UNKNOWN->value,
                     'status_text' => 'Uklassifisert'
                 ]
             ]
@@ -39,16 +39,16 @@ class ThreadEmailClassifierTest extends TestCase {
         $result = $this->classifier->classifyEmails($thread);
 
         // Verify first email was classified
-        $this->assertEquals('info', $result->emails[0]->status_type);
+        $this->assertEquals(\App\Enums\ThreadEmailStatusType::OUR_REQUEST, $result->emails[0]->status_type);
         $this->assertEquals('Initiell henvendelse', $result->emails[0]->status_text);
         $this->assertEquals('algo', $result->emails[0]->auto_classification);
 
         // Verify other emails were not classified
-        $this->assertEquals('unknown', $result->emails[1]->status_type);
+        $this->assertEquals(\App\Enums\ThreadEmailStatusType::UNKNOWN->value, $result->emails[1]->status_type);
         $this->assertEquals('Uklassifisert', $result->emails[1]->status_text);
         $this->assertObjectNotHasProperty('auto_classification', $result->emails[1]);
         
-        $this->assertEquals('unknown', $result->emails[2]->status_type);
+        $this->assertEquals(\App\Enums\ThreadEmailStatusType::UNKNOWN->value, $result->emails[2]->status_type);
         $this->assertEquals('Uklassifisert', $result->emails[2]->status_text);
         $this->assertObjectNotHasProperty('auto_classification', $result->emails[2]);
     }
@@ -59,12 +59,12 @@ class ThreadEmailClassifierTest extends TestCase {
             'emails' => [
                 (object)[
                     'email_type' => 'IN',
-                    'status_type' => 'unknown',
+                    'status_type' => \App\Enums\ThreadEmailStatusType::UNKNOWN->value,
                     'status_text' => 'Uklassifisert'
                 ],
                 (object)[
                     'email_type' => 'OUT',
-                    'status_type' => 'unknown',
+                    'status_type' => \App\Enums\ThreadEmailStatusType::UNKNOWN->value,
                     'status_text' => 'Uklassifisert'
                 ]
             ]
@@ -74,11 +74,11 @@ class ThreadEmailClassifierTest extends TestCase {
         $result = $this->classifier->classifyEmails($thread);
 
         // Verify no emails were classified
-        $this->assertEquals('unknown', $result->emails[0]->status_type);
+        $this->assertEquals(\App\Enums\ThreadEmailStatusType::UNKNOWN->value, $result->emails[0]->status_type);
         $this->assertEquals('Uklassifisert', $result->emails[0]->status_text);
         $this->assertObjectNotHasProperty('auto_classification', $result->emails[0]);
         
-        $this->assertEquals('unknown', $result->emails[1]->status_type);
+        $this->assertEquals(\App\Enums\ThreadEmailStatusType::UNKNOWN->value, $result->emails[1]->status_type);
         $this->assertEquals('Uklassifisert', $result->emails[1]->status_text);
         $this->assertObjectNotHasProperty('auto_classification', $result->emails[1]);
     }
@@ -99,7 +99,7 @@ class ThreadEmailClassifierTest extends TestCase {
         // Create test email with auto classification
         $email = (object)[
             'email_type' => 'OUT',
-            'status_type' => 'info',
+            'status_type' => \App\Enums\ThreadEmailStatusType::INFO,
             'status_text' => 'Initiell henvendelse',
             'auto_classification' => 'algo'
         ];
@@ -109,7 +109,7 @@ class ThreadEmailClassifierTest extends TestCase {
 
         // Verify auto classification was removed
         $this->assertObjectNotHasProperty('auto_classification', $result);
-        $this->assertEquals('info', $result->status_type);
+        $this->assertEquals(\App\Enums\ThreadEmailStatusType::INFO, $result->status_type);
         $this->assertEquals('Initiell henvendelse', $result->status_text);
     }
 
@@ -119,7 +119,7 @@ class ThreadEmailClassifierTest extends TestCase {
             'emails' => [
                 (object)[
                     'email_type' => 'OUT',
-                    'status_type' => 'success',
+                    'status_type' => \App\Enums\ThreadEmailStatusType::SUCCESS->value,
                     'status_text' => 'Existing Status'
                 ]
             ]
@@ -129,7 +129,7 @@ class ThreadEmailClassifierTest extends TestCase {
         $result = $this->classifier->classifyEmails($thread);
 
         // Verify email status was not changed
-        $this->assertEquals('success', $result->emails[0]->status_type);
+        $this->assertEquals(\App\Enums\ThreadEmailStatusType::SUCCESS->value, $result->emails[0]->status_type);
         $this->assertEquals('Existing Status', $result->emails[0]->status_text);
         $this->assertObjectNotHasProperty('auto_classification', $result->emails[0]);
     }
@@ -138,7 +138,7 @@ class ThreadEmailClassifierTest extends TestCase {
         // Create test email without auto classification
         $email = (object)[
             'email_type' => 'OUT',
-            'status_type' => 'unknown',
+            'status_type' => \App\Enums\ThreadEmailStatusType::UNKNOWN->value,
             'status_text' => 'Uklassifisert'
         ];
 

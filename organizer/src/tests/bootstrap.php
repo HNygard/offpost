@@ -32,6 +32,7 @@ if (!file_exists(THREAD_AUTH_DIR)) {
 }
 
 // Include required files
+require_once __DIR__ . '/../class/Enums/ThreadEmailStatusType.php'; // Add this line
 require_once __DIR__ . '/../class/Thread.php';
 require_once __DIR__ . '/../class/ThreadStorageManager.php';
 require_once __DIR__ . '/../class/ThreadFileOperations.php';
