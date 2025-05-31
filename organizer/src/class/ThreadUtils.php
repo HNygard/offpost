@@ -39,14 +39,10 @@ function getLabelType($type, $status_type_input) {
             return 'label label_ok';
         case ThreadEmailStatusType::UNKNOWN->value:
         case 'unknown': // explicit string check for old 'unknown'
+        case 'UNKNOWN':
         case null:
             return 'label'; // Default label
         default:
-            // It's good practice to log this or handle it gracefully
-            // For now, returning a default label to avoid breaking UI
-            error_log('Unknown status_type_input in getLabelType: ' . $type . ' / ' . $status_type_input);
-            return 'label'; 
-            // Or re-throw, but this might break UI if new unmapped statuses appear
-            // throw new Exception('Unknown status_type[' . $type . ']: ' . $status_type_value);
+            throw new Exception('Unknown status_type[' . $type . ']: ' . $status_type_input);
     }
 }
