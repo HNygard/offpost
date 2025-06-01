@@ -25,9 +25,9 @@ abstract class ThreadEmailExtractorPrompt extends ThreadEmailExtractor {
     protected $prompt;
     
     /**
-     * @var array Allowed prompt text sources to use as input
+     * @var array Prompt text sources to use as input
      */
-    protected $allowedPromptTextSources = ['email_body', 'attachment_pdf'];
+    protected $inputFromPromptTextSources = null;
     
     /**
      * Constructor
@@ -59,6 +59,10 @@ abstract class ThreadEmailExtractorPrompt extends ThreadEmailExtractor {
         // Get the prompt
         $prompts = $this->promptService->getAvailablePrompts();
         $this->prompt = $prompts[$this->getPromptId()];
+
+        if ($this->inputFromPromptTextSources === null) {
+            throw new Exception("No input sources defined for prompt " . $this->getPromptId());
+        }
     }
     
     /**
@@ -80,7 +84,7 @@ abstract class ThreadEmailExtractorPrompt extends ThreadEmailExtractor {
             FROM thread_emails te
             JOIN thread_email_extractions tee_source ON te.id = tee_source.email_id 
                 AND tee_source.prompt_service = 'code'
-                AND tee_source.prompt_text IN (" . implode(',', array_fill(0, count($this->allowedPromptTextSources), '?')) . ")
+                AND tee_source.prompt_text IN (" . implode(',', array_fill(0, count($this->inputFromPromptTextSources), '?')) . ")
             LEFT JOIN thread_email_extractions tee_target ON te.id = tee_target.email_id 
                 AND tee_target.prompt_service = ?
                 AND tee_target.prompt_id = ?
@@ -88,7 +92,7 @@ abstract class ThreadEmailExtractorPrompt extends ThreadEmailExtractor {
         ";
         
         // Prepare parameters: first the allowed prompt text sources, then the prompt service and ID
-        $params = array_merge($this->allowedPromptTextSources, [$this->prompt->getPromptService(), $this->prompt->getPromptId()]);
+        $params = array_merge($this->inputFromPromptTextSources, [$this->prompt->getPromptService(), $this->prompt->getPromptId()]);
         
         $result = Database::queryOneOrNone($query, $params);
         
@@ -126,7 +130,7 @@ abstract class ThreadEmailExtractorPrompt extends ThreadEmailExtractor {
             JOIN thread_email_extractions tee_source
                 ON te.id = tee_source.email_id
                 AND tee_source.prompt_service = 'code'
-                AND tee_source.prompt_text IN (" . implode(',', array_fill(0, count($this->allowedPromptTextSources), '?')) . ")
+                AND tee_source.prompt_text IN (" . implode(',', array_fill(0, count($this->inputFromPromptTextSources), '?')) . ")
             
             -- Check if the target extraction already exists
             LEFT JOIN thread_email_extractions tee_target
@@ -142,7 +146,7 @@ abstract class ThreadEmailExtractorPrompt extends ThreadEmailExtractor {
         ";
         
         // Prepare parameters: first the allowed prompt text sources, then the prompt service and ID
-        $params = array_merge($this->allowedPromptTextSources, [$this->prompt->getPromptService(), $this->prompt->getPromptId()]);
+        $params = array_merge($this->inputFromPromptTextSources, [$this->prompt->getPromptService(), $this->prompt->getPromptId()]);
         
         $row = Database::queryOneOrNone($query, $params);
         

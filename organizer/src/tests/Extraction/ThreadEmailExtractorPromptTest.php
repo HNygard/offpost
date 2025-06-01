@@ -8,6 +8,8 @@ require_once __DIR__ . '/../../class/Extraction/Prompts/OpenAiPrompt.php';
 
 // Create a concrete implementation for testing
 class TestThreadEmailExtractorPrompt extends ThreadEmailExtractorPrompt {
+
+    protected $inputFromPromptTextSources = ['email_body', 'attachment_pdf'];
     protected function getPromptId(): string {
         return 'test_prompt';
     }
