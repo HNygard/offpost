@@ -222,6 +222,7 @@ class Thread implements JsonSerializable {
      */
     public function getThreadStatus() {
         $status = new stdClass();
+        $status->error = false;
         
         // Use ThreadStatusRepository to get the thread status
         $statusCode = ThreadStatusRepository::getThreadStatus($this->id);

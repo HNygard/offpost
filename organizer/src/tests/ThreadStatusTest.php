@@ -185,7 +185,7 @@ class ThreadStatusTest extends PHPUnit\Framework\TestCase {
         
         // :: Assert
         $this->assertEquals('Email not synced. Can\'t determine thread status / further action.', $status->status_text, "Status should indicate email is not synced when no IMAP folder exists");
-        $this->assertFalse(property_exists($status, 'error'), "Error flag should not be set when no IMAP folder exists");
+        $this->assertTrue($status->error, "Error flag should be set to true when no IMAP folder exists");
     }
     
     public function testGetThreadStatusWithMultipleImapFolders(): void {
