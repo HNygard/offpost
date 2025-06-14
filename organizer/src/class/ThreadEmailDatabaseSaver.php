@@ -1,5 +1,6 @@
 <?php
 
+require_once __DIR__ . '/Enums/ThreadEmailStatusType.php';
 use App\Enums\ThreadEmailStatusType;
 require_once __DIR__ . '/ThreadEmailHistory.php';
 require_once __DIR__ . '/Imap/ImapWrapper.php';

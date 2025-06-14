@@ -1,5 +1,6 @@
 <?php
 
+require_once __DIR__ . '/Enums/ThreadEmailStatusType.php';
 use App\Enums\ThreadEmailStatusType;
 
 class ThreadEmail {
