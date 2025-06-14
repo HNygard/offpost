@@ -3,6 +3,7 @@ require_once __DIR__ . '/../../../class/Ai/OpenAiIntegration.php';
 require_once __DIR__ . '/../../../class/Extraction/Prompts/OpenAiPrompt.php';
 require_once __DIR__ . '/../../../class/Extraction/Prompts/SaksnummerPrompt.php';
 require_once __DIR__ . '/../../../class/Extraction/Prompts/EmailLatestReplyPrompt.php';
+require_once __DIR__ . '/../../../class/Extraction/Prompts/CopyAskingForPrompt.php';
 
 use Offpost\Ai\OpenAiIntegration;
 
@@ -24,6 +25,9 @@ class PromptService {
 
         $email_latest_reply = new EmailLatestReplyPrompt();
         $this->available_prompts[$email_latest_reply->getPromptId()] = $email_latest_reply;
+
+        $copy_asking_for = new CopyAskingForPrompt();
+        $this->available_prompts[$copy_asking_for->getPromptId()] = $copy_asking_for;
     }
 
     public function getAvailablePrompts(): array {

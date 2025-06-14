@@ -1,0 +1,19 @@
+### TEST INPUT ###
+
+Thread Details:
+- Thread title: Innsynskrav eksempel
+- Thread entity ID: 983999999-nordland-politidistrikt
+- Thread my name: Tobias S
+- Thread my email: tobias.s@offpost.no
+Email Details:
+- Date: 2021-07-23 14:08:28+00
+- Direction: IN
+- Source: Email body
+
+Vi har ikke mottatt eposten. Kan vi få kopi?
+
+
+### EXPECTED OUTPUT ###
+STARTS_WITH:{"is_requesting_copy":true,"copy_request_description":"
+
+### COMMENT ###

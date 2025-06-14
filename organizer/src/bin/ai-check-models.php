@@ -112,6 +112,14 @@ if (isset($options['prompt-tester'])) {
             $response_ok = false;
             foreach($alternative_outputs as $key => $expected_output) {
                 $alternative_outputs[$key] = trim($expected_output);
+
+                if (str_starts_with($expected_output, 'STARTS_WITH:')) {
+                    $expected_output_with_keyword = trim(str_replace('STARTS_WITH:', '', $expected_output));
+                    if (str_starts_with($response, $expected_output_with_keyword)) {
+                        echo " - OK   - " . $response;
+                        $response_ok = true;
+                    }
+                }
                 if ($response == $expected_output) {
                     echo " - OK   - " . $response;
                     $response_ok = true;
