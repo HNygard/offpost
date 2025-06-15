@@ -5,6 +5,7 @@ require_once __DIR__ . '/../class/Extraction/ThreadEmailExtractorEmailBody.php';
 require_once __DIR__ . '/../class/Extraction/ThreadEmailExtractorAttachmentPdf.php';
 require_once __DIR__ . '/../class/Extraction/ThreadEmailExtractorPromptSaksnummer.php';
 require_once __DIR__ . '/../class/Extraction/ThreadEmailExtractorPromptEmailLatestReply.php';
+require_once __DIR__ . '/../class/Extraction/ThreadEmailExtractorPromptCopyAskingFor.php';
 
 // Set up error reporting
 error_reporting(E_ALL);
@@ -15,6 +16,7 @@ $extractors = array(
     'attachment_pdf' => function() { return new ThreadEmailExtractorAttachmentPdf(); },
     'prompt_saksnummer' => function() { return new ThreadEmailExtractorPromptSaksnummer(); },
     'prompt_email_latest_reply' => function() { return new ThreadEmailExtractorPromptEmailLatestReply(); },
+    'prompt_copy_asking_for' => function() { return new ThreadEmailExtractorPromptCopyAskingFor(); },
 );
 
 // Get the extraction type from the query string, default to 'email_body'
