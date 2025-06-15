@@ -8,6 +8,29 @@ require_once(__DIR__ . '/../../class/Entity.php');
 
 class UpdateImapPageTest extends E2EPageTestCase {
 
+    public static function setUpBeforeClass(): void {
+        parent::setUpBeforeClass();
+        
+        // Reset GreenMail before running tests
+        // Wipes all emails and folders.
+        $ch = curl_init();
+        curl_setopt($ch, CURLOPT_URL, 'http://localhost:25181/api/service/reset');
+        curl_setopt($ch, CURLOPT_POST, true);
+        curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
+        curl_setopt($ch, CURLOPT_TIMEOUT, 10);
+        
+        $result = curl_exec($ch);
+        $httpCode = curl_getinfo($ch, CURLINFO_HTTP_CODE);
+        $error = curl_error($ch);
+        curl_close($ch);
+        
+        if ($result === false || !empty($error)) {
+            throw new Exception("Failed to reset GreenMail. cURL error: " . $error);
+        } elseif ($httpCode !== 200) {
+            throw new Exception("Failed to reset GreenMail. HTTP code: " . $httpCode);
+        }
+    }
+
     public function testShowsTaskMenu() {
         // :: Setup
         E2ETestSetup::createTestThread();
@@ -29,12 +52,27 @@ class UpdateImapPageTest extends E2EPageTestCase {
         $this->assertStringContainsString('<a href="?task=view-folder-logs">View Folder Logs</a>', $response->body);
     }
 
-    public function testCreateFolders() {
+    public function testFolderThatRequireCreation() {
+        $this->_testCreateFolders();
+        $this->_testProcessInbox();
+        $this->_testProcessSentFolder();
+        $this->_testProcessAllThreads();
+    }
+
+    public function _testCreateFolders() {
         // :: Setup
+        // Move all existing threads back in time using database update
+        Database::queryValue(
+        "UPDATE threads SET created_at = NOW() - INTERVAL '5 hour' returning id"
+        );
+
+        // Make our test thread
         $testdata = E2ETestSetup::createTestThread();
 
         // :: Act part 1 - create folders
-        $response = $this->renderPage('/update-imap?task=create-folders');
+        $twoSecondsAgo = new DateTime('now', new DateTimeZone('Europe/Oslo'));
+        $twoSecondsAgo->modify('-2 second');
+        $response = $this->renderPage('/update-imap?task=create-folders&not-before=' . str_replace(' ', '%20', $twoSecondsAgo->format('Y-m-d H:i:s')));
 
         // :: Assert part 1 - create folders
         $this->assertNotErrorInResponse($response);
@@ -72,7 +110,7 @@ class UpdateImapPageTest extends E2EPageTestCase {
         $this->assertStringContainsString('Archived folders for archived threads', $response->body);
     }
 
-    public function testProcessInbox() {
+    public function _testProcessInbox() {
         // :: Setup
         E2ETestSetup::createTestThread();
 
@@ -90,7 +128,7 @@ class UpdateImapPageTest extends E2EPageTestCase {
         );
     }
 
-    public function testProcessSentFolder() {
+    public function _testProcessSentFolder() {
         // :: Setup
         E2ETestSetup::createTestThread();
 
@@ -103,7 +141,7 @@ class UpdateImapPageTest extends E2EPageTestCase {
         $this->assertStringContainsString('Processed sent folder', $response->body);
     }
 
-    public function testProcessAllThreads() {
+    public function _testProcessAllThreads() {
         // :: Setup
         $testdata = E2ETestSetup::createTestThread();
 

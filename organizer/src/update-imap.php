@@ -428,6 +428,23 @@ try {
         switch ($task) {
             case 'create-folders':
                 $threads = ThreadStorageManager::getInstance()->getThreads();
+
+                if (isset($_GET['not-before'])) {
+                    // Filter threads based on 'not-before' date
+                    $notBefore = strtotime($_GET['not-before']);
+                    if ($notBefore === false) {
+                        throw new Exception("Invalid 'not-before' date format");
+                    }
+                    foreach ($threads as $key => $entityThreads) {
+                        $threads[$key]->threads = array_filter($entityThreads->threads, function($thread) use ($notBefore) {
+                            if (!isset($thread->created_at)) {
+                                throw new Exception("Thread created_at is not set");
+                            }
+                            return strtotime($thread->created_at) >= $notBefore;
+                        });
+                    }
+                }
+
                 $folders = createFolders($connection, $folderManager, $threads);
                 echo "Created folders:\n";
                 foreach ($folders as $folder) {

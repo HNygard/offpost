@@ -20,10 +20,11 @@ services:
     networks:
       - app-network
     ports:
-      - "25025:3025"    # SMTP
+      - "25025:3025"   # SMTP
       - "25143:3143"   # IMAP
       - "25465:3465"   # SMTPS
       - "25993:3993"   # IMAPS
+      - "25181:8080"   # Web UI
     environment:
       - GREENMAIL_OPTS=
         -Dgreenmail.setup.test.all
