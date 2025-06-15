@@ -15,6 +15,9 @@ class ThreadDatabaseOperations {
         $this->history = new ThreadHistory();
     }
 
+    /**
+     * @return Threads[]
+     */
     public function getThreads($userId = null) {
         $threads = array();
         
@@ -38,6 +41,8 @@ class ThreadDatabaseOperations {
                     t.labels,
                     t.sent_comment,
                     t.public,
+                    t.created_at,
+                    t.updated_at,
                     e.id as email_id,
                     e.id_old as email_id_old,
                     e.datetime_received,
@@ -103,6 +108,8 @@ class ThreadDatabaseOperations {
                 $currentThread->archived = (bool)$row['archived'];
                 $currentThread->public = (bool)$row['public'];
                 $currentThread->entity_id = $row['entity_id'];
+                $currentThread->created_at = $row['created_at'] ?? null;
+                $currentThread->updated_at = $row['updated_at'] ?? null;
                 
                 // Parse PostgreSQL array format
                 if ($row['labels'] !== null) {
@@ -233,6 +240,8 @@ class ThreadDatabaseOperations {
                 $currentThread->archived = (bool)$row['archived'];
                 $currentThread->public = (bool)$row['public'];
                 $currentThread->entity_id = $row['entity_id'];
+                $currentThread->created_at = $row['created_at'] ?? null;
+                $currentThread->updated_at = $row['updated_at'] ?? null;
                 
                 // Parse PostgreSQL array format
                 if ($row['labels'] !== null) {

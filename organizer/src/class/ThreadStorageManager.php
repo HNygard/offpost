@@ -23,6 +23,10 @@ class ThreadStorageManager {
         return self::$instance;
     }
     
+
+    /**
+     * @return Threads[]
+     */
     public function getThreads($userId = null) {
         return $this->useDatabase ? $this->dbOps->getThreads($userId) : $this->fileOps->getThreads($userId);
     }

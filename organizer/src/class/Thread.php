@@ -37,6 +37,9 @@ class Thread implements JsonSerializable {
     var $sentComment;
     var $request_law_basis;
     var $request_follow_up_plan;
+    var $created_at;
+    var $updated_at;
+
 
     /* @var ThreadEmail[] $emails */
     var $emails;
@@ -167,6 +170,7 @@ class Thread implements JsonSerializable {
         $thread->initial_request = $data['initial_request'] ?? null;
         $thread->request_law_basis = $data['request_law_basis'] ?? null;
         $thread->request_follow_up_plan = $data['request_follow_up_plan'] ?? null;
+        $thread->created_at = $data['created_at'];
 
         // Load emails
         $emails = Database::query(

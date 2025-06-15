@@ -392,6 +392,8 @@ startxref
             "sentComment": null,
             "request_law_basis": null,
             "request_follow_up_plan": null,
+            "created_at": null,
+            "updated_at": null,
             "emails": [{
                 "timestamp_received": ' . $email_time . ',
                 "datetime_received": "2021-01-01 12:00:00",
