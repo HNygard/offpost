@@ -63,8 +63,8 @@ I pledge to follow the custom instructions.
 
 - The current working directory is project root.
 - When making changes, avoid unnecessary modifications that would complicate code review (e.g. formatting, variable renaming, etc.)
-- After completing work, commit changes with detailed messages explaining what and why.
-- Never stage changes in git. Staging should not be done by Cline.
+- After completing work, suggest a commit command with a detailed messages explaining what and why.
+- Never stage changes in git. Staging should be done by human user.
 - When viewing git diffs, use git with "no-pager" parameter: git --no-pager diff
 - Update relevant documentation in /docs when modifying features. Don't forget to update codebase documentation with changes.
 - Keep README.md in sync with new capabilities
