@@ -16,7 +16,7 @@ volumes:
 
 services:
   greenmail:
-    image: greenmail/standalone:1.6.15
+    image: greenmail/standalone:2.1.3
     networks:
       - app-network
     ports:
