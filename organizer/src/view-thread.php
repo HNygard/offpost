@@ -219,6 +219,18 @@ function print_extraction ($extraction) {
         $text = 'Latest reply extracted.';
         $style = 'background-color: #86cff1; color: rgb(11, 96, 111);';
     }
+    elseif ($extraction->prompt_service == 'openai' && $extraction->prompt_id == 'copy-asking-for') {
+        if (empty($extraction->extracted_text)) {
+            return;
+        }
+        $obj = json_decode($extraction->extracted_text);
+        if (!$obj->is_requesting_copy) {
+            // Not requesting a copy, so nothing to display
+            return;
+        }
+        $text = 'Sender is requesting a copy of the email.';
+        $style = 'background-color: #d4edda; color:rgb(21, 33, 87);';
+    }
     else {
         global $admins;
         $text = 'Unknown extraction.';
