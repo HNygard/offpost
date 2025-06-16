@@ -6,19 +6,21 @@ class CopyAskingForPrompt extends OpenAiPrompt {
     }
 
     public function getPromptText(): string {
-        return 'You are a system for analyzing emails.'
-        . ' The task is to determine whether the sender is explicitly asking for a copy of something — especially a copy of the initial request or a document mentioned earlier in the email thread.'
-        . ' Only respond "true" if the email contains a **clear and direct** request for a copy.'
-        . "\n\n"
-        . 'You should return true for emails that request:\n'
-        . '- A copy of the original request\n'
-        . '- A copy of any document, letter, or decision\n'
-        . '- Phrases like "Can I get a copy of what was sent?", "Please forward the initial request", etc.\n\n'
-        . 'Do **not** return true if:\n'
-        . '- The message only mentions a case or number without requesting a copy\n'
-        . '- The request is vague or ambiguous (e.g., "What is this about?")\n\n'
-        . 'If a copy is requested, include a brief description (in free text) of what they are asking for — e.g., "copy of initial request", "copy of the decision", etc.\n'
-        . 'Respond only with structured JSON.';
+        return 'You are a system for analyzing emails. ' .
+               'The task is to determine whether the sender is explicitly asking for a copy of something — especially a copy of the initial request or a document mentioned earlier in the email thread. ' .
+               'Only respond "true" if the email contains a **clear and direct** request for a copy.' . "\n\n" .
+               
+               'You should return true for emails that request:' . "\n" .
+               '- A copy of the original request' . "\n" .
+               '- A copy of any document, letter, or decision' . "\n" .
+               '- Phrases like "Can I get a copy of what was sent?", "Please forward the initial request", etc.' . "\n\n" .
+               
+               'Do **not** return true if:' . "\n" .
+               '- The message only mentions a case or number without requesting a copy' . "\n" .
+               '- The request is vague or ambiguous (e.g., "What is this about?")' . "\n\n" .
+               
+               'If a copy is requested, include a brief description (in free text) of what they are asking for — e.g., "copy of initial request", "copy of the decision", etc.' . "\n" .
+               'Respond only with structured JSON.';
     }
 
     public function getModel(String $input_from_email): string {
