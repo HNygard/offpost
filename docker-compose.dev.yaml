@@ -15,6 +15,7 @@ volumes:
       device: tmpfs
 
 services:
+  # :: Greenmail service for email testing ::
   greenmail:
     image: greenmail/standalone:2.1.3
     networks:
@@ -31,6 +32,7 @@ services:
         -Dgreenmail.hostname=0.0.0.0
         -Dgreenmail.users=greenmail-user:EzUVrHxLVrF2@dev.offpost.no,public-entity:KjMnBvCxZq9Y@dev.offpost.no
 
+  # :: Roundcube service with MySQL backend ::
   roundcube:
     image: roundcube/roundcubemail:1.4.x-apache
     networks:
@@ -63,6 +65,16 @@ services:
       MYSQL_USER: mail
       MYSQL_PASSWORD: mail
 
+  phpmyadmin:
+    image: phpmyadmin/phpmyadmin
+    networks:
+      - app-network
+    ports:
+      - "25082:80"
+    links:
+      - mysql:db
+
+  # :: Organizer service with PostgreSQL backend ::
   postgres:
     image: postgres:15
     networks:
@@ -76,15 +88,6 @@ services:
       - ./secrets/postgres_password:/run/secrets/postgres_password:ro
     ports:
       - "25432:5432"
-
-  phpmyadmin:
-    image: phpmyadmin/phpmyadmin
-    networks:
-      - app-network
-    ports:
-      - "25082:80"
-    links:
-      - mysql:db
 
   organizer:
     build: ./organizer
