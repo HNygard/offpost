@@ -74,6 +74,7 @@ services:
     links:
       - mysql:db
 
+
   # :: Organizer service with PostgreSQL backend ::
   postgres:
     image: postgres:15
@@ -88,6 +89,19 @@ services:
       - ./secrets/postgres_password:/run/secrets/postgres_password:ro
     ports:
       - "25432:5432"
+
+  adminer:
+    image: adminer:5.3.0
+    networks:
+      - app-network
+    ports:
+      - "25084:8080"
+    depends_on:
+      - postgres
+    links:
+      - postgres:postgres
+    environment:
+      - ADMINER_DEFAULT_SERVER=postgres
 
   organizer:
     build: ./organizer

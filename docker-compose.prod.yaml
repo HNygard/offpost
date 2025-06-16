@@ -15,6 +15,8 @@ volumes:
       device: tmpfs
 
 services:
+
+  # :: Roundcube service with MySQL backend ::
   roundcube:
     image: roundcube/roundcubemail:1.4.x-apache
     networks:
@@ -40,6 +42,8 @@ services:
       MYSQL_PASSWORD: mail
     restart: unless-stopped
 
+
+  # :: Organizer service with PostgreSQL backend ::
   postgres:
     image: postgres:15
     networks:
@@ -52,6 +56,19 @@ services:
       - postgres_data:/var/lib/postgresql/data
       - /opt/offpost/secrets/postgres_password:/run/secrets/postgres_password:ro
     restart: unless-stopped
+
+  adminer:
+    image: adminer:5.3.0
+    networks:
+      - app-network
+    ports:
+      - "25084:8080"
+    depends_on:
+      - postgres
+    links:
+      - postgres:postgres
+    environment:
+      - ADMINER_DEFAULT_SERVER=postgres
 
   organizer:
     build: ./organizer

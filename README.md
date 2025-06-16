@@ -85,6 +85,7 @@ cd organizer/src && ./vendor/bin/phpunit tests/
 
 - Organizer (PHP Client): http://localhost:25081/
 - PHPMyAdmin: http://localhost:25082/ (Development only)
+- Adminer: http://localhost:25084/ (Development only - supports both PostgreSQL and MySQL)
 - Test Tools: http://localhost:25081/send-test-mail.php
 
 ### Starting a New Email Thread
