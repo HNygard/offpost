@@ -3,8 +3,8 @@
 Thread Details:
 - Thread title: Innsyn valgstempel
 - Thread entity ID: 938801363-sarpsborg-kommune
-- Thread my name: Nicoline Svenkerud
-- Thread my email: nicoline.svenkerud@offpost.no
+- Thread my name: Aaa Bbb
+- Thread my email: aaa.bbb@offpost.no
 Email Details:
 - Date: 2025-03-14 10:14:26+00
 - Direction: IN
@@ -12,7 +12,7 @@ Email Details:
 
 Adresse
                                                                         Post: Postboks 237, 1702 Sarpsborg
-                                                                      Bes\u00f8k: Glengsgata 38, 1706 Sarpsborg
+                                                                      Besøk: Glengsgata 38, 1706 Sarpsborg
                                                                       Faktura: Postboks 505, 1703 Sarpsborg
 
                                                                                    Telefon: +47 69 10 80 00
@@ -22,18 +22,18 @@ Adresse
 
 Nicoline Svenkerud
 
-Deres ref.              V\u00e5r ref.                Saksbehandler            Dato
-                        25\/05508-2              Ida Marie Ods\u00e6ter        14.03.2025
+Deres ref.              Vår ref.                Saksbehandler            Dato
+                        25/05508-2              Ccc ddd                  14.03.2025
 
-Svar p\u00e5 innsyn i valgstempel brukt i de to foreg\u00e5ende
+Svar på innsyn i valgstempel brukt i de to foregående
 valgene
 
-Viser til e-post 12.3.2025 med krav om innsyn i valgstempel. Vedlagt er kopi\/bilde av stempler
+Viser til e-post 12.3.2025 med krav om innsyn i valgstempel. Vedlagt er kopi/bilde av stempler
 brukt ved kommune- og fylkestingsvalget i 2023. Stemplene fra tidligere valg er makulert.
 
 Med hilsen
 
-Ida Ods\u00e6ter
+Ccc Ddd
 Valgansvarlig
 
 Virksomhet stabstjenester
@@ -41,7 +41,7 @@ Virksomhet stabstjenester
 Dokumentet er elektronisk godkjent.
 
 Kopi til:
-Virksomhet stabstjenester, Maren Lunde
+Virksomhet stabstjenester, Ccc ddd
 
 ### EXPECTED OUTPUT ###
 {"is_requesting_copy":false,"copy_request_description":""}

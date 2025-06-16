@@ -1,0 +1,51 @@
+### TEST INPUT ###
+
+Thread Details:
+- Thread title: Innsyn valgstempel
+- Thread entity ID: 941087957-masoy-kommune
+- Thread my name: Aaa Bbb
+- Thread my email: aaa.bbb@offpost.no
+Email Details:
+- Date: 2025-03-14 09:48:52+00
+- Direction: IN
+- Source: PDF Attachment
+
+MÅSØY KOMMUNE
+              Formannskapskontoret
+
+                                                                                       Havøysund, 14.03.2025
+
+Aaa Bbb - Prosjekt Åpne valgdata
+
+ vår ref.                              arkivkode                     deres ref.
+ 24/703/25/1650/4                      FE-010
+ saksbehandler                         direktetelefon                e-postadresse
+ LIS                                   47 60 78 45                   ccc.ddd@masoy.kommune.no
+
+Svar - Innsyn valgstempel
+Viser til deres innsynsforespørsel av 11.03.25 hvor det bes om å få se hvilke stempel Måsøy
+kommune bruker i forbindelse med valg gjennomføring.
+
+Vedlagt følger kopi av stempel vi bruker i forbindelse med forhåndsstemmegivning og på
+valgting. Stemplene er brukt de to foregående valgene, og noen år før det. Usikker på når
+disse ble kjøpt inn.
+
+Med hilsen
+
+Ccc ddd
+Kontorfaglært
+
+Dokumentet er elektronisk godkjent og har derfor ingen signatur
+
+Vedlegg
+Valgstempel Måsøy kommune
+
+Måsøy kommune                        Besøksadr: Torget 1
+Postboks 71                          Telefon sentralbord:  78 42 40 00            Bankgiro   4955.05.00050
+9691 HAVØYSUND                       E-post: postmottak@masoy.kommune.no          Org. nr.   941 087 957
+
+### EXPECTED OUTPUT ###
+{"is_requesting_copy":false,"copy_request_description":""}
+
+### COMMENT ###
+Example from prod. False positive.

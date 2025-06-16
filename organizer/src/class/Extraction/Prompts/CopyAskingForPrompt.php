@@ -16,10 +16,12 @@ class CopyAskingForPrompt extends OpenAiPrompt {
                '- Phrases like "Can I get a copy of what was sent?", "Please forward the initial request", etc.' . "\n\n" .
 
                'Do **not** return true if:' . "\n" .
-               '- The message only mentions a case or number without requesting a copy' . "\n" .
-               '- The request is vague or ambiguous (e.g., "What is this about?")' . "\n" .
-               '- The sender is providing/sending a copy (e.g., "Attached is a copy", "Vedlagt er kopi", "Here is a copy")' . "\n" .
-               '- The email mentions copies in a descriptive context without requesting them' . "\n\n" .
+               "- The message only mentions a case or number without requesting a copy\n" .
+               "- The request is vague or ambiguous (e.g., \"What is this about?\")\n" .
+               "- The sender is providing/sending a copy (e.g., \"Attached is a copy\", \"Vedlagt er kopi\", \"Here is a copy\")\n" .
+               "- The email mentions copies in a descriptive context without requesting them\n" .
+               "- The message only mentions a copy of an election stamp (e.g. \"valgstempel\") without requesting a copy of anything else\n" .
+               "\n" .
 
                'Focus on the **direction** of the request: only return true when someone is asking TO RECEIVE a copy, not when someone is providing or describing copies.' . "\n\n" .
 
