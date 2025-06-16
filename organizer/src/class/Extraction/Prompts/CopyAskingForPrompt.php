@@ -9,16 +9,20 @@ class CopyAskingForPrompt extends OpenAiPrompt {
         return 'You are a system for analyzing emails. ' .
                'The task is to determine whether the sender is explicitly asking for a copy of something — especially a copy of the initial request or a document mentioned earlier in the email thread. ' .
                'Only respond "true" if the email contains a **clear and direct** request for a copy.' . "\n\n" .
-               
+
                'You should return true for emails that request:' . "\n" .
                '- A copy of the original request' . "\n" .
                '- A copy of any document, letter, or decision' . "\n" .
                '- Phrases like "Can I get a copy of what was sent?", "Please forward the initial request", etc.' . "\n\n" .
-               
+
                'Do **not** return true if:' . "\n" .
                '- The message only mentions a case or number without requesting a copy' . "\n" .
-               '- The request is vague or ambiguous (e.g., "What is this about?")' . "\n\n" .
-               
+               '- The request is vague or ambiguous (e.g., "What is this about?")' . "\n" .
+               '- The sender is providing/sending a copy (e.g., "Attached is a copy", "Vedlagt er kopi", "Here is a copy")' . "\n" .
+               '- The email mentions copies in a descriptive context without requesting them' . "\n\n" .
+
+               'Focus on the **direction** of the request: only return true when someone is asking TO RECEIVE a copy, not when someone is providing or describing copies.' . "\n\n" .
+
                'If a copy is requested, include a brief description (in free text) of what they are asking for — e.g., "copy of initial request", "copy of the decision", etc.' . "\n" .
                'Respond only with structured JSON.';
     }
