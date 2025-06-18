@@ -53,6 +53,7 @@ try {
             '/thread-view' => '/../view-thread.php',
             '/thread-start' => '/../start-thread.php',
             '/thread-classify' => '/../classify-email.php',
+            '/thread-reply' => '/../thread-reply.php',
             '/api/threads' => '/../api.php',
             '/callback' => '/../callback.php',
             '/logout' => '/../logout.php',
