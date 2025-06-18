@@ -486,6 +486,176 @@ function print_extraction ($extraction) {
                 </div>
             <?php endforeach; ?>
         </div>
+
+        <?php 
+        // Check if thread has incoming emails that might need a reply
+        $hasIncomingEmails = false;
+        if (isset($thread->emails)) {
+            foreach ($thread->emails as $email) {
+                if ($email->email_type === 'IN') {
+                    $hasIncomingEmails = true;
+                    break;
+                }
+            }
+        }
+        
+        // Only show reply form if there are incoming emails and user has permission
+        if ($hasIncomingEmails && $thread->canUserAccess($userId)): ?>
+        <div id="reply-section">
+            <h2>Reply to Thread</h2>
+            <form method="POST" action="/thread-reply" class="reply-form">
+                <input type="hidden" name="thread_id" value="<?= htmlescape($thread->id) ?>">
+                <input type="hidden" name="entity_id" value="<?= htmlescape($entityId) ?>">
+                
+                <div class="form-group">
+                    <label for="reply_subject">Subject</label>
+                    <input type="text" id="reply_subject" name="reply_subject" 
+                           value="Re: <?= htmlescape($thread->title) ?>" required>
+                </div>
+                
+                <div class="form-group">
+                    <label for="reply_body">Message</label>
+                    <div class="editor-toolbar">
+                        <button type="button" onclick="formatText('bold')" title="Bold">
+                            <strong>B</strong>
+                        </button>
+                        <button type="button" onclick="formatText('italic')" title="Italic">
+                            <em>I</em>
+                        </button>
+                        <button type="button" onclick="insertSuggestedReply()" title="Insert suggested reply">
+                            📝 Suggested Reply
+                        </button>
+                    </div>
+                    <textarea id="reply_body" name="reply_body" rows="10" required 
+                              placeholder="Write your reply here..."></textarea>
+                </div>
+                
+                <div class="form-group">
+                    <button type="submit" name="send_reply" class="button">Send Reply</button>
+                    <button type="submit" name="save_draft" class="button secondary">Save as Draft</button>
+                </div>
+            </form>
+            
+            <!-- Suggested reply content (hidden, populated by JavaScript) -->
+            <div id="suggested-reply-content" style="display: none;">
+<?php
+// Generate suggested reply with previous emails
+$suggestedReply = "Previous emails in this thread:\n\n";
+if (isset($thread->emails)) {
+    $emailCount = 0;
+    foreach (array_reverse($thread->emails) as $email) {
+        $emailCount++;
+        if ($emailCount > 5) break; // Limit to last 5 emails
+        
+        $direction = ($email->email_type === 'IN') ? 'Received' : 'Sent';
+        $suggestedReply .= "{$emailCount}. {$direction} on {$email->datetime_received}\n";
+        if (isset($email->description) && $email->description) {
+            $suggestedReply .= "   Summary: " . strip_tags($email->description) . "\n";
+        }
+        $suggestedReply .= "\n";
+    }
+}
+echo htmlescape($suggestedReply);
+?>
+            </div>
+        </div>
+
+        <style>
+        #reply-section {
+            margin-top: 30px;
+            padding: 20px;
+            border: 1px solid #dee2e6;
+            border-radius: 6px;
+            background-color: #f8f9fa;
+        }
+        
+        .reply-form .form-group {
+            margin-bottom: 15px;
+        }
+        
+        .reply-form label {
+            display: block;
+            margin-bottom: 5px;
+            font-weight: bold;
+            color: #34495e;
+        }
+        
+        .reply-form input[type="text"],
+        .reply-form textarea {
+            width: 100%;
+            padding: 8px;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+            font-size: 14px;
+        }
+        
+        .editor-toolbar {
+            margin-bottom: 5px;
+            padding: 5px;
+            background: #fff;
+            border: 1px solid #ddd;
+            border-bottom: none;
+            border-radius: 4px 4px 0 0;
+        }
+        
+        .editor-toolbar button {
+            background: #f8f9fa;
+            border: 1px solid #dee2e6;
+            padding: 4px 8px;
+            margin-right: 5px;
+            cursor: pointer;
+            border-radius: 3px;
+        }
+        
+        .editor-toolbar button:hover {
+            background: #e9ecef;
+        }
+        
+        .button.secondary {
+            background-color: #6c757d;
+            color: white;
+            margin-left: 10px;
+        }
+        
+        .button.secondary:hover {
+            background-color: #5a6268;
+        }
+        </style>
+
+        <script>
+        function formatText(command) {
+            const textarea = document.getElementById('reply_body');
+            const start = textarea.selectionStart;
+            const end = textarea.selectionEnd;
+            const selectedText = textarea.value.substring(start, end);
+            
+            if (selectedText) {
+                let formattedText;
+                if (command === 'bold') {
+                    formattedText = '<strong>' + selectedText + '</strong>';
+                } else if (command === 'italic') {
+                    formattedText = '<em>' + selectedText + '</em>';
+                }
+                
+                textarea.value = textarea.value.substring(0, start) + formattedText + textarea.value.substring(end);
+                textarea.focus();
+                textarea.setSelectionRange(start + formattedText.length, start + formattedText.length);
+            }
+        }
+        
+        function insertSuggestedReply() {
+            const textarea = document.getElementById('reply_body');
+            const suggestedContent = document.getElementById('suggested-reply-content').textContent;
+            
+            if (textarea.value.trim() === '') {
+                textarea.value = suggestedContent;
+            } else {
+                textarea.value += '\n\n' + suggestedContent;
+            }
+            textarea.focus();
+        }
+        </script>
+        <?php endif; ?>
     </div>
 </body>
 </html>
