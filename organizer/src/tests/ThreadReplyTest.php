@@ -6,6 +6,7 @@ require_once __DIR__ . '/../class/ThreadEmail.php';
 require_once __DIR__ . '/../class/ThreadEmailSending.php';
 require_once __DIR__ . '/../class/ThreadStorageManager.php';
 require_once __DIR__ . '/../class/Entity.php';
+require_once __DIR__ . '/../class/ThreadUtils.php';
 
 use PHPUnit\Framework\TestCase;
 
@@ -129,10 +130,50 @@ class ThreadReplyTest extends TestCase {
         
         $this->assertEquals('<strong>important text</strong>', $boldFormatted);
         $this->assertEquals('<em>important text</em>', $italicFormatted);
+    }
+
+    public function testEmailAddressValidation() {
+        // Test isValidReplyEmail function
+        $myEmail = 'test-user@offpost.no';
         
-        // Test that formatting preserves the original text
-        $this->assertStringContainsString($selectedText, $boldFormatted);
-        $this->assertStringContainsString($selectedText, $italicFormatted);
+        // Valid emails
+        $this->assertTrue(isValidReplyEmail('valid@example.com', $myEmail), 'Valid email should pass');
+        $this->assertTrue(isValidReplyEmail('another.valid@domain.org', $myEmail), 'Another valid email should pass');
+        
+        // Invalid emails
+        $this->assertFalse(isValidReplyEmail($myEmail, $myEmail), 'Same as my email should be rejected');
+        $this->assertFalse(isValidReplyEmail('noreply@example.com', $myEmail), 'noreply email should be rejected');
+        $this->assertFalse(isValidReplyEmail('test-no-reply@example.com', $myEmail), 'no-reply email should be rejected');
+        $this->assertFalse(isValidReplyEmail('ikke-svar@example.com', $myEmail), 'ikke-svar email should be rejected');
+        $this->assertFalse(isValidReplyEmail('invalid-email', $myEmail), 'Invalid email format should be rejected');
+        $this->assertFalse(isValidReplyEmail('', $myEmail), 'Empty email should be rejected');
+    }
+
+    public function testEmailHeaderExtraction() {
+        // Test extractEmailAddressesFromHeaders function
+        $headers = [
+            'from' => [
+                ['mailbox' => 'sender', 'host' => 'example.com']
+            ],
+            'reply_to' => [
+                ['mailbox' => 'reply', 'host' => 'example.com']
+            ],
+            'sender' => [
+                ['mailbox' => 'sender2', 'host' => 'example.org']
+            ]
+        ];
+        
+        $addresses = extractEmailAddressesFromHeaders($headers);
+        
+        $this->assertContains('sender@example.com', $addresses, 'Should extract from field');
+        $this->assertContains('reply@example.com', $addresses, 'Should extract reply_to field');
+        $this->assertContains('sender2@example.org', $addresses, 'Should extract sender field');
+        
+        // Test with JSON string
+        $jsonHeaders = json_encode($headers);
+        $addressesFromJson = extractEmailAddressesFromHeaders($jsonHeaders);
+        
+        $this->assertEquals($addresses, $addressesFromJson, 'JSON parsing should yield same results');
     }
 
     public function testReplySubjectGeneration() {

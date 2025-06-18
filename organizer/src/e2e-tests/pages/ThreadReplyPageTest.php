@@ -114,6 +114,7 @@ class ThreadReplyPageTest extends E2EPageTestCase {
                 'entity_id' => $entityId,
                 'reply_subject' => $replySubject,
                 'reply_body' => $replyBody,
+                'recipients' => ['test-recipient@example.com'], // Add recipients parameter
                 'save_draft' => '1'
             ]
         );
@@ -167,6 +168,7 @@ class ThreadReplyPageTest extends E2EPageTestCase {
                 'entity_id' => $entityId,
                 'reply_subject' => $replySubject,
                 'reply_body' => $replyBody,
+                'recipients' => ['test-recipient@example.com'], // Add recipients parameter
                 'send_reply' => '1'
             ]
         );
@@ -214,7 +216,12 @@ class ThreadReplyPageTest extends E2EPageTestCase {
         );
 
         // :: Assert
-        $this->assertStringContainsString('Missing required parameters', $response->body);
+        // Should fail with either missing parameters or no recipients selected
+        $this->assertTrue(
+            strpos($response->body, 'Missing required parameters') !== false ||
+            strpos($response->body, 'No recipients selected') !== false,
+            'Should fail with parameter validation error'
+        );
     }
 
     public function testReplyFormRejectsThreadWithoutIncomingEmails() {
@@ -268,6 +275,7 @@ class ThreadReplyPageTest extends E2EPageTestCase {
                 'entity_id' => $entityId,
                 'reply_subject' => 'Test Success Subject',
                 'reply_body' => 'Test success body',
+                'recipients' => ['test-recipient@example.com'], // Add recipients parameter
                 'send_reply' => '1'
             ]
         );
@@ -276,6 +284,6 @@ class ThreadReplyPageTest extends E2EPageTestCase {
         $response = $this->renderPage('/thread-view?entityId=' . $entityId . '&threadId=' . $threadId);
 
         // :: Assert
-        $this->assertStringContainsString('Reply has been prepared and will be sent shortly', $response->body, 'Should show success message');
+        $this->assertStringContainsString('Reply has been prepared for 1 recipient and will be sent shortly', $response->body, 'Should show success message with recipient count');
     }
 }
