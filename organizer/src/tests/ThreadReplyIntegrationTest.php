@@ -18,8 +18,21 @@ class ThreadReplyIntegrationTest extends TestCase {
     private static $testEntityId = 'test-entity-reply-integration';
     private static $testUserId = 'test-user-reply-integration';
 
+    /**
+     * Generate a UUID v4
+     */
+    private static function generateUuid(): string {
+        return sprintf('%04x%04x-%04x-%04x-%04x-%04x%04x%04x',
+            mt_rand(0, 0xffff), mt_rand(0, 0xffff),
+            mt_rand(0, 0xffff),
+            mt_rand(0, 0x0fff) | 0x4000,
+            mt_rand(0, 0x3fff) | 0x8000,
+            mt_rand(0, 0xffff), mt_rand(0, 0xffff), mt_rand(0, 0xffff)
+        );
+    }
+
     public static function setUpBeforeClass(): void {
-        self::$testThreadId = 'thread-reply-integration-test-' . uniqid();
+        self::$testThreadId = self::generateUuid();
         
         // Clean up any existing test data
         self::cleanupTestData();
