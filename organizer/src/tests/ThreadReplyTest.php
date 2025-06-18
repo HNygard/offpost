@@ -150,7 +150,7 @@ class ThreadReplyTest extends TestCase {
     }
 
     public function testEmailHeaderExtraction() {
-        // Test extractEmailAddressesFromHeaders function
+        // Test getEmailAddressesFromImapHeaders function
         $headers = [
             'from' => [
                 ['mailbox' => 'sender', 'host' => 'example.com']
@@ -163,7 +163,7 @@ class ThreadReplyTest extends TestCase {
             ]
         ];
         
-        $addresses = extractEmailAddressesFromHeaders($headers);
+        $addresses = getEmailAddressesFromImapHeaders($headers);
         
         $this->assertContains('sender@example.com', $addresses, 'Should extract from field');
         $this->assertContains('reply@example.com', $addresses, 'Should extract reply_to field');
@@ -171,7 +171,7 @@ class ThreadReplyTest extends TestCase {
         
         // Test with JSON string
         $jsonHeaders = json_encode($headers);
-        $addressesFromJson = extractEmailAddressesFromHeaders($jsonHeaders);
+        $addressesFromJson = getEmailAddressesFromImapHeaders($jsonHeaders);
         
         $this->assertEquals($addresses, $addressesFromJson, 'JSON parsing should yield same results');
     }

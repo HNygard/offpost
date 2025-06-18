@@ -1,7 +1,9 @@
 <?php
 
 require_once __DIR__ . '/Enums/ThreadEmailStatusType.php';
+require_once __DIR__ . '/Imap/ImapEmail.php';
 use App\Enums\ThreadEmailStatusType;
+use Imap\ImapEmail;
 
 function getThreadId($thread) {
     $email_folder = str_replace(' ', '_', mb_strtolower($thread->title, 'UTF-8'));
@@ -67,7 +69,7 @@ function getThreadReplyRecipients($thread) {
     if (isset($thread->emails)) {
         foreach ($thread->emails as $email) {
             if ($email->email_type === 'IN' && isset($email->imap_headers)) {
-                $emailAddresses = extractEmailAddressesFromHeaders($email->imap_headers);
+                $emailAddresses = getEmailAddressesFromImapHeaders($email->imap_headers);
                 foreach ($emailAddresses as $emailAddr) {
                     if (isValidReplyEmail($emailAddr, $thread->my_email)) {
                         $recipients[] = $emailAddr;
@@ -82,39 +84,28 @@ function getThreadReplyRecipients($thread) {
 }
 
 /**
- * Extract email addresses from IMAP headers stored as JSON
+ * Extract email addresses from IMAP headers stored in database using existing ImapEmail functionality
  * 
- * @param string|array $imapHeaders The IMAP headers as JSON string or array
+ * @param string|array $imapHeaders The IMAP headers as JSON string or array from database
  * @return array Array of email addresses
  */
-function extractEmailAddressesFromHeaders($imapHeaders) {
-    $addresses = [];
-    
+function getEmailAddressesFromImapHeaders($imapHeaders) {
     // Parse JSON if it's a string
     if (is_string($imapHeaders)) {
-        $headers = json_decode($imapHeaders, true);
+        $headers = json_decode($imapHeaders, false); // Use false to get object instead of array
     } else {
-        $headers = $imapHeaders;
+        $headers = (object) $imapHeaders;
     }
     
     if (!$headers) {
-        return $addresses;
+        return [];
     }
     
-    // Extract from various header fields
-    $fields = ['from', 'reply_to', 'sender'];
+    // Create a temporary ImapEmail instance to use its getEmailAddresses method
+    $tempEmail = new ImapEmail();
+    $tempEmail->mailHeaders = $headers;
     
-    foreach ($fields as $field) {
-        if (isset($headers[$field]) && is_array($headers[$field])) {
-            foreach ($headers[$field] as $emailObj) {
-                if (isset($emailObj['mailbox']) && isset($emailObj['host'])) {
-                    $addresses[] = strtolower($emailObj['mailbox'] . '@' . $emailObj['host']);
-                }
-            }
-        }
-    }
-    
-    return array_unique($addresses);
+    return $tempEmail->getEmailAddresses();
 }
 
 /**
