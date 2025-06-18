@@ -18,4 +18,5 @@ class ThreadEmail {
     var $auto_classification;
     /* @var $attachments ThreadEmailAttachment[] */
     var $attachments;
+    var $imap_headers; // JSONB field from database
 }

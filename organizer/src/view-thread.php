@@ -7,6 +7,7 @@ require_once __DIR__ . '/class/ThreadStorageManager.php';
 require_once __DIR__ . '/class/ThreadHistory.php';
 require_once __DIR__ . '/class/ThreadEmailSending.php';
 require_once __DIR__ . '/class/Extraction/ThreadEmailExtractionService.php';
+require_once __DIR__ . '/class/ThreadUtils.php';
 
 // Require authentication
 requireAuth();
@@ -500,7 +501,10 @@ function print_extraction ($extraction) {
         }
         
         // Only show reply form if there are incoming emails and user has permission
-        if ($hasIncomingEmails && $thread->canUserAccess($userId)): ?>
+        if ($hasIncomingEmails && $thread->canUserAccess($userId)): 
+            // Get valid reply recipients
+            $replyRecipients = getThreadReplyRecipients($thread);
+        ?>
         <div id="reply-section">
             <h2>Reply to Thread</h2>
             <form method="POST" action="/thread-reply" class="reply-form">
@@ -512,6 +516,31 @@ function print_extraction ($extraction) {
                     <input type="text" id="reply_subject" name="reply_subject" 
                            value="Re: <?= htmlescape($thread->title) ?>" required>
                 </div>
+                
+                <?php if (!empty($replyRecipients)): ?>
+                <div class="form-group">
+                    <label>Recipients</label>
+                    <div class="recipients-list">
+                        <?php foreach ($replyRecipients as $index => $email): ?>
+                            <div class="recipient-item">
+                                <input type="checkbox" 
+                                       id="recipient_<?= $index ?>" 
+                                       name="recipients[]" 
+                                       value="<?= htmlescape($email) ?>"
+                                       <?= $index === 0 ? 'checked' : '' ?>>
+                                <label for="recipient_<?= $index ?>"><?= htmlescape($email) ?></label>
+                            </div>
+                        <?php endforeach; ?>
+                    </div>
+                    <small class="form-help">Select one or more recipients for your reply.</small>
+                </div>
+                <?php else: ?>
+                <div class="form-group">
+                    <div class="alert-warning">
+                        No valid recipient email addresses found in this thread.
+                    </div>
+                </div>
+                <?php endif; ?>
                 
                 <div class="form-group">
                     <label for="reply_body">Message</label>
@@ -531,8 +560,13 @@ function print_extraction ($extraction) {
                 </div>
                 
                 <div class="form-group">
-                    <button type="submit" name="send_reply" class="button">Send Reply</button>
-                    <button type="submit" name="save_draft" class="button secondary">Save as Draft</button>
+                    <?php if (!empty($replyRecipients)): ?>
+                        <button type="submit" name="send_reply" class="button">Send Reply</button>
+                        <button type="submit" name="save_draft" class="button secondary">Save as Draft</button>
+                    <?php else: ?>
+                        <button type="button" class="button" disabled>Send Reply</button>
+                        <button type="button" class="button secondary" disabled>Save as Draft</button>
+                    <?php endif; ?>
                 </div>
             </form>
             
@@ -619,6 +653,42 @@ echo htmlescape($suggestedReply);
         
         .button.secondary:hover {
             background-color: #5a6268;
+        }
+        
+        .recipients-list {
+            margin-bottom: 10px;
+        }
+        
+        .recipient-item {
+            margin-bottom: 8px;
+            display: flex;
+            align-items: center;
+        }
+        
+        .recipient-item input[type="checkbox"] {
+            margin-right: 8px;
+            width: auto;
+        }
+        
+        .recipient-item label {
+            margin-bottom: 0;
+            font-weight: normal;
+            cursor: pointer;
+            color: #555;
+        }
+        
+        .form-help {
+            color: #6c757d;
+            font-size: 0.875em;
+            margin-top: 5px;
+        }
+        
+        .alert-warning {
+            background-color: #fff3cd;
+            border: 1px solid #ffeaa7;
+            color: #856404;
+            padding: 10px;
+            border-radius: 4px;
         }
         </style>
 
