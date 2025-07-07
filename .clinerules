@@ -109,6 +109,9 @@ I pledge to follow the custom instructions.
 - Get into database:
     docker exec -it offpost_postgres_1 psql -U offpost -d offpost
 
+- Reset Greenmail (clears emails and folders in mail server)
+    docker-compose -f docker-compose.dev.yaml restart greenmail
+
 ## Database
 
 To see the current schema for the database, read organizer/src/migrations/sql/99999-database-schema-after-migrations.sql.
