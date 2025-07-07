@@ -35,8 +35,8 @@ jobs:
         echo "# This is a placeholder for the OpenAI API key" > ./secrets/openai_api_key
         echo "sk-placeholder-api-key-not-real" >> ./secrets/openai_api_key
         
-    - name: Start Docker compose (organizer, postgres, greenmail)
-      run: docker compose -f docker-compose.dev.yaml up -d greenmail postgres organizer
+    - name: Start Docker compose (organizer, postgres, greenmail, auth)
+      run: docker compose -f docker-compose.dev.yaml up -d greenmail postgres organizer auth
 
     - name: Wait for PostgreSQL to be ready
       run: |
