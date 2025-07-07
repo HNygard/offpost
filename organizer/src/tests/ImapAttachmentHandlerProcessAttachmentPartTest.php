@@ -393,4 +393,70 @@ class ImapAttachmentHandlerProcessAttachmentPartTest extends TestCase {
         $this->assertEquals('case-test.txt', $result->name, 'Name should be extracted correctly regardless of case');
         $this->assertEquals('txt', $result->filetype, 'File type should be determined correctly');
     }
+
+    public function testProcessAttachmentPartWithContinuationParameters(): void {
+        // :: Setup
+        $part = $this->createTestPart();
+        $part->ifdparameters = true;
+        $part->ifparameters = true;
+        
+        // Setup filename continuation parameters
+        $dParam0 = new stdClass();
+        $dParam0->attribute = 'filename*0*';
+        $dParam0->value = "iso-8859-1''Forel%F8pig%20svar%20-%20Innsynsforesp%F8rsel_%20Val";
+        
+        $dParam1 = new stdClass();
+        $dParam1->attribute = 'filename*1';
+        $dParam1->value = 'gstyrets skriftelige rutine for forsegling, oppbevaring og trans';
+        
+        $dParam2 = new stdClass();
+        $dParam2->attribute = 'filename*2*';
+        $dParam2->value = 'port%20av%20valgmateriell%20-%20jfr.%20valgsforskriften%20%A79-1';
+        
+        $dParam3 = new stdClass();
+        $dParam3->attribute = 'filename*3';
+        $dParam3->value = ' - samt rutine for valget i 2023 og 2025 (hvis denne er klar)  .';
+        
+        $dParam4 = new stdClass();
+        $dParam4->attribute = 'filename*4';
+        $dParam4->value = 'pdf';
+        
+        // The parts need to be sorted, so we have a mix of ordering here as a test
+        $part->dparameters = [$dParam4, $dParam1, $dParam2, $dParam3, $dParam0];
+        
+        // Setup name continuation parameters
+        $param0 = new stdClass();
+        $param0->attribute = 'name*0*';
+        $param0->value = "iso-8859-1''Forel%F8pig%20svar%20-%20Innsynsforesp%F8rsel_%20Valgsty";
+        
+        $param1 = new stdClass();
+        $param1->attribute = 'name*1';
+        $param1->value = 'rets skriftelige rutine for forsegling, oppbevaring og transport av ';
+        
+        $param2 = new stdClass();
+        $param2->attribute = 'name*2*';
+        $param2->value = 'valgmateriell%20-%20jfr.%20valgsforskriften%20%A79-1%20-%20samt%20ru';
+        
+        $param3 = new stdClass();
+        $param3->attribute = 'name*3';
+        $param3->value = 'tine for valget i 2023 og 2025 (hvis denne er klar)  .pdf';
+        
+        // The parts need to be sorted, so we have a mix of ordering here as a test
+        $part->parameters = [$param2, $param1, $param3, $param0];
+
+        $uid = 123;
+        $partNumber = 1;
+
+        // :: Act
+        $result = $this->reflectionMethod->invokeArgs($this->handler, [$uid, $part, $partNumber]);
+
+        // :: Assert
+        $expectedFilename = 'Foreløpig svar - Innsynsforespørsel_ Valgstyrets skriftelige rutine for forsegling, oppbevaring og transport av valgmateriell - jfr. valgsforskriften §9-1 - samt rutine for valget i 2023 og 2025 (hvis denne er klar)  .pdf';
+        $expectedName = 'Foreløpig svar - Innsynsforespørsel_ Valgstyrets skriftelige rutine for forsegling, oppbevaring og transport av valgmateriell - jfr. valgsforskriften §9-1 - samt rutine for valget i 2023 og 2025 (hvis denne er klar)  .pdf';
+        
+        $this->assertNotNull($result, 'Should return attachment object for continuation parameters');
+        $this->assertEquals($expectedFilename, $result->filename, 'Filename should be decoded and concatenated correctly from continuation parameters');
+        $this->assertEquals($expectedName, $result->name, 'Name should be decoded and concatenated correctly from continuation parameters');
+        $this->assertEquals('pdf', $result->filetype, 'File type should be determined correctly');
+    }
 }

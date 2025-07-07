@@ -46,23 +46,43 @@ class ImapAttachmentHandler {
 
         // Check for filename in dparameters
         if ($part->ifdparameters) {
+            $continuationParts = [];
             foreach ($part->dparameters as $object) {
-                if (strtolower($object->attribute) == 'filename' || 
-                    strtolower($object->attribute) == 'filename*') {
+                $attr = strtolower($object->attribute);
+                if ($attr == 'filename' || $attr == 'filename*') {
                     $attachment['is_attachment'] = true;
                     $attachment['filename'] = $this->decodeUtf8String($object->value);
+                } elseif (preg_match('/^filename\*(\d+)(\*)?$/', $attr, $matches)) {
+                    // Handle RFC 2231 continuation parameters
+                    $attachment['is_attachment'] = true;
+                    $continuationParts[$attr] = $object->value;
                 }
+            }
+            
+            // Process continuation parts for filename
+            if (!empty($continuationParts)) {
+                $attachment['filename'] = $this->processContinuationParameters($continuationParts);
             }
         }
 
         // Check for name in parameters
         if ($part->ifparameters) {
+            $continuationParts = [];
             foreach ($part->parameters as $object) {
-                if (strtolower($object->attribute) == 'name' || 
-                    strtolower($object->attribute) == 'name*') {
+                $attr = strtolower($object->attribute);
+                if ($attr == 'name' || $attr == 'name*') {
                     $attachment['is_attachment'] = true;
                     $attachment['name'] = $this->decodeUtf8String($object->value);
+                } elseif (preg_match('/^name\*(\d+)(\*)?$/', $attr, $matches)) {
+                    // Handle RFC 2231 continuation parameters
+                    $attachment['is_attachment'] = true;
+                    $continuationParts[$attr] = $object->value;
                 }
+            }
+            
+            // Process continuation parts for name
+            if (!empty($continuationParts)) {
+                $attachment['name'] = $this->processContinuationParameters($continuationParts);
             }
         }
 
@@ -211,6 +231,18 @@ class ImapAttachmentHandler {
     }
 
     /**
+     * Process RFC 2231 continuation parameters
+     */
+    private function processContinuationParameters(array $continuationParts): string {
+        // Sort by part number
+        ksort($continuationParts);
+        
+        $result = implode('', $continuationParts);
+        $result = $this->decodeUtf8String($result);
+        return $result;
+    }
+
+    /**
      * Get ISO-8859-1 character replacements
      */
     private function getIso88591Replacements(): array {
@@ -229,7 +261,9 @@ class ImapAttachmentHandler {
             '%EC' => 'ì', '%ED' => 'í', '%EE' => 'î', '%EF' => 'ï',
             '%F0' => 'ð', '%F1' => 'ñ', '%F2' => 'ò', '%F3' => 'ó',
             '%F4' => 'ô', '%F5' => 'õ', '%F6' => 'ö', '%F8' => 'ø',
-            '%F9' => 'ù', '%FA' => 'ú', '%FB' => 'û', '%FC' => 'ü'
+            '%F9' => 'ù', '%FA' => 'ú', '%FB' => 'û', '%FC' => 'ü',
+
+            '%A7' => '§',
         ];
     }
 }
