@@ -12,19 +12,18 @@ class ImapFolderStatus {
      * @param bool $requestUpdate Whether to set requested_update_time to current timestamp
      * @return bool Success status
      */
-    public static function createOrUpdate(string $folderName, $threadId = null, bool $updateLastChecked = false, bool $requestUpdate = false): bool {
+    public static function createOrUpdate(string $folderName, $threadId = null, bool $updateLastChecked = false, $requestUpdate = false): bool {
         // Check if record exists
-        $exists = Database::queryValue(
-            "SELECT COUNT(*) FROM imap_folder_status WHERE folder_name = ?",
+        $exists = Database::queryOneOrNone(
+            "SELECT * FROM imap_folder_status WHERE folder_name = ?",
             [$folderName]
         );
         
-        if ($exists) {
+        if ($exists != null) {
             // Update existing record
             $updates = [];
             $params = [];
-            
-            if ($threadId != null) {
+            if ($threadId != null && $exists['thread_id'] != $threadId) {
                 $updates[] = "thread_id = ?";
                 $params[] = $threadId;
             }
@@ -35,7 +34,8 @@ class ImapFolderStatus {
             
             if ($requestUpdate) {
                 $updates[] = "requested_update_time = CURRENT_TIMESTAMP";
-            } else if ($requestUpdate === false) {
+            }
+            else if ($requestUpdate === false) {
                 // Only explicitly set to NULL if $requestUpdate is false (not null)
                 $updates[] = "requested_update_time = NULL";
             }
