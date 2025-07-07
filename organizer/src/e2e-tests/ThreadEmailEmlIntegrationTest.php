@@ -787,11 +787,11 @@ class ThreadEmailEmlIntegrationTest extends E2EPageTestCase {
         
         $this->assertNotNull($lastCheckedAt, "IMAP folder status last_checked_at was not updated");
         
-        // :: Act - Step 6: Check thread view again
+        // :: Assert - Step 6: Check thread view again
         $threadViewResponse = $this->checkThreadView($this->testEntityId, $this->thread->id);
         $this->assertNotNull($threadViewResponse, "Thread view failed to load after processing emails");
         
-        // :: Act - Step 7: Check email body content
+        // :: Assert - Step 7: Check email body content
         $emailId = $savedEmails[0]; // Use the first saved email ID
         $bodyContentResponse = $this->checkEmailBodyContent($this->testEntityId, $this->thread->id, $emailId, $expected_text);
         $this->assertNotNull($bodyContentResponse, "Email body content could not be accessed");
