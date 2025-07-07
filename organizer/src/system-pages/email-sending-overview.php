@@ -64,8 +64,8 @@ $sentEmailsQuery = "
     SELECT tes.*, t.entity_id FROM thread_email_sendings tes
     LEFT JOIN threads t ON tes.thread_id = t.id
     WHERE status = ? 
-    AND tes.created_at >= NOW() - INTERVAL '5 days'
-    ORDER BY tes.created_at DESC
+    AND tes.updated_at >= NOW() - INTERVAL '5 days'
+    ORDER BY tes.updated_at DESC
 ";
 $sentEmails = Database::query($sentEmailsQuery, [ThreadEmailSending::STATUS_SENT]);
 
