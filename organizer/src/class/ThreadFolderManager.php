@@ -62,7 +62,7 @@ class ThreadFolderManager {
     /**
      * Get the IMAP folder path for a thread
      * 
-     * @param object $entity_id Entity threads object
+     * @param string $entity_id Entity threads object
      * @param object $thread Thread object
      * @return string IMAP folder path
      */
