@@ -13,6 +13,7 @@ require_once __DIR__ . '/ThreadEmail.php';
 require_once __DIR__ . '/ThreadEmailAttachment.php';
 require_once __DIR__ . '/ImapFolderStatus.php';
 require_once __DIR__ . '/ThreadFolderManager.php';
+require_once __DIR__ . '/ThreadStorageManager.php';
 
 use Imap\ImapConnection;
 use Imap\ImapEmailProcessor;
