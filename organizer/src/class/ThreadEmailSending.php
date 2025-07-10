@@ -164,7 +164,7 @@ class ThreadEmailSending {
      * @return ThreadEmailSending|null The record or null if not found
      */
     public static function getById($id) {
-        $data = Database::queryOne(
+        $data = Database::queryOneOrNone(
             "SELECT * FROM thread_email_sendings WHERE id = ?",
             [$id]
         );

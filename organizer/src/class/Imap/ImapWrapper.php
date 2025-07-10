@@ -50,7 +50,13 @@ class ImapWrapper {
 
     public function close(mixed $imap_stream, int $flags = 0): bool {
         $result = \imap_close($imap_stream, $flags);
-        $this->checkError('close');
+        try {
+            $this->checkError('close');
+        }
+        catch (\Exception $e) {
+            // Log the error but allow close to return true
+            error_log($e->getMessage());
+        }
         return $result;
     }
 

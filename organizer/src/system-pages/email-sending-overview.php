@@ -7,13 +7,65 @@ require_once __DIR__ . '/../class/Database.php';
 // Require authentication
 requireAuth();
 
+// Handle bulk action processing
+if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action'])) {
+    $action = $_POST['action'];
+    $emailIds = isset($_POST['email_ids']) ? $_POST['email_ids'] : [];
+    $processedCount = 0;
+    $errorCount = 0;
+    
+    if ($action === 'set_ready_for_sending') {
+        if (!is_array($emailIds) || empty($emailIds)) {
+            throw new Exception("Invalid request: No email IDs provided.");
+        }
+
+        foreach ($emailIds as $emailId) {
+            // Validate email ID is numeric and exists
+            if (!is_numeric($emailId)) {
+                throw new Exception("Invalid email. Not numeric.");
+            }
+            
+            // Get the email to verify it exists and is in STAGING status
+            $email = ThreadEmailSending::getById($emailId);
+            if (!$email) {
+                throw new Exception("Invalid email. Not in STAGING status or does not exist.");
+            }
+        }
+
+        foreach ($emailIds as $emailId) { 
+            $email = ThreadEmailSending::getById($emailId);
+            if ($email->status !== ThreadEmailSending::STATUS_STAGING) {
+                // Skip emails that are not in STAGING status
+                $errorCount++;
+                continue;
+            }
+
+            // Update the status
+            if (ThreadEmailSending::updateStatus($emailId, ThreadEmailSending::STATUS_READY_FOR_SENDING)) {
+                $processedCount++;
+            } else {
+                $errorCount++;
+            }
+        }
+        
+        // Redirect to prevent form resubmission
+        http_response_code(302);
+        header('Location: ' . $_SERVER['REQUEST_URI'] . '?success_bulk_action_ready_for_sending='. $processedCount . '&error_bulk_action_ready_for_sending='. $errorCount);
+        exit;
+    }
+    else {
+        // Invalid action.
+        throw new Exception("Invalid action.");
+    }
+}
+
 // Get email sendings from the last 5 days with status SENT
 $sentEmailsQuery = "
     SELECT tes.*, t.entity_id FROM thread_email_sendings tes
     LEFT JOIN threads t ON tes.thread_id = t.id
     WHERE status = ? 
-    AND tes.created_at >= NOW() - INTERVAL '5 days'
-    ORDER BY tes.created_at DESC
+    AND tes.updated_at >= NOW() - INTERVAL '5 days'
+    ORDER BY tes.updated_at DESC
 ";
 $sentEmails = Database::query($sentEmailsQuery, [ThreadEmailSending::STATUS_SENT]);
 
@@ -159,14 +211,17 @@ function formatStatus($status) {
             table-layout: fixed;
             width: 100%;
         }
+        th.checkbox-col, td.checkbox-col {
+            width: 5%;
+        }
         th.id-col, td.id-col {
             width: 5%;
         }
         th.thread-col, td.thread-col {
-            width: 30%;
+            width: 25%;
         }
         th.to-from-col, td.to-from-col {
-            width: 30%;
+            width: 25%;
         }
         th.status-col, td.status-col {
             width: 10%;
@@ -175,12 +230,36 @@ function formatStatus($status) {
             width: 20%;
         }
         th.actions-col, td.actions-col {
-            width: 15%;
+            width: 10%;
         }
 
         /* Label styling */
         span.label {
             font-size: 0.2em;
+        }
+        
+        /* Bulk Actions styling */
+        .bulk-actions-container {
+            margin-bottom: 15px;
+            padding: 10px;
+            background-color: #f8f9fa;
+            border: 1px solid #dee2e6;
+            border-radius: 4px;
+        }
+        
+        .bulk-actions-container select,
+        .bulk-actions-container button {
+            margin-right: 10px;
+        }
+        
+        .selected-count-container {
+            display: inline-block;
+            margin-left: 10px;
+            font-weight: bold;
+        }
+        
+        .email-checkbox-container {
+            text-align: center;
         }
     </style>
 </head>
@@ -189,6 +268,22 @@ function formatStatus($status) {
         <?php include __DIR__ . '/../header.php'; ?>
 
         <h1>Email Sending Overview</h1>
+        
+        <?php
+
+        if (isset($_GET['success_bulk_action_ready_for_sending']) && $_GET['success_bulk_action_ready_for_sending'] != '0') {
+            echo '<div class="alert alert-success">' 
+                . 'Successfully set ' . htmlspecialchars((int)$_GET['success_bulk_action_ready_for_sending']) 
+                . ' email(s) to "Ready for Sending".'
+                . '</div>';
+        }
+        if (isset($_GET['error_bulk_action_ready_for_sending']) && $_GET['error_bulk_action_ready_for_sending'] != '0') {
+            echo '<div class="alert alert-error">' 
+                . 'Failed to set ' . htmlspecialchars((int)$_GET['error_bulk_action_ready_for_sending']) 
+                . ' email(s) to "Ready for Sending".'
+                . '</div>';
+        }
+        ?>
 
         <div class="summary-box">
             <div class="summary-item">
@@ -213,8 +308,27 @@ function formatStatus($status) {
             </div>
         </div>
 
+        <!-- Bulk Actions Form -->
+        <div class="bulk-actions-container">
+            <form method="post" id="bulk-actions-form">
+                <select name="action" id="bulk-action">
+                    <option value="">-- Select Action --</option>
+                    <option value="set_ready_for_sending">Set ready for sending</option>
+                </select>
+                <button type="submit" id="bulk-action-button" disabled>Apply to Selected</button>
+                <div class="selected-count-container" id="selected-count-container">
+                    <span id="selected-count">0</span> email(s) selected
+                </div>
+            </form>
+        </div>
+
         <table>
             <tr>
+                <th class="checkbox-col">
+                    <div class="email-checkbox-container">
+                        <input type="checkbox" id="select-all-emails" title="Select all staging emails">
+                    </div>
+                </th>
                 <th class="id-col">ID</th>
                 <th class="thread-col">Thread / Subject</th>
                 <th class="to-from-col">To / From</th>
@@ -224,6 +338,13 @@ function formatStatus($status) {
             </tr>
             <?php foreach ($allEmails as $email): ?>
                 <tr>
+                    <td class="checkbox-col">
+                        <?php if ($email['status'] === ThreadEmailSending::STATUS_STAGING): ?>
+                            <div class="email-checkbox-container">
+                                <input type="checkbox" class="email-checkbox" name="email_ids[]" value="<?= $email['id'] ?>" form="bulk-actions-form">
+                            </div>
+                        <?php endif; ?>
+                    </td>
                     <td class="id-col"><?= $email['id'] ?></td>
                     <td class="thread-col">
                         <a href="/thread-view?threadId=<?= htmlspecialchars($email['thread_id']) ?>&entityId=<?= urlencode($email['entity_id']) ?>">
@@ -275,7 +396,7 @@ function formatStatus($status) {
             <?php endforeach; ?>
             <?php if (empty($allEmails)): ?>
                 <tr>
-                    <td colspan="6" style="text-align: center;">No email sending records found</td>
+                    <td colspan="7" style="text-align: center;">No email sending records found</td>
                 </tr>
             <?php endif; ?>
         </table>
@@ -283,6 +404,54 @@ function formatStatus($status) {
 
     <script>
         document.addEventListener('DOMContentLoaded', function() {
+            // Get references to bulk action elements
+            const selectAllCheckbox = document.getElementById('select-all-emails');
+            const emailCheckboxes = document.querySelectorAll('.email-checkbox');
+            const bulkActionSelect = document.getElementById('bulk-action');
+            const bulkActionButton = document.getElementById('bulk-action-button');
+            const selectedCountElement = document.getElementById('selected-count');
+            
+            // Function to update the selected count and button state
+            function updateBulkActionState() {
+                const checkedBoxes = document.querySelectorAll('.email-checkbox:checked');
+                const count = checkedBoxes.length;
+                const actionSelected = bulkActionSelect.value !== '';
+                
+                selectedCountElement.textContent = count;
+                bulkActionButton.disabled = count === 0 || !actionSelected;
+                
+                // Update select all checkbox state
+                if (count === 0) {
+                    selectAllCheckbox.indeterminate = false;
+                    selectAllCheckbox.checked = false;
+                } else if (count === emailCheckboxes.length) {
+                    selectAllCheckbox.indeterminate = false;
+                    selectAllCheckbox.checked = true;
+                } else {
+                    selectAllCheckbox.indeterminate = true;
+                    selectAllCheckbox.checked = false;
+                }
+            }
+            
+            // Handle select all checkbox
+            selectAllCheckbox.addEventListener('change', function() {
+                emailCheckboxes.forEach(checkbox => {
+                    checkbox.checked = this.checked;
+                });
+                updateBulkActionState();
+            });
+            
+            // Handle individual email checkboxes
+            emailCheckboxes.forEach(checkbox => {
+                checkbox.addEventListener('change', updateBulkActionState);
+            });
+            
+            // Handle bulk action select change
+            bulkActionSelect.addEventListener('change', updateBulkActionState);
+            
+            // Initialize the state
+            updateBulkActionState();
+            
             // Add click handlers for opening SMTP response dialogs
             const toggleButtons = document.querySelectorAll('.toggle-response');
             toggleButtons.forEach(button => {

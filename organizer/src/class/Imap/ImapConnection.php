@@ -4,6 +4,10 @@ namespace Imap;
 
 use Exception;
 
+use Imap\ImapWrapper;
+
+require_once __DIR__ . '/ImapWrapper.php';
+
 class ImapConnection {
     private string $server;
     private string $email;
