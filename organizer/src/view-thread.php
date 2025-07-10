@@ -561,11 +561,11 @@ function print_extraction ($extraction) {
                 
                 <div class="form-group">
                     <?php if (!empty($replyRecipients)): ?>
-                        <button type="submit" name="send_reply" class="button">Send Reply</button>
-                        <button type="submit" name="save_draft" class="button secondary">Save as Draft</button>
+                        <button type="submit" name="send_reply" class="button">Send reply</button>
+                        <button type="submit" name="save_draft" class="button secondary">Stage reply</button>
                     <?php else: ?>
-                        <button type="button" class="button" disabled>Send Reply</button>
-                        <button type="button" class="button secondary" disabled>Save as Draft</button>
+                        <button type="button" class="button" disabled>Send reply</button>
+                        <button type="button" class="button secondary" disabled>Stage reply</button>
                     <?php endif; ?>
                 </div>
             </form>
