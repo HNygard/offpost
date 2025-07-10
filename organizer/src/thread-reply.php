@@ -140,8 +140,8 @@ try {
 
     // Log the action in thread history
     $history = new ThreadHistory();
-    $action = $sendReply ? 'Reply created and marked for sending' : 'Reply draft saved';
-    $history->logAction($threadId, $userId, $action, [
+    $action = $sendReply ? 'thread_reply_created_and_queued_sending' : 'thread_reply_draft';
+    $history->logAction($threadId, $action, $userId, [
         'email_sending_ids' => $emailIds,
         'recipients' => $selectedRecipients,
         'subject' => $replySubject
