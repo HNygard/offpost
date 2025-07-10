@@ -574,17 +574,17 @@ function print_extraction ($extraction) {
             <div id="suggested-reply-content" style="display: none;">
 <?php
 // Generate suggested reply with previous emails
-$suggestedReply = "Previous emails in this thread:\n\n";
+$suggestedReply = "Tidligere e-poster i denne tråden:\n\n";
 if (isset($thread->emails)) {
     $emailCount = 0;
     foreach (array_reverse($thread->emails) as $email) {
         $emailCount++;
         if ($emailCount > 5) break; // Limit to last 5 emails
         
-        $direction = ($email->email_type === 'IN') ? 'Received' : 'Sent';
-        $suggestedReply .= "{$emailCount}. {$direction} on {$email->datetime_received}\n";
+        $direction = ($email->email_type === 'IN') ? 'Mottatt' : 'Sendt';
+        $suggestedReply .= "{$emailCount}. {$direction} den {$email->datetime_received}\n";
         if (isset($email->description) && $email->description) {
-            $suggestedReply .= "   Summary: " . strip_tags($email->description) . "\n";
+            $suggestedReply .= "   Sammendrag: " . strip_tags($email->description) . "\n";
         }
         $suggestedReply .= "\n";
     }
