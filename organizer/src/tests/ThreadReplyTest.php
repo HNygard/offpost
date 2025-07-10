@@ -153,13 +153,13 @@ class ThreadReplyTest extends TestCase {
         // Test getEmailAddressesFromImapHeaders function
         $headers = [
             'from' => [
-                ['mailbox' => 'sender', 'host' => 'example.com']
+                (object)['mailbox' => 'sender', 'host' => 'example.com']
             ],
             'reply_to' => [
-                ['mailbox' => 'reply', 'host' => 'example.com']
+                (object)['mailbox' => 'reply', 'host' => 'example.com']
             ],
             'sender' => [
-                ['mailbox' => 'sender2', 'host' => 'example.org']
+                (object)['mailbox' => 'sender2', 'host' => 'example.org']
             ]
         ];
         
