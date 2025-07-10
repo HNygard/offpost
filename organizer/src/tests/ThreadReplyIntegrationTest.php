@@ -31,42 +31,6 @@ class ThreadReplyIntegrationTest extends TestCase {
         );
     }
 
-    public static function setUpBeforeClass(): void {
-        self::$testThreadId = self::generateUuid();
-        
-        // Clean up any existing test data
-        self::cleanupTestData();
-    }
-
-    public static function tearDownAfterClass(): void {
-        self::cleanupTestData();
-    }
-
-    private static function cleanupTestData() {
-        try {
-            // Clean up ThreadEmailSending records
-            Database::execute(
-                "DELETE FROM thread_email_sendings WHERE thread_id = ?",
-                [self::$testThreadId]
-            );
-            
-            // Clean up thread history
-            Database::execute(
-                "DELETE FROM thread_history WHERE thread_id = ?",
-                [self::$testThreadId]
-            );
-            
-            // Clean up thread emails (if they exist in database)
-            Database::execute(
-                "DELETE FROM thread_emails WHERE thread_id = ?",
-                [self::$testThreadId]
-            );
-            
-        } catch (Exception $e) {
-            // Ignore cleanup errors in case tables don't exist or are empty
-        }
-    }
-
     public function testCreateReplyEmailSending() {
         $threadId = self::$testThreadId;
         $replySubject = 'Re: Test Reply Integration';
