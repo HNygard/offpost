@@ -69,6 +69,19 @@ class ThreadHistory {
                 return 'Sending status changed'
                     . ' from [' . self::sendingStatusToString($details['from']) . ']'
                     . ' to [' . self::sendingStatusToString($details['to']) . ']';
+            case 'thread_reply_created_and_queued_sending':
+                $details = json_decode($details, true);
+                $recipients = isset($details['recipients']) ? implode(', ', $details['
+recipients']) : 'Unknown recipients';
+                return 'Reply created and queued for sending'
+                    . ' to [' . $recipients . ']'
+                    . ' with subject [' . ($details['subject'] ?? 'No subject') . ']';
+            case 'thread_reply_draft':
+                $details = json_decode($details, true);
+                $recipients = isset($details['recipients']) ? implode(', ', $details['recipients']) : 'Unknown recipients';
+                return 'Reply draft saved'
+                    . ' to [' . $recipients . ']'
+                    . ' with subject [' . ($details['subject'] ?? 'No subject') . ']';
             default:
                 throw new Exception('Unknown action: ' . $action);
         }
