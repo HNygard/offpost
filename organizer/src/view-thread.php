@@ -519,25 +519,25 @@ function print_extraction ($extraction) {
                 
                 <?php if (!empty($replyRecipients)): ?>
                 <div class="form-group">
-                    <label>Recipients</label>
+                    <label>Recipient</label>
                     <div class="recipients-list">
                         <?php foreach ($replyRecipients as $index => $email): ?>
                             <div class="recipient-item">
-                                <input type="checkbox" 
+                                <input type="radio" 
                                        id="recipient_<?= $index ?>" 
-                                       name="recipients[]" 
+                                       name="recipient" 
                                        value="<?= htmlescape($email) ?>"
-                                       <?= $index === 0 ? 'checked' : '' ?>>
+                                       <?= $index === 0 ? 'checked' : '' ?> required>
                                 <label for="recipient_<?= $index ?>"><?= htmlescape($email) ?></label>
                             </div>
                         <?php endforeach; ?>
                     </div>
-                    <small class="form-help">Select one or more recipients for your reply.</small>
+                    <small class="form-help">Select one recipient for your reply.</small>
                 </div>
                 <?php else: ?>
                 <div class="form-group">
                     <div class="alert-warning">
-                        No valid recipient email addresses found in this thread.
+                        No valid recipient email address found in this thread.
                     </div>
                 </div>
                 <?php endif; ?>
@@ -665,7 +665,7 @@ echo htmlescape($suggestedReply);
             align-items: center;
         }
         
-        .recipient-item input[type="checkbox"] {
+        .recipient-item input[type="radio"] {
             margin-right: 8px;
             width: auto;
         }

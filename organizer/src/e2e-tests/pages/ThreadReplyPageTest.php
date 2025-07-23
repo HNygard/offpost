@@ -46,9 +46,9 @@ class ThreadReplyPageTest extends E2EPageTestCase {
         
         // Add an incoming email to the thread to enable reply functionality
         Database::execute(
-            "INSERT INTO thread_emails (id, thread_id, email_type, status_type, status_text, datetime_received, timestamp_received, content)
-             VALUES (?, ?, 'IN', 'processed', 'Email received', '2024-01-01 10:00:00', ?, 'Test incoming email content')",
-            ['email-' . uniqid(), $threadId, time()]
+            "INSERT INTO thread_emails (thread_id, email_type, status_type, status_text, datetime_received, timestamp_received, content)
+             VALUES (?, 'IN', 'info', 'Email received', '2024-01-01 10:00:00', '2024-01-01 10:00:00', 'Test incoming email content')",
+            [$threadId]
         );
 
         // :: Act
@@ -68,7 +68,7 @@ class ThreadReplyPageTest extends E2EPageTestCase {
         $this->assertStringContainsString('insertSuggestedReply()', $response->body, 'Should have suggested reply button');
         
         // Check for suggested reply content
-        $this->assertStringContainsString('Previous emails in this thread:', $response->body, 'Should have suggested reply content');
+        $this->assertStringContainsString('Tidligere e-poster i denne tråden:', $response->body, 'Should have suggested reply content');
     }
 
     public function testThreadViewHidesReplyFormWhenNoIncomingEmails() {
@@ -95,9 +95,9 @@ class ThreadReplyPageTest extends E2EPageTestCase {
         
         // Add an incoming email
         Database::execute(
-            "INSERT INTO thread_emails (id, thread_id, email_type, status_type, status_text, datetime_received, timestamp_received, content)
-             VALUES (?, ?, 'IN', 'processed', 'Email received', '2024-01-01 10:00:00', ?, 'Test incoming email for reply')",
-            ['email-reply-' . uniqid(), $threadId, time()]
+            "INSERT INTO thread_emails (thread_id, email_type, status_type, status_text, datetime_received, timestamp_received, content)
+             VALUES (?, 'IN', 'info', 'Email received', '2024-01-01 10:00:00', '2024-01-01 10:00:00', 'Test incoming email for reply')",
+            [$threadId]
         );
 
         $replySubject = 'Re: Test Reply Subject';
@@ -114,7 +114,7 @@ class ThreadReplyPageTest extends E2EPageTestCase {
                 'entity_id' => $entityId,
                 'reply_subject' => $replySubject,
                 'reply_body' => $replyBody,
-                'recipients' => ['test-recipient@example.com'], // Add recipients parameter
+                'recipient' => 'test-recipient@example.com', // Single recipient parameter
                 'save_draft' => '1'
             ]
         );
@@ -149,9 +149,9 @@ class ThreadReplyPageTest extends E2EPageTestCase {
         
         // Add an incoming email
         Database::execute(
-            "INSERT INTO thread_emails (id, thread_id, email_type, status_type, status_text, datetime_received, timestamp_received, content)
-             VALUES (?, ?, 'IN', 'processed', 'Email received', '2024-01-01 10:00:00', ?, 'Test incoming email for send reply')",
-            ['email-send-' . uniqid(), $threadId, time()]
+            "INSERT INTO thread_emails (thread_id, email_type, status_type, status_text, datetime_received, timestamp_received, content)
+             VALUES (?, 'IN', 'info', 'Email received', '2024-01-01 10:00:00', '2024-01-01 10:00:00', 'Test incoming email for send reply')",
+            [$threadId]
         );
 
         $replySubject = 'Re: Test Send Reply Subject';
@@ -168,7 +168,7 @@ class ThreadReplyPageTest extends E2EPageTestCase {
                 'entity_id' => $entityId,
                 'reply_subject' => $replySubject,
                 'reply_body' => $replyBody,
-                'recipients' => ['test-recipient@example.com'], // Add recipients parameter
+                'recipient' => 'test-recipient@example.com', // Single recipient parameter
                 'send_reply' => '1'
             ]
         );
@@ -216,10 +216,10 @@ class ThreadReplyPageTest extends E2EPageTestCase {
         );
 
         // :: Assert
-        // Should fail with either missing parameters or no recipients selected
+        // Should fail with either missing parameters or no recipient selected
         $this->assertTrue(
             strpos($response->body, 'Missing required parameters') !== false ||
-            strpos($response->body, 'No recipients selected') !== false,
+            strpos($response->body, 'No recipient selected') !== false,
             'Should fail with parameter validation error'
         );
     }
@@ -248,7 +248,7 @@ class ThreadReplyPageTest extends E2EPageTestCase {
         );
 
         // :: Assert
-        $this->assertStringContainsString('No incoming emails found', $response->body);
+        $this->assertStringContainsString('No recipient selected', $response->body);
     }
 
     public function testSuccessAndErrorMessages() {
@@ -259,9 +259,9 @@ class ThreadReplyPageTest extends E2EPageTestCase {
         
         // Add an incoming email
         Database::execute(
-            "INSERT INTO thread_emails (id, thread_id, email_type, status_type, status_text, datetime_received, timestamp_received, content)
-             VALUES (?, ?, 'IN', 'processed', 'Email received', '2024-01-01 10:00:00', ?, 'Test email for messages')",
-            ['email-msg-' . uniqid(), $threadId, time()]
+            "INSERT INTO thread_emails (thread_id, email_type, status_type, status_text, datetime_received, timestamp_received, content)
+             VALUES (?, 'IN', 'info', 'Email received', '2024-01-01 10:00:00', '2024-01-01 10:00:00', 'Test email for messages')",
+            [$threadId]
         );
 
         // :: Act - Submit a successful reply
@@ -275,7 +275,7 @@ class ThreadReplyPageTest extends E2EPageTestCase {
                 'entity_id' => $entityId,
                 'reply_subject' => 'Test Success Subject',
                 'reply_body' => 'Test success body',
-                'recipients' => ['test-recipient@example.com'], // Add recipients parameter
+                'recipient' => 'test-recipient@example.com', // Single recipient parameter
                 'send_reply' => '1'
             ]
         );
@@ -284,6 +284,6 @@ class ThreadReplyPageTest extends E2EPageTestCase {
         $response = $this->renderPage('/thread-view?entityId=' . $entityId . '&threadId=' . $threadId);
 
         // :: Assert
-        $this->assertStringContainsString('Reply has been prepared for 1 recipient and will be sent shortly', $response->body, 'Should show success message with recipient count');
+        $this->assertStringContainsString('Reply has been prepared for test-recipient@example.com and will be sent shortly', $response->body, 'Should show success message with recipient email');
     }
 }
