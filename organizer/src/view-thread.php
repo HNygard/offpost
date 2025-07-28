@@ -574,7 +574,7 @@ function print_extraction ($extraction) {
             <div id="suggested-reply-content" style="display: none;">
 <?php
 // Generate suggested reply with previous emails
-$suggestedReply = "Tidligere e-poster i denne tråden:\n\n";
+$suggestedReply = "Tidligere e-poster:\n\n";
 if (isset($thread->emails)) {
     $emailCount = 0;
     foreach (array_reverse($thread->emails) as $email) {
@@ -590,8 +590,10 @@ if (isset($thread->emails)) {
     }
 }
 echo htmlescape($suggestedReply);
+
+echo "\n\n--\n" . $thread->my_name;
 ?>
-            </div>
+</div>
         </div>
 
         <style>
@@ -621,6 +623,10 @@ echo htmlescape($suggestedReply);
             border: 1px solid #ddd;
             border-radius: 4px;
             font-size: 14px;
+        }
+
+        .reply-form textarea {
+            height: 400px;
         }
         
         .editor-toolbar {

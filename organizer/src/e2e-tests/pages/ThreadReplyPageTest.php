@@ -68,7 +68,7 @@ class ThreadReplyPageTest extends E2EPageTestCase {
         $this->assertStringContainsString('insertSuggestedReply()', $response->body, 'Should have suggested reply button');
         
         // Check for suggested reply content
-        $this->assertStringContainsString('Tidligere e-poster i denne tråden:', $response->body, 'Should have suggested reply content');
+        $this->assertStringContainsString('Tidligere e-poster:', $response->body, 'Should have suggested reply content');
     }
 
     public function testThreadViewHidesReplyFormWhenNoIncomingEmails() {
