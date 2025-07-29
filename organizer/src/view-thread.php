@@ -8,6 +8,7 @@ require_once __DIR__ . '/class/ThreadHistory.php';
 require_once __DIR__ . '/class/ThreadEmailSending.php';
 require_once __DIR__ . '/class/Extraction/ThreadEmailExtractionService.php';
 require_once __DIR__ . '/class/ThreadUtils.php';
+require_once __DIR__ . '/class/SuggestedReplyGenerator.php';
 
 // Require authentication
 requireAuth();
@@ -587,25 +588,10 @@ function print_extraction ($extraction) {
             <!-- Suggested reply content (hidden, populated by JavaScript) -->
             <div id="suggested-reply-content" style="display: none;">
 <?php
-// Generate suggested reply with previous emails
-$suggestedReply = "Tidligere e-poster:\n\n";
-if (isset($thread->emails)) {
-    $emailCount = 0;
-    foreach (array_reverse($thread->emails) as $email) {
-        $emailCount++;
-        if ($emailCount > 5) break; // Limit to last 5 emails
-        
-        $direction = ($email->email_type === 'IN') ? 'Mottatt' : 'Sendt';
-        $suggestedReply .= "{$emailCount}. {$direction} den {$email->datetime_received}\n";
-        if (isset($email->description) && $email->description) {
-            $suggestedReply .= "   Sammendrag: " . strip_tags($email->description) . "\n";
-        }
-        $suggestedReply .= "\n";
-    }
-}
+// Generate suggested reply using the new SuggestedReplyGenerator class
+$suggestedReplyGenerator = new SuggestedReplyGenerator();
+$suggestedReply = $suggestedReplyGenerator->generateSuggestedReply($thread);
 echo htmlescape($suggestedReply);
-
-echo "\n\n--\n" . $thread->my_name;
 ?>
 </div>
         </div>
