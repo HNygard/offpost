@@ -256,6 +256,20 @@ function print_extraction ($extraction) {
     <div class="container">
         <?php include 'header.php'; ?>
 
+        <?php if (isset($_SESSION['success_message'])): ?>
+            <div class="alert-success" style="margin: 1em 0; padding: 1em; background-color: #d4edda; border: 1px solid #c3e6cb; color: #155724; border-radius: 4px;">
+                <?= htmlescape($_SESSION['success_message']) ?>
+            </div>
+            <?php unset($_SESSION['success_message']); ?>
+        <?php endif; ?>
+
+        <?php if (isset($_SESSION['error_message'])): ?>
+            <div class="alert-error" style="margin: 1em 0; padding: 1em; background-color: #f8d7da; border: 1px solid #f5c6cb; color: #721c24; border-radius: 4px;">
+                <?= htmlescape($_SESSION['error_message']) ?>
+            </div>
+            <?php unset($_SESSION['error_message']); ?>
+        <?php endif; ?>
+
         <h1>Thread: <?= htmlescape($thread->title) ?></h1>
 
         <div class="thread-details">

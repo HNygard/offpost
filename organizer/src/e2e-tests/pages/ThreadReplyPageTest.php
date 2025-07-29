@@ -55,7 +55,7 @@ class ThreadReplyPageTest extends E2EPageTestCase {
         $response = $this->renderPage('/thread-view?entityId=' . $entityId . '&threadId=' . $threadId);
 
         // :: Assert
-        $this->assertStringContainsString('Reply to Thread', $response->body, 'Should show reply form when incoming emails exist');
+        $this->assertStringContainsString('class="button">Send reply', $response->body, 'Should show reply form when incoming emails exist');
         $this->assertStringContainsString('id="reply-section"', $response->body, 'Should have reply section');
         $this->assertStringContainsString('name="reply_subject"', $response->body, 'Should have reply subject field');
         $this->assertStringContainsString('name="reply_body"', $response->body, 'Should have reply body field');
@@ -78,12 +78,16 @@ class ThreadReplyPageTest extends E2EPageTestCase {
         $entityId = $testData['entity_id'];
         
         // Don't add any incoming emails - only outgoing should exist
+        Database::execute(
+            "UPDATE thread_emails SET email_type = 'OUT' WHERE thread_id = ?",
+            [$threadId]
+        );
 
         // :: Act
         $response = $this->renderPage('/thread-view?entityId=' . $entityId . '&threadId=' . $threadId);
 
         // :: Assert
-        $this->assertStringNotContainsString('Reply to Thread', $response->body, 'Should not show reply form when no incoming emails exist');
+        $this->assertStringNotContainsString('class="button">Send reply', $response->body, 'Should not show reply form when no incoming emails exist');
         $this->assertStringNotContainsString('id="reply-section"', $response->body, 'Should not have reply section');
     }
 
@@ -104,7 +108,7 @@ class ThreadReplyPageTest extends E2EPageTestCase {
         $replyBody = 'This is a test reply with <strong>bold</strong> text.';
 
         // :: Act
-        $response = $this->renderPage(
+        $response1 = $this->renderPage(
             '/thread-reply',
             'dev-user-id',
             'POST',
@@ -114,14 +118,18 @@ class ThreadReplyPageTest extends E2EPageTestCase {
                 'entity_id' => $entityId,
                 'reply_subject' => $replySubject,
                 'reply_body' => $replyBody,
-                'recipient' => 'test-recipient@example.com', // Single recipient parameter
+                'recipient' => 'public-entity@dev.offpost.no',
                 'save_draft' => '1'
             ]
         );
+        $response = $this->renderPage(path: '/thread-view?entityId=' . $entityId . '&threadId=' . $threadId);
 
         // :: Assert
         // Should redirect back to thread view
-        $this->assertStringContainsString('Location: /thread-view?threadId=' . urlencode($threadId), $response->headers);
+        $this->assertStringContainsString('Location: /thread-view?threadId=' . urlencode($threadId), $response1->headers);
+
+        // Assert the success message
+        $this->assertStringContainsString('Reply draft has been saved for', $response->body, 'Should show draft saved message');
 
         // Verify draft was saved in database
         $emailSendings = ThreadEmailSending::getByThreadId($threadId);
@@ -158,7 +166,7 @@ class ThreadReplyPageTest extends E2EPageTestCase {
         $replyBody = 'This is a test reply to be sent with <em>italic</em> text.';
 
         // :: Act
-        $response = $this->renderPage(
+        $response1 = $this->renderPage(
             '/thread-reply',
             'dev-user-id',
             'POST',
@@ -168,14 +176,18 @@ class ThreadReplyPageTest extends E2EPageTestCase {
                 'entity_id' => $entityId,
                 'reply_subject' => $replySubject,
                 'reply_body' => $replyBody,
-                'recipient' => 'test-recipient@example.com', // Single recipient parameter
+                'recipient' => 'public-entity@dev.offpost.no', // Single recipient parameter
                 'send_reply' => '1'
             ]
         );
+        $response = $this->renderPage(path: '/thread-view?entityId=' . $entityId . '&threadId=' . $threadId);
 
         // :: Assert
         // Should redirect back to thread view
-        $this->assertStringContainsString('Location: /thread-view?threadId=' . urlencode($threadId), $response->headers);
+        $this->assertStringContainsString('Location: /thread-view?threadId=' . urlencode($threadId), $response1->headers);
+
+        // Assert the success message
+        $this->assertStringContainsString('Reply has been prepared for ', $response->body, 'Should show draft saved message');
 
         // Verify email was marked for sending in database
         $emailSendings = ThreadEmailSending::getByThreadId($threadId);
@@ -275,15 +287,15 @@ class ThreadReplyPageTest extends E2EPageTestCase {
                 'entity_id' => $entityId,
                 'reply_subject' => 'Test Success Subject',
                 'reply_body' => 'Test success body',
-                'recipient' => 'test-recipient@example.com', // Single recipient parameter
+                'recipient' => 'public-entity@dev.offpost.no', // Use the actual recipient that getThreadReplyRecipients() returns
                 'send_reply' => '1'
             ]
         );
 
         // Follow the redirect to see the success message
-        $response = $this->renderPage('/thread-view?entityId=' . $entityId . '&threadId=' . $threadId);
+        $response = $this->renderPage(path: '/thread-view?entityId=' . $entityId . '&threadId=' . $threadId);
 
         // :: Assert
-        $this->assertStringContainsString('Reply has been prepared for test-recipient@example.com and will be sent shortly', $response->body, 'Should show success message with recipient email');
+        $this->assertStringContainsString('Reply has been prepared for public-entity@dev.offpost.no and will be sent shortly', $response->body, 'Should show success message with recipient email');
     }
 }
