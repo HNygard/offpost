@@ -1,6 +1,6 @@
 <?php
 
-require_once __DIR__ . '/../bootstrap.php';
+require_once __DIR__ . '/bootstrap.php';
 require_once __DIR__ . '/../class/SuggestedReplyGenerator.php';
 require_once __DIR__ . '/../class/Extraction/ThreadEmailExtractionService.php';
 require_once __DIR__ . '/../class/Extraction/ThreadEmailExtraction.php';

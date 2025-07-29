@@ -39,14 +39,17 @@ class SuggestedReplyGenerator {
             }
         }
         
+        // Get all extractions once for efficiency
+        $allExtractions = $this->getAllExtractions($thread);
+        
         // Add case number information from saksnummer extractions
-        $caseNumberInfo = $this->getCaseNumberInfo($thread);
+        $caseNumberInfo = $this->getCaseNumberInfoFromExtractions($allExtractions);
         if (!empty($caseNumberInfo)) {
             $suggestedReply .= $caseNumberInfo . "\n\n";
         }
         
         // Add copy request information
-        $copyRequestInfo = $this->getCopyRequestInfo($thread);
+        $copyRequestInfo = $this->getCopyRequestInfoFromExtractions($allExtractions);
         if (!empty($copyRequestInfo)) {
             $suggestedReply .= $copyRequestInfo . "\n\n";
         }
@@ -57,21 +60,36 @@ class SuggestedReplyGenerator {
     }
     
     /**
-     * Get case number information from saksnummer extractions
+     * Get all extractions for all emails in the thread
      * 
      * @param Thread $thread The thread object
-     * @return string Case number information or empty string
+     * @return array All extractions grouped by email
      */
-    private function getCaseNumberInfo($thread) {
-        $caseNumbers = [];
+    private function getAllExtractions($thread) {
+        $allExtractions = [];
         
         if (!isset($thread->emails)) {
-            return '';
+            return $allExtractions;
         }
         
         foreach ($thread->emails as $email) {
             $extractions = $this->extractionService->getExtractionsForEmail($email->id);
-            
+            $allExtractions[$email->id] = $extractions;
+        }
+        
+        return $allExtractions;
+    }
+    
+    /**
+     * Get case number information from extractions
+     * 
+     * @param array $allExtractions All extractions grouped by email
+     * @return string Case number information or empty string
+     */
+    private function getCaseNumberInfoFromExtractions($allExtractions) {
+        $caseNumbers = [];
+        
+        foreach ($allExtractions as $emailId => $extractions) {
             foreach ($extractions as $extraction) {
                 if ($extraction->prompt_service == 'openai' && 
                     $extraction->prompt_id == 'saksnummer' && 
@@ -107,19 +125,13 @@ class SuggestedReplyGenerator {
     }
     
     /**
-     * Get copy request information from copy-asking-for extractions
+     * Get copy request information from extractions
      * 
-     * @param Thread $thread The thread object
+     * @param array $allExtractions All extractions grouped by email
      * @return string Copy request information or empty string
      */
-    private function getCopyRequestInfo($thread) {
-        if (!isset($thread->emails)) {
-            return '';
-        }
-        
-        foreach ($thread->emails as $email) {
-            $extractions = $this->extractionService->getExtractionsForEmail($email->id);
-            
+    private function getCopyRequestInfoFromExtractions($allExtractions) {
+        foreach ($allExtractions as $emailId => $extractions) {
             foreach ($extractions as $extraction) {
                 if ($extraction->prompt_service == 'openai' && 
                     $extraction->prompt_id == 'copy-asking-for' && 
