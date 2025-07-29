@@ -140,6 +140,8 @@ function getThreadStatusLabelClass($status) {
                     <li><a href="/scheduled-email-sending">Scheduled email sending</a></li>
                     <li><a href="/scheduled-imap-handling">Scheduled IMAP handling</a></li>
                     <li><a href="/scheduled-email-receiver">Scheduled email receiver</a></li>
+                    -:-
+                    <li><a href="http://localhost:25080">Roundcube</a></li>
                 </ul>
             </div>
         <?php } ?>

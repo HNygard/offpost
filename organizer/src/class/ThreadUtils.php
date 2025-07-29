@@ -1,7 +1,9 @@
 <?php
 
 require_once __DIR__ . '/Enums/ThreadEmailStatusType.php';
+require_once __DIR__ . '/Imap/ImapEmail.php';
 use App\Enums\ThreadEmailStatusType;
+use Imap\ImapEmail;
 
 function getThreadId($thread) {
     $email_folder = str_replace(' ', '_', mb_strtolower($thread->title, 'UTF-8'));
@@ -46,4 +48,100 @@ function getLabelType($type, $status_type_input) {
         default:
             throw new Exception('Unknown status_type[' . $type . ']: ' . $status_type_input);
     }
+}
+
+/**
+ * Extract valid reply recipient email addresses from a thread
+ * 
+ * @param Thread $thread The thread to extract emails from
+ * @return array Array of unique valid email addresses
+ */
+function getThreadReplyRecipients($thread) {
+    $recipients = [];
+    
+    // Add entity email if it exists and is valid
+    $entity = $thread->getEntity();
+    if ($entity && isset($entity->email) && isValidReplyEmail($entity->email, $thread->my_email)) {
+        $recipients[] = $entity->email;
+    }
+    
+    // Extract emails from incoming emails in the thread
+    if (isset($thread->emails)) {
+        foreach ($thread->emails as $email) {
+            if ($email->email_type === 'IN' && isset($email->imap_headers)) {
+                $emailAddresses = getEmailAddressesFromImapHeaders($email->imap_headers);
+                foreach ($emailAddresses as $emailAddr) {
+                    if (isValidReplyEmail($emailAddr, $thread->my_email)) {
+                        $recipients[] = $emailAddr;
+                    }
+                }
+            }
+        }
+    }
+    
+    // Remove duplicates and return
+    return array_values(array_unique(array_map('strtolower', $recipients)));
+}
+
+/**
+ * Extract email addresses from IMAP headers stored in database using existing ImapEmail functionality
+ * 
+ * @param string|array $imapHeaders The IMAP headers as JSON string or array from database
+ * @return array Array of email addresses
+ */
+function getEmailAddressesFromImapHeaders($imapHeaders) {
+    // Parse JSON if it's a string
+    if (is_string($imapHeaders)) {
+        $headers = json_decode($imapHeaders, false); // Use false to get object instead of array
+    } else {
+        $headers = (object) $imapHeaders;
+    }
+    
+    if (!$headers) {
+        return [];
+    }
+    
+    // Create a temporary ImapEmail instance to use its getEmailAddresses method
+    $tempEmail = new ImapEmail();
+    $tempEmail->mailHeaders = $headers;
+    
+    return $tempEmail->getEmailAddresses();
+}
+
+/**
+ * Check if an email address is valid for replies
+ * 
+ * @param string $email The email address to check
+ * @param string $myEmail The thread's own email address to exclude
+ * @return bool True if the email is valid for replies
+ */
+function isValidReplyEmail($email, $myEmail) {
+    if (!$email || !filter_var($email, FILTER_VALIDATE_EMAIL)) {
+        return false;
+    }
+    
+    $email = strtolower(trim($email));
+    $myEmail = strtolower(trim($myEmail));
+    
+    // Exclude our own email
+    if ($email === $myEmail) {
+        return false;
+    }
+    
+    // Banned email patterns (case-insensitive)
+    $bannedPatterns = [
+        'noreply',
+        'no-reply', 
+        'ikke-svar',
+        'donotreply',
+        'do-not-reply'
+    ];
+    
+    foreach ($bannedPatterns as $pattern) {
+        if (strpos($email, $pattern) !== false) {
+            return false;
+        }
+    }
+    
+    return true;
 }

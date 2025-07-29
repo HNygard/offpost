@@ -79,6 +79,27 @@ class PHPMailerService implements IEmailService {
                 $mail->addBCC($bcc);
             }
 
+            if ($this->host == 'greenmail') {
+                // -> In development mode using greenmail.
+
+                if(str_contains($to, '@offpost.no')) {
+                    // -> Email sent to our own domain. Let's send a copy to our incoming email box.
+                    $mail->addAddress('greenmail-user@dev.offpost.no');
+                }
+                if (str_contains($bcc, '@offpost.no')) {
+                    // -> Email sent with copy to our own domain, so likely to a public entity.
+
+                    // The bcc must be visible in development mode to get sorted correctly when reading from IMAP.
+                    $mail->addCC($bcc);
+
+                    // Give our incoming email box a copy as well.
+                    $mail->addBCC('greenmail-user@dev.offpost.no');
+
+                    // Our public entity 
+                    $mail->addAddress('public-entity@dev.offpost.no');
+                }
+            }
+
             $mail->WordWrap = 150;
             $mail->Subject = $subject;
             $mail->Body = $body;

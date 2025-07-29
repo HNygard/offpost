@@ -7,6 +7,7 @@ require_once __DIR__ . '/class/ThreadStorageManager.php';
 require_once __DIR__ . '/class/ThreadHistory.php';
 require_once __DIR__ . '/class/ThreadEmailSending.php';
 require_once __DIR__ . '/class/Extraction/ThreadEmailExtractionService.php';
+require_once __DIR__ . '/class/ThreadUtils.php';
 
 // Require authentication
 requireAuth();
@@ -255,6 +256,20 @@ function print_extraction ($extraction) {
     <div class="container">
         <?php include 'header.php'; ?>
 
+        <?php if (isset($_SESSION['success_message'])): ?>
+            <div class="alert-success" style="margin: 1em 0; padding: 1em; background-color: #d4edda; border: 1px solid #c3e6cb; color: #155724; border-radius: 4px;">
+                <?= htmlescape($_SESSION['success_message']) ?>
+            </div>
+            <?php unset($_SESSION['success_message']); ?>
+        <?php endif; ?>
+
+        <?php if (isset($_SESSION['error_message'])): ?>
+            <div class="alert-error" style="margin: 1em 0; padding: 1em; background-color: #f8d7da; border: 1px solid #f5c6cb; color: #721c24; border-radius: 4px;">
+                <?= htmlescape($_SESSION['error_message']) ?>
+            </div>
+            <?php unset($_SESSION['error_message']); ?>
+        <?php endif; ?>
+
         <h1>Thread: <?= htmlescape($thread->title) ?></h1>
 
         <div class="thread-details">
@@ -486,6 +501,251 @@ function print_extraction ($extraction) {
                 </div>
             <?php endforeach; ?>
         </div>
+
+        <?php 
+        // Check if thread has incoming emails that might need a reply
+        $hasIncomingEmails = false;
+        if (isset($thread->emails)) {
+            foreach ($thread->emails as $email) {
+                if ($email->email_type === 'IN') {
+                    $hasIncomingEmails = true;
+                    break;
+                }
+            }
+        }
+        
+        // Only show reply form if there are incoming emails and user has permission
+        if ($hasIncomingEmails && $thread->canUserAccess($userId)): 
+            // Get valid reply recipients
+            $replyRecipients = getThreadReplyRecipients($thread);
+        ?>
+        <div id="reply-section">
+            <h2>Reply to Thread</h2>
+            <form method="POST" action="/thread-reply" class="reply-form">
+                <input type="hidden" name="thread_id" value="<?= htmlescape($thread->id) ?>">
+                <input type="hidden" name="entity_id" value="<?= htmlescape($entityId) ?>">
+                
+                <div class="form-group">
+                    <label for="reply_subject">Subject</label>
+                    <input type="text" id="reply_subject" name="reply_subject" 
+                           value="Re: <?= htmlescape($thread->title) ?>" required>
+                </div>
+                
+                <?php if (!empty($replyRecipients)): ?>
+                <div class="form-group">
+                    <label>Recipient</label>
+                    <div class="recipients-list">
+                        <?php foreach ($replyRecipients as $index => $email): ?>
+                            <div class="recipient-item">
+                                <input type="radio" 
+                                       id="recipient_<?= $index ?>" 
+                                       name="recipient" 
+                                       value="<?= htmlescape($email) ?>"
+                                       <?= $index === 0 ? 'checked' : '' ?> required>
+                                <label for="recipient_<?= $index ?>"><?= htmlescape($email) ?></label>
+                            </div>
+                        <?php endforeach; ?>
+                    </div>
+                    <small class="form-help">Select one recipient for your reply.</small>
+                </div>
+                <?php else: ?>
+                <div class="form-group">
+                    <div class="alert-warning">
+                        No valid recipient email address found in this thread.
+                    </div>
+                </div>
+                <?php endif; ?>
+                
+                <div class="form-group">
+                    <label for="reply_body">Message</label>
+                    <div class="editor-toolbar">
+                        <button type="button" onclick="formatText('bold')" title="Bold">
+                            <strong>B</strong>
+                        </button>
+                        <button type="button" onclick="formatText('italic')" title="Italic">
+                            <em>I</em>
+                        </button>
+                        <button type="button" onclick="insertSuggestedReply()" title="Insert suggested reply">
+                            📝 Suggested Reply
+                        </button>
+                    </div>
+                    <textarea id="reply_body" name="reply_body" rows="10" required 
+                              placeholder="Write your reply here..."></textarea>
+                </div>
+                
+                <div class="form-group">
+                    <?php if (!empty($replyRecipients)): ?>
+                        <button type="submit" name="send_reply" class="button">Send reply</button>
+                        <button type="submit" name="save_draft" class="button secondary">Stage reply</button>
+                    <?php else: ?>
+                        <button type="button" class="button" disabled>Send reply</button>
+                        <button type="button" class="button secondary" disabled>Stage reply</button>
+                    <?php endif; ?>
+                </div>
+            </form>
+            
+            <!-- Suggested reply content (hidden, populated by JavaScript) -->
+            <div id="suggested-reply-content" style="display: none;">
+<?php
+// Generate suggested reply with previous emails
+$suggestedReply = "Tidligere e-poster:\n\n";
+if (isset($thread->emails)) {
+    $emailCount = 0;
+    foreach (array_reverse($thread->emails) as $email) {
+        $emailCount++;
+        if ($emailCount > 5) break; // Limit to last 5 emails
+        
+        $direction = ($email->email_type === 'IN') ? 'Mottatt' : 'Sendt';
+        $suggestedReply .= "{$emailCount}. {$direction} den {$email->datetime_received}\n";
+        if (isset($email->description) && $email->description) {
+            $suggestedReply .= "   Sammendrag: " . strip_tags($email->description) . "\n";
+        }
+        $suggestedReply .= "\n";
+    }
+}
+echo htmlescape($suggestedReply);
+
+echo "\n\n--\n" . $thread->my_name;
+?>
+</div>
+        </div>
+
+        <style>
+        #reply-section {
+            margin-top: 30px;
+            padding: 20px;
+            border: 1px solid #dee2e6;
+            border-radius: 6px;
+            background-color: #f8f9fa;
+        }
+        
+        .reply-form .form-group {
+            margin-bottom: 15px;
+        }
+        
+        .reply-form label {
+            display: block;
+            margin-bottom: 5px;
+            font-weight: bold;
+            color: #34495e;
+        }
+        
+        .reply-form input[type="text"],
+        .reply-form textarea {
+            width: 100%;
+            padding: 8px;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+            font-size: 14px;
+        }
+
+        .reply-form textarea {
+            height: 400px;
+        }
+        
+        .editor-toolbar {
+            margin-bottom: 5px;
+            padding: 5px;
+            background: #fff;
+            border: 1px solid #ddd;
+            border-bottom: none;
+            border-radius: 4px 4px 0 0;
+        }
+        
+        .editor-toolbar button {
+            background: #f8f9fa;
+            border: 1px solid #dee2e6;
+            padding: 4px 8px;
+            margin-right: 5px;
+            cursor: pointer;
+            border-radius: 3px;
+        }
+        
+        .editor-toolbar button:hover {
+            background: #e9ecef;
+        }
+        
+        .button.secondary {
+            background-color: #6c757d;
+            color: white;
+            margin-left: 10px;
+        }
+        
+        .button.secondary:hover {
+            background-color: #5a6268;
+        }
+        
+        .recipients-list {
+            margin-bottom: 10px;
+        }
+        
+        .recipient-item {
+            margin-bottom: 8px;
+            display: flex;
+            align-items: center;
+        }
+        
+        .recipient-item input[type="radio"] {
+            margin-right: 8px;
+            width: auto;
+        }
+        
+        .recipient-item label {
+            margin-bottom: 0;
+            font-weight: normal;
+            cursor: pointer;
+            color: #555;
+        }
+        
+        .form-help {
+            color: #6c757d;
+            font-size: 0.875em;
+            margin-top: 5px;
+        }
+        
+        .alert-warning {
+            background-color: #fff3cd;
+            border: 1px solid #ffeaa7;
+            color: #856404;
+            padding: 10px;
+            border-radius: 4px;
+        }
+        </style>
+
+        <script>
+        function formatText(command) {
+            const textarea = document.getElementById('reply_body');
+            const start = textarea.selectionStart;
+            const end = textarea.selectionEnd;
+            const selectedText = textarea.value.substring(start, end);
+            
+            if (selectedText) {
+                let formattedText;
+                if (command === 'bold') {
+                    formattedText = '<strong>' + selectedText + '</strong>';
+                } else if (command === 'italic') {
+                    formattedText = '<em>' + selectedText + '</em>';
+                }
+                
+                textarea.value = textarea.value.substring(0, start) + formattedText + textarea.value.substring(end);
+                textarea.focus();
+                textarea.setSelectionRange(start + formattedText.length, start + formattedText.length);
+            }
+        }
+        
+        function insertSuggestedReply() {
+            const textarea = document.getElementById('reply_body');
+            const suggestedContent = document.getElementById('suggested-reply-content').textContent;
+            
+            if (textarea.value.trim() === '') {
+                textarea.value = suggestedContent;
+            } else {
+                textarea.value += '\n\n' + suggestedContent;
+            }
+            textarea.focus();
+        }
+        </script>
+        <?php endif; ?>
     </div>
 </body>
 </html>
