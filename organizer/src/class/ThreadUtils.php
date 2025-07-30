@@ -145,3 +145,106 @@ function isValidReplyEmail($email, $myEmail) {
     
     return true;
 }
+
+/**
+ * Extract email subject from IMAP headers stored in database
+ * 
+ * @param string|array $imapHeaders The IMAP headers as JSON string or array from database
+ * @return string Email subject or empty string if not found
+ */
+function getEmailSubjectFromImapHeaders($imapHeaders) {
+    // Parse JSON if it's a string
+    if (is_string($imapHeaders)) {
+        $headers = json_decode($imapHeaders, false); // Use false to get object instead of array
+    } else {
+        $headers = (object) $imapHeaders;
+    }
+    
+    if (!$headers || !isset($headers->subject)) {
+        return '';
+    }
+    
+    return (string) $headers->subject;
+}
+
+/**
+ * Extract from address from IMAP headers stored in database
+ * 
+ * @param string|array $imapHeaders The IMAP headers as JSON string or array from database
+ * @return string From address or empty string if not found
+ */
+function getEmailFromAddressFromImapHeaders($imapHeaders) {
+    // Parse JSON if it's a string
+    if (is_string($imapHeaders)) {
+        $headers = json_decode($imapHeaders, false); // Use false to get object instead of array
+    } else {
+        $headers = (object) $imapHeaders;
+    }
+    
+    if (!$headers || !isset($headers->from) || !is_array($headers->from) || empty($headers->from)) {
+        return '';
+    }
+    
+    $from = $headers->from[0];
+    if (isset($from->mailbox) && isset($from->host)) {
+        return $from->mailbox . '@' . $from->host;
+    }
+    
+    return '';
+}
+
+/**
+ * Extract to addresses from IMAP headers stored in database
+ * 
+ * @param string|array $imapHeaders The IMAP headers as JSON string or array from database
+ * @return array Array of to addresses
+ */
+function getEmailToAddressesFromImapHeaders($imapHeaders) {
+    // Parse JSON if it's a string
+    if (is_string($imapHeaders)) {
+        $headers = json_decode($imapHeaders, false); // Use false to get object instead of array
+    } else {
+        $headers = (object) $imapHeaders;
+    }
+    
+    if (!$headers || !isset($headers->to) || !is_array($headers->to)) {
+        return [];
+    }
+    
+    $addresses = [];
+    foreach ($headers->to as $email) {
+        if (isset($email->mailbox) && isset($email->host)) {
+            $addresses[] = $email->mailbox . '@' . $email->host;
+        }
+    }
+    
+    return $addresses;
+}
+
+/**
+ * Extract CC addresses from IMAP headers stored in database
+ * 
+ * @param string|array $imapHeaders The IMAP headers as JSON string or array from database
+ * @return array Array of CC addresses
+ */
+function getEmailCcAddressesFromImapHeaders($imapHeaders) {
+    // Parse JSON if it's a string
+    if (is_string($imapHeaders)) {
+        $headers = json_decode($imapHeaders, false); // Use false to get object instead of array
+    } else {
+        $headers = (object) $imapHeaders;
+    }
+    
+    if (!$headers || !isset($headers->cc) || !is_array($headers->cc)) {
+        return [];
+    }
+    
+    $addresses = [];
+    foreach ($headers->cc as $email) {
+        if (isset($email->mailbox) && isset($email->host)) {
+            $addresses[] = $email->mailbox . '@' . $email->host;
+        }
+    }
+    
+    return $addresses;
+}
