@@ -29,6 +29,21 @@ abstract class ThreadEmailExtractor {
 
 
     /**
+     * Get additional email data (e.g., imap_headers) for a given email ID
+     * 
+     * @param string $emailId The email ID to fetch data for
+     * @return array|null Email data or null if not found
+     */
+    protected function getEmailData($emailId) {
+        require_once __DIR__ . '/../Database.php';
+        
+        $query = "SELECT imap_headers FROM thread_emails WHERE id = ?";
+        $result = Database::queryOneOrNone($query, [$emailId]);
+        
+        return $result;
+    }
+
+    /**
      * Process the next email extraction
      * 
      * @return array Result of the operation
@@ -43,6 +58,13 @@ abstract class ThreadEmailExtractor {
                 'success' => false,
                 'message' => 'No emails found that need extraction'
             ];
+        }
+        
+        // Fetch additional email data (imap_headers) for this email
+        $emailData = $this->getEmailData($email['email_id']);
+        if ($emailData) {
+            // Merge the additional data into the email array
+            $email = array_merge($email, $emailData);
         }
         
         try {
