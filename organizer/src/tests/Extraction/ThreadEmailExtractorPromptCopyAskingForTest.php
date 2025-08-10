@@ -216,4 +216,80 @@ class ThreadEmailExtractorPromptCopyAskingForTest extends PHPUnit\Framework\Test
         $this->assertEquals($emailData['thread_id'], $result['thread_id'], 'Thread ID should match');
         $this->assertEquals($extraction->extraction_id, $result['extraction_id'], 'Extraction ID should match');
     }
+
+    public function testProcessNextEmailExtractionKopimottakerNotification() {
+        // :: Setup - Test email notifying user they've been set as "kopimottaker" (copy recipient)
+        $emailData = [
+            'email_id' => 'test-email-kopimottaker',
+            'thread_id' => 'test-thread-kopimottaker',
+            'email_type' => 'IN',
+            'status_type' => \App\Enums\ThreadEmailStatusType::UNKNOWN->value,
+            'status_text' => 'Kopimottaker notification email',
+            'datetime_received' => '2025-04-21 12:00:00',
+            'subject' => 'Du er satt som kopimottaker på sak 2025/2617',
+            'from_address' => 'sender@kongsberg.kommune.no',
+            'to_address' => 'recipient@example.com',
+            'source_extraction_id' => 124,
+            'source_extracted_text' => 'Du er satt som kopimottaker på sak 2025/2617
+
+	Vennlig hilsen
+
+			A A A | seksjonsleder
+
+	e-post: a.a.a@kongsberg.kommune.no',
+            'source_prompt_text' => 'email_body',
+            'source_attachment_id' => null,
+            'thread_title' => 'Test Kopimottaker Thread',
+            'thread_entity_id' => 'test-entity-kopimottaker',
+            'thread_my_name' => 'Test User',
+            'thread_my_email' => 'test@example.com'
+        ];
+        
+        // Sample extraction
+        $extraction = new ThreadEmailExtraction();
+        $extraction->extraction_id = 457;
+        $extraction->email_id = $emailData['email_id'];
+        $extraction->prompt_id = 'copy-asking-for';
+        $extraction->prompt_text = 'copy-asking-for';
+        $extraction->prompt_service = 'openai';
+        
+        // Create a partial mock to override methods
+        $extractor = $this->extractor;
+        $extractor->setNext($emailData);
+        
+        // Mocks - Should return false for kopimottaker notification
+        $this->promptService->expects($this->once())
+            ->method('run')
+            ->with($this->prompt, $this->stringContains('Email Details:'))
+            ->willReturn('{"is_requesting_copy": false, "copy_request_description": "notification about being set as copy recipient, not requesting a copy"}');
+        
+        $this->extractionService->expects($this->once())
+            ->method('createExtraction')
+            ->with(
+                $this->equalTo($emailData['email_id']),
+                $this->stringContains('The task is to determine whether the sender is explicitly asking for a copy'),
+                $this->equalTo('openai'),
+                $this->isNull(),
+                $this->equalTo('copy-asking-for')
+            )
+            ->willReturn($extraction);
+        
+        $this->extractionService->expects($this->once())
+            ->method('updateExtractionResults')
+            ->with(
+                $this->equalTo($extraction->extraction_id),
+                $this->equalTo('{"is_requesting_copy": false, "copy_request_description": "notification about being set as copy recipient, not requesting a copy"}')
+            )
+            ->willReturn($extraction);
+        
+        // :: Act
+        $result = $extractor->processNextEmailExtraction();
+        
+        // :: Assert
+        $this->assertTrue($result['success'], 'Extraction should be successful. Result: ' . json_encode($result));
+        $this->assertEquals('Successfully extracted text from email', $result['message'], 'Message should indicate successful extraction');
+        $this->assertEquals($emailData['email_id'], $result['email_id'], 'Email ID should match');
+        $this->assertEquals($emailData['thread_id'], $result['thread_id'], 'Thread ID should match');
+        $this->assertEquals($extraction->extraction_id, $result['extraction_id'], 'Extraction ID should match');
+    }
 }
