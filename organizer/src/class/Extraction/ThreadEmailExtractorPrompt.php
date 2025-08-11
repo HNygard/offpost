@@ -191,13 +191,15 @@ abstract class ThreadEmailExtractorPrompt extends ThreadEmailExtractor {
         // Start with the extracted text from the source extraction
         $input = $row['source_extracted_text'];
         
-        // Extract email details from imap_headers if available
-        $subject = '';
-        $fromAddress = '';
-        $toAddresses = [];
-        $ccAddresses = [];
+        // Use pre-extracted email details if available, otherwise extract from imap_headers for backward compatibility
+        $subject = $row['email_subject'] ?? '';
+        $fromAddress = $row['email_from_address'] ?? '';
+        $toAddresses = $row['email_to_addresses'] ?? [];
+        $ccAddresses = $row['email_cc_addresses'] ?? [];
         
-        if (isset($row['imap_headers'])) {
+        // Fallback: if pre-extracted fields are empty and imap_headers is available, extract them
+        if (empty($subject) && empty($fromAddress) && empty($toAddresses) && empty($ccAddresses) && isset($row['imap_headers'])) {
+            require_once __DIR__ . '/../ThreadUtils.php';
             $subject = getEmailSubjectFromImapHeaders($row['imap_headers']);
             $fromAddress = getEmailFromAddressFromImapHeaders($row['imap_headers']);
             $toAddresses = getEmailToAddressesFromImapHeaders($row['imap_headers']);

@@ -63,8 +63,22 @@ abstract class ThreadEmailExtractor {
         // Fetch additional email data (imap_headers) for this email
         $emailData = $this->getEmailData($email['email_id']);
         if ($emailData) {
+            // Extract email details from imap_headers if available
+            require_once __DIR__ . '/../ThreadUtils.php';
+            
+            $emailData['email_subject'] = isset($emailData['imap_headers']) ? getEmailSubjectFromImapHeaders($emailData['imap_headers']) : '';
+            $emailData['email_from_address'] = isset($emailData['imap_headers']) ? getEmailFromAddressFromImapHeaders($emailData['imap_headers']) : '';
+            $emailData['email_to_addresses'] = isset($emailData['imap_headers']) ? getEmailToAddressesFromImapHeaders($emailData['imap_headers']) : [];
+            $emailData['email_cc_addresses'] = isset($emailData['imap_headers']) ? getEmailCcAddressesFromImapHeaders($emailData['imap_headers']) : [];
+            
             // Merge the additional data into the email array
             $email = array_merge($email, $emailData);
+        } else {
+            // Ensure email detail fields are always present with default values
+            $email['email_subject'] = '';
+            $email['email_from_address'] = '';
+            $email['email_to_addresses'] = [];
+            $email['email_cc_addresses'] = [];
         }
         
         try {
