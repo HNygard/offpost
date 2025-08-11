@@ -279,7 +279,20 @@ class ThreadEmailExtractorPromptTest extends PHPUnit\Framework\TestCase {
         $result = $method->invoke($this->extractor, $emailData);
         
         // :: Assert
-        $expectedOutput = "Thread Details:\n- Thread title: Test Thread\n- Thread entity ID: test-entity-id\n- Thread my name: Test User\n- Thread my email: test@example.com\nEmail Details:\n- Date: 2025-04-21 12:00:00\n- Subject: Test Email Subject\n- Direction: IN\n- From: sender@example.com\n- To: recipient@example.org\n- CC: cc-recipient@example.net\n- Source: Email body\n\nThis is the extracted text from the email body";
+        $expectedOutput = "Thread Details:\n" .
+            "- Thread title: Test Thread\n" .
+            "- Thread entity ID: test-entity-id\n" .
+            "- Thread my name: Test User\n" .
+            "- Thread my email: test@example.com\n" .
+            "Email Details:\n" .
+            "- Date: 2025-04-21 12:00:00\n" .
+            "- Subject: Test Email Subject\n" .
+            "- Direction: IN\n" .
+            "- From: sender@example.com\n" .
+            "- To: recipient@example.org\n" .
+            "- CC: cc-recipient@example.net\n" .
+            "- Source: Email body\n\n" .
+            "This is the extracted text from the email body";
         $this->assertEquals($expectedOutput, $result, 'Output should match expected format with all email details');
     }
     
@@ -314,7 +327,17 @@ class ThreadEmailExtractorPromptTest extends PHPUnit\Framework\TestCase {
         $result = $method->invoke($this->extractor, $emailData);
         
         // :: Assert
-        $expectedOutput = "Thread Details:\n- Thread title: Test Thread\n- Thread entity ID: test-entity-id\n- Thread my name: Test User\n- Thread my email: test@example.com\nEmail Details:\n- Date: 2025-04-21 12:00:00\n- Direction: IN\n- Source: Email body\n\nThis is the extracted text from the email body";
+        $expectedOutput = "Thread Details:\n" .
+            "- Thread title: Test Thread\n" .
+            "- Thread entity ID: test-entity-id\n" .
+            "- Thread my name: Test User\n" .
+            "- Thread my email: test@example.com\n" .
+            "Email Details:\n" .
+            "- Date: 2025-04-21 12:00:00\n" .
+            "- Subject: \n" .
+            "- Direction: IN\n" .
+            "- Source: Email body\n\n" .
+            "This is the extracted text from the email body";
         $this->assertEquals($expectedOutput, $result, 'Output should match expected format without email details when fields are empty');
     }
 }

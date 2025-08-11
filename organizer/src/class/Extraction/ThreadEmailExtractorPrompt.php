@@ -184,7 +184,7 @@ abstract class ThreadEmailExtractorPrompt extends ThreadEmailExtractor {
     /**
      * Prepare input for the prompt based on email data and existing extractions
      * 
-     * @param array $email Email data including source extraction and imap_headers
+     * @param array $email Email data including source extraction and pre-extracted email details
      * @return string Prepared input for the prompt
      */
     protected function preparePromptInput($row) {
@@ -192,10 +192,10 @@ abstract class ThreadEmailExtractorPrompt extends ThreadEmailExtractor {
         $input = $row['source_extracted_text'];
         
         // Use pre-extracted email details
-        $subject = $row['email_subject'] ?? '';
-        $fromAddress = $row['email_from_address'] ?? '';
-        $toAddresses = $row['email_to_addresses'] ?? [];
-        $ccAddresses = $row['email_cc_addresses'] ?? [];
+        $subject = $row['email_subject'];
+        $fromAddress = $row['email_from_address'];
+        $toAddresses = $row['email_to_addresses'];
+        $ccAddresses = $row['email_cc_addresses'];
         
         // Add basic email and thread details
         $details = [
@@ -208,10 +208,8 @@ abstract class ThreadEmailExtractorPrompt extends ThreadEmailExtractor {
             '- Date: ' . $row['datetime_received'],
         ];
         
-        // Add subject if available
-        if (!empty($subject)) {
-            $details[] = '- Subject: ' . $subject;
-        }
+        // Add subject
+        $details[] = '- Subject: ' . $subject;
         
         $details[] = '- Direction: ' . $row['email_type'];
         
