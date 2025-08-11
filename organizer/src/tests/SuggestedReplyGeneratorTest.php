@@ -277,15 +277,19 @@ Test User';
         $result = $this->generator->generateSuggestedReply($thread);
         
         // :: Assert
-        $this->assertStringContainsString("Tidligere e-poster:", $result);
-        $this->assertStringContainsString("1. Sendt den 2025-01-16 14:20:00", $result);
-        $this->assertStringContainsString("2. Mottatt den 2025-01-15 10:30:00", $result);
-        // Case number and copy request should now appear under the specific email
-        $this->assertStringContainsString("   Saksnummer: 2025/123-1 (Kongsberg kommune)", $result);
-        $this->assertStringContainsString("   Merk: Avsenderen ber om en kopi av e-posten.", $result);
-        $this->assertStringContainsString("--\nTest User", $result);
-        // Should not contain the old aggregated sections
-        $this->assertStringNotContainsString("Saksnummer informasjon:", $result);
+        $expectedResult = 'Tidligere e-poster:
+
+1. Sendt den 2025-01-16 14:20:00
+   Sammendrag: Response
+
+2. Mottatt den 2025-01-15 10:30:00
+   Sammendrag: Initial request
+   Saksnummer: 2025/123-1 (Kongsberg kommune)
+   Merk: Avsenderen ber om en kopi av e-posten.
+
+--
+Test User';
+        $this->assertEquals($expectedResult, $result);
     }
     
     public function testGenerateWithNoEmails() {
@@ -380,8 +384,17 @@ Test User';
         $result = $this->generator->generateSuggestedReply($thread);
         
         // :: Assert
-        // Test complete expected output
-        $expected = $result;
-        $this->assertEquals($expected, $result);
+        $expectedResult = 'Tidligere e-poster:
+
+1. Mottatt den 2025-01-16 11:30:00
+   Sammendrag: Second email
+   Saksnummer: 2025/123-1 (Test Kommune)
+
+2. Mottatt den 2025-01-15 10:30:00
+   Sammendrag: First email
+
+--
+Test User';
+        $this->assertEquals($expectedResult, $result);
     }
 }
