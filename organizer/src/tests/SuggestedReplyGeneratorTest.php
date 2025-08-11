@@ -183,10 +183,16 @@ Test User';
         $result = $this->generator->generateSuggestedReply($thread);
         
         // :: Assert
-        // Copy request should now appear under the specific email
-        $this->assertStringContainsString("1. Mottatt den 2025-01-15 10:30:00", $result);
-        $this->assertStringContainsString("   Sammendrag: Email requesting copy", $result);
-        $this->assertStringContainsString("   Merk: Avsenderen ber om en kopi av e-posten.", $result);
+        $expectedResult = 'Tidligere e-poster:
+
+1. Mottatt den 2025-01-15 10:30:00
+   Sammendrag: Email requesting copy
+   Merk: Avsenderen ber om en kopi av e-posten.
+
+--
+Test User';
+        
+        $this->assertEquals($expectedResult, $result);
     }
     
     public function testGenerateWithNoCopyRequest() {
