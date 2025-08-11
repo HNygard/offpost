@@ -99,12 +99,15 @@ class SuggestedReplyGeneratorTest extends PHPUnit\Framework\TestCase {
         $result = $this->generator->generateSuggestedReply($thread);
         
         // :: Assert
-        // Case number should now appear under the specific email, not in a separate section
-        $this->assertStringContainsString("1. Mottatt den 2025-01-15 10:30:00", $result);
-        $this->assertStringContainsString("   Sammendrag: Email with case number", $result);
-        $this->assertStringContainsString("   Saksnummer: 2025/123-1 (Kongsberg kommune)", $result);
-        // Should not contain the old aggregated section
-        $this->assertStringNotContainsString("Saksnummer informasjon:", $result);
+        $expectedResult = 'Tidligere e-poster:
+
+1. Mottatt den 2025-01-15 10:30:00
+   Sammendrag: Email with case number
+   Saksnummer: 2025/123-1 (Kongsberg kommune)
+
+--
+Test User';
+        $this->assertEquals($expectedResult, $result);
     }
     
     public function testGenerateWithDocumentNumber() {
@@ -139,12 +142,15 @@ class SuggestedReplyGeneratorTest extends PHPUnit\Framework\TestCase {
         $result = $this->generator->generateSuggestedReply($thread);
         
         // :: Assert
-        // Document number should now appear under the specific email, not in a separate section
-        $this->assertStringContainsString("1. Mottatt den 2025-01-15 10:30:00", $result);
-        $this->assertStringContainsString("   Sammendrag: Email with document number", $result);
-        $this->assertStringContainsString("   Dokumentnummer: 2025/DOC-456 (Test Kommune)", $result);
-        // Should not contain the old aggregated section
-        $this->assertStringNotContainsString("Saksnummer informasjon:", $result);
+        $expectedResult = 'Tidligere e-poster:
+
+1. Mottatt den 2025-01-15 10:30:00
+   Sammendrag: Email with document number
+   Dokumentnummer: 2025/DOC-456 (Test Kommune)
+
+--
+Test User';
+        $this->assertEquals($expectedResult, $result);
     }
     
     public function testGenerateWithCopyRequest() {
@@ -286,10 +292,11 @@ class SuggestedReplyGeneratorTest extends PHPUnit\Framework\TestCase {
         $result = $this->generator->generateSuggestedReply($thread);
         
         // :: Assert
-        $this->assertStringContainsString("Tidligere e-poster:", $result);
-        $this->assertStringContainsString("--\nTest User", $result);
-        $this->assertStringNotContainsString("Saksnummer:", $result);
-        $this->assertStringNotContainsString("Merk: Avsenderen ber om en kopi av e-posten.", $result);
+        $expectedResult = 'Tidligere e-poster:
+
+--
+Test User';
+        $this->assertEquals($expectedResult, $result);
     }
     
     public function testGenerateWithMoreThanFiveEmails() {
