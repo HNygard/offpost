@@ -33,6 +33,29 @@ abstract class ThreadEmailExtractor {
 
 
     /**
+     * Enrich email data with details extracted from imap_headers
+     * 
+     * @param array $email The base email data
+     * @return array Email data enriched with email details
+     */
+    protected function enrichEmailWithDetails($email) {
+        // Fetch additional email data (imap_headers) for this email
+        $query = "SELECT imap_headers FROM thread_emails WHERE id = ?";
+        $emailData = Database::queryOneOrNone($query, [$email['email_id']]);
+        
+        // Extract email details from imap_headers if available
+        require_once __DIR__ . '/../ThreadUtils.php';
+        
+        $emailData['email_subject'] = isset($emailData['imap_headers']) ? getEmailSubjectFromImapHeaders($emailData['imap_headers']) : '';
+        $emailData['email_from_address'] = isset($emailData['imap_headers']) ? getEmailFromAddressFromImapHeaders($emailData['imap_headers']) : '';
+        $emailData['email_to_addresses'] = isset($emailData['imap_headers']) ? getEmailToAddressesFromImapHeaders($emailData['imap_headers']) : [];
+        $emailData['email_cc_addresses'] = isset($emailData['imap_headers']) ? getEmailCcAddressesFromImapHeaders($emailData['imap_headers']) : [];
+        
+        // Merge the additional data into the email array
+        return array_merge($email, $emailData);
+    }
+
+    /**
      * Process the next email extraction
      * 
      * @return array Result of the operation
@@ -49,20 +72,8 @@ abstract class ThreadEmailExtractor {
             ];
         }
         
-        // Fetch additional email data (imap_headers) for this email
-        $query = "SELECT imap_headers FROM thread_emails WHERE id = ?";
-        $emailData = Database::queryOneOrNone($query, [$email['email_id']]);
-        
-        // Extract email details from imap_headers if available
-        require_once __DIR__ . '/../ThreadUtils.php';
-        
-        $emailData['email_subject'] = isset($emailData['imap_headers']) ? getEmailSubjectFromImapHeaders($emailData['imap_headers']) : '';
-        $emailData['email_from_address'] = isset($emailData['imap_headers']) ? getEmailFromAddressFromImapHeaders($emailData['imap_headers']) : '';
-        $emailData['email_to_addresses'] = isset($emailData['imap_headers']) ? getEmailToAddressesFromImapHeaders($emailData['imap_headers']) : [];
-        $emailData['email_cc_addresses'] = isset($emailData['imap_headers']) ? getEmailCcAddressesFromImapHeaders($emailData['imap_headers']) : [];
-        
-        // Merge the additional data into the email array
-        $email = array_merge($email, $emailData);
+        // Enrich email data with details from imap_headers
+        $email = $this->enrichEmailWithDetails($email);
         
         try {
             // Create extraction record

@@ -15,6 +15,16 @@ class ThreadEmailExtractorPromptEmailLatestReplyMock extends ThreadEmailExtracto
     public function findNextEmailForExtraction() {
         return $this->next;
     }
+    
+    public function enrichEmailWithDetails($email) {
+        // For tests, return the email data with required email detail fields
+        return array_merge($email, [
+            'email_subject' => 'Test Subject',
+            'email_from_address' => 'test@example.com',
+            'email_to_addresses' => ['recipient@example.com'],
+            'email_cc_addresses' => []
+        ]);
+    }
 }
 
 class ThreadEmailExtractorPromptEmailLatestReplyTest extends PHPUnit\Framework\TestCase {
