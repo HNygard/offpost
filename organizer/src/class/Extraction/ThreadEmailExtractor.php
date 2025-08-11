@@ -1,5 +1,7 @@
 <?php
 
+require_once __DIR__ . '/../Database.php';
+
 abstract class ThreadEmailExtractor {
 
     protected $extractionService;
@@ -28,20 +30,7 @@ abstract class ThreadEmailExtractor {
     public abstract function processNextEmailExtraction();
 
 
-    /**
-     * Get additional email data (e.g., imap_headers) for a given email ID
-     * 
-     * @param string $emailId The email ID to fetch data for
-     * @return array|null Email data or null if not found
-     */
-    protected function getEmailData($emailId) {
-        require_once __DIR__ . '/../Database.php';
-        
-        $query = "SELECT imap_headers FROM thread_emails WHERE id = ?";
-        $result = Database::queryOneOrNone($query, [$emailId]);
-        
-        return $result;
-    }
+
 
     /**
      * Process the next email extraction
@@ -61,25 +50,19 @@ abstract class ThreadEmailExtractor {
         }
         
         // Fetch additional email data (imap_headers) for this email
-        $emailData = $this->getEmailData($email['email_id']);
-        if ($emailData) {
-            // Extract email details from imap_headers if available
-            require_once __DIR__ . '/../ThreadUtils.php';
-            
-            $emailData['email_subject'] = isset($emailData['imap_headers']) ? getEmailSubjectFromImapHeaders($emailData['imap_headers']) : '';
-            $emailData['email_from_address'] = isset($emailData['imap_headers']) ? getEmailFromAddressFromImapHeaders($emailData['imap_headers']) : '';
-            $emailData['email_to_addresses'] = isset($emailData['imap_headers']) ? getEmailToAddressesFromImapHeaders($emailData['imap_headers']) : [];
-            $emailData['email_cc_addresses'] = isset($emailData['imap_headers']) ? getEmailCcAddressesFromImapHeaders($emailData['imap_headers']) : [];
-            
-            // Merge the additional data into the email array
-            $email = array_merge($email, $emailData);
-        } else {
-            // Ensure email detail fields are always present with default values
-            $email['email_subject'] = '';
-            $email['email_from_address'] = '';
-            $email['email_to_addresses'] = [];
-            $email['email_cc_addresses'] = [];
-        }
+        $query = "SELECT imap_headers FROM thread_emails WHERE id = ?";
+        $emailData = Database::queryOneOrNone($query, [$email['email_id']]);
+        
+        // Extract email details from imap_headers if available
+        require_once __DIR__ . '/../ThreadUtils.php';
+        
+        $emailData['email_subject'] = isset($emailData['imap_headers']) ? getEmailSubjectFromImapHeaders($emailData['imap_headers']) : '';
+        $emailData['email_from_address'] = isset($emailData['imap_headers']) ? getEmailFromAddressFromImapHeaders($emailData['imap_headers']) : '';
+        $emailData['email_to_addresses'] = isset($emailData['imap_headers']) ? getEmailToAddressesFromImapHeaders($emailData['imap_headers']) : [];
+        $emailData['email_cc_addresses'] = isset($emailData['imap_headers']) ? getEmailCcAddressesFromImapHeaders($emailData['imap_headers']) : [];
+        
+        // Merge the additional data into the email array
+        $email = array_merge($email, $emailData);
         
         try {
             // Create extraction record

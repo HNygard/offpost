@@ -255,20 +255,7 @@ class ThreadEmailExtractorPromptTest extends PHPUnit\Framework\TestCase {
         $method = $reflection->getMethod('preparePromptInput');
         $method->setAccessible(true);
         
-        // Sample email data with source extraction and imap_headers
-        $imapHeaders = [
-            'subject' => 'Test Email Subject',
-            'from' => [
-                ['mailbox' => 'sender', 'host' => 'example.com']
-            ],
-            'to' => [
-                ['mailbox' => 'recipient', 'host' => 'example.org']
-            ],
-            'cc' => [
-                ['mailbox' => 'cc-recipient', 'host' => 'example.net']
-            ]
-        ];
-        
+        // Sample email data with source extraction and email details
         $emailData = [
             'email_id' => 'test-email-id',
             'thread_id' => 'test-thread-id',
@@ -282,24 +269,18 @@ class ThreadEmailExtractorPromptTest extends PHPUnit\Framework\TestCase {
             'thread_entity_id' => 'test-entity-id',
             'thread_my_name' => 'Test User',
             'thread_my_email' => 'test@example.com',
-            'imap_headers' => json_encode($imapHeaders)
+            'email_subject' => 'Test Email Subject',
+            'email_from_address' => 'sender@example.com',
+            'email_to_addresses' => ['recipient@example.org'],
+            'email_cc_addresses' => ['cc-recipient@example.net']
         ];
         
         // :: Act
         $result = $method->invoke($this->extractor, $emailData);
         
         // :: Assert
-        $this->assertStringContainsString('Thread Details:', $result, 'Output should contain thread details section');
-        $this->assertStringContainsString('- Thread title: Test Thread', $result, 'Output should contain thread title');
-        $this->assertStringContainsString('Email Details:', $result, 'Output should contain email details section');
-        $this->assertStringContainsString('- Date: 2025-04-21 12:00:00', $result, 'Output should contain email date');
-        $this->assertStringContainsString('- Subject: Test Email Subject', $result, 'Output should contain email subject');
-        $this->assertStringContainsString('- Direction: IN', $result, 'Output should contain email direction');
-        $this->assertStringContainsString('- From: sender@example.com', $result, 'Output should contain from address');
-        $this->assertStringContainsString('- To: recipient@example.org', $result, 'Output should contain to address');
-        $this->assertStringContainsString('- CC: cc-recipient@example.net', $result, 'Output should contain CC address');
-        $this->assertStringContainsString('- Source: Email body', $result, 'Output should indicate source is email body');
-        $this->assertStringContainsString('This is the extracted text from the email body', $result, 'Output should contain the extracted text');
+        $expectedOutput = "Thread Details:\n- Thread title: Test Thread\n- Thread entity ID: test-entity-id\n- Thread my name: Test User\n- Thread my email: test@example.com\nEmail Details:\n- Date: 2025-04-21 12:00:00\n- Subject: Test Email Subject\n- Direction: IN\n- From: sender@example.com\n- To: recipient@example.org\n- CC: cc-recipient@example.net\n- Source: Email body\n\nThis is the extracted text from the email body";
+        $this->assertEquals($expectedOutput, $result, 'Output should match expected format with all email details');
     }
     
     public function testPreparePromptInputWithoutImapHeaders() {
@@ -309,7 +290,7 @@ class ThreadEmailExtractorPromptTest extends PHPUnit\Framework\TestCase {
         $method = $reflection->getMethod('preparePromptInput');
         $method->setAccessible(true);
         
-        // Sample email data without imap_headers
+        // Sample email data without email details
         $emailData = [
             'email_id' => 'test-email-id',
             'thread_id' => 'test-thread-id',
@@ -322,26 +303,18 @@ class ThreadEmailExtractorPromptTest extends PHPUnit\Framework\TestCase {
             'thread_title' => 'Test Thread',
             'thread_entity_id' => 'test-entity-id',
             'thread_my_name' => 'Test User',
-            'thread_my_email' => 'test@example.com'
-            // Note: no imap_headers field
+            'thread_my_email' => 'test@example.com',
+            'email_subject' => '',
+            'email_from_address' => '',
+            'email_to_addresses' => [],
+            'email_cc_addresses' => []
         ];
         
         // :: Act
         $result = $method->invoke($this->extractor, $emailData);
         
         // :: Assert
-        $this->assertStringContainsString('Thread Details:', $result, 'Output should contain thread details section');
-        $this->assertStringContainsString('- Thread title: Test Thread', $result, 'Output should contain thread title');
-        $this->assertStringContainsString('Email Details:', $result, 'Output should contain email details section');
-        $this->assertStringContainsString('- Date: 2025-04-21 12:00:00', $result, 'Output should contain email date');
-        $this->assertStringContainsString('- Direction: IN', $result, 'Output should contain email direction');
-        $this->assertStringContainsString('- Source: Email body', $result, 'Output should indicate source is email body');
-        $this->assertStringContainsString('This is the extracted text from the email body', $result, 'Output should contain the extracted text');
-        
-        // Verify that missing email details are not included (graceful degradation)
-        $this->assertStringNotContainsString('- Subject:', $result, 'Output should not contain subject when imap_headers missing');
-        $this->assertStringNotContainsString('- From:', $result, 'Output should not contain from when imap_headers missing');
-        $this->assertStringNotContainsString('- To:', $result, 'Output should not contain to when imap_headers missing');
-        $this->assertStringNotContainsString('- CC:', $result, 'Output should not contain CC when imap_headers missing');
+        $expectedOutput = "Thread Details:\n- Thread title: Test Thread\n- Thread entity ID: test-entity-id\n- Thread my name: Test User\n- Thread my email: test@example.com\nEmail Details:\n- Date: 2025-04-21 12:00:00\n- Direction: IN\n- Source: Email body\n\nThis is the extracted text from the email body";
+        $this->assertEquals($expectedOutput, $result, 'Output should match expected format without email details when fields are empty');
     }
 }
