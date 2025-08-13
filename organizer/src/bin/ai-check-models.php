@@ -16,7 +16,36 @@ putenv('DB_NAME=offpost');
 putenv('DB_USER=offpost');
 
 // Parse command line arguments
-$options = getopt('', ['test', 'prompt:', 'prompt-tester:']);
+$options = getopt('', ['test', 'prompt:', 'prompt-tester:', 'list']);
+
+if (isset($options['list'])) {
+    ###### List available prompts ######
+    ###### List available prompts ######
+    ###### List available prompts ######
+    ###### List available prompts ######
+    echo "Available prompts:\n";
+    echo "==================\n";
+
+    $prompt_service = new PromptService($openai_api_key);
+    $available_prompts = $prompt_service->getAvailablePrompts();
+    
+    if (empty($available_prompts)) {
+        echo "No prompts available.\n";
+        exit(0);
+    }
+    
+    foreach ($available_prompts as $prompt_id => $prompt) {
+        echo "ID: " . $prompt_id . "\n";
+        echo "Class: " . get_class($prompt) . "\n";
+        echo "---\n";
+    }
+    
+    echo "\nTotal: " . count($available_prompts) . " prompts available\n";
+    echo "\nUsage examples:\n";
+    echo "  php ai-check-models.php --prompt <prompt_id>\n";
+    echo "  php ai-check-models.php --prompt-tester <prompt_id>\n";
+    exit(0);
+}
 
 if (isset($options['prompt'])) {
     ###### Test prompt with manual input ######
@@ -150,6 +179,7 @@ if (isset($options['prompt-tester'])) {
 
 if (!isset($options['test'])) {
     echo "Usage: php ai-check-models.php --test\n";
+    echo "Usage: php ai-check-models.php --list\n";
     echo "Usage: php ai-check-models.php --prompt <prompt id>\n";
     echo "Usage: php ai-check-models.php --prompt-tester <prompt id>\n";
     exit(1);
