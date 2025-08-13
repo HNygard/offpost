@@ -17,6 +17,9 @@ RUN docker-php-ext-install pdo_mysql mysqli
 # Install Postgres PDO for internal database
 RUN docker-php-ext-install pdo_pgsql pgsql
 
+# Add Debian bookworm repository to install libc-client2007e-dev package
+# This is needed because libc-client-dev is no longer available in Debian trixie (used by php:8.2-apache)
+# and libc-client2007e-dev (the replacement) is not yet available in trixie
 RUN echo "deb http://deb.debian.org/debian bookworm main" >> /etc/apt/sources.list && \
     apt-get update && apt-get install -y libc-client2007e-dev libkrb5-dev && \
     rm -r /var/lib/apt/lists/*
