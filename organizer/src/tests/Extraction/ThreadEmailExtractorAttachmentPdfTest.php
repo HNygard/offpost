@@ -162,12 +162,22 @@ class ThreadEmailExtractorAttachmentPdfTest extends PHPUnit\Framework\TestCase {
         // Create a partial mock to override methods
         $extractor = $this->getMockBuilder(ThreadEmailExtractorAttachmentPdf::class)
             ->setConstructorArgs([$this->extractionService])
-            ->onlyMethods(['findNextEmailForExtraction', 'extractTextFromPdf'])
+            ->onlyMethods(['findNextEmailForExtraction', 'extractTextFromPdf', 'enrichEmailWithDetails'])
             ->getMock();
         
         // Configure the mocks
         $extractor->method('findNextEmailForExtraction')
             ->willReturn($attachmentData);
+            
+        // Mock enrichEmailWithDetails to return data with required email fields
+        $enrichedData = array_merge($attachmentData, [
+            'email_subject' => 'Test Subject',
+            'email_from_address' => 'test@example.com',
+            'email_to_addresses' => ['recipient@example.com'],
+            'email_cc_addresses' => []
+        ]);
+        $extractor->method('enrichEmailWithDetails')
+            ->willReturn($enrichedData);
         
         $exception = new \Exception('PDF extraction error');
         $extractor->method('extractTextFromPdf')
