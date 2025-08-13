@@ -76,6 +76,7 @@ class SuggestedReplyGeneratorTest extends PHPUnit\Framework\TestCase {
         $email->id = "email1";
         $email->email_type = "IN";
         $email->datetime_received = "2025-01-15 10:30:00";
+        $email->description = "Email with case number";
         $thread->emails = [$email];
         
         // Create mock extraction with case number
@@ -98,8 +99,15 @@ class SuggestedReplyGeneratorTest extends PHPUnit\Framework\TestCase {
         $result = $this->generator->generateSuggestedReply($thread);
         
         // :: Assert
-        $this->assertStringContainsString("Saksnummer informasjon:", $result);
-        $this->assertStringContainsString("Saksnummer: 2025/123-1 (Kongsberg kommune)", $result);
+        $expectedResult = 'Tidligere e-poster:
+
+1. Mottatt den 2025-01-15 10:30:00
+   Sammendrag: Email with case number
+   Saksnummer: 2025/123-1 (Kongsberg kommune)
+
+--
+Test User';
+        $this->assertEquals($expectedResult, $result);
     }
     
     public function testGenerateWithDocumentNumber() {
@@ -111,6 +119,7 @@ class SuggestedReplyGeneratorTest extends PHPUnit\Framework\TestCase {
         $email->id = "email1";
         $email->email_type = "IN";
         $email->datetime_received = "2025-01-15 10:30:00";
+        $email->description = "Email with document number";
         $thread->emails = [$email];
         
         // Create mock extraction with document number
@@ -133,8 +142,15 @@ class SuggestedReplyGeneratorTest extends PHPUnit\Framework\TestCase {
         $result = $this->generator->generateSuggestedReply($thread);
         
         // :: Assert
-        $this->assertStringContainsString("Saksnummer informasjon:", $result);
-        $this->assertStringContainsString("Dokumentnummer: 2025/DOC-456 (Test Kommune)", $result);
+        $expectedResult = 'Tidligere e-poster:
+
+1. Mottatt den 2025-01-15 10:30:00
+   Sammendrag: Email with document number
+   Dokumentnummer: 2025/DOC-456 (Test Kommune)
+
+--
+Test User';
+        $this->assertEquals($expectedResult, $result);
     }
     
     public function testGenerateWithCopyRequest() {
@@ -146,6 +162,7 @@ class SuggestedReplyGeneratorTest extends PHPUnit\Framework\TestCase {
         $email->id = "email1";
         $email->email_type = "IN";
         $email->datetime_received = "2025-01-15 10:30:00";
+        $email->description = "Email requesting copy";
         $thread->emails = [$email];
         
         // Create mock extraction with copy request
@@ -166,7 +183,16 @@ class SuggestedReplyGeneratorTest extends PHPUnit\Framework\TestCase {
         $result = $this->generator->generateSuggestedReply($thread);
         
         // :: Assert
-        $this->assertStringContainsString("Merk: Avsenderen ber om en kopi av e-posten.", $result);
+        $expectedResult = 'Tidligere e-poster:
+
+1. Mottatt den 2025-01-15 10:30:00
+   Sammendrag: Email requesting copy
+   Merk: Avsenderen ber om en kopi av e-posten.
+
+--
+Test User';
+        
+        $this->assertEquals($expectedResult, $result);
     }
     
     public function testGenerateWithNoCopyRequest() {
@@ -251,13 +277,19 @@ class SuggestedReplyGeneratorTest extends PHPUnit\Framework\TestCase {
         $result = $this->generator->generateSuggestedReply($thread);
         
         // :: Assert
-        $this->assertStringContainsString("Tidligere e-poster:", $result);
-        $this->assertStringContainsString("1. Sendt den 2025-01-16 14:20:00", $result);
-        $this->assertStringContainsString("2. Mottatt den 2025-01-15 10:30:00", $result);
-        $this->assertStringContainsString("Saksnummer informasjon:", $result);
-        $this->assertStringContainsString("Saksnummer: 2025/123-1 (Kongsberg kommune)", $result);
-        $this->assertStringContainsString("Merk: Avsenderen ber om en kopi av e-posten.", $result);
-        $this->assertStringContainsString("--\nTest User", $result);
+        $expectedResult = 'Tidligere e-poster:
+
+1. Sendt den 2025-01-16 14:20:00
+   Sammendrag: Response
+
+2. Mottatt den 2025-01-15 10:30:00
+   Sammendrag: Initial request
+   Saksnummer: 2025/123-1 (Kongsberg kommune)
+   Merk: Avsenderen ber om en kopi av e-posten.
+
+--
+Test User';
+        $this->assertEquals($expectedResult, $result);
     }
     
     public function testGenerateWithNoEmails() {
@@ -270,10 +302,11 @@ class SuggestedReplyGeneratorTest extends PHPUnit\Framework\TestCase {
         $result = $this->generator->generateSuggestedReply($thread);
         
         // :: Assert
-        $this->assertStringContainsString("Tidligere e-poster:", $result);
-        $this->assertStringContainsString("--\nTest User", $result);
-        $this->assertStringNotContainsString("Saksnummer informasjon:", $result);
-        $this->assertStringNotContainsString("Merk: Avsenderen ber om en kopi av e-posten.", $result);
+        $expectedResult = 'Tidligere e-poster:
+
+--
+Test User';
+        $this->assertEquals($expectedResult, $result);
     }
     
     public function testGenerateWithMoreThanFiveEmails() {
@@ -307,5 +340,61 @@ class SuggestedReplyGeneratorTest extends PHPUnit\Framework\TestCase {
         // Should NOT contain emails 1-2
         $this->assertStringNotContainsString("2025-01-1 10:30:00", $result);
         $this->assertStringNotContainsString("2025-01-2 10:30:00", $result);
+    }
+    
+    public function testNoDuplicateCaseNumbers() {
+        // :: Setup
+        $thread = new Thread();
+        $thread->my_name = "Test User";
+        
+        // Create two emails with the same case number
+        $email1 = new stdClass();
+        $email1->id = "email1";
+        $email1->email_type = "IN";
+        $email1->datetime_received = "2025-01-15 10:30:00";
+        $email1->description = "First email";
+        
+        $email2 = new stdClass();
+        $email2->id = "email2";
+        $email2->email_type = "IN";
+        $email2->datetime_received = "2025-01-16 11:30:00";
+        $email2->description = "Second email";
+        
+        $thread->emails = [$email1, $email2];
+        
+        // Both emails have the same case number
+        $sameCaseNumberExtraction = function() {
+            $extraction = new ThreadEmailExtraction();
+            $extraction->prompt_service = "openai";
+            $extraction->prompt_id = "saksnummer";
+            $extraction->extracted_text = json_encode([
+                (object)['case_number' => '2025/123-1', 'entity_name' => 'Test Kommune']
+            ]);
+            return $extraction;
+        };
+        
+        $this->extractionService->expects($this->exactly(2))
+            ->method('getExtractionsForEmail')
+            ->willReturnMap([
+                ['email1', [$sameCaseNumberExtraction()]],
+                ['email2', [$sameCaseNumberExtraction()]]
+            ]);
+        
+        // :: Act
+        $result = $this->generator->generateSuggestedReply($thread);
+        
+        // :: Assert
+        $expectedResult = 'Tidligere e-poster:
+
+1. Mottatt den 2025-01-16 11:30:00
+   Sammendrag: Second email
+   Saksnummer: 2025/123-1 (Test Kommune)
+
+2. Mottatt den 2025-01-15 10:30:00
+   Sammendrag: First email
+
+--
+Test User';
+        $this->assertEquals($expectedResult, $result);
     }
 }
