@@ -1,0 +1,26 @@
+### TEST INPUT ###
+
+Thread Details:
+- Thread title: Sak 2025/2617
+- Thread entity ID: kongsberg-kommune
+- Thread my name: Test User
+- Thread my email: test@example.com
+Email Details:
+- Date: 2025-04-21 12:00:00+00
+- Direction: IN
+- Source: Email body
+
+Du er satt som kopimottaker på sak 2025/2617
+
+	Vennlig hilsen
+
+			A A A | seksjonsleder
+
+	e-post: a.a.a@kongsberg.kommune.no
+
+
+### EXPECTED OUTPUT ###
+{"is_requesting_copy":false,"copy_request_description":""}
+
+### COMMENT ###
+This email is a notification that the recipient has been set as a "kopimottaker" (copy recipient), not a request for a copy.
