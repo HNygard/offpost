@@ -21,6 +21,7 @@ class CopyAskingForPrompt extends OpenAiPrompt {
                "- The sender is providing/sending a copy (e.g., \"Attached is a copy\", \"Vedlagt er kopi\", \"Here is a copy\")\n" .
                "- The email mentions copies in a descriptive context without requesting them\n" .
                "- The message only mentions a copy of an election stamp (e.g. \"valgstempel\") without requesting a copy of anything else\n" .
+               "- The message is notifying someone they have been set as a copy recipient (e.g., \"Du er satt som kopimottaker\", \"You have been added as a copy recipient\")\n" .
                "\n" .
 
                'Focus on the **direction** of the request: only return true when someone is asking TO RECEIVE a copy, not when someone is providing or describing copies.' . "\n\n" .
