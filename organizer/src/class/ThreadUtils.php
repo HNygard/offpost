@@ -197,7 +197,8 @@ function getEmailSubjectFromImapHeaders($imapHeaders) {
         return '';
     }
     
-    return (string) $headers->subject;
+    $subject = (string) $headers->subject;
+    return ImapEmail::getEmailSubject('Subject: ' . $subject);
 }
 
 /**
