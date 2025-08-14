@@ -110,7 +110,7 @@ class ThreadEmailExtractorPromptEmailLatestReplyTest extends PHPUnit\Framework\T
         // Sample extraction
         $extraction = new ThreadEmailExtraction();
         $extraction->extraction_id = 456;
-        $extraction->email_id = $emailData['email_id'];
+        $extraction->email_id = $enrichedData['email_id'];
         $extraction->prompt_id = 'email-latest-reply';
         $extraction->prompt_text = 'email-latest-reply';
         $extraction->prompt_service = 'openai';
@@ -128,7 +128,7 @@ class ThreadEmailExtractorPromptEmailLatestReplyTest extends PHPUnit\Framework\T
         $this->extractionService->expects($this->once())
             ->method('createExtraction')
             ->with(
-                $this->equalTo($emailData['email_id']),
+                $this->equalTo($enrichedData['email_id']),
                 $this->stringContains('The task is to find the text in the email.'),
                 $this->equalTo('openai'),
                 $this->isNull(),
@@ -150,7 +150,7 @@ class ThreadEmailExtractorPromptEmailLatestReplyTest extends PHPUnit\Framework\T
         // :: Assert
         $this->assertTrue($result['success'], 'Extraction should be successful. Result: ' . json_encode($result));
         $this->assertEquals('Successfully extracted text from email', $result['message']);
-        $this->assertEquals($emailData['email_id'], $result['email_id']);
+        $this->assertEquals($enrichedData['email_id'], $result['email_id']);
         $this->assertEquals($emailData['thread_id'], $result['thread_id']);
         $this->assertEquals($extraction->extraction_id, $result['extraction_id']);
     }
@@ -180,7 +180,7 @@ class ThreadEmailExtractorPromptEmailLatestReplyTest extends PHPUnit\Framework\T
         // Sample extraction
         $extraction = new ThreadEmailExtraction();
         $extraction->extraction_id = 456;
-        $extraction->email_id = $emailData['email_id'];
+        $extraction->email_id = $enrichedData['email_id'];
         $extraction->prompt_id = 'email-latest-reply';
         $extraction->prompt_text = 'email-latest-reply';
         $extraction->prompt_service = 'openai';
@@ -198,7 +198,7 @@ class ThreadEmailExtractorPromptEmailLatestReplyTest extends PHPUnit\Framework\T
         $this->extractionService->expects($this->once())
             ->method('createExtraction')
             ->with(
-                $this->equalTo($emailData['email_id']),
+                $this->equalTo($enrichedData['email_id']),
                 $this->stringContains('The task is to find the text in the email.'),
                 $this->equalTo('openai'),
                 $this->isNull(),
@@ -220,7 +220,7 @@ class ThreadEmailExtractorPromptEmailLatestReplyTest extends PHPUnit\Framework\T
         // :: Assert
         $this->assertTrue($result['success'], 'Extraction should be successful. Result: ' . json_encode($result));
         $this->assertEquals('Successfully extracted text from email', $result['message'], 'Message should indicate successful extraction');
-        $this->assertEquals($emailData['email_id'], $result['email_id'], 'Email ID should match');
+        $this->assertEquals($enrichedData['email_id'], $result['email_id'], 'Email ID should match');
         $this->assertEquals($emailData['thread_id'], $result['thread_id'], 'Thread ID should match');
         $this->assertEquals($extraction->extraction_id, $result['extraction_id'], 'Extraction ID should match');
     }
@@ -249,7 +249,7 @@ class ThreadEmailExtractorPromptEmailLatestReplyTest extends PHPUnit\Framework\T
         // Sample extraction
         $extraction = new ThreadEmailExtraction();
         $extraction->extraction_id = 456;
-        $extraction->email_id = $emailData['email_id'];
+        $extraction->email_id = $enrichedData['email_id'];
         $extraction->prompt_id = 'email-latest-reply';
         $extraction->prompt_text = 'email-latest-reply';
         $extraction->prompt_service = 'openai';
@@ -267,7 +267,7 @@ class ThreadEmailExtractorPromptEmailLatestReplyTest extends PHPUnit\Framework\T
         $this->extractionService->expects($this->once())
             ->method('createExtraction')
             ->with(
-                $this->equalTo($emailData['email_id']),
+                $this->equalTo($enrichedData['email_id']),
                 $this->stringContains('The task is to find the text in the email.'),
                 $this->equalTo('openai'),
                 $this->isNull(),
@@ -290,7 +290,7 @@ class ThreadEmailExtractorPromptEmailLatestReplyTest extends PHPUnit\Framework\T
         // :: Assert
         $this->assertFalse($result['success'], 'Extraction should fail when an exception is thrown');
         $this->assertEquals('Failed to extract text from email.', $result['message'], 'Message should indicate extraction failure');
-        $this->assertEquals($emailData['email_id'], $result['email_id'], 'Email ID should match');
+        $this->assertEquals($enrichedData['email_id'], $result['email_id'], 'Email ID should match');
         $this->assertEquals($emailData['thread_id'], $result['thread_id'], 'Thread ID should match');
         $this->assertEquals('AI processing error', $result['error'], 'Error message should match the exception message');
     }

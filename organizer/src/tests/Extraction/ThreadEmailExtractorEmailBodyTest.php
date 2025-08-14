@@ -109,7 +109,7 @@ class ThreadEmailExtractorEmailBodyTest extends PHPUnit\Framework\TestCase {
         $this->extractionService->expects($this->once())
             ->method('createExtraction')
             ->with(
-                $this->equalTo($emailData['email_id']),
+                $this->equalTo($enrichedData['email_id']),
                 $this->equalTo('email_body'),
                 $this->equalTo('code')
             )
@@ -178,7 +178,7 @@ class ThreadEmailExtractorEmailBodyTest extends PHPUnit\Framework\TestCase {
         $this->extractionService->expects($this->once())
             ->method('createExtraction')
             ->with(
-                $this->equalTo($emailData['email_id']),
+                $this->equalTo($enrichedData['email_id']),
                 $this->equalTo('email_body'),
                 $this->equalTo('code')
             )
