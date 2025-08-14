@@ -167,7 +167,7 @@ function parseImapHeaders($imapHeaders) {
  * Extract addresses from email address objects
  * 
  * @param array $emailObjects Array of email objects with mailbox and host properties
- * @return array Array of email addresses
+ * @return array Array of email addresses in format "Name <email@domain.com>" or "email@domain.com"
  */
 function extractAddressesFromEmailObjects($emailObjects) {
     if (!is_array($emailObjects)) {
@@ -177,7 +177,14 @@ function extractAddressesFromEmailObjects($emailObjects) {
     $addresses = [];
     foreach ($emailObjects as $email) {
         if (isset($email->mailbox) && isset($email->host)) {
-            $addresses[] = $email->mailbox . '@' . $email->host;
+            $emailAddress = $email->mailbox . '@' . $email->host;
+            
+            // Include personal name if available
+            if (isset($email->personal) && !empty($email->personal)) {
+                $addresses[] = $email->personal . ' <' . $emailAddress . '>';
+            } else {
+                $addresses[] = $emailAddress;
+            }
         }
     }
     
