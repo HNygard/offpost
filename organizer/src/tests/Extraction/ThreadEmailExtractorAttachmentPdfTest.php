@@ -113,10 +113,10 @@ class ThreadEmailExtractorAttachmentPdfTest extends PHPUnit\Framework\TestCase {
         $this->extractionService->expects($this->once())
             ->method('createExtraction')
             ->with(
-                $this->equalTo($enrichedData['email_id']),
+                $this->equalTo($attachmentData['email_id']),
                 $this->equalTo('attachment_pdf'),
                 $this->equalTo('code'),
-                $this->equalTo($enrichedData['attachment_id'])
+                $this->equalTo($attachmentData['attachment_id'])
             )
             ->willReturn($extraction);
         
@@ -186,10 +186,10 @@ class ThreadEmailExtractorAttachmentPdfTest extends PHPUnit\Framework\TestCase {
         $this->extractionService->expects($this->once())
             ->method('createExtraction')
             ->with(
-                $this->equalTo($enrichedData['email_id']),
+                $this->equalTo($attachmentData['email_id']),
                 $this->equalTo('attachment_pdf'),
                 $this->equalTo('code'),
-                $this->equalTo($enrichedData['attachment_id'])
+                $this->equalTo($attachmentData['attachment_id'])
             )
             ->willReturn($extraction);
         

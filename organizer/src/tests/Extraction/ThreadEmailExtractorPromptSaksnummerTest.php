@@ -108,7 +108,7 @@ class ThreadEmailExtractorPromptSaksnummerTest extends PHPUnit\Framework\TestCas
         // Sample extraction
         $extraction = new ThreadEmailExtraction();
         $extraction->extraction_id = 456;
-        $extraction->email_id = $enrichedData['email_id'];
+        $extraction->email_id = $emailData['email_id'];
         $extraction->prompt_id = 'saksnummer';
         $extraction->prompt_text = 'saksnummer';
         $extraction->prompt_service = 'openai';
@@ -127,7 +127,7 @@ class ThreadEmailExtractorPromptSaksnummerTest extends PHPUnit\Framework\TestCas
         $this->extractionService->expects($this->once())
             ->method('createExtraction')
             ->with(
-                $this->equalTo($enrichedData['email_id']),
+                $this->equalTo($emailData['email_id']),
                 $this->stringContains('The task is to find the case number in the email.'),
                 // $promptService
                 $this->equalTo('openai'),
@@ -152,7 +152,7 @@ class ThreadEmailExtractorPromptSaksnummerTest extends PHPUnit\Framework\TestCas
         // Check the result
         $this->assertTrue($result['success'], 'Extraction should be successful. Result: ' . json_encode($result));
         $this->assertEquals('Successfully extracted text from email', $result['message']);
-        $this->assertEquals($enrichedData['email_id'], $result['email_id']);
+        $this->assertEquals($emailData['email_id'], $result['email_id']);
         $this->assertEquals($emailData['thread_id'], $result['thread_id']);
         $this->assertEquals($extraction->extraction_id, $result['extraction_id']);
     }
@@ -182,7 +182,7 @@ class ThreadEmailExtractorPromptSaksnummerTest extends PHPUnit\Framework\TestCas
         // Sample extraction
         $extraction = new ThreadEmailExtraction();
         $extraction->extraction_id = 456;
-        $extraction->email_id = $enrichedData['email_id'];
+        $extraction->email_id = $emailData['email_id'];
         $extraction->prompt_id = 'saksnummer';
         $extraction->prompt_text = 'saksnummer';
         $extraction->prompt_service = 'openai';
@@ -200,7 +200,7 @@ class ThreadEmailExtractorPromptSaksnummerTest extends PHPUnit\Framework\TestCas
         $this->extractionService->expects($this->once())
             ->method('createExtraction')
             ->with(
-                $this->equalTo($enrichedData['email_id']),
+                $this->equalTo($emailData['email_id']),
                 $this->stringContains('The task is to find the case number in the email.'),
                 $this->equalTo('openai'),
                 $this->isNull(),
@@ -222,7 +222,7 @@ class ThreadEmailExtractorPromptSaksnummerTest extends PHPUnit\Framework\TestCas
         // :: Assert
         $this->assertTrue($result['success'], 'Extraction should be successful. Result: ' . json_encode($result));
         $this->assertEquals('Successfully extracted text from email', $result['message'], 'Message should indicate successful extraction');
-        $this->assertEquals($enrichedData['email_id'], $result['email_id'], 'Email ID should match');
+        $this->assertEquals($emailData['email_id'], $result['email_id'], 'Email ID should match');
         $this->assertEquals($emailData['thread_id'], $result['thread_id'], 'Thread ID should match');
         $this->assertEquals($extraction->extraction_id, $result['extraction_id'], 'Extraction ID should match');
     }
