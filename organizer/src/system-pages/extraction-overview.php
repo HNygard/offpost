@@ -8,6 +8,7 @@ require_once __DIR__ . '/../class/Extraction/ThreadEmailExtractorAttachmentPdf.p
 require_once __DIR__ . '/../class/Extraction/ThreadEmailExtractorPromptSaksnummer.php';
 require_once __DIR__ . '/../class/Extraction/ThreadEmailExtractorPromptEmailLatestReply.php';
 require_once __DIR__ . '/../class/Extraction/ThreadEmailExtractorPromptCopyAskingFor.php';
+require_once __DIR__ . '/../class/Extraction/ThreadEmailExtractorPromptSummary.php';
 require_once __DIR__ . '/../class/Thread.php';
 require_once __DIR__ . '/../class/ThreadEmail.php';
 require_once __DIR__ . '/../class/ThreadEmailAttachment.php';
@@ -322,6 +323,12 @@ function getExtractionType($extraction) {
                 <li><b>Prompt - Asking for copy:</b>
                 <?php
                 $extractor = new ThreadEmailExtractorPromptCopyAskingFor();
+                echo $extractor->getNumberOfEmailsToProcess() . ' emails to process';
+                ?></li>
+
+                <li><b>Prompt - Email summary:</b>
+                <?php
+                $extractor = new ThreadEmailExtractorPromptSummary();
                 echo $extractor->getNumberOfEmailsToProcess() . ' emails to process';
                 ?></li>
             </ul>

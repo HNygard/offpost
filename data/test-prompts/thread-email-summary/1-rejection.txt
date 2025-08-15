@@ -1,0 +1,27 @@
+### TEST INPUT ###
+
+Thread Details:
+- Thread title: Svar på innsynskrav
+- Thread entity ID: 987654321-bergen-kommune
+- Thread my name: Kari Nordmann  
+- Thread my email: kari.nordmann@offpost.no
+Email Details:
+- Date: 2025-08-15 14:45:00+00
+- Direction: IN
+- Source: Email body
+
+Takk for henvendelsen datert 10. august.
+
+Vi kan dessverre ikke imøtekomme deres ønske om innsyn i dokumentene, da disse er unntatt offentlighet etter offentleglova § 13.
+
+Eventuell klage kan sendes til Fylkesmannen innen 3 uker.
+
+Vennlig hilsen
+Saksbehandler
+
+
+### EXPECTED OUTPUT ###
+Avslag på innsynskrav med henvisning til offentleglova § 13, klagemulighet til Fylkesmannen innen 3 uker.
+
+### COMMENT ###
+Rejection response - should summarize that the request was denied with reference to the law and appeal information.

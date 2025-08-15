@@ -1,0 +1,32 @@
+### TEST INPUT ###
+
+Thread Details:
+- Thread title: Dokumenter sendt
+- Thread entity ID: 555666777-trondheim-kommune
+- Thread my name: Per Hansen
+- Thread my email: per.hansen@offpost.no
+Email Details:
+- Date: 2025-08-15 16:20:00+00
+- Direction: IN
+- Source: Email body
+
+Hei,
+
+Som lovet sender vi hermed de ønskede dokumentene vedrørende saken.
+
+Vedlagt finner dere:
+- Søknad datert 15.01.2025
+- Vedtak datert 20.02.2025  
+- Korrespondanse med byggeier
+
+Håper dette dekker deres behov. Ta kontakt hvis dere trenger ytterligere informasjon.
+
+Med vennlig hilsen
+Kommunen
+
+
+### EXPECTED OUTPUT ###
+Dokumenter sendt som lovet: søknad fra januar, vedtak fra februar og korrespondanse med byggeier.
+
+### COMMENT ###
+Information release - should summarize that documents were sent and briefly list what was included.

@@ -1,0 +1,25 @@
+### TEST INPUT ###
+
+Thread Details:
+- Thread title: Innsynskrav om kommunale dokumenter
+- Thread entity ID: 123456789-oslo-kommune
+- Thread my name: Ola Nordmann
+- Thread my email: ola.nordmann@offpost.no
+Email Details:
+- Date: 2025-08-15 10:30:00+00
+- Direction: IN
+- Source: Email body
+
+Vi ønsker innsyn i alle dokumenter relatert til byggesak 2024/1234 fra januar til mars 2025.
+
+Takk på forhånd.
+
+Med vennlig hilsen
+Anna Hansen
+
+
+### EXPECTED OUTPUT ###
+Forespørsel om innsyn i dokumenter relatert til byggesak 2024/1234 fra januar til mars 2025.
+
+### COMMENT ###
+Basic request for document access - should create a concise Norwegian summary focusing on what is being requested.
