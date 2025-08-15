@@ -6,23 +6,43 @@ class SaksnummerPrompt extends OpenAiPrompt {
     }
 
     public function getPromptText(): string {
-        return 'You are a system for analyzing emails.'
-                . ' The task is to find the case number in the email.'
-                . ' "You must only respond with a case number if it is **explicitly** present in the input text and in one of the listed formats.'
-                . ' Do not infer or guess based on nearby numbers or context.'
-                . "\n\n"
-                . ' Do not make up any case numbers.'
-                . ' It is **extremely important** that any result is correct and extracted **literally** from the input.'
-                . "\n\n"
-                . "Typical formats for case numbers are:\n"
-                . "- 2025/123 - Case number only. Case 123 in year 2025.\n"
-                . "Typcial formats for document numbers are:\n"
-                . "- 2025/123-2 - Document number. Includes case number plus internal number in the case. In this example number 2 in case 123 in year 2025.\n"
-                . "\n\n"
-                . "The numbers are connected to a public entity. In the structured response, also include the entity name.\n\n"
-                . "If you are unsure about the name of the public entity, including just the case number is fine.\n"
-                . "Same if the document number is not available, don't make anything up.\n"
-                ;
+        return '🤖 You are a system for analyzing emails. Your task is to extract case numbers only if they are **explicitly** mentioned in one of the allowed formats.'
+                . "\n\n" . '✅ Extract and return only if the format is valid. Do **not** guess or infer.'
+                . "\n\n" . '📋 Valid formats include:'
+                . "\n- Case number: 2025/123"
+                . "\n- Document number: 2025/123-2 (includes a case number)"
+                . "\n\n" . '📤 If a case number is found, return it in this JSON format:'
+                . "\n```json"
+                . "\n{"
+                . "\n  \"found_case_number\": true,"
+                . "\n  \"case_numbers\": ["
+                . "\n    {"
+                . "\n      \"case_number\": \"2025/123\","
+                . "\n      \"document_number\": \"2025/123-2\","
+                . "\n      \"entity_name\": \"Entity Name\""
+                . "\n    }"
+                . "\n  ]"
+                . "\n}"
+                . "\n```"
+                . "\nIf the entity is not mentioned or unclear, set entity_name as empty string."
+                . "\nIf document_number is not available, set as \"-\"."
+                . "\nIf no case number is found, return: {\"found_case_number\": false, \"case_numbers\": []}"
+                . "\n\n" . '❌ Extract only what is literally present in the email text. Do **not** fabricate any data.'
+                . "\n\n" . '📧 Example input:'
+                . "\n\"Dear Sir, regarding your inquiry about case number 2025/123 from the Municipality, the status has been updated.\""
+                . "\n✅ Expected output:"
+                . "\n```json"
+                . "\n{"
+                . "\n  \"found_case_number\": true,"
+                . "\n  \"case_numbers\": ["
+                . "\n    {"
+                . "\n      \"case_number\": \"2025/123\","
+                . "\n      \"document_number\": \"-\","
+                . "\n      \"entity_name\": \"Municipality\""
+                . "\n    }"
+                . "\n  ]"
+                . "\n}"
+                . "\n```";
     }
 
     public function getModel(String $input_from_email): string {

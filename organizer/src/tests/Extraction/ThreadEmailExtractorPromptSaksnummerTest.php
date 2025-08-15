@@ -128,7 +128,7 @@ class ThreadEmailExtractorPromptSaksnummerTest extends PHPUnit\Framework\TestCas
             ->method('createExtraction')
             ->with(
                 $this->equalTo($emailData['email_id']),
-                $this->stringContains('The task is to find the case number in the email.'),
+                $this->stringContains('Your task is to extract case numbers only if they are **explicitly** mentioned'),
                 // $promptService
                 $this->equalTo('openai'),
                 // $attachmentId
@@ -201,7 +201,7 @@ class ThreadEmailExtractorPromptSaksnummerTest extends PHPUnit\Framework\TestCas
             ->method('createExtraction')
             ->with(
                 $this->equalTo($emailData['email_id']),
-                $this->stringContains('The task is to find the case number in the email.'),
+                $this->stringContains('Your task is to extract case numbers only if they are **explicitly** mentioned'),
                 $this->equalTo('openai'),
                 $this->isNull(),
                 $this->equalTo('saksnummer')
