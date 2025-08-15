@@ -8,6 +8,7 @@ require_once __DIR__ . '/vendor/autoload.php';
 require_once __DIR__ . '/class/ThreadStorageManager.php';
 require_once __DIR__ . '/class/ThreadAuthorization.php';
 require_once __DIR__ . '/class/Extraction/ThreadEmailExtractorEmailBody.php';
+require_once __DIR__ . '/class/Imap/ImapEmail.php';
 
 // Require authentication
 requireAuth();
@@ -64,13 +65,7 @@ foreach ($thread->emails as $email) {
 
         $email_content = ThreadEmailExtractorEmailBody::extractContentFromEmail($eml);
 
-        try {
-            $message = new Message(['raw' => $eml]);
-            $subject = $message->getHeader('subject')->getFieldValue();
-        }
-        catch (Exception $e) {
-            $subject = 'Error getting subject - ' . $e->getMessage();
-        }
+        $subject = Imap\ImapEmail::getEmailSubject($eml);
         echo '<h1 id="email-subject">Subject: ' . htmlescape($subject) . '</h1>' . chr(10);
         // Convert datetime to local timezone (Europe/Oslo)
         $utcDateTime = new DateTime($email->datetime_received);

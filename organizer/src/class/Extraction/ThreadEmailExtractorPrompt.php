@@ -7,6 +7,7 @@ require_once __DIR__ . '/../Extraction/ThreadEmailExtractor.php';
 require_once __DIR__ . '/../Extraction/Prompts/PromptService.php';
 require_once __DIR__ . '/../ThreadEmail.php';
 require_once __DIR__ . '/../Thread.php';
+require_once __DIR__ . '/../ThreadUtils.php';
 require_once __DIR__ . '/../../error.php';
 
 /**
@@ -183,12 +184,18 @@ abstract class ThreadEmailExtractorPrompt extends ThreadEmailExtractor {
     /**
      * Prepare input for the prompt based on email data and existing extractions
      * 
-     * @param array $email Email data including source extraction
+     * @param array $email Email data including source extraction and pre-extracted email details
      * @return string Prepared input for the prompt
      */
     protected function preparePromptInput($row) {
         // Start with the extracted text from the source extraction
         $input = $row['source_extracted_text'];
+        
+        // Use pre-extracted email details
+        $subject = $row['email_subject'];
+        $fromAddress = $row['email_from_address'];
+        $toAddresses = $row['email_to_addresses'];
+        $ccAddresses = $row['email_cc_addresses'];
         
         // Add basic email and thread details
         $details = [
@@ -199,14 +206,24 @@ abstract class ThreadEmailExtractorPrompt extends ThreadEmailExtractor {
             '- Thread my email: ' . $row['thread_my_email'],
             'Email Details:',
             '- Date: ' . $row['datetime_received'],
-            // TODO: Make subject available
-            //'- Subject: ' . $row['subject'],
-            '- Direction: ' . $row['email_type'],
-            // TODO: Make to/from/cc as fields on thread_emails. 
-            //'- From name: ' . $row['from_name'],
-            //'- From: ' . $row['from_address'],
-            //'- To: ' . $row['to_address'],
         ];
+        
+        // Add subject
+        $details[] = '- Subject: ' . $subject;
+        
+        $details[] = '- Direction: ' . $row['email_type'];
+        
+        // Add from/to/cc details if available
+        if (!empty($fromAddress)) {
+            $details[] = '- From: ' . $fromAddress;
+        }
+        if (!empty($toAddresses)) {
+            $details[] = '- To: ' . implode(', ', $toAddresses);
+        }
+        if (!empty($ccAddresses)) {
+            $details[] = '- CC: ' . implode(', ', $ccAddresses);
+        }
+        
         if ($row['source_prompt_text'] === 'attachment_pdf') {
             $details[] =  '- Source: PDF Attachment';
         }

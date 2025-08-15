@@ -4,6 +4,7 @@ namespace Imap;
 
 require_once __DIR__ . '/../../vendor/autoload.php';
 
+use Exception;
 use Laminas\Mail\Storage\Message;
 
 class ImapEmail {
@@ -140,5 +141,16 @@ class ImapEmail {
 
         // Use array_values to reindex the array after removing duplicates
         return array_values(array_unique($addresses));
+    }
+
+    static function getEmailSubject($eml_or_partial_eml) {
+        try {
+            $message = new Message(['raw' => $eml_or_partial_eml]);
+            $subject = $message->getHeader('subject')->getFieldValue();
+        }
+        catch (Exception $e) {
+            $subject = 'Error getting subject - ' . $e->getMessage();
+        }
+        return $subject;
     }
 }

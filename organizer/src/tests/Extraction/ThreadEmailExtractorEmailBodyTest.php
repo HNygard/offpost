@@ -81,12 +81,22 @@ class ThreadEmailExtractorEmailBodyTest extends PHPUnit\Framework\TestCase {
         // Create a partial mock to override methods
         $extractor = $this->getMockBuilder(ThreadEmailExtractorEmailBody::class)
             ->setConstructorArgs([$this->extractionService])
-            ->onlyMethods(['findNextEmailForExtraction', 'extractTextFromEmailBody'])
+            ->onlyMethods(['findNextEmailForExtraction', 'extractTextFromEmailBody', 'enrichEmailWithDetails'])
             ->getMock();
         
         // Configure the mocks
         $extractor->method('findNextEmailForExtraction')
             ->willReturn($emailData);
+            
+        // Mock enrichEmailWithDetails to return data with required email fields
+        $enrichedData = array_merge($emailData, [
+            'email_subject' => 'Test Subject',
+            'email_from_address' => 'test@example.com',
+            'email_to_addresses' => ['recipient@example.com'],
+            'email_cc_addresses' => []
+        ]);
+        $extractor->method('enrichEmailWithDetails')
+            ->willReturn($enrichedData);
         
         // Create a mock ExtractedEmailBody object
         $mockExtractedBody = new ExtractedEmailBody();
@@ -99,7 +109,7 @@ class ThreadEmailExtractorEmailBodyTest extends PHPUnit\Framework\TestCase {
         $this->extractionService->expects($this->once())
             ->method('createExtraction')
             ->with(
-                $this->equalTo($emailData['email_id']),
+                $this->equalTo($enrichedData['email_id']),
                 $this->equalTo('email_body'),
                 $this->equalTo('code')
             )
@@ -144,12 +154,22 @@ class ThreadEmailExtractorEmailBodyTest extends PHPUnit\Framework\TestCase {
         // Create a partial mock to override methods
         $extractor = $this->getMockBuilder(ThreadEmailExtractorEmailBody::class)
             ->setConstructorArgs([$this->extractionService])
-            ->onlyMethods(['findNextEmailForExtraction', 'extractTextFromEmailBody'])
+            ->onlyMethods(['findNextEmailForExtraction', 'extractTextFromEmailBody', 'enrichEmailWithDetails'])
             ->getMock();
         
         // Configure the mocks
         $extractor->method('findNextEmailForExtraction')
             ->willReturn($emailData);
+            
+        // Mock enrichEmailWithDetails to return data with required email fields
+        $enrichedData = array_merge($emailData, [
+            'email_subject' => 'Test Subject',
+            'email_from_address' => 'test@example.com',
+            'email_to_addresses' => ['recipient@example.com'],
+            'email_cc_addresses' => []
+        ]);
+        $extractor->method('enrichEmailWithDetails')
+            ->willReturn($enrichedData);
         
         $exception = new \Exception('Test error');
         $extractor->method('extractTextFromEmailBody')
@@ -158,7 +178,7 @@ class ThreadEmailExtractorEmailBodyTest extends PHPUnit\Framework\TestCase {
         $this->extractionService->expects($this->once())
             ->method('createExtraction')
             ->with(
-                $this->equalTo($emailData['email_id']),
+                $this->equalTo($enrichedData['email_id']),
                 $this->equalTo('email_body'),
                 $this->equalTo('code')
             )
