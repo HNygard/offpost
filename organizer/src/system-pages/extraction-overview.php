@@ -340,6 +340,7 @@ function getExtractionType($extraction) {
                 <a href="/scheduled-email-extraction?type=prompt_saksnummer" class="btn btn-primary">Process Next Prompt saksnummer</a>
                 <a href="/scheduled-email-extraction?type=prompt_email_latest_reply" class="btn btn-primary">Process Next Prompt email latest reply</a>
                 <a href="/scheduled-email-extraction?type=prompt_copy_asking_for" class="btn btn-primary">Process Next Prompt copy asking for</a>
+                <a href="/scheduled-email-extraction?type=prompt_summary" class="btn btn-primary">Process Next Prompt summary</a>
             </p>
         </div>
 

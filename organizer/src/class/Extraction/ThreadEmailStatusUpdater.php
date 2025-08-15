@@ -104,16 +104,18 @@ class ThreadEmailStatusUpdater {
         $summary_lower = mb_strtolower($summary, 'UTF-8');
 
         // Look for keywords that indicate specific status types
-        if (preg_match('/\b(kopi|kopi av|kan vi få|trenger|send|videresend)\b/u', $summary_lower)) {
+        // Order matters - check more specific patterns first
+        
+        if (preg_match('/\b(mer tid|utsette|forlenge|frist)\b/u', $summary_lower)) {
+            return ThreadEmailStatusType::ASKING_FOR_MORE_TIME;
+        }
+        
+        if (preg_match('/\b(kopi|kopi av|kan vi få|send|videresend)\b/u', $summary_lower)) {
             return ThreadEmailStatusType::ASKING_FOR_COPY;
         }
         
         if (preg_match('/\b(avslag|avslår|ikke|kan ikke|avvise)\b/u', $summary_lower)) {
             return ThreadEmailStatusType::REQUEST_REJECTED;
-        }
-        
-        if (preg_match('/\b(mer tid|utsette|forlenge|frist)\b/u', $summary_lower)) {
-            return ThreadEmailStatusType::ASKING_FOR_MORE_TIME;
         }
         
         if (preg_match('/\b(sendt|vedlagt|informasjon|dokumenter|vedlegg)\b/u', $summary_lower)) {
