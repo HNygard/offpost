@@ -258,19 +258,36 @@ class ThreadStatusRepository {
             $email->email_description = $row['email_description'];
             
             // Parse IMAP headers to get from/subject information
-            $imapHeaders = json_decode($row['imap_headers'], true);
-            $email->from_email = $imapHeaders['from'][0]['email'] ?? 'unknown';
-            $email->from_name = $imapHeaders['from'][0]['name'] ?? $email->from_email;
-            $email->subject = $imapHeaders['subject'] ?? 'No subject';
+            $imapHeaders = !empty($row['imap_headers']) ? json_decode($row['imap_headers'], true) : null;
+            $email->from_email = 'unknown';
+            $email->from_name = 'Unknown Sender';
+            $email->subject = 'No subject';
+            
+            if ($imapHeaders && is_array($imapHeaders)) {
+                if (isset($imapHeaders['from']) && is_array($imapHeaders['from']) && !empty($imapHeaders['from'])) {
+                    $email->from_email = $imapHeaders['from'][0]['email'] ?? 'unknown';
+                    $email->from_name = $imapHeaders['from'][0]['name'] ?? $email->from_email;
+                }
+                if (isset($imapHeaders['subject'])) {
+                    $email->subject = $imapHeaders['subject'];
+                }
+            }
             
             // Thread information
             $email->thread_id = $row['thread_id'];
             $email->thread_title = $row['thread_title'];
             $email->entity_id = $row['entity_id'];
-            $email->thread_labels = $row['thread_labels'] ? 
-                array_map(function($label) {
-                    return trim($label, '\"');
-                }, explode(',', trim($row['thread_labels'], '{}'))) : [];
+            
+            // Parse thread labels safely
+            $labelsStr = $row['thread_labels'];
+            $email->thread_labels = [];
+            if (!empty($labelsStr) && $labelsStr !== '{}') {
+                $labelArray = explode(',', trim($labelsStr, '{}'));
+                $email->thread_labels = array_filter(array_map(function($label) {
+                    return trim(trim($label), '\"');
+                }, $labelArray));
+            }
+            
             $email->my_name = $row['my_name'];
             $email->my_email = $row['my_email'];
             $email->request_law_basis = $row['request_law_basis'];
