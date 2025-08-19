@@ -10,6 +10,7 @@ require_once __DIR__ . '/class/ThreadEmailClassifier.php';
 require_once __DIR__ . '/class/Database.php';
 require_once __DIR__ . '/class/ThreadFileOperations.php';
 require_once __DIR__ . '/class/ThreadStorageManager.php';
+require_once __DIR__ . '/class/ThreadStatusRepository.php';
 
 // Require authentication
 requireAuth();
@@ -59,6 +60,9 @@ foreach ($filteredThreads as $file => $threads) {
 $threadStatuses =
  ThreadStatusRepository::getAllThreadStatusesEfficient($threadIds, archived: false)
 + ThreadStatusRepository::getAllThreadStatusesEfficient($threadIds, archived: true);
+
+// Get recent incoming emails for the user (for the activity section)
+$recentEmails = ThreadStatusRepository::getRecentIncomingEmailsForUser($userId, 20);
 
 // Helper function to convert thread status to human-readable string
 function threadStatusToString($status) {
@@ -110,6 +114,29 @@ function getThreadStatusLabelClass($status) {
         default:
             throw new Exception('Unknown status: ' . $status);
     }
+}
+
+// Helper function to format timestamp
+function formatTimestamp($timestamp) {
+    if (!$timestamp) return 'N/A';
+    return date('Y-m-d H:i', strtotime($timestamp));
+}
+
+// Helper function to get thread status from thread information
+function getThreadStatusForEmail($email, $threadStatuses) {
+    if (isset($threadStatuses[$email->thread_id])) {
+        $statusData = $threadStatuses[$email->thread_id];
+        return threadStatusToString($statusData->status);
+    }
+    return 'Unknown';
+}
+
+// Helper function to truncate text
+function truncateText($text, $length = 100) {
+    if (strlen($text) <= $length) {
+        return $text;
+    }
+    return substr($text, 0, $length) . '...';
 }
 
 ?>
@@ -168,6 +195,81 @@ function getThreadStatusLabelClass($status) {
             }
         }
         ?>
+        
+        <!-- Recent Activity Section -->
+        <h2>Recent Activity (<?= count($recentEmails) ?>)</h2>
+        
+        <?php if (count($recentEmails) > 0): ?>
+        <p>Recent incoming emails from threads you have access to, sorted by time received:</p>
+        
+        <table class="recent-activity-table">
+            <thead>
+                <tr>
+                    <th>Thread Info</th>
+                    <th>Email Info</th>
+                    <th>Received</th>
+                    <th>Actions</th>
+                </tr>
+            </thead>
+            <tbody>
+                <?php foreach ($recentEmails as $email): ?>
+                <tr>
+                    <td>
+                        <div class="thread-info">
+                            <strong><?= htmlspecialchars($email->thread_title) ?></strong><br>
+                            <small>Entity: <?= htmlspecialchars($email->entity_id) ?></small><br>
+                            
+                            <!-- Thread Status -->
+                            <span class="label label_info">
+                                <?= htmlspecialchars(getThreadStatusForEmail($email, $threadStatuses)) ?>
+                            </span>
+                            
+                            <!-- Thread Labels -->
+                            <?php if (!empty($email->thread_labels)): ?>
+                                <br>
+                                <?php foreach ($email->thread_labels as $label): ?>
+                                    <?php if (!empty($label)): ?>
+                                        <span class="label"><a href="?label_filter=<?= urlencode($label) ?>"><?= htmlspecialchars($label) ?></a></span>
+                                    <?php endif; ?>
+                                <?php endforeach; ?>
+                            <?php endif; ?>
+                        </div>
+                    </td>
+                    <td>
+                        <div class="email-info">
+                            <strong>From:</strong> <?= htmlspecialchars($email->from_name) ?> 
+                            &lt;<?= htmlspecialchars($email->from_email) ?>&gt;<br>
+                            <strong>Subject:</strong> <?= htmlspecialchars($email->subject) ?><br>
+                            
+                            <?php if (!empty($email->email_description)): ?>
+                                <strong>Summary:</strong> <?= htmlspecialchars(truncateText($email->email_description, 150)) ?><br>
+                            <?php endif; ?>
+                            
+                            <strong>Classification:</strong> 
+                            <span class="label <?= getLabelType('email', $email->email_status_type) ?>">
+                                <?= htmlspecialchars($email->email_status_text) ?>
+                            </span>
+                        </div>
+                    </td>
+                    <td>
+                        <small><?= formatTimestamp($email->datetime_received) ?></small>
+                    </td>
+                    <td>
+                        <div class="action-links">
+                            <a href="/thread-view?entityId=<?= urlencode($email->entity_id) ?>&threadId=<?= urlencode($email->thread_id) ?>">View Thread</a><br>
+                            <a href="/thread-classify?entityId=<?= urlencode($email->entity_id) ?>&threadId=<?= urlencode($email->thread_id) ?>">Classify</a>
+                        </div>
+                    </td>
+                </tr>
+                <?php endforeach; ?>
+            </tbody>
+        </table>
+        <?php else: ?>
+        <p>No recent email activity found.</p>
+        <?php endif; ?>
+        
+        <hr>
+        
         <h2>Threads (<?= $totalThreads ?>)</h2>
 
         <ul class="nav-links">
