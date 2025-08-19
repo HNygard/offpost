@@ -10,6 +10,7 @@ require_once __DIR__ . '/class/ThreadEmailClassifier.php';
 require_once __DIR__ . '/class/Database.php';
 require_once __DIR__ . '/class/ThreadFileOperations.php';
 require_once __DIR__ . '/class/ThreadStorageManager.php';
+require_once __DIR__ . '/class/ThreadStatusRepository.php';
 
 // Require authentication
 requireAuth();
@@ -59,6 +60,8 @@ foreach ($filteredThreads as $file => $threads) {
 $threadStatuses =
  ThreadStatusRepository::getAllThreadStatusesEfficient($threadIds, archived: false)
 + ThreadStatusRepository::getAllThreadStatusesEfficient($threadIds, archived: true);
+
+
 
 // Helper function to convert thread status to human-readable string
 function threadStatusToString($status) {
@@ -111,6 +114,8 @@ function getThreadStatusLabelClass($status) {
             throw new Exception('Unknown status: ' . $status);
     }
 }
+
+
 
 ?>
 <!DOCTYPE html>
@@ -168,9 +173,11 @@ function getThreadStatusLabelClass($status) {
             }
         }
         ?>
+        
         <h2>Threads (<?= $totalThreads ?>)</h2>
 
         <ul class="nav-links">
+            <li><a href="/recent-activity">Recent Activity</a></li>
             <li><a href="/thread-start">Start new thread</a></li>
             <li><a href="/entities">View entities</a></li>
             <li><?php if (isset($_GET['archived'])): ?>
