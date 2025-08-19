@@ -755,6 +755,70 @@ span.label.label_disabled a {
     background-color: #2980b9;
 }
 
+/* Recent Activity Table Styles */
+.recent-activity-table {
+    width: 100%;
+    margin-bottom: 30px;
+    border-collapse: collapse;
+}
+
+.recent-activity-table th {
+    background-color: #f8f9fa;
+    font-weight: bold;
+    text-align: left;
+    padding: 12px;
+    border: 1px solid #ddd;
+    color: #495057;
+}
+
+.recent-activity-table td {
+    padding: 15px 12px;
+    border: 1px solid #ddd;
+    vertical-align: top;
+}
+
+.recent-activity-table tr:nth-child(even) {
+    background-color: #f9f9f9;
+}
+
+.recent-activity-table tr:hover {
+    background-color: #e8f4f8;
+}
+
+.thread-info {
+    max-width: 250px;
+}
+
+.thread-info strong {
+    color: #2c3e50;
+    display: block;
+    margin-bottom: 4px;
+}
+
+.thread-info small {
+    color: #6c757d;
+    font-size: 0.85em;
+}
+
+.email-info {
+    max-width: 300px;
+}
+
+.email-info strong {
+    color: #2c3e50;
+    font-weight: 600;
+}
+
+.recent-activity-table .action-links {
+    white-space: nowrap;
+}
+
+.recent-activity-table .action-links a {
+    display: block;
+    margin-bottom: 4px;
+    font-size: 0.9em;
+}
+
 /* Media query for mobile responsiveness */
 @media (max-width: 600px) {
     .responsive-form {
