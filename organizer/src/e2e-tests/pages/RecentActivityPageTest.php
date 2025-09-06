@@ -141,8 +141,7 @@ class RecentActivityPageTest extends E2EPageTestCase {
         // :: Act
         $response = $this->renderPage('/recent-activity');
 
-        // :: Assert multiple emails are shown
-        $this->assertStringContainsString('Recent Incoming Emails (2)', $response->body);
+        // :: Assert both specific emails we created are shown (don't assert exact count as other tests may add emails)
         $this->assertStringContainsString('First Email Subject', $response->body);
         $this->assertStringContainsString('Second Email Subject', $response->body);
         $this->assertStringContainsString('First Sender', $response->body);
