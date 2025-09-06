@@ -67,6 +67,12 @@ foreach ($threadIds as $threadInfo) {
             $processedCount++;
             break;
             
+        case 'unarchive':
+            $thread->archived = false;
+            $storageManager->updateThread($thread, $userId);
+            $processedCount++;
+            break;
+            
         case 'ready_for_sending':
             if ($thread->sending_status === Thread::SENDING_STATUS_STAGING) {
                 $thread->sending_status = Thread::SENDING_STATUS_READY_FOR_SENDING;
@@ -125,6 +131,36 @@ if ($errorCount > 0) {
     $_SESSION['error_message'] = "Failed to process $errorCount thread(s)";
 }
 
-// Redirect back to the thread listing
+// Redirect back to the appropriate page
+// If only one thread was processed, redirect back to thread view
+if ($processedCount === 1 && count($threadIds) === 1) {
+    $parts = explode(':', $threadIds[0]);
+    if (count($parts) === 2) {
+        $entityId = $parts[0];
+        $threadId = $parts[1];
+        
+        // Security: Validate that the thread actually exists and user has access
+        // This prevents open redirect attacks by ensuring we only redirect to valid threads
+        $thread = null;
+        foreach ($allThreads as $file => $threads) {
+            if ($threads->entity_id === $entityId) {
+                foreach ($threads->threads as $t) {
+                    if ($t->id === $threadId && $t->canUserAccess($userId)) {
+                        $thread = $t;
+                        break 2;
+                    }
+                }
+            }
+        }
+        
+        // Only redirect if thread exists and user has access
+        if ($thread) {
+            header("Location: /thread-view?threadId=" . urlencode($threadId) . "&entityId=" . urlencode($entityId));
+            exit;
+        }
+    }
+}
+
+// Otherwise redirect to the thread listing
 header('Location: /');
 exit;
