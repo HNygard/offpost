@@ -35,10 +35,9 @@ $folderManager->initialize();
 
 // Same as the task https://offpost.no/update-imap?task=create-folders:
 createFolders($connection, $folderManager, $threads);
+$connection->closeConnection();
 
 // Same as the task https://offpost.no/update-imap?task=process-sent:
-
-$connection->closeConnection();
 $connection = new ImapConnection($imapServer, $imap_username, $imap_password, true);
 $connection->openConnection($imapSentFolder);
 
@@ -48,6 +47,10 @@ processSentFolder($connection, $folderManager, $emailProcessor, $threads, $imapS
 $connection->closeConnection(CL_EXPUNGE);
 
 // Same as the task https://offpost.no/update-imap?task=process-inbox:
+$connection = new ImapConnection($imapServer, $imap_username, $imap_password, true);
+$connection->openConnection();
 
-// TODO:
+$emailProcessor = new ImapEmailProcessor($connection);
 
+processInbox($connection, $folderManager, $emailProcessor, $threads);
+$connection->closeConnection(CL_EXPUNGE);
