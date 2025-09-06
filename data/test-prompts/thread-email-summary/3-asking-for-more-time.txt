@@ -21,7 +21,16 @@ Saksbehandler Kommune
 
 
 ### EXPECTED OUTPUT ###
-Forespørsel om utsettelse av frist for innsynskrav til 30. september grunnet kompleks sak.
+STARTS_WITH:Forespørsel om utsettelse av frist for innsynskrav til 30. september grunnet kompleks sak.
+STARTS_WITH:Forespørsel om forlengelse av fristen for innsynskrav til 30. september på grunn av kompleksitet i saken.
+STARTS_WITH:Forespørsel om forlengelse av fristen for behandling av innsynskravet til 30. september på grunn av kompleksitet i saken.
+CONTAINS:frist for innsynskrav til 30. september
+CONTAINS:fristen for behandling av innsynskravet til 30. september
+CONTAINS:fristen for behandling av innsynskrav til 30. september
+CONTAINS:fristen for innsynskrav til 30. september
+CONTAINS:fristen for innsynskravet til 30. september
+CONTAINS:fristen for å behandle innsynskravet til 30. september
+CONTAINS:frist for behandling av innsynskrav inntil 30. september
 
 ### COMMENT ###
 Request for more time - should be categorized as ASKING_FOR_MORE_TIME and summarize the time extension request.

@@ -23,6 +23,7 @@ CONTAINS:byggesak 2024/1234 fra januar til mars 2025
 CONTAINS:alle dokumenter relatert til byggesak 2024/1234
 CONTAINS:alle dokumenter knyttet til byggesak 2024/1234
 CONTAINS:innsynskrav om dokumenter relatert til byggesak 2024/1234
+CONTAINS:Innsynskrav om dokumenter relatert til byggesak 2024/1234
 
 ### COMMENT ###
 Basic request for document access - should create a concise Norwegian summary focusing on what is being requested.

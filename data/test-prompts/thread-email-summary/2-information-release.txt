@@ -43,6 +43,20 @@ STARTS_WITH:Dokumenter vedrørende saken er sendt, inkludert søknad datert 15.0
 STARTS_WITH:Dokumenter vedrørende saken er sendt, inkludert søknad datert 15.01.2025, vedtak datert 20.02.2025, og korrespondanse med byggeier
 STARTS_WITH:Dokumenter vedrørende saken er sendt, inkludert søknad datert 15.01.2025, vedtak datert 20.02.2025, samt korrespondanse med byggeier
 STARTS_WITH:Dokumenter vedrørende saken er sendt, inkludert søknad datert 15.01.2025, vedtak datert 20.02.2025, samt korrespondanse med byggeier
+STARTS_WITH:Dokumentene vedrørende saken er sendt og inkluderer en søknad datert 15.01.2025, vedtak datert 20.02.2025, samt korrespondanse med byggeier
+STARTS_WITH:Dokumenter vedrørende saken er sendt i henhold til tidligere avtale. Vedleggene inkluderer søknad datert 15.01.2025, vedtak datert 20.02.2025, samt korrespondanse med byggeier
+STARTS_WITH:Dokumenter vedrørende saken er sendt, og inkluderer søknad datert 15.01.2025, vedtak datert 20.02.2025, samt korrespondanse med byggeier
+STARTS_WITH:Dokumenter vedrørende saken er sendt, inkludert søknad fra 15.01.2025, vedtak fra 20.02.2025, og korrespondanse med byggeier
+STARTS_WITH:Dokumentene vedrørende saken er sendt og inkluderer søknad datert 15.01.2025, vedtak datert 20.02.2025, samt korrespondanse med byggeier
+STARTS_WITH:Dokumentene vedrørende saken er sendt, og inkluderer søknad datert 15.01.2025, vedtak datert 20.02.2025, samt korrespondanse med byggeier
+STARTS_WITH:Dokumentene vedrørende saken er sendt, inkludert søknad fra 15.01.2025, vedtak fra 20.02.2025 og korrespondanse med byggeier
+STARTS_WITH:Dokumentene vedrørende saken er sendt, inkludert en søknad datert 15.01.2025, et vedtak datert 20.02.2025, og korrespondanse med byggeier.
+STARTS_WITH:Dokumenter vedrørende saken er sendt, inkludert søknaden datert 15.01.2025, vedtaket datert 20.02.2025, og korrespondansen med byggeier.
+STARTS_WITH:De ønskede dokumentene vedrørende saken er sendt, inkludert søknad datert 15.01.2025, vedtak datert 20.02.2025, og korrespondanse med byggeier
+CONTAINS:søknad fra 15.01.2025, vedtak fra 20.02.2025, og korrespondanse med byggeier
+CONTAINS:søknad datert 15.01.2025, vedtak datert 20.02.2025, og korrespondanse med byggeier
+CONTAINS:søknad datert 15.01.2025, vedtak datert 20.02.2025, samt korrespondanse med byggeier.
+CONTAINS:søknad datert 15.01.2025, vedtak datert 20.02.2025 og korrespondanse med byggeier
 
 ### COMMENT ###
 Information release - should summarize that documents were sent and briefly list what was included.
