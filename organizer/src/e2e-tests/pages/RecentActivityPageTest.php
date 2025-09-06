@@ -31,7 +31,7 @@ class RecentActivityPageTest extends E2EPageTestCase {
                 'Test email description for recent activity',
                 date('Y-m-d H:i:s'),
                 date('Y-m-d H:i:s'),
-                'email_status_pending',
+                'unknown',
                 'Pending Classification',
                 'Test email content',
                 $imapHeaders
@@ -109,7 +109,7 @@ class RecentActivityPageTest extends E2EPageTestCase {
                 'First email description',
                 date('Y-m-d H:i:s', strtotime('-1 hour')),
                 date('Y-m-d H:i:s', strtotime('-1 hour')),
-                'email_status_pending',
+                'unknown',
                 'Pending Classification',
                 'First email content',
                 $imapHeaders1
@@ -131,7 +131,7 @@ class RecentActivityPageTest extends E2EPageTestCase {
                 'Second email description',
                 date('Y-m-d H:i:s'),
                 date('Y-m-d H:i:s'),
-                'email_status_classified',
+                'success',
                 'Classified',
                 'Second email content',
                 $imapHeaders2
@@ -157,10 +157,10 @@ class RecentActivityPageTest extends E2EPageTestCase {
     public function testPageRequiresAuthentication() {
         // :: Act
         // Try to access the page without authentication
-        $response = $this->renderPage('/recent-activity', null, 'GET', '302 Found');
+        $response = $this->renderPage('/recent-activity', user: null, expected_status: '302 Found');
 
         // :: Assert
         // Should be redirected (authentication required)
-        $this->assertStringContainsString('Location: /auth.php', $response->headers);
+        $this->assertStringContainsString('Location: http://localhost:25083/oidc/auth?client_id=organizer&response_type=code&scope=openid+email+profile&redirect_uri=http%3A%2F%2Flocalhost%3A25081%2Fcallback&state=', $response->headers);
     }
 }
