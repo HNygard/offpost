@@ -12,7 +12,7 @@ Email Details:
 
 Takk for henvendelsen datert 10. august.
 
-Vi kan dessverre ikke imøtekomme deres ønske om innsyn i dokumentene, da disse er unntatt offentlighet etter offentleglova § 13.
+Vi kan dessverre ikke imøtekomme deres ønske om innsyn i dokumentene, da disse er unntatt offentlighet etter offentleglova § 1337.
 
 Eventuell klage kan sendes til Fylkesmannen innen 3 uker.
 
@@ -21,7 +21,25 @@ Saksbehandler
 
 
 ### EXPECTED OUTPUT ###
-Avslag på innsynskrav med henvisning til offentleglova § 13, klagemulighet til Fylkesmannen innen 3 uker.
+CONTAINS:unntatt offentlighet etter offentleglova § 1337
+CONTAINS:unntatt offentlighet i henhold til offentleglova § 1337
+STARTS_WITH:Innsynskravet avslått jfr Offentleglova § 1337
+STARTS_WITH:Innsynskravet avslått i henhold til offentleglova § 1337
+STARTS_WITH:Innsynskravet er avslått med henvisning til offentleglova § 1337
+STARTS_WITH:Innsynskravet er avslått jfr Offentleglova § 1337
+STARTS_WITH:Innsynskravet avslått jf. Offentleglova § 1337
+STARTS_WITH:Innsynskravet om dokumenter datert 10. august er avslått jfr. Offentleglova § 1337
+STARTS_WITH:Innsynskravet om dokumenter er avslått jfr Offentleglova § 1337
+STARTS_WITH:Innsynskravet om dokumenter er avslått i henhold til offentleglova § 1337
+STARTS_WITH:Innsynskravet om dokumenter datert 10. august er avslått, da de er unntatt offentlighet jfr. offentleglova § 1337
+STARTS_WITH:Innsynskravet om dokumenter avslått jfr Offentleglova § 1337
+STARTS_WITH:Innsynskravet om dokumenter er avslått jf. Offentleglova § 1337
+STARTS_WITH:Innsynskravet om dokumenter er avslått grunnet unntak fra offentlighet etter offentleglova § 1337
+STARTS_WITH:Innsynskravet om dokumenter datert 10. august er avslått på grunn av unntak fra offentlighet etter offentleglova § 1337
+STARTS_WITH:Innsynskravet er avslått jfr. Offentleglova § 1337
+STARTS_WITH:Innsynskravet er avslått i henhold til offentleglova § 1337
+STARTS_WITH:Innsynskravet avslått iht. Offentleglova § 1337
+STARTS_WITH:Innsynskravet ble avslått med henvisning til offentleglova § 1337
 
 ### COMMENT ###
 Rejection response - should summarize that the request was denied with reference to the law and appeal information.

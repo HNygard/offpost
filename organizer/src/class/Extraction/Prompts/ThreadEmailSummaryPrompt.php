@@ -6,14 +6,22 @@ class ThreadEmailSummaryPrompt extends OpenAiPrompt {
     }
 
     public function getPromptText(): string {
-        return 'Du er et system for å analysere e-poster på norsk.'
-                . ' Oppgaven er å lage et kort sammendrag av e-posten som skal hjelpe en saksbehandler å forstå innholdet raskt.'
-                . ' Sammendraget skal være på norsk og skal være kort og presist (maksimalt 2-3 setninger).'
-                . ' Fokuser på hovedbudskapet, viktige datoer, og hva avsenderen ber om eller informerer om.'
-                . ' Ikke ta med avsenders navn eller epost.'
-                . ' Hvis e-posten inneholder en forespørsel, nevn hva som blir bedt om.'
-                . ' Hvis e-posten inneholder et svar eller informasjon, nevn hva som blir kommunisert.'
-                . ' Svar kun med sammendraget, ingen forklaringer eller formatering.';
+        return "Du er et system for å analysere e-poster på norsk.\n"
+                . "Oppgaven er å lage et kort sammendrag av e-posten som skal hjelpe en saksbehandler å forstå innholdet raskt.\n"
+                . "Sammendraget skal være på norsk og skal være kort og presist (maksimalt 2-3 setninger).\n"
+                . "Fokuser på hovedbudskapet, viktige datoer, og hva avsenderen ber om eller informerer om.\n"
+                . "Ikke ta med avsenders navn eller epost.\n"
+                . "Hvis e-posten inneholder en forespørsel, nevn hva som blir bedt om.\n"
+                . "Hvis e-posten inneholder et svar eller informasjon, nevn hva som blir kommunisert.\n"
+                . "Svar kun med sammendraget, ingen forklaringer eller formatering.\n"
+                . "Ikke finn på informasjon som ikke er i e-posten.\n"
+                . "\n"
+                
+                . "Eksempler:\n"
+                . "- Innsynskravet avslått jfr Offentleglova § 1337.\n"
+                . "- Forespørsel om innsyn i dokumenter relatert til byggesak 2023/13.\n"
+                . "- Purring på manglende svar.\n"
+                ;
     }
 
     public function getModel(String $input_from_email): string {
