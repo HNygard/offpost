@@ -7,10 +7,14 @@ class SaksnummerPrompt extends OpenAiPrompt {
 
     public function getPromptText(): string {
         return '🤖 You are a system for analyzing emails. Your task is to extract case numbers only if they are **explicitly** mentioned in one of the allowed formats.'
-                . "\n\n" . '✅ Extract and return only if the format is valid. Do **not** guess or infer.'
+                . "\n\n" . '✅ Extract and return only if the format is valid. Do **not** guess case numbers.'
                 . "\n\n" . '📋 Valid formats include:'
                 . "\n- Case number: 2025/123"
                 . "\n- Document number: 2025/123-2 (includes a case number)"
+                . "\n\n" . '🏛️ Entity names: If a case number is found, include the entity name. You may infer the entity name from:'
+                . "\n- Entity names mentioned in the email text"
+                . "\n- Thread context information (thread entity ID, thread title)"
+                . "\n- Common variations of public entity names"
                 . "\n\n" . '📤 If a case number is found, return it in this JSON format:'
                 . "\n```json"
                 . "\n{"
@@ -24,10 +28,10 @@ class SaksnummerPrompt extends OpenAiPrompt {
                 . "\n  ]"
                 . "\n}"
                 . "\n```"
-                . "\nIf the entity is not mentioned or unclear, set entity_name as empty string."
+                . "\nIf the entity cannot be determined, set entity_name as empty string."
                 . "\nIf document_number is not available, set as \"-\"."
                 . "\nIf no case number is found, return: {\"found_case_number\": false, \"case_numbers\": []}"
-                . "\n\n" . '❌ Extract only what is literally present in the email text. Do **not** fabricate any data.'
+                . "\n\n" . '❌ Extract only case numbers that are literally present. Do **not** fabricate case numbers.'
                 . "\n\n" . '📧 Example input:'
                 . "\n\"Dear Sir, regarding your inquiry about case number 2025/123 from the Municipality, the status has been updated.\""
                 . "\n✅ Expected output:"
