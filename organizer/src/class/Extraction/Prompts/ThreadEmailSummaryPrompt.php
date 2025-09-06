@@ -10,6 +10,7 @@ class ThreadEmailSummaryPrompt extends OpenAiPrompt {
                 . ' Oppgaven er å lage et kort sammendrag av e-posten som skal hjelpe en saksbehandler å forstå innholdet raskt.'
                 . ' Sammendraget skal være på norsk og skal være kort og presist (maksimalt 2-3 setninger).'
                 . ' Fokuser på hovedbudskapet, viktige datoer, og hva avsenderen ber om eller informerer om.'
+                . ' Ikke ta med avsenders navn eller epost.'
                 . ' Hvis e-posten inneholder en forespørsel, nevn hva som blir bedt om.'
                 . ' Hvis e-posten inneholder et svar eller informasjon, nevn hva som blir kommunisert.'
                 . ' Svar kun med sammendraget, ingen forklaringer eller formatering.';
