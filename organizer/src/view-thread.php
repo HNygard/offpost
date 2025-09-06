@@ -324,9 +324,13 @@ function print_extraction ($extraction) {
             </div>
 
             <div class="action-links">
-                <a href="/toggle-thread-archive?entityId=<?= htmlescape($entityId) ?>&threadId=<?= htmlescape($threadId) ?>&archive=<?= $thread->archived ? '0' : '1' ?>">
-                    <?= $thread->archived ? 'Unarchive thread' : 'Archive thread' ?>
-                </a>
+                <form method="POST" action="/thread-bulk-actions" style="display: inline;">
+                    <input type="hidden" name="action" value="<?= $thread->archived ? 'unarchive' : 'archive' ?>">
+                    <input type="hidden" name="thread_ids[]" value="<?= htmlescape($entityId) ?>:<?= htmlescape($threadId) ?>">
+                    <button type="submit" class="button">
+                        <?= $thread->archived ? 'Unarchive thread' : 'Archive thread' ?>
+                    </button>
+                </form>
             </div>
 
             <?php if ($thread->isUserOwner($userId)): ?>
