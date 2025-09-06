@@ -40,6 +40,7 @@ STARTS_WITH:Innsynskravet er avslått jfr. Offentleglova § 1337
 STARTS_WITH:Innsynskravet er avslått i henhold til offentleglova § 1337
 STARTS_WITH:Innsynskravet avslått iht. Offentleglova § 1337
 STARTS_WITH:Innsynskravet ble avslått med henvisning til offentleglova § 1337
+STARTS_WITH:Innsynskravet om dokumenter ble avslått i henhold til offentleglova § 1337
 
 ### COMMENT ###
 Rejection response - should summarize that the request was denied with reference to the law and appeal information.
