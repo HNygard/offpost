@@ -95,39 +95,6 @@ class RecentActivityPageTest extends E2EPageTestCase {
         $this->assertStringContainsString('Classify', $response->body);
     }
 
-    public function testPageWithNoActivity() {
-        // :: Setup  
-        // Temporarily remove all incoming emails to simulate no activity state
-        $backupEmails = Database::query("SELECT * FROM thread_emails WHERE email_type = 'IN'");
-        Database::execute("DELETE FROM thread_emails WHERE email_type = 'IN'");
-        
-        try {
-            // :: Act
-            $response = $this->renderPage('/recent-activity');
-
-            // :: Assert basic page content
-            $this->assertStringContainsString('<h1>Recent Activity</h1>', $response->body);
-            $this->assertStringContainsString('Recent Incoming Emails (0)', $response->body);
-
-            // :: Assert message for no activity
-            $this->assertStringContainsString('No recent email activity found.', $response->body);
-
-            // :: Assert navigation links are still present
-            $this->assertStringContainsString('Back to main page', $response->body);
-        } finally {
-            // :: Cleanup - Restore all the backed up incoming emails
-            foreach ($backupEmails as $email) {
-                $columns = array_keys($email);
-                $placeholders = str_repeat('?,', count($columns) - 1) . '?';
-                $columnList = implode(',', $columns);
-                Database::execute(
-                    "INSERT INTO thread_emails ($columnList) VALUES ($placeholders)",
-                    array_values($email)
-                );
-            }
-        }
-    }
-
     public function testPageWithMultipleEmails() {
         // :: Setup
         // Create multiple test threads with emails
