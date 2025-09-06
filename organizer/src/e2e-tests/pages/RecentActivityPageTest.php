@@ -16,18 +16,25 @@ class RecentActivityPageTest extends E2EPageTestCase {
         $entityId = $testData['entity_id'];
 
         // Create a test incoming email for this thread to show in recent activity
+        $imapHeaders = json_encode([
+            'from' => [
+                ['name' => 'Test Sender', 'email' => 'test@example.com']
+            ],
+            'subject' => 'Test Email Subject'
+        ]);
+        
         Database::execute(
-            "INSERT INTO thread_emails (thread_id, email_type, from_name, from_email, subject, description, datetime_received, status_type, status_text) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)",
+            "INSERT INTO thread_emails (thread_id, email_type, description, datetime_received, timestamp_received, status_type, status_text, content, imap_headers) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)",
             [
                 $threadId,
                 'IN',
-                'Test Sender',
-                'test@example.com',
-                'Test Email Subject',
                 'Test email description for recent activity',
                 date('Y-m-d H:i:s'),
+                date('Y-m-d H:i:s'),
                 'email_status_pending',
-                'Pending Classification'
+                'Pending Classification',
+                'Test email content',
+                $imapHeaders
             ]
         );
 
@@ -87,33 +94,47 @@ class RecentActivityPageTest extends E2EPageTestCase {
         $threadId2 = $testData2['thread']->id;
 
         // Create multiple test incoming emails
+        $imapHeaders1 = json_encode([
+            'from' => [
+                ['name' => 'First Sender', 'email' => 'first@example.com']
+            ],
+            'subject' => 'First Email Subject'
+        ]);
+        
         Database::execute(
-            "INSERT INTO thread_emails (thread_id, email_type, from_name, from_email, subject, description, datetime_received, status_type, status_text) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)",
+            "INSERT INTO thread_emails (thread_id, email_type, description, datetime_received, timestamp_received, status_type, status_text, content, imap_headers) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)",
             [
                 $threadId1,
                 'IN',
-                'First Sender',
-                'first@example.com',
-                'First Email Subject',
                 'First email description',
                 date('Y-m-d H:i:s', strtotime('-1 hour')),
+                date('Y-m-d H:i:s', strtotime('-1 hour')),
                 'email_status_pending',
-                'Pending Classification'
+                'Pending Classification',
+                'First email content',
+                $imapHeaders1
             ]
         );
 
+        $imapHeaders2 = json_encode([
+            'from' => [
+                ['name' => 'Second Sender', 'email' => 'second@example.com']
+            ],
+            'subject' => 'Second Email Subject'
+        ]);
+        
         Database::execute(
-            "INSERT INTO thread_emails (thread_id, email_type, from_name, from_email, subject, description, datetime_received, status_type, status_text) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)",
+            "INSERT INTO thread_emails (thread_id, email_type, description, datetime_received, timestamp_received, status_type, status_text, content, imap_headers) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)",
             [
                 $threadId2,
                 'IN',
-                'Second Sender',
-                'second@example.com',
-                'Second Email Subject',
                 'Second email description',
                 date('Y-m-d H:i:s'),
+                date('Y-m-d H:i:s'),
                 'email_status_classified',
-                'Classified'
+                'Classified',
+                'Second email content',
+                $imapHeaders2
             ]
         );
 
