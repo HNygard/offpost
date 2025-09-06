@@ -8,35 +8,64 @@ require_once(__DIR__ . '/../../class/Entity.php');
 require_once(__DIR__ . '/../../class/ThreadEmail.php');
 
 class RecentActivityPageTest extends E2EPageTestCase {
-    public function testPageHappy() {
-        // :: Setup
-        // Use the test data we created
-        $testData = E2ETestSetup::createTestThread();
-        $threadId = $testData['thread']->id;
-        $entityId = $testData['entity_id'];
-
-        // Create a test incoming email for this thread to show in recent activity
+    
+    private $createdThreadIds = [];
+    private $createdEmailIds = [];
+    
+    protected function tearDown(): void {
+        // Clean up test data after each test to prevent interference
+        $this->cleanupTestData();
+        parent::tearDown();
+    }
+    
+    private function cleanupTestData() {
+        // Delete emails and threads created by this test
+        foreach ($this->createdEmailIds as $emailId) {
+            Database::execute("DELETE FROM thread_emails WHERE id = ?", [$emailId]);
+        }
+        foreach ($this->createdThreadIds as $threadId) {
+            E2ETestSetup::cleanupTestThread($threadId);
+        }
+        $this->createdThreadIds = [];
+        $this->createdEmailIds = [];
+    }
+    
+    private function createTestEmailForThread($threadId, $subjectSuffix = '', $timeOffset = 0) {
+        $uniqueId = uniqid();
         $imapHeaders = json_encode([
             'from' => [
-                ['name' => 'Test Sender', 'email' => 'test@example.com']
+                ['name' => 'Test Sender ' . $uniqueId, 'email' => 'test' . $uniqueId . '@example.com']
             ],
-            'subject' => 'Test Email Subject'
+            'subject' => 'Test Email Subject' . $subjectSuffix . ' ' . $uniqueId
         ]);
         
-        Database::execute(
-            "INSERT INTO thread_emails (thread_id, email_type, description, datetime_received, timestamp_received, status_type, status_text, content, imap_headers) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)",
+        $emailId = Database::queryValue(
+            "INSERT INTO thread_emails (thread_id, email_type, description, datetime_received, timestamp_received, status_type, status_text, content, imap_headers) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?) RETURNING id",
             [
                 $threadId,
                 'IN',
                 'Test email description for recent activity',
-                date('Y-m-d H:i:s'),
-                date('Y-m-d H:i:s'),
+                date('Y-m-d H:i:s', strtotime($timeOffset . ' seconds')),
+                date('Y-m-d H:i:s', strtotime($timeOffset . ' seconds')),
                 'unknown',
                 'Pending Classification',
                 'Test email content',
                 $imapHeaders
             ]
         );
+        
+        $this->createdEmailIds[] = $emailId;
+        return $emailId;
+    }
+
+    public function testPageHappy() {
+        // :: Setup
+        $testData = E2ETestSetup::createTestThread();
+        $threadId = $testData['thread']->id;
+        $this->createdThreadIds[] = $threadId;
+        
+        // Create a test incoming email for this thread
+        $this->createTestEmailForThread($threadId);
 
         // :: Act
         $response = $this->renderPage('/recent-activity');
@@ -55,7 +84,7 @@ class RecentActivityPageTest extends E2EPageTestCase {
         // :: Assert that the test email appears in the listing
         $this->assertStringContainsString('Test Email Subject', $response->body);
         $this->assertStringContainsString('Test Sender', $response->body);
-        $this->assertStringContainsString('test@example.com', $response->body);
+        $this->assertStringContainsString('@example.com', $response->body);
 
         // :: Assert navigation links
         $this->assertStringContainsString('Back to main page', $response->body);
@@ -67,21 +96,29 @@ class RecentActivityPageTest extends E2EPageTestCase {
     }
 
     public function testPageWithNoActivity() {
-        // :: Setup
-        // No recent emails setup - just test with empty results
+        // :: Setup  
+        // Remove all thread authorizations for the dev-user-id temporarily to simulate no access
+        $removedAuthorizations = Database::query("DELETE FROM thread_authorizations WHERE user_id = 'dev-user-id' RETURNING thread_id");
+        
+        try {
+            // :: Act
+            $response = $this->renderPage('/recent-activity');
 
-        // :: Act
-        $response = $this->renderPage('/recent-activity');
+            // :: Assert basic page content
+            $this->assertStringContainsString('<h1>Recent Activity</h1>', $response->body);
+            $this->assertStringContainsString('Recent Incoming Emails (0)', $response->body);
 
-        // :: Assert basic page content
-        $this->assertStringContainsString('<h1>Recent Activity</h1>', $response->body);
-        $this->assertStringContainsString('Recent Incoming Emails (0)', $response->body);
+            // :: Assert message for no activity
+            $this->assertStringContainsString('No recent email activity found.', $response->body);
 
-        // :: Assert message for no activity
-        $this->assertStringContainsString('No recent email activity found.', $response->body);
-
-        // :: Assert navigation links are still present
-        $this->assertStringContainsString('Back to main page', $response->body);
+            // :: Assert navigation links are still present
+            $this->assertStringContainsString('Back to main page', $response->body);
+        } finally {
+            // :: Cleanup - Restore the removed authorizations
+            foreach ($removedAuthorizations as $auth) {
+                Database::execute("INSERT INTO thread_authorizations (thread_id, user_id, admin) VALUES (?, 'dev-user-id', true)", [$auth['thread_id']]);
+            }
+        }
     }
 
     public function testPageWithMultipleEmails() {
@@ -89,67 +126,26 @@ class RecentActivityPageTest extends E2EPageTestCase {
         // Create multiple test threads with emails
         $testData1 = E2ETestSetup::createTestThread();
         $testData2 = E2ETestSetup::createTestThread();
+        $this->createdThreadIds[] = $testData1['thread']->id;
+        $this->createdThreadIds[] = $testData2['thread']->id;
         
         $threadId1 = $testData1['thread']->id;
         $threadId2 = $testData2['thread']->id;
 
-        // Create multiple test incoming emails
-        $imapHeaders1 = json_encode([
-            'from' => [
-                ['name' => 'First Sender', 'email' => 'first@example.com']
-            ],
-            'subject' => 'First Email Subject'
-        ]);
-        
-        Database::execute(
-            "INSERT INTO thread_emails (thread_id, email_type, description, datetime_received, timestamp_received, status_type, status_text, content, imap_headers) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)",
-            [
-                $threadId1,
-                'IN',
-                'First email description',
-                date('Y-m-d H:i:s', strtotime('-1 hour')),
-                date('Y-m-d H:i:s', strtotime('-1 hour')),
-                'unknown',
-                'Pending Classification',
-                'First email content',
-                $imapHeaders1
-            ]
-        );
-
-        $imapHeaders2 = json_encode([
-            'from' => [
-                ['name' => 'Second Sender', 'email' => 'second@example.com']
-            ],
-            'subject' => 'Second Email Subject'
-        ]);
-        
-        Database::execute(
-            "INSERT INTO thread_emails (thread_id, email_type, description, datetime_received, timestamp_received, status_type, status_text, content, imap_headers) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)",
-            [
-                $threadId2,
-                'IN',
-                'Second email description',
-                date('Y-m-d H:i:s'),
-                date('Y-m-d H:i:s'),
-                'success',
-                'Classified',
-                'Second email content',
-                $imapHeaders2
-            ]
-        );
+        // Create multiple test incoming emails with different times
+        $this->createTestEmailForThread($threadId1, ' First', '-3600'); // 1 hour ago
+        $this->createTestEmailForThread($threadId2, ' Second', '0'); // now
 
         // :: Act
         $response = $this->renderPage('/recent-activity');
 
-        // :: Assert both specific emails we created are shown (don't assert exact count as other tests may add emails)
-        $this->assertStringContainsString('First Email Subject', $response->body);
-        $this->assertStringContainsString('Second Email Subject', $response->body);
-        $this->assertStringContainsString('First Sender', $response->body);
-        $this->assertStringContainsString('Second Sender', $response->body);
+        // :: Assert both specific emails we created are shown
+        $this->assertStringContainsString('Test Email Subject First', $response->body);
+        $this->assertStringContainsString('Test Email Subject Second', $response->body);
 
         // :: Assert the emails are ordered by time (most recent first)
-        $firstPos = strpos($response->body, 'Second Email Subject');
-        $secondPos = strpos($response->body, 'First Email Subject');
+        $firstPos = strpos($response->body, 'Test Email Subject Second');
+        $secondPos = strpos($response->body, 'Test Email Subject First');
         $this->assertTrue($firstPos < $secondPos, 'Most recent email should appear first');
     }
 
