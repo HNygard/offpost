@@ -33,24 +33,16 @@ $threads = ThreadStorageManager::getInstance()->getThreads();
 $folderManager = new ImapFolderManager($connection);
 $folderManager->initialize();
 
+$emailProcessor = new ImapEmailProcessor($connection);
+
 // Same as the task https://offpost.no/update-imap?task=create-folders:
 createFolders($connection, $folderManager, $threads);
-$connection->closeConnection();
 
 // Same as the task https://offpost.no/update-imap?task=process-sent:
-$connection = new ImapConnection($imapServer, $imap_username, $imap_password, true);
-$connection->openConnection($imapSentFolder);
-
-$emailProcessor = new ImapEmailProcessor($connection);
-
 processSentFolder($connection, $folderManager, $emailProcessor, $threads, $imapSentFolder);
-$connection->closeConnection(CL_EXPUNGE);
 
 // Same as the task https://offpost.no/update-imap?task=process-inbox:
-$connection = new ImapConnection($imapServer, $imap_username, $imap_password, true);
-$connection->openConnection();
-
-$emailProcessor = new ImapEmailProcessor($connection);
-
 processInbox($connection, $folderManager, $emailProcessor, $threads);
+
+// Finally, expunge to remove any deleted emails
 $connection->closeConnection(CL_EXPUNGE);
