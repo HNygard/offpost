@@ -169,7 +169,26 @@ sort($sources);
                                     <button class="close-button" onclick="document.getElementById('response-<?= $log['id'] ?>').close()">&times;</button>
                                 </div>
                                 <div class="dialog-content">
-                                    <strong>Request:</strong>
+                                    <strong>Content:</strong>
+                                    <pre><?php
+                                    $request = json_decode($log['request']);
+                                    foreach($request->input as $input) {
+                                        if ($input->role == 'system') {
+                                            echo '<span style="color: #888;">';
+                                        }
+                                        echo '<b>role: ' . htmlspecialchars($input->role) . "</b>\n";
+                                        echo htmlspecialchars($input->content);
+
+                                        if ($input->role == 'system') {
+                                            echo '</span>';
+                                        }
+                                        echo "\n\n";
+                                    }
+                                    ?></pre>
+                                    
+                                    <hr>
+
+                                    <strong>Full HTTP Request:</strong>
                                     <pre><?= htmlspecialchars($log['request']) ?></pre>
                                     
                                     <hr>
