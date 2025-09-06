@@ -97,8 +97,9 @@ class RecentActivityPageTest extends E2EPageTestCase {
 
     public function testPageWithNoActivity() {
         // :: Setup  
-        // Remove all thread authorizations for the dev-user-id temporarily to simulate no access
-        $removedAuthorizations = Database::query("DELETE FROM thread_authorizations WHERE user_id = 'dev-user-id' RETURNING thread_id");
+        // Temporarily remove all incoming emails to simulate no activity state
+        $backupEmails = Database::query("SELECT * FROM thread_emails WHERE email_type = 'IN'");
+        Database::execute("DELETE FROM thread_emails WHERE email_type = 'IN'");
         
         try {
             // :: Act
@@ -114,9 +115,15 @@ class RecentActivityPageTest extends E2EPageTestCase {
             // :: Assert navigation links are still present
             $this->assertStringContainsString('Back to main page', $response->body);
         } finally {
-            // :: Cleanup - Restore the removed authorizations
-            foreach ($removedAuthorizations as $auth) {
-                Database::execute("INSERT INTO thread_authorizations (thread_id, user_id, admin) VALUES (?, 'dev-user-id', true)", [$auth['thread_id']]);
+            // :: Cleanup - Restore all the backed up incoming emails
+            foreach ($backupEmails as $email) {
+                $columns = array_keys($email);
+                $placeholders = str_repeat('?,', count($columns) - 1) . '?';
+                $columnList = implode(',', $columns);
+                Database::execute(
+                    "INSERT INTO thread_emails ($columnList) VALUES ($placeholders)",
+                    array_values($email)
+                );
             }
         }
     }
