@@ -268,8 +268,27 @@ This is a test email.
     }
 
     public function testExtractContentFromEmailWithProblematicHeaders() {
-        // Load the problematic email that causes Laminas\Mail\Header\Exception\InvalidArgumentException
-        $emlContent = file_get_contents('/tmp/problematic_email.eml');
+        // Create the problematic email content that causes Laminas\Mail\Header\Exception\InvalidArgumentException
+        $emlContent = 'Return-Path: <postmottak@varoy.kommune.no>
+Delivered-To: <removed>
+Received: from mx1.cst.mailpod11-cph3.one.com ([10.27.54.11])
+	by mailstorage6.cst.mailpod11-cph3.one.com with LMTP
+	id +DG/GzZCvWilWwAAclUnxw
+	(envelope-from <postmottak@varoy.kommune.no>)
+	for <removed>; Sun, 07 Sep 2025 08:28:38 +0000
+From: =?iso-8859-1?Q?Postmottak_V=E6r=F8y_kommune?=
+	<postmottak@varoy.kommune.no>
+To: <removed>
+Subject: SV: Innsyn i lokaler for opptelling - Stortingsvalget 2025
+Date: Sun, 7 Sep 2025 08:28:35 +0000
+Content-Type: text/plain; charset="iso-8859-1"
+Content-Transfer-Encoding: quoted-printable
+MIME-Version: 1.0
+
+Hei,
+
+Svar p=E5 innsynsforesp=F8rsel vedr=F8rende stortingsvalget
+';
         
         // This should not throw an exception - it should handle problematic headers gracefully
         $result = ThreadEmailExtractorEmailBody::extractContentFromEmail($emlContent);
