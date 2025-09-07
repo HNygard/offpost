@@ -96,6 +96,10 @@ class ThreadEmailExtractorEmailBody extends ThreadEmailExtractor {
     }
 
     public static function extractContentFromEmail($eml) {
+        if (empty($eml)) {
+            throw new Exception("Empty email content provided for extraction");
+        }
+
         try {
             $message = new \Laminas\Mail\Storage\Message(['raw' => $eml]);
         } catch (Exception $e) {
