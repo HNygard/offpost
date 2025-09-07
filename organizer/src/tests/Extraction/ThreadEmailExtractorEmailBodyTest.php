@@ -267,59 +267,63 @@ This is a test email.
         $this->assertEquals($expectedText, $cleanedText);
     }
 
-    public function testExtractContentFromEmailWithCorruptedDkimHeaders() {
-        // Test email with corrupted DKIM headers (character encoding corruption)
-        // This reproduces the real issue where = gets corrupted to other characters
-        $corruptedEmail = "From: sender@example.com\r\n" .
+    public function testExtractContentFromEmailWithDkimHeaders() {
+        // Test email with DKIM headers that should be stripped
+        $emailWithDkim = "From: sender@example.com\r\n" .
                          "To: recipient@example.com\r\n" .
-                         "Subject: Test Email with Corrupted DKIM\r\n" .
+                         "Subject: Test Email with DKIM\r\n" .
                          "DKIM-Signature: v=1; a=rsa-sha256; c=relaxed/relaxed;\r\n" .
-                         "\td=custmx.one.com; s 201015;\r\n" . // Missing = after s
+                         "\td=custmx.one.com; s=201015;\r\n" .
                          "\th=mime-version:content-transfer-encoding:content-type:in-reply-to:references:\r\n" .
                          "\t message-id:date:subject:to:from:x-halone-refid:x-halone-sa:from:x-halone-sa:\r\n" .
                          "\t x-halone-refid;\r\n" .
                          "\tbh=rIv00cKr8Xj97WFZtdmVkJKsLtJVgVpaj8sxpPtmnM0=;\r\n" .
-                         "\tbÑRyvwGvMBQY371EWYO86jmKOmZwcKfiXURMrZaZkjz7dUf1Hq8mCHVcn+dPWm8dk3vSipkYLDQJH\r\n" . // Ñ instead of =
+                         "\tb=RyvwGvMBQY371EWYO86jmKOmZwcKfiXURMrZaZkjz7dUf1Hq8mCHVcn+dPWm8dk3vSipkYLDQJH\r\n" .
                          "\t iXL6nkuCFGUJz/uPGXWaVqB1skd6V0jHR17zvGQBFyIZyMsVOibl0XvY9bmZwf7Is6jCLUm2OJJ/Uo\r\n" .
                          "\t EdxSemT/iRaznT2cNZU0tU40umIm5HTQxw2lL/ltAhfvDKfSrITTwXbelqMk0GjsdXgI309XYqm1cQ\r\n" .
                          "\t BLObJxLrARR2ZzHmkERv267dTCjzJBB6FG8njUCz5tAQvpeRPu+GnTLKFMq\r\n" .
                          "\t sZ+DzQgUPHuBimow2XjATT3yZQ3JfEA==\r\n" .
                          "Content-Type: text/plain; charset=utf-8\r\n" .
                          "\r\n" .
-                         "This is a test email with corrupted DKIM header.\r\n" .
-                         "The corruption happens when data is read from database with encoding issues.";
+                         "This is a test email with DKIM header.\r\n" .
+                         "The DKIM header should be stripped out completely.";
         
-        // This should not throw an exception - the method should handle corrupted headers
-        $result = ThreadEmailExtractorEmailBody::extractContentFromEmail($corruptedEmail);
+        // This should not throw an exception - DKIM headers should be stripped
+        $result = ThreadEmailExtractorEmailBody::extractContentFromEmail($emailWithDkim);
         
         // Verify we get a result
         $this->assertNotNull($result);
         $this->assertInstanceOf(ExtractedEmailBody::class, $result);
         
-        // Verify content is extracted (either property can be null, but the object should exist)
-        $this->assertTrue($result->html !== null || $result->plain_text !== null);
+        // Verify content is extracted 
+        $this->assertNotNull($result->plain_text);
+        $this->assertStringContainsString('This is a test email with DKIM header', $result->plain_text);
     }
 
-    public function testFixCorruptedDkimHeaders() {
-        // Test the header fixing method directly using reflection
+    public function testRemoveDkimHeaders() {
+        // Test the header removal method directly using reflection
         $reflection = new \ReflectionClass(ThreadEmailExtractorEmailBody::class);
-        $method = $reflection->getMethod('fixCorruptedDkimHeaders');
+        $method = $reflection->getMethod('removeDkimHeaders');
         $method->setAccessible(true);
         
-        $corruptedEmail = "DKIM-Signature: v=1; a=rsa-sha256; c=relaxed/relaxed;\r\n" .
-                         "\td=custmx.one.com; s 201015;\r\n" . // Missing =
-                         "\tb=RyvwGvMBQY371EWYO86jmKOmZwcKfiXURMrZaZkjz7dUf1==\r\n" . // Normal b= case
-                         "\r\n" .
-                         "Test body content";
+        $emailWithDkim = "From: sender@example.com\r\n" .
+                        "DKIM-Signature: v=1; a=rsa-sha256; c=relaxed/relaxed;\r\n" .
+                        "\td=custmx.one.com; s=201015;\r\n" .
+                        "\tb=RyvwGvMBQY371EWYO86jmKOmZwcKfiXURMrZaZkjz7dUf1==\r\n" .
+                        "Subject: Test Email\r\n" .
+                        "\r\n" .
+                        "Test body content";
         
-        $fixed = $method->invoke(null, $corruptedEmail);
+        $stripped = $method->invoke(null, $emailWithDkim);
         
-        // Verify fixes were applied for missing equals
-        $this->assertStringContainsString('s=201015', $fixed); // Missing = should be fixed
-        $this->assertStringNotContainsString('s 201015', $fixed); // Original corruption should be gone
-        $this->assertStringContainsString('b=RyvwGvMBQY', $fixed); // Normal case should remain
+        // Verify DKIM headers were completely removed
+        $this->assertStringNotContainsString('DKIM-Signature', $stripped);
+        $this->assertStringNotContainsString('d=custmx.one.com', $stripped);
+        $this->assertStringNotContainsString('s=201015', $stripped);
         
-        // Note: The complex multi-line corruption like bÑ patterns are handled by the fallback
-        // removal method if character fixing doesn't work
+        // Verify other headers and body are preserved
+        $this->assertStringContainsString('From: sender@example.com', $stripped);
+        $this->assertStringContainsString('Subject: Test Email', $stripped);
+        $this->assertStringContainsString('Test body content', $stripped);
     }
 }
