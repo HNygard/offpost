@@ -90,6 +90,11 @@ class ThreadScheduledEmailSender {
             $thread->sending_status = Thread::SENDING_STATUS_SENT;
             $thread->sent = true; // For backward compatibility
             $this->dbOps->updateThread($thread, 'system');
+
+            // Request an update for the target folder
+
+            $records = ImapFolderStatus::getForThread($thread->id);
+            ImapFolderStatus::createOrUpdate($records['folder_name'], requestUpdate: true);
             
             return [
                 'success' => true,
