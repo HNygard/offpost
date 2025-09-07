@@ -96,7 +96,12 @@ class ThreadEmailExtractorEmailBody extends ThreadEmailExtractor {
     }
 
     public static function extractContentFromEmail($eml) {
-        $message = new \Laminas\Mail\Storage\Message(['raw' => $eml]);
+        try {
+            $message = new \Laminas\Mail\Storage\Message(['raw' => $eml]);
+        } catch (Exception $e) {
+            error_log("Error parsing email content: " . $e->getMessage() . " . EML: " . substr($eml, 0, 1000));
+            throw $e;
+        }
 
         $htmlConvertPart = function ($html, $part) {
             if (!$part || !($part instanceof \Laminas\Mail\Storage\Message)) {
