@@ -267,61 +267,48 @@ This is a test email.
         $this->assertEquals($expectedText, $cleanedText);
     }
 
-    public function testExtractContentFromEmailWithProblematicHeaders() {
-        // Create the problematic email content that causes Laminas\Mail\Header\Exception\InvalidArgumentException
-        $emlContent = 'Return-Path: <postmottak@varoy.kommune.no>
-Delivered-To: <removed>
-Received: from mx1.cst.mailpod11-cph3.one.com ([10.27.54.11])
-	by mailstorage6.cst.mailpod11-cph3.one.com with LMTP
-	id +DG/GzZCvWilWwAAclUnxw
-	(envelope-from <postmottak@varoy.kommune.no>)
-	for <removed>; Sun, 07 Sep 2025 08:28:38 +0000
-From: =?iso-8859-1?Q?Postmottak_V=E6r=F8y_kommune?=
-	<postmottak@varoy.kommune.no>
-To: <removed>
-Subject: SV: Innsyn i lokaler for opptelling - Stortingsvalget 2025
-Date: Sun, 7 Sep 2025 08:28:35 +0000
-Content-Type: text/plain; charset="iso-8859-1"
-Content-Transfer-Encoding: quoted-printable
-MIME-Version: 1.0
-
-Hei,
-
-Svar p=E5 innsynsforesp=F8rsel vedr=F8rende stortingsvalget
-';
+    public function testExtractContentFromEmailWithAnonymizedHeaders() {
+        // Test email with anonymized headers (like <removed>) that would cause Laminas Mail to fail
+        $problematicEmail = "From: sender@example.com\r\n" .
+                          "To: <removed>\r\n" .
+                          "Delivered-To: <removed>\r\n" .
+                          "X-Forwarded-for: <removed>\r\n" .
+                          "Subject: Test Email\r\n" .
+                          "Content-Type: text/plain; charset=utf-8\r\n" .
+                          "\r\n" .
+                          "This is a test email with anonymized headers.\r\n" .
+                          "The headers contain <removed> placeholders for privacy.";
         
-        // This should not throw an exception - it should handle problematic headers gracefully
-        $result = ThreadEmailExtractorEmailBody::extractContentFromEmail($emlContent);
+        // This should not throw an exception and should successfully extract content
+        $result = ThreadEmailExtractorEmailBody::extractContentFromEmail($problematicEmail);
         
-        // Verify we get a result object
+        // Verify we get a valid result
         $this->assertInstanceOf(ExtractedEmailBody::class, $result);
-        
-        // Verify we can extract some content - the body should contain text (might be encoded)
         $this->assertNotEmpty($result->plain_text);
-        
-        // The body contains quoted-printable encoded Norwegian text
-        // p=E5 is the encoded form of 'på' in iso-8859-1 quoted-printable
-        $this->assertStringContainsString('Svar p=E5', $result->plain_text);
+        $this->assertStringContainsString('test email with anonymized headers', $result->plain_text);
+        $this->assertStringContainsString('privacy', $result->plain_text);
     }
 
-    public function testSanitizeProblematicHeaders() {
-        // Create a reflection to access the private method
+    public function testRemoveProblematicHeaders() {
+        // Test the private method for removing problematic headers
         $reflection = new ReflectionClass(ThreadEmailExtractorEmailBody::class);
-        $method = $reflection->getMethod('sanitizeProblematicHeaders');
+        $method = $reflection->getMethod('removeProblematicHeaders');
         $method->setAccessible(true);
         
-        // Test email with problematic headers
-        $problematicEmail = "From: sender@example.com\r\nTo: <removed>\r\nDelivered-To: <removed>\r\nSubject: Test\r\n\r\nEmail body content";
+        $problematicEmail = "From: sender@example.com\r\n" .
+                          "To: <removed>\r\n" .
+                          "Delivered-To: <removed>\r\n" .
+                          "Subject: Test\r\n" .
+                          "\r\n" .
+                          "Email body content";
         
-        // Call the method
-        $sanitized = $method->invoke(null, $problematicEmail);
+        $cleaned = $method->invoke(null, $problematicEmail);
         
-        // Verify that <removed> has been replaced with valid email addresses
-        $this->assertStringContainsString('To: <sanitized@example.com>', $sanitized);
-        $this->assertStringContainsString('Delivered-To: <sanitized@example.com>', $sanitized);
-        $this->assertStringNotContainsString('<removed>', $sanitized);
-        
-        // Verify the body is preserved
-        $this->assertStringContainsString('Email body content', $sanitized);
+        // Verify <removed> headers are removed while keeping valid headers and body
+        $this->assertStringNotContainsString('To: <removed>', $cleaned);
+        $this->assertStringNotContainsString('Delivered-To: <removed>', $cleaned);
+        $this->assertStringContainsString('From: sender@example.com', $cleaned);
+        $this->assertStringContainsString('Subject: Test', $cleaned);
+        $this->assertStringContainsString('Email body content', $cleaned);
     }
 }

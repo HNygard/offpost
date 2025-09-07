@@ -96,12 +96,13 @@ class ThreadEmailExtractorEmailBody extends ThreadEmailExtractor {
     }
 
     /**
-     * Sanitize problematic email headers that cause Laminas Mail parsing errors
+     * Remove headers that contain invalid email addresses causing parsing errors
+     * This preserves privacy by not sanitizing anonymized email addresses
      * 
      * @param string $eml Raw email content
-     * @return string Sanitized email content
+     * @return string Email content with problematic headers removed
      */
-    private static function sanitizeProblematicHeaders($eml) {
+    private static function removeProblematicHeaders($eml) {
         // Split into headers and body
         $parts = explode("\n\n", $eml, 2);
         if (count($parts) < 2) {
@@ -111,21 +112,36 @@ class ThreadEmailExtractorEmailBody extends ThreadEmailExtractor {
         $headers = $parts[0];
         $body = isset($parts[1]) ? $parts[1] : '';
         
-        // Sanitize headers that contain invalid email addresses
-        $headers = preg_replace('/^(To|Delivered-To|X-Forwarded-for):\s*<removed>/mi', '$1: <sanitized@example.com>', $headers);
+        // Remove headers that contain <removed> or other obvious placeholder values
+        // This preserves the user's anonymization intent
+        $headerLines = explode("\n", $headers);
+        $cleanHeaders = [];
         
-        // Sanitize any other obvious placeholder email addresses that might cause issues
-        $headers = preg_replace('/^([^:]+):\s*<removed>/mi', '$1: <sanitized@example.com>', $headers);
+        foreach ($headerLines as $line) {
+            // Skip headers with <removed> placeholder or other obvious anonymization
+            if (preg_match('/:\s*<removed>/', $line)) {
+                continue;
+            }
+            $cleanHeaders[] = $line;
+        }
         
         // Rejoin headers and body
-        return $headers . "\n\n" . $body;
+        return implode("\n", $cleanHeaders) . "\n\n" . $body;
     }
 
     public static function extractContentFromEmail($eml) {
-        // Sanitize problematic headers that cause Laminas Mail parsing errors
-        $sanitizedEml = self::sanitizeProblematicHeaders($eml);
-        
-        $message = new \Laminas\Mail\Storage\Message(['raw' => $sanitizedEml]);
+        try {
+            $message = new \Laminas\Mail\Storage\Message(['raw' => $eml]);
+        } catch (\Laminas\Mail\Exception\InvalidArgumentException $e) {
+            // Handle emails with invalid headers (like anonymized email addresses)
+            // by removing problematic headers while preserving privacy
+            $eml = self::removeProblematicHeaders($eml);
+            $message = new \Laminas\Mail\Storage\Message(['raw' => $eml]);
+        } catch (\Laminas\Mail\Header\Exception\InvalidArgumentException $e) {
+            // Handle specific header parsing exceptions as well
+            $eml = self::removeProblematicHeaders($eml);
+            $message = new \Laminas\Mail\Storage\Message(['raw' => $eml]);
+        }
 
         $htmlConvertPart = function ($html, $part) {
             if (!$part || !($part instanceof \Laminas\Mail\Storage\Message)) {
