@@ -266,4 +266,19 @@ This is a test email.
         // Check the result
         $this->assertEquals($expectedText, $cleanedText);
     }
+
+    public function testExtractContentFromEmailWithProblematicHeaders() {
+        // Load the problematic email that causes Laminas\Mail\Header\Exception\InvalidArgumentException
+        $emlContent = file_get_contents('/tmp/problematic_email.eml');
+        
+        // This should not throw an exception - it should handle problematic headers gracefully
+        $result = ThreadEmailExtractorEmailBody::extractContentFromEmail($emlContent);
+        
+        // Verify we get a result object
+        $this->assertInstanceOf(ExtractedEmailBody::class, $result);
+        
+        // Verify we can extract some content - the body should contain Norwegian text
+        $this->assertNotEmpty($result->plain_text);
+        $this->assertStringContainsString('Svar på innsynsforespørsel', $result->plain_text);
+    }
 }
