@@ -96,13 +96,13 @@ class ThreadEmailExtractorEmailBody extends ThreadEmailExtractor {
     }
 
     /**
-     * Remove headers that contain invalid email addresses causing parsing errors
-     * This preserves privacy by not sanitizing anonymized email addresses
+     * Fix corrupted DKIM headers caused by character encoding issues
+     * Common issue: equals signs (=) get corrupted to other characters like Ñ
      * 
      * @param string $eml Raw email content
-     * @return string Email content with problematic headers removed
+     * @return string Email content with fixed headers
      */
-    private static function removeProblematicHeaders($eml) {
+    private static function fixCorruptedDkimHeaders($eml) {
         // Split into headers and body
         $parts = explode("\n\n", $eml, 2);
         if (count($parts) < 2) {
@@ -112,17 +112,71 @@ class ThreadEmailExtractorEmailBody extends ThreadEmailExtractor {
         $headers = $parts[0];
         $body = isset($parts[1]) ? $parts[1] : '';
         
-        // Remove headers that contain <removed> or other obvious placeholder values
-        // This preserves the user's anonymization intent
+        // Fix common character encoding corruption in DKIM headers
         $headerLines = explode("\n", $headers);
-        $cleanHeaders = [];
+        $fixedHeaders = [];
+        $inDkimHeader = false;
         
         foreach ($headerLines as $line) {
-            // Skip headers with <removed> placeholder or other obvious anonymization
-            if (preg_match('/:\s*<removed>/', $line)) {
-                continue;
+            // Check if this line starts a DKIM header
+            if (preg_match('/^(DKIM-Signature|DKIM-Filter|DomainKey-Signature):/i', $line)) {
+                $inDkimHeader = true;
+            } elseif (preg_match('/^[A-Za-z-]+:/', $line)) {
+                // New header started, no longer in DKIM header
+                $inDkimHeader = false;
             }
-            $cleanHeaders[] = $line;
+            
+            // Apply fixes if we're in a DKIM header (including continuation lines)
+            if ($inDkimHeader) {
+                // Fix pattern like "s 201015" to "s=201015" (missing equals)
+                $line = preg_replace('/\b([a-zA-Z]+)\s+([a-zA-Z0-9][^;\s]+)/', '$1=$2', $line);
+                
+                // Fix pattern like "bÑ" to "b=" where special characters replace =
+                $line = preg_replace('/([a-zA-Z]+)[Ññáàâåäãæçéèêëíìîïñóòôöõøúùûüýþß]([A-Za-z0-9+\/])/', '$1=$2', $line);
+            }
+            $fixedHeaders[] = $line;
+        }
+        
+        // Rejoin headers and body
+        return implode("\n", $fixedHeaders) . "\n\n" . $body;
+    }
+
+    /**
+     * Remove problematic DKIM headers entirely when fixing doesn't work
+     * This is a fallback when character encoding fixes are not sufficient
+     * 
+     * @param string $eml Raw email content
+     * @return string Email content with problematic DKIM headers removed
+     */
+    private static function removeProblematicDkimHeaders($eml) {
+        // Split into headers and body
+        $parts = explode("\n\n", $eml, 2);
+        if (count($parts) < 2) {
+            $parts = explode("\r\n\r\n", $eml, 2);
+        }
+        
+        $headers = $parts[0];
+        $body = isset($parts[1]) ? $parts[1] : '';
+        
+        // Remove DKIM headers entirely
+        $headerLines = explode("\n", $headers);
+        $cleanHeaders = [];
+        $skipHeader = false;
+        
+        foreach ($headerLines as $line) {
+            // Check if this line starts a problematic header
+            if (preg_match('/^(DKIM-Signature|DKIM-Filter|DomainKey-Signature):/i', $line)) {
+                $skipHeader = true;
+                continue;
+            } elseif (preg_match('/^[A-Za-z-]+:/', $line)) {
+                // New header started, stop skipping
+                $skipHeader = false;
+            }
+            
+            // Only add the line if we're not skipping this header
+            if (!$skipHeader) {
+                $cleanHeaders[] = $line;
+            }
         }
         
         // Rejoin headers and body
@@ -132,15 +186,26 @@ class ThreadEmailExtractorEmailBody extends ThreadEmailExtractor {
     public static function extractContentFromEmail($eml) {
         try {
             $message = new \Laminas\Mail\Storage\Message(['raw' => $eml]);
-        } catch (\Laminas\Mail\Exception\InvalidArgumentException $e) {
-            // Handle emails with invalid headers (like anonymized email addresses)
-            // by removing problematic headers while preserving privacy
-            $eml = self::removeProblematicHeaders($eml);
-            $message = new \Laminas\Mail\Storage\Message(['raw' => $eml]);
         } catch (\Laminas\Mail\Header\Exception\InvalidArgumentException $e) {
-            // Handle specific header parsing exceptions as well
-            $eml = self::removeProblematicHeaders($eml);
-            $message = new \Laminas\Mail\Storage\Message(['raw' => $eml]);
+            // Handle specific header parsing exceptions first (more specific exception)
+            $eml = self::fixCorruptedDkimHeaders($eml);
+            try {
+                $message = new \Laminas\Mail\Storage\Message(['raw' => $eml]);
+            } catch (\Exception $e2) {
+                // If fixing doesn't work, remove problematic headers entirely
+                $eml = self::removeProblematicDkimHeaders($eml);
+                $message = new \Laminas\Mail\Storage\Message(['raw' => $eml]);
+            }
+        } catch (\Laminas\Mail\Exception\InvalidArgumentException $e) {
+            // Handle emails with corrupted DKIM headers due to character encoding issues
+            $eml = self::fixCorruptedDkimHeaders($eml);
+            try {
+                $message = new \Laminas\Mail\Storage\Message(['raw' => $eml]);
+            } catch (\Exception $e2) {
+                // If fixing doesn't work, remove problematic headers entirely
+                $eml = self::removeProblematicDkimHeaders($eml);
+                $message = new \Laminas\Mail\Storage\Message(['raw' => $eml]);
+            }
         }
 
         $htmlConvertPart = function ($html, $part) {
