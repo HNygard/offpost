@@ -99,6 +99,7 @@ class ThreadEmailExtractorEmailBody extends ThreadEmailExtractor {
         try {
             $message = new \Laminas\Mail\Storage\Message(['raw' => $eml]);
         } catch (Exception $e) {
+            return json_encode($eml);
             error_log("Error parsing email content: " . $e->getMessage() . " . EML: " . substr($eml, 0, 1000));
             throw $e;
         }
