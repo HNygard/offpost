@@ -33,14 +33,9 @@ class ThreadEmailHeaderProcessingTest {
             "Test body content.\r\n";
 
         // With the fix, this should now work instead of throwing an exception
-        try {
-            $result = ThreadEmailExtractorEmailBody::extractContentFromEmail($problematicEmail);
-            echo "Test passed: DKIM-Signature header is now handled properly\n";
-            return true;
-        } catch (Exception $e) {
-            echo "ERROR: Fixed code should not throw exception: " . $e->getMessage() . "\n";
-            return false;
-        }
+        $result = ThreadEmailExtractorEmailBody::extractContentFromEmail($problematicEmail);
+        echo "Test passed: DKIM-Signature header is now handled properly\n";
+        return true;
     }
 
     public function testEmailWithoutDkimHeaderWorks() {
@@ -57,14 +52,9 @@ class ThreadEmailHeaderProcessingTest {
             "\r\n" .
             "Test body content.\r\n";
 
-        try {
-            $result = ThreadEmailExtractorEmailBody::extractContentFromEmail($cleanEmail);
-            echo "Test passed: Email without DKIM-Signature parses successfully\n";
-            return true;
-        } catch (Exception $e) {
-            echo "ERROR: Clean email should not throw exception: " . $e->getMessage() . "\n";
-            return false;
-        }
+        $result = ThreadEmailExtractorEmailBody::extractContentFromEmail($cleanEmail);
+        echo "Test passed: Email without DKIM-Signature parses successfully\n";
+        return true;
     }
 
     public function testDkimSignatureHeaderIsStripped() {
@@ -110,9 +100,26 @@ class ThreadEmailHeaderProcessingTest {
     public function runAllTests() {
         echo "Running DKIM-Signature header processing tests...\n";
         
-        $test1 = $this->testDkimSignatureHeaderCausesException();
-        $test2 = $this->testEmailWithoutDkimHeaderWorks();
-        $test3 = $this->testDkimSignatureHeaderIsStripped();
+        try {
+            $test1 = $this->testDkimSignatureHeaderCausesException();
+        } catch (Exception $e) {
+            echo "Test 1 failed with exception: " . $e->getMessage() . "\n";
+            $test1 = false;
+        }
+        
+        try {
+            $test2 = $this->testEmailWithoutDkimHeaderWorks();
+        } catch (Exception $e) {
+            echo "Test 2 failed with exception: " . $e->getMessage() . "\n";
+            $test2 = false;
+        }
+        
+        try {
+            $test3 = $this->testDkimSignatureHeaderIsStripped();
+        } catch (Exception $e) {
+            echo "Test 3 failed with exception: " . $e->getMessage() . "\n";
+            $test3 = false;
+        }
         
         if ($test1 && $test2 && $test3) {
             echo "All tests passed!\n";
