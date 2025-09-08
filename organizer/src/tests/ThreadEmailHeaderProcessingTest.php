@@ -1,11 +1,12 @@
 <?php
 
+require_once __DIR__ . '/bootstrap.php';
 require_once __DIR__ . '/../class/Extraction/ThreadEmailExtractorEmailBody.php';
 
 /**
  * Test for fixing DKIM-Signature header parsing issues
  */
-class ThreadEmailHeaderProcessingTest {
+class ThreadEmailHeaderProcessingTest extends PHPUnit\Framework\TestCase {
 
     public function testDkimSignatureHeaderCausesException() {
         // Sample email with problematic DKIM-Signature header (similar to the one from the issue)
@@ -34,8 +35,7 @@ class ThreadEmailHeaderProcessingTest {
 
         // With the fix, this should now work instead of throwing an exception
         $result = ThreadEmailExtractorEmailBody::extractContentFromEmail($problematicEmail);
-        echo "Test passed: DKIM-Signature header is now handled properly\n";
-        return true;
+        $this->assertNotNull($result, "DKIM-Signature header should be handled properly without throwing an exception");
     }
 
     public function testEmailWithoutDkimHeaderWorks() {
@@ -53,8 +53,7 @@ class ThreadEmailHeaderProcessingTest {
             "Test body content.\r\n";
 
         $result = ThreadEmailExtractorEmailBody::extractContentFromEmail($cleanEmail);
-        echo "Test passed: Email without DKIM-Signature parses successfully\n";
-        return true;
+        $this->assertNotNull($result, "Email without DKIM-Signature should parse successfully");
     }
 
     public function testDkimSignatureHeaderIsStripped() {
@@ -76,46 +75,12 @@ class ThreadEmailHeaderProcessingTest {
         $cleanedEmail = $method->invoke(null, $emailWithDkim);
         
         // Verify DKIM-Signature header is removed
-        if (strpos($cleanedEmail, 'DKIM-Signature') !== false) {
-            echo "ERROR: DKIM-Signature header was not stripped\n";
-            return false;
-        }
+        $this->assertStringNotContainsString('DKIM-Signature', $cleanedEmail, "DKIM-Signature header should be stripped");
         
         // Verify other headers are preserved
-        if (strpos($cleanedEmail, 'From: sender@example.com') === false) {
-            echo "ERROR: From header was incorrectly removed\n";
-            return false;
-        }
+        $this->assertStringContainsString('From: sender@example.com', $cleanedEmail, "From header should be preserved");
         
         // Verify body is preserved
-        if (strpos($cleanedEmail, 'Body content') === false) {
-            echo "ERROR: Email body was lost\n";
-            return false;
-        }
-        
-        echo "Test passed: DKIM-Signature header is properly stripped while preserving other content\n";
-        return true;
+        $this->assertStringContainsString('Body content', $cleanedEmail, "Email body should be preserved");
     }
-
-    public function runAllTests() {
-        echo "Running DKIM-Signature header processing tests...\n";
-        
-        $test1 = $this->testDkimSignatureHeaderCausesException();
-        $test2 = $this->testEmailWithoutDkimHeaderWorks();
-        $test3 = $this->testDkimSignatureHeaderIsStripped();
-        
-        if ($test1 && $test2 && $test3) {
-            echo "All tests passed!\n";
-            return true;
-        } else {
-            echo "Some tests failed!\n";
-            return false;
-        }
-    }
-}
-
-// Run the tests if this file is executed directly
-if (basename(__FILE__) == basename($_SERVER["SCRIPT_NAME"])) {
-    $test = new ThreadEmailHeaderProcessingTest();
-    $test->runAllTests();
 }
