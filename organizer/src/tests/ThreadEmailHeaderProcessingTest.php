@@ -100,26 +100,9 @@ class ThreadEmailHeaderProcessingTest {
     public function runAllTests() {
         echo "Running DKIM-Signature header processing tests...\n";
         
-        try {
-            $test1 = $this->testDkimSignatureHeaderCausesException();
-        } catch (Exception $e) {
-            echo "Test 1 failed with exception: " . $e->getMessage() . "\n";
-            $test1 = false;
-        }
-        
-        try {
-            $test2 = $this->testEmailWithoutDkimHeaderWorks();
-        } catch (Exception $e) {
-            echo "Test 2 failed with exception: " . $e->getMessage() . "\n";
-            $test2 = false;
-        }
-        
-        try {
-            $test3 = $this->testDkimSignatureHeaderIsStripped();
-        } catch (Exception $e) {
-            echo "Test 3 failed with exception: " . $e->getMessage() . "\n";
-            $test3 = false;
-        }
+        $test1 = $this->testDkimSignatureHeaderCausesException();
+        $test2 = $this->testEmailWithoutDkimHeaderWorks();
+        $test3 = $this->testDkimSignatureHeaderIsStripped();
         
         if ($test1 && $test2 && $test3) {
             echo "All tests passed!\n";
