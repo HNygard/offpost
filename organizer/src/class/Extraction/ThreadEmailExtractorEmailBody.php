@@ -109,7 +109,7 @@ class ThreadEmailExtractorEmailBody extends ThreadEmailExtractor {
             error_log("Error parsing email content: " . $e->getMessage() . " . EML: " . $eml);
 
             $email_content = new ExtractedEmailBody();
-            $email_content->plain_text = $eml;
+            $email_content->plain_text = "ERROR\n\n".$eml;
             $email_content->html = '<pre>' . jTraceEx($e) . '</pre>';
             return $email_content;
         }
@@ -332,14 +332,17 @@ class ThreadEmailExtractorEmailBody extends ThreadEmailExtractor {
                 $headerName = $matches[1];
                 $skipCurrentHeader = in_array($headerName, $problematicHeaders);
                 
-                if (!$skipCurrentHeader) {
+                if ($skipCurrentHeader) {
+                    // Keep the header name but replace content with "REMOVED"
+                    $cleanedHeaders[] = $headerName . ": REMOVED";
+                } else {
                     $cleanedHeaders[] = $line;
                 }
             } elseif (!$skipCurrentHeader && (substr($line, 0, 1) === ' ' || substr($line, 0, 1) === "\t")) {
                 // This is a continuation line for a header we're keeping
                 $cleanedHeaders[] = $line;
             }
-            // If $skipCurrentHeader is true, we ignore both the header line and continuation lines
+            // If $skipCurrentHeader is true, we ignore continuation lines for problematic headers
         }
 
         // Rebuild the email

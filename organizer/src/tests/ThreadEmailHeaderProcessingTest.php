@@ -36,6 +36,7 @@ class ThreadEmailHeaderProcessingTest extends PHPUnit\Framework\TestCase {
         // With the fix, this should now work instead of throwing an exception
         $result = ThreadEmailExtractorEmailBody::extractContentFromEmail($this->problematicEmail);
         $this->assertStringContainsString('Test body content.', $result->plain_text, "DKIM-Signature header should be handled properly without throwing an exception");
+        $this->assertStringNotContainsString('ERROR', $result->plain_text, "Email should parse successfully without error");
     }
 
     public function testEmailWithoutDkimHeaderWorks() {
@@ -75,7 +76,7 @@ class ThreadEmailHeaderProcessingTest extends PHPUnit\Framework\TestCase {
         $cleanedEmail = $method->invoke(null, $emailWithDkim);
         
         // Verify DKIM-Signature header is removed
-        $this->assertStringNotContainsString('DKIM-Signature', $cleanedEmail, "DKIM-Signature header should be stripped");
+        $this->assertStringContainsString('DKIM-Signature: REMOVED', $cleanedEmail, "DKIM-Signature header should be stripped");
         
         // Verify other headers are preserved
         $this->assertStringContainsString('From: sender@example.com', $cleanedEmail, "From header should be preserved");
