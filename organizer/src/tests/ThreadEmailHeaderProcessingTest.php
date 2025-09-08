@@ -83,4 +83,34 @@ class ThreadEmailHeaderProcessingTest extends PHPUnit\Framework\TestCase {
         // Verify body is preserved
         $this->assertStringContainsString('Body content', $cleanedEmail, "Email body should be preserved");
     }
+
+    public function testLaminasMailLibraryDirectCallThrowsExceptionWithProblematicDkim() {
+        // Test calling Laminas Mail library directly on problematic email to demonstrate the original issue
+        $problematicEmail = "Return-Path: <postmottak@varoy.kommune.no>\r\n" .
+            "Delivered-To: <test@example.com>\r\n" .
+            "DKIM-Signature: v=1; a=rsa-sha256; c=relaxed/relaxed;\r\n" .
+            "\td=custmx.one.com; s=20201015;\r\n" .
+            "\th=mime-version:content-transfer-encoding:content-type:in-reply-to:references:\r\n" .
+            "\t message-id:date:subject:to:from:x-halone-refid:x-halone-sa:from:x-halone-sa:\r\n" .
+            "\t x-halone-refid;\r\n" .
+            "\tbh=rIv00cKr8Xj97WFZtdmVkJKsLtJVgVpaj8sxpPtmnM0=;\r\n" .
+            "\tb=D1RyvwGvMBQY371EWYO86jmKOmZwcKfiXURMrZaZkjz7dUf1Hq8mCHVcn+dPWm8dk3vSipkYLDQJH\r\n" .
+            "\t iXL6nkuCFGUJz/uPGXWaVqB1skd6V0jHR17zvGQBFyIZyMsVOibl0XvY9bmZwf7Is6jCLUm2OJJ/Uo\r\n" .
+            "\t EdxSemT/iRaznT2cNZU0tU40umIm5HTQxw2lL/ltAhfvDKfSrITTwXbelqMk0GjsdXgI309XYqm1cQ\r\n" .
+            "\t BLObJxLrARR2ZzHmkERv267dTCjzJm3JV1GQJK4JAWO3iDzJBB6FG8njUCz5tAQvpeRPu+GnTLKFMq\r\n" .
+            "\t sZ+DzQgUPHuBimow2XjATT3yZQ3JfEA==\r\n" .
+            "From: =?iso-8859-1?Q?Postmottak_V=E6r=F8y_kommune?= <postmottak@varoy.kommune.no>\r\n" .
+            "To: <test@example.com>\r\n" .
+            "Subject: Test Subject\r\n" .
+            "Date: Sun, 7 Sep 2025 08:28:35 +0000\r\n" .
+            "Content-Type: text/plain; charset=\"iso-8859-1\"\r\n" .
+            "Content-Transfer-Encoding: quoted-printable\r\n" .
+            "MIME-Version: 1.0\r\n" .
+            "\r\n" .
+            "Test body content.\r\n";
+
+        // Expect exception when calling Laminas Mail library directly without header stripping
+        $this->expectException(Exception::class);
+        new \Laminas\Mail\Storage\Message(['raw' => $problematicEmail]);
+    }
 }
