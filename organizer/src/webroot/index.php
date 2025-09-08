@@ -61,6 +61,7 @@ try {
             '/file' => '/../file.php',
             '/entities' => '/../entities.php',
             '/thread-bulk-actions' => '/../thread-bulk-actions.php',
+            '/recent-activity' => '/../recent-activity.php',
         ];
 
         if (array_key_exists($path, $regularPages)) {
