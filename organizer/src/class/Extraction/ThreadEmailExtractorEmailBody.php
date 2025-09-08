@@ -107,8 +107,8 @@ class ThreadEmailExtractorEmailBody extends ThreadEmailExtractor {
 
             $email_content = new ExtractedEmailBody();
             $email_content->plain_text = $eml;
+            $email_content->html = '<pre>' . jTraceEx($e) . '</pre>';
             return $email_content;
-            throw $e;
         }
 
         $htmlConvertPart = function ($html, $part) {
