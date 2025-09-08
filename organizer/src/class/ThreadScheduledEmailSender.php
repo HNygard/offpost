@@ -94,7 +94,9 @@ class ThreadScheduledEmailSender {
             // Request an update for the target folder
 
             $records = ImapFolderStatus::getForThread($thread->id);
-            ImapFolderStatus::createOrUpdate($records['folder_name'], requestUpdate: true);
+            foreach ($records as $record) {
+                ImapFolderStatus::createOrUpdate($record['folder_name'], requestUpdate: true);
+            }
             
             return [
                 'success' => true,
