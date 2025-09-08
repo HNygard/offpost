@@ -3,7 +3,7 @@
 namespace Imap;
 
 require_once __DIR__ . '/../../vendor/autoload.php';
-require_once __DIR__ . '/class/Extraction/ThreadEmailExtractorEmailBody.php';
+require_once __DIR__ . '/../Extraction/ThreadEmailExtractorEmailBody.php';
 
 use Exception;
 use Laminas\Mail\Storage\Message;
