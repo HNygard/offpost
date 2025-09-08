@@ -6,6 +6,7 @@ require_once __DIR__ . '/../../vendor/autoload.php';
 
 use Exception;
 use Laminas\Mail\Storage\Message;
+use ThreadEmailExtractorEmailBody;
 
 class ImapEmail {
     public int $uid;
@@ -117,7 +118,7 @@ class ImapEmail {
 
         if ($rawEmail !== null) {
             try {
-                $message = new \Laminas\Mail\Storage\Message(['raw' => $rawEmail]);
+                $message = new \Laminas\Mail\Storage\Message(['raw' => ThreadEmailExtractorEmailBody::stripProblematicHeaders($rawEmail)]);
                 $x_forwarded_for = $message->getHeaders()->get('x-forwarded-for');
                 if ($x_forwarded_for !== false ) {
                     if ($x_forwarded_for instanceof ArrayIterator) {

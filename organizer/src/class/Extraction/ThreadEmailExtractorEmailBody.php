@@ -301,7 +301,7 @@ class ThreadEmailExtractorEmailBody extends ThreadEmailExtractor {
      * @param string $eml Raw email content
      * @return string Cleaned email content
      */
-    private static function stripProblematicHeaders($eml) {
+    public static function stripProblematicHeaders($eml) {
         // List of headers that should be stripped to avoid parsing issues
         $problematicHeaders = [
             'DKIM-Signature',           // Can contain malformed data that breaks parsing
