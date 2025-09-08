@@ -16,3 +16,6 @@ data/threads/000000000-test-entity-development
 data/threads/test-entity-development
 !data/entities.json
 !data/entities_test.json
+
+# Temporary test files
+test_*.php
