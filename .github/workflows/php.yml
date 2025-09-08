@@ -88,10 +88,3 @@ jobs:
 
     - name: Run e2e tests
       run: cd organizer/src && vendor/bin/phpunit e2e-tests/
-
-    - name: Run tests in Docker (fallback)
-      if: failure()
-      run: |
-        # If host tests fail, try running them inside the Docker container
-        docker exec offpost-organizer-1 /bin/bash -c "cd /php-frontend && vendor/bin/phpunit --exclude-group integration tests"
-        docker exec offpost-organizer-1 /bin/bash -c "cd /php-frontend && vendor/bin/phpunit e2e-tests/"
