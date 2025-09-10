@@ -16,7 +16,7 @@ $error_count = 0;
 $error_types = [];
 
 // Batch size for processing
-$batch_size = 80;
+$batch_size = 50;
 $offset = isset($_GET['offset']) ? (int)$_GET['offset'] : 0;
 
 try {
