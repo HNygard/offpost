@@ -16,54 +16,7 @@ function displayErrorPage($error) {
     header('Content-Type: text/html');
     
     echo '<html><head><title>Error - Offpost</title>';
-    echo '<style>
-        body { font-family: Arial, sans-serif; margin: 40px; }
-        .error-container { max-width: 800px; margin: 0 auto; }
-        .header { display: flex; align-items: center; justify-content: center; gap: 10px; margin-bottom: 0; }
-        .header img { width: 32px; height: 32px; }
-        .error-details {
-            position: relative;
-        }
-        pre { 
-            background: #f5f5f5; 
-            padding: 15px; 
-            border-radius: 5px; 
-            overflow-x: auto;
-            white-space: pre-wrap;
-            margin: 0;
-        }
-        .copy-button {
-            position: absolute;
-            top: 10px;
-            right: 10px;
-            padding: 5px 10px;
-            background: #fff;
-            border: 1px solid #ddd;
-            border-radius: 3px;
-            cursor: pointer;
-            font-size: 12px;
-            color: #666;
-            transition: all 0.2s;
-        }
-        .copy-button:hover {
-            background: #f0f0f0;
-            border-color: #ccc;
-        }
-        a { color: #0366d6; }
-
-        .nav-back {
-            text-align: left;
-        }
-
-        .nav-back a {
-            color: #3498db;
-            text-decoration: none;
-        }
-
-        .nav-back a:hover {
-            text-decoration: underline;
-        }
-    </style>';
+    echo '<link rel="stylesheet" type="text/css" href="/css/error.css">';
     echo '<script>
         document.addEventListener("DOMContentLoaded", function() {
             const copyButton = document.querySelector(".copy-button");
@@ -89,7 +42,7 @@ function displayErrorPage($error) {
     echo '</head><body>';
     echo '<div class="error-container">';
     echo '<div class="header">';
-    echo '<img src="/images/offpost-icon.webp" alt="Offpost Logo" style="max-width: 100px; height: auto;">';
+    echo '<img src="/images/offpost-icon.webp" alt="Offpost Logo">';
     echo '<h1>Offpost - Error</h1>';
     echo '</div>';
     echo '<div class="nav-back"><a href="/">← Back to application</a></div>';
