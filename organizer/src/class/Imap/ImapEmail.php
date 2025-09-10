@@ -7,6 +7,7 @@ require_once __DIR__ . '/../Extraction/ThreadEmailExtractorEmailBody.php';
 
 use Exception;
 use Laminas\Mail\Storage\Message;
+use ThreadEmailExtractorEmailBody;
 
 class ImapEmail {
     public int $uid;
