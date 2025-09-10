@@ -100,11 +100,8 @@ class ThreadEmailExtractorEmailBody extends ThreadEmailExtractor {
             throw new Exception("Empty email content provided for extraction");
         }
 
-        // Strip problematic headers that cause parsing issues
-        $cleanedEml = self::stripProblematicHeaders($eml);
-
         try {
-            $message = new \Laminas\Mail\Storage\Message(['raw' => $cleanedEml]);
+            $message = self::readLaminasMessage_withErrorHandling(['raw' => $eml]);
         } catch (Exception $e) {
             error_log("Error parsing email content: " . $e->getMessage() . " . EML: " . $eml);
 
@@ -347,6 +344,50 @@ class ThreadEmailExtractorEmailBody extends ThreadEmailExtractor {
 
         // Rebuild the email
         return implode("\n", $cleanedHeaders) . "\n\n" . $bodyPart;
+    }
+
+    /**
+     * Read Laminas Mail Message with error handling for problematic headers.
+     * 
+     * We will split out headers and read one by one until we find the problematic one,
+     * then add it to exception message for easier debugging.
+     * 
+     * @param mixed $eml
+     * @return Laminas\Mail\Storage\Message
+     */
+    public static function readLaminasMessage_withErrorHandling($eml) {
+        try {
+            return new \Laminas\Mail\Storage\Message(['raw' => self::stripProblematicHeaders($eml)]);
+        } catch (\Laminas\Mail\Header\Exception\InvalidArgumentException $e) {
+            // We hit some invalid header.
+            // Laminas\Mail\Header\Exception\InvalidArgumentException: Invalid header value detected
+            error_log("Error parsing email content: " . $e->getMessage() . " . EML: " . $eml);
+
+            $headers = preg_split('/\r?\n/', $eml);
+            $currentHeader = '';
+            foreach ($headers as $line) {
+                if (preg_match('/^([A-Za-z-]+):\s*/', $line, $matches)) {
+                    // New header
+                    $currentHeader = $matches[1];
+                } elseif (substr($line, 0, 1) === ' ' || substr($line, 0, 1) === "\t") {
+                    // Continuation line
+                    // Do nothing, just continue
+                } else {
+                    // Not a header line, skip
+                    continue;
+                }   
+                try {
+                    // Try to parse the email up to the current header
+                    $partialEml = implode("\n", array_slice($headers, 0, array_search($line, $headers) + 1));
+                    $message = new \Laminas\Mail\Storage\Message(['raw' => self::stripProblematicHeaders($partialEml)]);
+                } catch (\Laminas\Mail\Header\Exception\InvalidArgumentException $e2) {
+                    // Failed to parse at this header, log and throw
+                    throw new Exception("Failed to parse email due to problematic header: " . $currentHeader . ". Original error: " . $e2->getMessage());
+                }
+            }
+            // If we got here, we couldn't find the problematic header
+            throw new Exception("Failed to parse email, but couldn't isolate problematic header.", 0, $e);
+        }
     }
 }
 
