@@ -148,9 +148,11 @@ try {
 
             if ($status === 'success') {
                 // Mark content_read_ok as true
+                Database::beginTransaction();
                 $update_query = "UPDATE thread_emails SET content_read_ok = true WHERE id = ?";
                 $update_stmt = $db->prepare($update_query);
                 $update_stmt->execute([$email['email_id']]);
+                Database::commit();
             }
 
             $total_emails++;
