@@ -101,7 +101,7 @@ class ThreadEmailExtractorEmailBody extends ThreadEmailExtractor {
         }
 
         try {
-            $message = self::readLaminasMessage_withErrorHandling(['raw' => $eml]);
+            $message = self::readLaminasMessage_withErrorHandling($eml);
         } catch (Exception $e) {
             error_log("Error parsing email content: " . $e->getMessage() . " . EML: " . $eml);
 
