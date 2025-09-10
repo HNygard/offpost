@@ -1,6 +1,6 @@
 -- ******************************************************************
 -- AUTOMATICALLY GENERATED FILE - DO NOT MODIFY
--- Generated on: 2025-09-10 15:55:10
+-- Generated on: 2025-09-10 16:19:43
 -- 
 -- This file contains the current database schema after all migrations.
 -- It is NOT meant to be executed as a migration script.
@@ -182,7 +182,7 @@ CREATE TABLE thread_emails (
     id_old character varying(255),
     imap_headers jsonb,
     content bytea NOT NULL,
-    content_read_ok boolean NOT NULL DEFAULT false
+    content_read_status character varying(10) DEFAULT NULL::character varying
 );
 
 ALTER TABLE thread_emails ADD CONSTRAINT thread_emails_pkey PRIMARY KEY (id);
