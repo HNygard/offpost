@@ -89,7 +89,7 @@ function displayErrorPage($error) {
     echo '</head><body>';
     echo '<div class="error-container">';
     echo '<div class="header">';
-    echo '<img src="/images/offpost-icon.webp" alt="Offpost Logo">';
+    echo '<img src="/images/offpost-icon.webp" alt="Offpost Logo" style="width: 100px; height: 100px;">';
     echo '<h1>Offpost - Error</h1>';
     echo '</div>';
     echo '<div class="nav-back"><a href="/">← Back to application</a></div>';
