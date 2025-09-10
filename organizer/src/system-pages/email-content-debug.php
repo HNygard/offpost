@@ -27,7 +27,7 @@ try {
         SELECT COUNT(*) as total 
         FROM thread_emails te 
         JOIN threads t ON te.thread_id = t.id
-        WHERE te.content_read_ok = false";
+        WHERE te.content_read_status IS NULL";
     $total_result = $db->query($total_count_query)->fetch(PDO::FETCH_ASSOC);
     $total_count = $total_result['total'];
     
@@ -38,10 +38,10 @@ try {
             t.entity_id,
             te.id as email_id,
             te.datetime_received,
-            te.content_read_ok
+            te.content_read_status
         FROM thread_emails te
         JOIN threads t ON te.thread_id = t.id
-        WHERE te.content_read_ok = false
+        WHERE te.content_read_status IS NULL
         ORDER BY te.datetime_received
         LIMIT ? OFFSET ?";
     
@@ -121,6 +121,7 @@ try {
                 <th>Thread ID</th>
                 <th>Email ID</th>
                 <th>Date</th>
+                <th>Content Read Status</th>
                 <th>Status</th>
             </tr>
         </thead>
@@ -146,14 +147,12 @@ try {
                 $error_types[$error_type]++;
             }
 
-            if ($status === 'success') {
-                // Mark content_read_ok as true
-                Database::beginTransaction();
-                $update_query = "UPDATE thread_emails SET content_read_ok = true WHERE id = ?";
-                $update_stmt = $db->prepare($update_query);
-                $update_stmt->execute([$email['email_id']]);
-                Database::commit();
-            }
+            // Update content_read_status based on result
+            Database::beginTransaction();
+            $update_query = "UPDATE thread_emails SET content_read_status = ? WHERE id = ?";
+            $update_stmt = $db->prepare($update_query);
+            $update_stmt->execute([$status, $email['email_id']]);
+            Database::commit();
 
             $total_emails++;
         ?>
@@ -161,6 +160,7 @@ try {
                 <td>Thread: <a href="thread-view?entityId=<?php echo urlencode($email['entity_id']); ?>&threadId=<?php echo urlencode($email['thread_id']); ?>"><?php echo htmlspecialchars($email['thread_id']); ?></a></td>
                 <td><a href="file?entityId=<?php echo urlencode($email['entity_id']); ?>&threadId=<?php echo urlencode($email['thread_id']); ?>&body=<?php echo urlencode($email['email_id']); ?>"><?php echo htmlspecialchars($email['email_id']); ?></a></td>
                 <td><?php echo htmlspecialchars($email['datetime_received']); ?></td>
+                <td><?php echo htmlspecialchars($email['content_read_status'] ?? 'null'); ?></td>
                 <td>
                     <?php echo $status; ?>
                     <?php if ($error): ?>
