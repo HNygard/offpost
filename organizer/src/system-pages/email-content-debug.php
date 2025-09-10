@@ -16,7 +16,7 @@ $error_count = 0;
 $error_types = [];
 
 // Batch size for processing
-$batch_size = 50;
+$batch_size = 20;
 $offset = isset($_GET['offset']) ? (int)$_GET['offset'] : 0;
 
 try {
@@ -26,7 +26,8 @@ try {
     $total_count_query = "
         SELECT COUNT(*) as total 
         FROM thread_emails te 
-        JOIN threads t ON te.thread_id = t.id";
+        JOIN threads t ON te.thread_id = t.id
+        WHERE te.content_read_ok = false";
     $total_result = $db->query($total_count_query)->fetch(PDO::FETCH_ASSOC);
     $total_count = $total_result['total'];
     
@@ -36,9 +37,11 @@ try {
             t.id as thread_id,
             t.entity_id,
             te.id as email_id,
-            te.datetime_received
+            te.datetime_received,
+            te.content_read_ok
         FROM thread_emails te
         JOIN threads t ON te.thread_id = t.id
+        WHERE te.content_read_ok = false
         ORDER BY te.datetime_received
         LIMIT ? OFFSET ?";
     
@@ -127,6 +130,7 @@ try {
             try {
                 $eml = ThreadStorageManager::getInstance()->getThreadEmailContent($email['thread_id'], $email['email_id']);
                 $email_content = ThreadEmailExtractorEmailBody::extractContentFromEmail($eml);
+                
                 $status = 'success';
                 $error = null;
                 $success_count++;
@@ -141,6 +145,14 @@ try {
                 }
                 $error_types[$error_type]++;
             }
+
+            if ($status === 'success') {
+                // Mark content_read_ok as true
+                $update_query = "UPDATE thread_emails SET content_read_ok = true WHERE id = ?";
+                $update_stmt = $db->prepare($update_query);
+                $update_stmt->execute([$email['email_id']]);
+            }
+
             $total_emails++;
         ?>
             <tr class="<?php echo $status; ?>">
