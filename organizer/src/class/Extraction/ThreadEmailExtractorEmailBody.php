@@ -356,8 +356,9 @@ class ThreadEmailExtractorEmailBody extends ThreadEmailExtractor {
      * @return Laminas\Mail\Storage\Message
      */
     public static function readLaminasMessage_withErrorHandling($eml) {
+        $eml = self::stripProblematicHeaders($eml);
         try {
-            return new \Laminas\Mail\Storage\Message(['raw' => self::stripProblematicHeaders($eml)]);
+            return new \Laminas\Mail\Storage\Message(['raw' => $eml]);
         } catch (\Laminas\Mail\Header\Exception\InvalidArgumentException $e) {
             // We hit some invalid header.
             // Laminas\Mail\Header\Exception\InvalidArgumentException: Invalid header value detected
