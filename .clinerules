@@ -114,9 +114,10 @@ I pledge to follow the custom instructions.
 
 ## Database
 
-To see the current schema for the database, read organizer/src/migrations/sql/99999-database-schema-after-migrations.sql.
+All migrations are SQL scripts in `organizer/src/migrations/sql/`
 
-This file is automatically updated when we make new migrations and run them.
+To see the current schema for the database, read
+`organizer/src/migrations/sql/99999-database-schema-after-migrations.sql`. This file is automatically updated when we make new migrations and run them.
 
 ## Security
 
