@@ -106,21 +106,31 @@ function createThreadTestData($threadsData, $threadData, $sourceEntityId) {
         */
 
         // Insert email into database with original ID stored in id_old
-        $sql = "INSERT INTO thread_emails (thread_id, id_old, timestamp_received, datetime_received, ignore, email_type, status_type, status_text, content) 
-                VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?) RETURNING id";
+        $sql = "INSERT INTO thread_emails (
+                thread_id, id_old, timestamp_received, 
+                datetime_received, ignore, email_type, 
+                status_type, status_text, content) 
+            VALUES (
+                :thread_id, :id_old, :timestamp_received,
+                :datetime_received, :ignore, :email_type,
+                :status_type, :status_text, :content
+            ) RETURNING id";
         
         try {
-            $emailId = Database::queryValue($sql, [
-                $thread->id,
-                $email->id,
-                $email->timestamp_received,
-                $email->datetime_received,
-                $email->ignore ? 't' : 'f',
-                $email->email_type,
-                $email->status_type,
-                $email->status_text,
-                '' //$email_content
-            ]);
+            $emailId = Database::queryValueWithBinaryParam($sql, [
+                ':thread_id' => $thread->id,
+                ':id_old' => $email->id,
+                ':timestamp_received' => $email->timestamp_received,
+                ':datetime_received' => $email->datetime_received,
+                ':ignore' => $email->ignore ? 't' : 'f',
+                ':email_type' => $email->email_type,
+                ':status_type' => $email->status_type,
+                ':status_text' => $email->status_text,
+            ],
+            [
+                ':content' => file_get_contents($sourceThreadsDir . "/{$thread->id_old}/{$email->id}.eml") ?: ''
+            ]
+        );
         }
         catch (Exception $e) {
             //throw new Exception("Error inserting email: " . "/{$thread->id_old}/{$email->id}.eml", 0, $e);

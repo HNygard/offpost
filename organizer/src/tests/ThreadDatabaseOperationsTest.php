@@ -122,8 +122,8 @@ class ThreadDatabaseOperationsTest extends PHPUnit\Framework\TestCase {
         // Add an email to the thread
         $now = new DateTime();
         $emailId = Database::queryValue(
-            "INSERT INTO thread_emails (thread_id, timestamp_received, datetime_received, email_type, status_type, status_text, description, content) 
-            VALUES (?, ?, ?, 'incoming', '" . \App\Enums\ThreadEmailStatusType::INFO->value . "', 'Test status', 'Test description', ?) RETURNING id",
+            "INSERT INTO thread_emails (thread_id, timestamp_received, datetime_received, email_type, status_type, status_text, description, content)
+            VALUES (?, ?, ?, 'incoming', '" . \App\Enums\ThreadEmailStatusType::INFO->value . "', 'Test status', 'Test description', ?::bytea) RETURNING id",
             [
                 $createdThread->id,
                 $now->format('Y-m-d H:i:s'),
