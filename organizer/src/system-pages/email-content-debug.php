@@ -41,7 +41,7 @@ try {
             te.content_read_status
         FROM thread_emails te
         JOIN threads t ON te.thread_id = t.id
-        WHERE te.content_read_status IS NULL
+        WHERE te.content_read_status IS NULL or te.content_read_status != 'success'
         ORDER BY te.datetime_received
         LIMIT ? OFFSET ?";
     
