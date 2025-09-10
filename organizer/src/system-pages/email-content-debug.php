@@ -4,23 +4,97 @@ require_once(__DIR__ . '/../head.php');
 require_once(__DIR__ . '/../class/ThreadStorageManager.php');
 require_once(__DIR__ . '/../class/Extraction/ThreadEmailExtractorEmailBody.php');
 require_once(__DIR__ . '/../class/ThreadDatabaseOperations.php');
+require_once(__DIR__ . '/../class/Database.php');
 
 // Require authentication
 requireAuth();
 
+// Initialize statistics
+$total_emails = 0;
+$success_count = 0;
+$error_count = 0;
+$error_types = [];
+
+// Batch size for processing
+$batch_size = 500;
+$offset = isset($_GET['offset']) ? (int)$_GET['offset'] : 0;
+
 try {
-    $threadDb = new ThreadDatabaseOperations();
-    $threads = $threadDb->getThreads();
-    $total_emails = 0;
-    $success_count = 0;
-    $error_count = 0;
-    $error_types = [];
+    $db = Database::getInstance();
+    
+    // Get total count of emails
+    $total_count_query = "
+        SELECT COUNT(*) as total 
+        FROM thread_emails te 
+        JOIN threads t ON te.thread_id = t.id";
+    $total_result = $db->query($total_count_query)->fetch(PDO::FETCH_ASSOC);
+    $total_count = $total_result['total'];
+    
+    // Get batch of emails
+    $query = "
+        SELECT 
+            t.id as thread_id,
+            t.entity_id,
+            te.id as email_id,
+            te.datetime_received
+        FROM thread_emails te
+        JOIN threads t ON te.thread_id = t.id
+        ORDER BY te.datetime_received
+        LIMIT ? OFFSET ?";
+    
+    $stmt = $db->prepare($query);
+    $stmt->execute([$batch_size, $offset]);
+    $emails = $stmt->fetchAll(PDO::FETCH_ASSOC);
 ?>
 <h1>Email Content Debug</h1>
+
+<div class="page-nav">
+    <a href="email-sending-overview.php" class="nav-link">Email Sending Overview</a>
+    <a href="extraction-overview.php" class="nav-link">Extraction Overview</a>
+    <a href="scheduled-email-sending.php" class="nav-link">Scheduled Email Sending</a>
+    <a href="scheduled-email-receiver.php" class="nav-link">Scheduled Email Receiver</a>
+    <a href="scheduled-email-extraction.php" class="nav-link">Scheduled Email Extraction</a>
+    <a href="scheduled-imap-handling.php" class="nav-link">Scheduled IMAP Handling</a>
+    <a href="scheduled-thread-follow-up.php" class="nav-link">Scheduled Thread Follow-up</a>
+    <a href="thread-status-overview.php" class="nav-link">Thread Status Overview</a>
+</div>
 
 <div class="container">
     <div class="stats-section">
         <h2>Statistics</h2>
+        <div class="batch-info">
+            <p>Processing emails <?php echo $offset + 1; ?> to <?php echo min($offset + $batch_size, $total_count); ?> of <?php echo $total_count; ?></p>
+            <div class="page-numbers">
+                <?php
+                $total_pages = ceil($total_count / $batch_size);
+                $current_page = floor($offset / $batch_size) + 1;
+                
+                // Always show first page
+                if ($current_page > 1) {
+                    echo '<a href="?offset=0" class="page-link">1</a>';
+                    if ($current_page > 2) {
+                        echo '<span class="page-ellipsis">...</span>';
+                    }
+                }
+                
+                // Show pages around current page
+                for ($i = max(2, $current_page - 2); $i <= min($total_pages - 1, $current_page + 2); $i++) {
+                    $page_offset = ($i - 1) * $batch_size;
+                    $class = ($i === $current_page) ? 'page-link current' : 'page-link';
+                    echo "<a href=\"?offset={$page_offset}\" class=\"{$class}\">{$i}</a>";
+                }
+                
+                // Always show last page
+                if ($current_page < $total_pages) {
+                    if ($current_page < $total_pages - 1) {
+                        echo '<span class="page-ellipsis">...</span>';
+                    }
+                    $last_page_offset = ($total_pages - 1) * $batch_size;
+                    echo "<a href=\"?offset={$last_page_offset}\" class=\"page-link\">{$total_pages}</a>";
+                }
+                ?>
+            </div>
+        </div>
         <div class="stats-grid">
             <div class="stat-box">
                 <div class="stat-label">Total Emails</div>
@@ -38,57 +112,51 @@ try {
         <div id="error-types"></div>
     </div>
 
-    <?php foreach ($threads as $threadsObj): ?>
-        <?php foreach ($threadsObj->threads as $thread): ?>
-            <table class="email-table">
-                <thead>
-                    <tr>
-                        <th>ID</th>
-                        <th>Date</th>
-                        <th>Status</th>
-                        <th>Content</th>
-                    </tr>
-                </thead>
-                <tbody>
-                <?php
-                $emails = $thread->emails;
-                foreach ($emails as $email):
-                    try {
-                        $eml = ThreadStorageManager::getInstance()->getThreadEmailContent($thread->id, $email->id);
-                        $email_content = ThreadEmailExtractorEmailBody::extractContentFromEmail($eml);
-                        $status = 'success';
-                        $error = null;
-                        $success_count++;
-                    } catch (Exception $e) {
-                        $status = 'error';
-                        $error = $e->getMessage();
-                        $email_content = null;
-                        $error_count++;
-                        // Track error types
-                        $error_type = get_class($e);
-                        if (!isset($error_types[$error_type])) {
-                            $error_types[$error_type] = 0;
-                        }
-                        $error_types[$error_type]++;
-                    }
-                    $total_emails++;
-                ?>
-                    <tr class="<?php echo $status; ?>">
-                        <td>Thread: <a href="thread-view?entityId=<?php echo urlencode($thread->entity_id); ?>&threadId=<?php echo urlencode($thread->id); ?>"><?php echo htmlspecialchars($thread->id); ?></a></td>
-                        <td><a href="file?entityId=<?php echo urlencode($thread->entity_id); ?>&threadId=<?php echo urlencode($thread->id); ?>&body=<?php echo urlencode($email->id); ?>"><?php echo htmlspecialchars($email->id); ?></a></td>
-                        <td><?php echo htmlspecialchars($email->datetime_received); ?></td>
-                        <td>
-                            <?php echo $status; ?>
-                            <?php if ($error): ?>
-                                <div class="error-details"><?php echo htmlspecialchars($error); ?></div>
-                            <?php endif; ?>
-                        </td>
-                    </tr>
-                <?php endforeach; ?>
-                </tbody>
-            </table>
+    <table class="email-table">
+        <thead>
+            <tr>
+                <th>Thread ID</th>
+                <th>Email ID</th>
+                <th>Date</th>
+                <th>Status</th>
+            </tr>
+        </thead>
+        <tbody>
+        <?php 
+        foreach ($emails as $email):
+            try {
+                $eml = ThreadStorageManager::getInstance()->getThreadEmailContent($email['thread_id'], $email['email_id']);
+                $email_content = ThreadEmailExtractorEmailBody::extractContentFromEmail($eml);
+                $status = 'success';
+                $error = null;
+                $success_count++;
+            } catch (Exception $e) {
+                $status = 'error';
+                $error = $e->getMessage();
+                $error_count++;
+                // Track error types
+                $error_type = get_class($e);
+                if (!isset($error_types[$error_type])) {
+                    $error_types[$error_type] = 0;
+                }
+                $error_types[$error_type]++;
+            }
+            $total_emails++;
+        ?>
+            <tr class="<?php echo $status; ?>">
+                <td>Thread: <a href="thread-view?entityId=<?php echo urlencode($email['entity_id']); ?>&threadId=<?php echo urlencode($email['thread_id']); ?>"><?php echo htmlspecialchars($email['thread_id']); ?></a></td>
+                <td><a href="file?entityId=<?php echo urlencode($email['entity_id']); ?>&threadId=<?php echo urlencode($email['thread_id']); ?>&body=<?php echo urlencode($email['email_id']); ?>"><?php echo htmlspecialchars($email['email_id']); ?></a></td>
+                <td><?php echo htmlspecialchars($email['datetime_received']); ?></td>
+                <td>
+                    <?php echo $status; ?>
+                    <?php if ($error): ?>
+                        <div class="error-details"><?php echo htmlspecialchars($error); ?></div>
+                    <?php endif; ?>
+                </td>
+            </tr>
         <?php endforeach; ?>
-    <?php endforeach; ?>
+        </tbody>
+    </table>
 </div>
 
 <?php
@@ -133,6 +201,56 @@ echo "<script>
     background: #f8f8f8;
     border-radius: 5px;
     border: 1px solid #ddd;
+}
+.batch-info {
+    margin: 15px 0;
+    padding: 10px;
+    background: #fff;
+    border-radius: 3px;
+    text-align: center;
+}
+.batch-nav {
+    display: inline-block;
+    padding: 5px 15px;
+    margin: 0 10px;
+    background: #007bff;
+    color: white;
+    text-decoration: none;
+    border-radius: 3px;
+}
+.page-numbers {
+    margin: 15px 0;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    gap: 5px;
+}
+
+.page-link {
+    padding: 5px 10px;
+    background: white;
+    border: 1px solid #ddd;
+    border-radius: 3px;
+    color: #333;
+    text-decoration: none;
+    min-width: 20px;
+    text-align: center;
+}
+
+.page-link:hover {
+    background: #f0f0f0;
+    border-color: #999;
+}
+
+.page-link.current {
+    background: #007bff;
+    color: white;
+    border-color: #0056b3;
+}
+
+.page-ellipsis {
+    color: #666;
+    padding: 0 5px;
 }
 .stats-grid {
     display: grid;
@@ -238,5 +356,31 @@ echo "<script>
     margin: 20px;
     border-radius: 5px;
     color: #721c24;
+}
+
+.page-nav {
+    margin: 20px;
+    padding: 15px;
+    background: #f8f8f8;
+    border-radius: 5px;
+    border: 1px solid #ddd;
+    display: flex;
+    flex-wrap: wrap;
+    gap: 10px;
+}
+
+.nav-link {
+    padding: 8px 15px;
+    background: white;
+    border: 1px solid #ddd;
+    border-radius: 3px;
+    color: #333;
+    text-decoration: none;
+    font-size: 0.9em;
+}
+
+.nav-link:hover {
+    background: #f0f0f0;
+    border-color: #999;
 }
 </style>
