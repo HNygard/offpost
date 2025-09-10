@@ -266,4 +266,57 @@ This is a test email.
         // Check the result
         $this->assertEquals($expectedText, $cleanedText);
     }
+
+    public function testReadLaminasMessage_withErrorHandling_Success() {
+        // Test email with valid headers
+        $validEmail = "From: sender@example.com\r\n" .
+                     "To: recipient@example.com\r\n" .
+                     "Subject: Test Email\r\n" .
+                     "Content-Type: text/plain\r\n" .
+                     "\r\n" .
+                     "This is a test email body";
+
+        // Test successful parsing
+        $result = ThreadEmailExtractorEmailBody::readLaminasMessage_withErrorHandling($validEmail);
+        
+        // Assert we got a valid Laminas Mail Message object
+        $this->assertInstanceOf(\Laminas\Mail\Storage\Message::class, $result);
+        $this->assertEquals('Test Email', $result->getHeader('subject')->getFieldValue());
+    }
+
+    public function testReadLaminasMessage_withErrorHandling_InvalidHeader() {
+        // Test email with problematic DKIM header
+        $emailWithBadHeader = "DKIM-Signature: v=1; a=rsa-sha256; invalid base64///\r\n" .
+                            "From: sender@example.com\r\n" .
+                            "To: recipient@example.com\r\n" .
+                            "Subject: Test Email\r\n" .
+                            "\r\n" .
+                            "This is a test email body";
+
+        // The method should handle the invalid header by stripping it
+        $result = ThreadEmailExtractorEmailBody::readLaminasMessage_withErrorHandling($emailWithBadHeader);
+        
+        // Assert we got a valid Laminas Mail Message object despite the bad header
+        $this->assertInstanceOf(\Laminas\Mail\Storage\Message::class, $result);
+        $this->assertEquals('Test Email', $result->getHeader('subject')->getFieldValue());
+    }
+
+    public function testReadLaminasMessage_withErrorHandling_EmptyContent() {
+        $this->expectException(\TypeError::class);
+        $this->expectExceptionMessage("preg_split(): Argument #2 (\$subject) must be of type string, array given");
+        
+        ThreadEmailExtractorEmailBody::readLaminasMessage_withErrorHandling(['raw' => '']);
+    }
+
+    public function testReadLaminasMessage_withErrorHandling_CompletelyInvalidEmail() {
+        // Test with completely invalid email format that can't be parsed even after stripping headers
+        $invalidEmail = "This is not an email at all\r\n" .
+                       "Just some random text\r\n" .
+                       "Without any valid headers";
+
+        $this->expectException(\TypeError::class);
+        $this->expectExceptionMessage("preg_split(): Argument #2 (\$subject) must be of type string, array given");
+        
+        ThreadEmailExtractorEmailBody::readLaminasMessage_withErrorHandling(['raw' => $invalidEmail]);
+    }
 }

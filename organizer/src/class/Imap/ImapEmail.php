@@ -119,7 +119,7 @@ class ImapEmail {
 
         if ($rawEmail !== null) {
             try {
-                $message = new \Laminas\Mail\Storage\Message(['raw' => ThreadEmailExtractorEmailBody::stripProblematicHeaders($rawEmail)]);
+                $message = ThreadEmailExtractorEmailBody::readLaminasMessage_withErrorHandling($rawEmail);
                 $x_forwarded_for = $message->getHeaders()->get('x-forwarded-for');
                 if ($x_forwarded_for !== false ) {
                     if ($x_forwarded_for instanceof ArrayIterator) {
