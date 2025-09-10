@@ -98,8 +98,8 @@ class ThreadStatusRepositoryTest extends PHPUnit\Framework\TestCase {
         }
         
         return Database::queryValue(
-            "INSERT INTO thread_emails (thread_id, timestamp_received, datetime_received, email_type, status_type, status_text, description, content) 
-            VALUES (?, ?, ?, ?, ?, ?, ?, ?) RETURNING id",
+            "INSERT INTO thread_emails (thread_id, timestamp_received, datetime_received, email_type, status_type, status_text, description, content)
+            VALUES (?, ?, ?, ?, ?, ?, ?, ?::bytea) RETURNING id",
             [
                 $threadId,
                 $timestamp,
@@ -631,8 +631,8 @@ class ThreadStatusRepositoryTest extends PHPUnit\Framework\TestCase {
         ]);
         
         return Database::queryValue(
-            "INSERT INTO thread_emails (thread_id, timestamp_received, datetime_received, email_type, status_type, status_text, description, content, imap_headers) 
-            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?) RETURNING id",
+            "INSERT INTO thread_emails (thread_id, timestamp_received, datetime_received, email_type, status_type, status_text, description, content, imap_headers)
+            VALUES (?, ?, ?, ?, ?, ?, ?, ?::bytea, ?) RETURNING id",
             [
                 $threadId,
                 $timestamp,

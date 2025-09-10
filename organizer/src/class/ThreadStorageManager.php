@@ -53,12 +53,8 @@ class ThreadStorageManager {
             "SELECT content FROM thread_emails WHERE thread_id = ? AND id = ?",
             [$thread_id, $email_id]
         );
-        
-        if (!$content) {
-            throw new Exception("Thread Email have no content [thread_id=$thread_id, email_id=$email_id]");
-        }
-        
-        return $content;
+
+        return stream_get_contents($content);
     }
     public function getThreadEmailAttachment(Thread $thread, $attachment_location) {
         // Get attachment from database

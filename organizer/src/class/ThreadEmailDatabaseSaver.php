@@ -329,7 +329,7 @@ class ThreadEmailDatabaseSaver {
             ':content' => $content
         ];
         
-        $result = Database::queryValueWithBinary($query, $params, $binaryParams);
+        $result = Database::queryValueWithBinaryParam($query, $params, $binaryParams);
         
         if (!$result) {
             throw new Exception('Failed to save attachment to database');

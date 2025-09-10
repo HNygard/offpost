@@ -39,8 +39,8 @@ class ThreadEmailExtractionServiceTest extends TestCase {
         // Create a test email for the thread
         $now = new DateTime();
         $this->emailId = Database::queryValue(
-            "INSERT INTO thread_emails (thread_id, timestamp_received, datetime_received, email_type, status_type, status_text, description, content) 
-            VALUES (?, ?, ?, 'incoming', 'received', 'Test status', 'Test description', ?) RETURNING id",
+            "INSERT INTO thread_emails (thread_id, timestamp_received, datetime_received, email_type, status_type, status_text, description, content)
+            VALUES (?, ?, ?, 'incoming', 'received', 'Test status', 'Test description', ?::bytea) RETURNING id",
             [
                 $this->thread->id,
                 $now->format('Y-m-d H:i:s'),
