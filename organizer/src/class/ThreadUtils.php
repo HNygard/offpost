@@ -221,7 +221,17 @@ function getEmailFromAddressFromImapHeaders($imapHeaders) {
         return '';
     }
     
-    $addresses = extractAddressesFromEmailObjects($headers->from);
+    // Convert array elements to objects if needed
+    $fromObjects = [];
+    foreach ($headers->from as $fromItem) {
+        if (is_array($fromItem)) {
+            $fromObjects[] = (object) $fromItem;
+        } else {
+            $fromObjects[] = $fromItem;
+        }
+    }
+    
+    $addresses = extractAddressesFromEmailObjects($fromObjects);
     return $addresses[0] ?? '';
 }
 
@@ -234,11 +244,21 @@ function getEmailFromAddressFromImapHeaders($imapHeaders) {
 function getEmailToAddressesFromImapHeaders($imapHeaders) {
     $headers = parseImapHeaders($imapHeaders);
     
-    if (!$headers || !isset($headers->to)) {
+    if (!$headers || !isset($headers->to) || !is_array($headers->to)) {
         return [];
     }
     
-    return extractAddressesFromEmailObjects($headers->to);
+    // Convert array elements to objects if needed
+    $toObjects = [];
+    foreach ($headers->to as $toItem) {
+        if (is_array($toItem)) {
+            $toObjects[] = (object) $toItem;
+        } else {
+            $toObjects[] = $toItem;
+        }
+    }
+    
+    return extractAddressesFromEmailObjects($toObjects);
 }
 
 /**
@@ -250,9 +270,19 @@ function getEmailToAddressesFromImapHeaders($imapHeaders) {
 function getEmailCcAddressesFromImapHeaders($imapHeaders) {
     $headers = parseImapHeaders($imapHeaders);
     
-    if (!$headers || !isset($headers->cc)) {
+    if (!$headers || !isset($headers->cc) || !is_array($headers->cc)) {
         return [];
     }
     
-    return extractAddressesFromEmailObjects($headers->cc);
+    // Convert array elements to objects if needed
+    $ccObjects = [];
+    foreach ($headers->cc as $ccItem) {
+        if (is_array($ccItem)) {
+            $ccObjects[] = (object) $ccItem;
+        } else {
+            $ccObjects[] = $ccItem;
+        }
+    }
+    
+    return extractAddressesFromEmailObjects($ccObjects);
 }

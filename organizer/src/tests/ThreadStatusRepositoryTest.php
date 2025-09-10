@@ -623,9 +623,14 @@ class ThreadStatusRepositoryTest extends PHPUnit\Framework\TestCase {
             $timestamp = date('Y-m-d H:i:s');
         }
         
+        // Split email into mailbox and host parts for proper IMAP format
+        $emailParts = explode('@', $fromEmail);
+        $mailbox = $emailParts[0] ?? 'unknown';
+        $host = $emailParts[1] ?? 'unknown.com';
+        
         $imapHeaders = json_encode([
             'from' => [
-                ['name' => $fromName, 'email' => $fromEmail]
+                ['mailbox' => $mailbox, 'host' => $host, 'personal' => $fromName]
             ],
             'subject' => $subject
         ]);
