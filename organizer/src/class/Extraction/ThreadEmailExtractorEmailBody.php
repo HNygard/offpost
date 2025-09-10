@@ -383,7 +383,13 @@ class ThreadEmailExtractorEmailBody extends ThreadEmailExtractor {
                     $message = new \Laminas\Mail\Storage\Message(['raw' => self::stripProblematicHeaders($partialEml)]);
                 } catch (\Laminas\Mail\Header\Exception\InvalidArgumentException $e2) {
                     // Failed to parse at this header, log and throw
-                    throw new Exception("Failed to parse email due to problematic header: " . $currentHeader . ". Original error: " . $e2->getMessage());
+                    throw new Exception("Failed to parse email due to problematic header: " . $currentHeader . ".\n"
+                        . "Original error: " . $e->getMessage() . "\n"
+                        . "New error: " . $e2->getMessage() . "\n"
+                        . "\n"
+                        . "Partial EML up to this header:\n"
+                        . $partialEml
+                    );
                 }
             }
             // If we got here, we couldn't find the problematic header
