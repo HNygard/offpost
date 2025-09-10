@@ -1,6 +1,7 @@
 <?php
 
 require_once __DIR__ . '/Database.php';
+require_once __DIR__ . '/ThreadUtils.php';
 
 /**
  * Repository class for retrieving thread statuses
