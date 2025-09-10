@@ -99,7 +99,7 @@ foreach ($thread->emails as $email) {
         echo '<pre>';
         echo '-------------------' . chr(10);
         echo "EMAIL HEADERS (RAW):\n";
-        $message = new \Laminas\Mail\Storage\Message(['raw' => $eml]);
+        $message = new \Laminas\Mail\Storage\Message(['raw' => ThreadEmailExtractorEmailBody::stripProblematicHeaders($eml)]);
         echo $message->getHeaders()->toString();
         echo '</pre>';
         exit;

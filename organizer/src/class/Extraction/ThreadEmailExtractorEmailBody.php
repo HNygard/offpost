@@ -100,13 +100,16 @@ class ThreadEmailExtractorEmailBody extends ThreadEmailExtractor {
             throw new Exception("Empty email content provided for extraction");
         }
 
+        // Strip problematic headers that cause parsing issues
+        $cleanedEml = self::stripProblematicHeaders($eml);
+
         try {
-            $message = new \Laminas\Mail\Storage\Message(['raw' => $eml]);
+            $message = new \Laminas\Mail\Storage\Message(['raw' => $cleanedEml]);
         } catch (Exception $e) {
             error_log("Error parsing email content: " . $e->getMessage() . " . EML: " . $eml);
 
             $email_content = new ExtractedEmailBody();
-            $email_content->plain_text = $eml;
+            $email_content->plain_text = "ERROR\n\n".$eml;
             $email_content->html = '<pre>' . jTraceEx($e) . '</pre>';
             return $email_content;
         }
@@ -290,6 +293,60 @@ class ThreadEmailExtractorEmailBody extends ThreadEmailExtractor {
         $text = trim($text);
         
         return $text;
+    }
+
+    /**
+     * Strip problematic headers that cause parsing issues in Laminas Mail
+     * 
+     * @param string $eml Raw email content
+     * @return string Cleaned email content
+     */
+    public static function stripProblematicHeaders($eml) {
+        // List of headers that should be stripped to avoid parsing issues
+        $problematicHeaders = [
+            'DKIM-Signature',           // Can contain malformed data that breaks parsing
+            'ARC-Seal',                 // Authentication headers not needed for content extraction
+            'ARC-Message-Signature',    // Authentication headers not needed for content extraction
+            'ARC-Authentication-Results', // Authentication headers not needed for content extraction
+            'Authentication-Results',    // Authentication headers not needed for content extraction
+        ];
+
+        // Split email into header and body parts
+        $parts = preg_split('/\r?\n\r?\n/', $eml, 2);
+        if (count($parts) < 2) {
+            // If there's no clear header/body separation, return as-is
+            return $eml;
+        }
+
+        $headerPart = $parts[0];
+        $bodyPart = $parts[1];
+
+        // Process headers line by line
+        $headerLines = preg_split('/\r?\n/', $headerPart);
+        $cleanedHeaders = [];
+        $skipCurrentHeader = false;
+
+        foreach ($headerLines as $line) {
+            // Check if this is a new header (starts at beginning of line with header name)
+            if (preg_match('/^([A-Za-z-]+):\s*/', $line, $matches)) {
+                $headerName = $matches[1];
+                $skipCurrentHeader = in_array($headerName, $problematicHeaders);
+                
+                if ($skipCurrentHeader) {
+                    // Keep the header name but replace content with "REMOVED"
+                    $cleanedHeaders[] = $headerName . ": REMOVED";
+                } else {
+                    $cleanedHeaders[] = $line;
+                }
+            } elseif (!$skipCurrentHeader && (substr($line, 0, 1) === ' ' || substr($line, 0, 1) === "\t")) {
+                // This is a continuation line for a header we're keeping
+                $cleanedHeaders[] = $line;
+            }
+            // If $skipCurrentHeader is true, we ignore continuation lines for problematic headers
+        }
+
+        // Rebuild the email
+        return implode("\n", $cleanedHeaders) . "\n\n" . $bodyPart;
     }
 }
 
