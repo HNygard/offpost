@@ -1,5 +1,6 @@
 <?php
 
+require_once __DIR__ . '/../OpenAiPrompt.php';
 class ThreadEmailSummaryPrompt extends OpenAiPrompt {
     public function getPromptId(): string {
         return 'thread-email-summary';
