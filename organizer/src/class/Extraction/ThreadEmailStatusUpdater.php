@@ -114,7 +114,7 @@ class ThreadEmailStatusUpdater {
             return ThreadEmailStatusType::ASKING_FOR_COPY;
         }
         
-        if (preg_match('/\b(avslag|avslår|ikke|kan ikke|avvise)\b/u', $summary_lower)) {
+        if (preg_match('/\b(avslag|avslår|kan ikke|avvise)\b/u', $summary_lower)) {
             return ThreadEmailStatusType::REQUEST_REJECTED;
         }
         
