@@ -83,14 +83,14 @@ class BulkEmailActionsPageTest extends E2EPageTestCase {
             "Selected count container should be present"
         );
         
-        // Check for individual email checkboxes (only for STAGING emails)
+        // Check for individual email checkboxes (for STAGING and READY_FOR_SENDING emails)
         $this->assertStringContainsString(
             'class="email-checkbox" name="email_ids[]"',
             $response->body,
             "Email checkboxes should be present"
         );
         
-        // Verify that checkboxes are only present for STAGING emails
+        // Verify that checkboxes are present for STAGING emails
         foreach ($this->testEmails as $email) {
             $this->assertStringContainsString(
                 'value="' . $email->id . '"',
@@ -144,14 +144,14 @@ class BulkEmailActionsPageTest extends E2EPageTestCase {
             );
         }
         
-        // Verify that emails no longer have checkboxes (since they're not STAGING anymore)
+        // Verify that emails now have checkboxes (since they're READY_FOR_SENDING and actionable)
         foreach ($this->testEmails as $email) {
-            // The checkbox should not be present for non-STAGING emails
+            // The checkbox should be present for READY_FOR_SENDING emails since they can be set back to staging
             $checkboxPattern = 'name="email_ids[]" value="' . $email->id . '"';
-            $this->assertStringNotContainsString(
+            $this->assertStringContainsString(
                 $checkboxPattern,
                 $response->body,
-                "Checkbox for email ID {$email->id} should not be present since it's no longer STAGING"
+                "Checkbox for email ID {$email->id} should be present since it's READY_FOR_SENDING and actionable"
             );
         }
     }
