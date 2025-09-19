@@ -69,6 +69,13 @@ class BulkEmailActionsPageTest extends E2EPageTestCase {
             "Set ready for sending action should be available"
         );
         
+        // Check for the new staging action
+        $this->assertStringContainsString(
+            'value="set_staging">Set back to staging</option>',
+            $response->body,
+            "Set back to staging action should be available"
+        );
+        
         // Check for the selected count container
         $this->assertStringContainsString(
             '<div class="selected-count-container" id="selected-count-container">',
@@ -294,6 +301,76 @@ class BulkEmailActionsPageTest extends E2EPageTestCase {
                 ThreadEmailSending::STATUS_STAGING,
                 $unchangedEmail->status,
                 "Email {$email->id} should still be in STAGING status after invalid action"
+            );
+        }
+    }
+    
+    public function testBulkSetStagingFromReadyForSendingUI() {
+        // :: Setup
+        // First set some emails to READY_FOR_SENDING status
+        foreach ($this->testEmails as $email) {
+            ThreadEmailSending::updateStatus($email->id, ThreadEmailSending::STATUS_READY_FOR_SENDING);
+        }
+        
+        // Prepare email IDs for the POST request
+        $emailIds = [];
+        foreach ($this->testEmails as $email) {
+            $emailIds[] = $email->id;
+        }
+        
+        // :: Act
+        // Submit the bulk action form to set back to staging
+        $response = $this->renderPage(
+            '/email-sending-overview',
+            'dev-user-id',
+            'POST',
+            '302 Found',
+            [
+                'action' => 'set_staging',
+                'email_ids' => $emailIds
+            ]
+        );
+        
+        // Follow the redirect
+        $response = $this->renderPage('/email-sending-overview');
+        
+        // :: Assert
+        // Verify in database that emails are back in staging
+        foreach ($this->testEmails as $email) {
+            $updatedEmail = ThreadEmailSending::getById($email->id);
+            $this->assertEquals(
+                ThreadEmailSending::STATUS_STAGING,
+                $updatedEmail->status,
+                "Email {$email->id} should be marked as staging"
+            );
+        }
+        
+        // Verify success message is shown
+        $this->assertStringContainsString(
+            'Successfully set 3 email(s) back to "Staging"',
+            $response->body,
+            "Success message should be displayed"
+        );
+    }
+    
+    public function testCheckboxesVisibleForReadyForSendingEmails() {
+        // :: Setup
+        // Set some emails to READY_FOR_SENDING status
+        foreach ($this->testEmails as $email) {
+            ThreadEmailSending::updateStatus($email->id, ThreadEmailSending::STATUS_READY_FOR_SENDING);
+        }
+        
+        // :: Act
+        $response = $this->renderPage('/email-sending-overview');
+        
+        // :: Assert
+        // Verify that checkboxes are present for READY_FOR_SENDING emails
+        foreach ($this->testEmails as $email) {
+            $checkboxPattern = 'name="email_ids[]" value="' . $email->id . '"';
+            $this->assertStringContainsString(
+                $checkboxPattern,
+                $response->body,
+                "Checkbox for email ID {$email->id} should be present since it's READY_FOR_SENDING"
             );
         }
     }

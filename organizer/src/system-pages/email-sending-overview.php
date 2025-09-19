@@ -53,6 +53,45 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action'])) {
         header('Location: ' . $_SERVER['REQUEST_URI'] . '?success_bulk_action_ready_for_sending='. $processedCount . '&error_bulk_action_ready_for_sending='. $errorCount);
         exit;
     }
+    elseif ($action === 'set_staging') {
+        if (!is_array($emailIds) || empty($emailIds)) {
+            throw new Exception("Invalid request: No email IDs provided.");
+        }
+
+        foreach ($emailIds as $emailId) {
+            // Validate email ID is numeric and exists
+            if (!is_numeric($emailId)) {
+                throw new Exception("Invalid email. Not numeric.");
+            }
+            
+            // Get the email to verify it exists
+            $email = ThreadEmailSending::getById($emailId);
+            if (!$email) {
+                throw new Exception("Invalid email. Does not exist.");
+            }
+        }
+
+        foreach ($emailIds as $emailId) { 
+            $email = ThreadEmailSending::getById($emailId);
+            if ($email->status !== ThreadEmailSending::STATUS_READY_FOR_SENDING) {
+                // Skip emails that are not in READY_FOR_SENDING status
+                $errorCount++;
+                continue;
+            }
+
+            // Update the status
+            if (ThreadEmailSending::updateStatus($emailId, ThreadEmailSending::STATUS_STAGING)) {
+                $processedCount++;
+            } else {
+                $errorCount++;
+            }
+        }
+        
+        // Redirect to prevent form resubmission
+        http_response_code(302);
+        header('Location: ' . $_SERVER['REQUEST_URI'] . '?success_bulk_action_staging='. $processedCount . '&error_bulk_action_staging='. $errorCount);
+        exit;
+    }
     else {
         // Invalid action.
         throw new Exception("Invalid action.");
@@ -283,6 +322,18 @@ function formatStatus($status) {
                 . ' email(s) to "Ready for Sending".'
                 . '</div>';
         }
+        if (isset($_GET['success_bulk_action_staging']) && $_GET['success_bulk_action_staging'] != '0') {
+            echo '<div class="alert alert-success">' 
+                . 'Successfully set ' . htmlspecialchars((int)$_GET['success_bulk_action_staging']) 
+                . ' email(s) back to "Staging".'
+                . '</div>';
+        }
+        if (isset($_GET['error_bulk_action_staging']) && $_GET['error_bulk_action_staging'] != '0') {
+            echo '<div class="alert alert-error">' 
+                . 'Failed to set ' . htmlspecialchars((int)$_GET['error_bulk_action_staging']) 
+                . ' email(s) back to "Staging".'
+                . '</div>';
+        }
         ?>
 
         <div class="summary-box">
@@ -314,6 +365,7 @@ function formatStatus($status) {
                 <select name="action" id="bulk-action">
                     <option value="">-- Select Action --</option>
                     <option value="set_ready_for_sending">Set ready for sending</option>
+                    <option value="set_staging">Set back to staging</option>
                 </select>
                 <button type="submit" id="bulk-action-button" disabled>Apply to Selected</button>
                 <div class="selected-count-container" id="selected-count-container">
@@ -326,7 +378,7 @@ function formatStatus($status) {
             <tr>
                 <th class="checkbox-col">
                     <div class="email-checkbox-container">
-                        <input type="checkbox" id="select-all-emails" title="Select all staging emails">
+                        <input type="checkbox" id="select-all-emails" title="Select all actionable emails">
                     </div>
                 </th>
                 <th class="id-col">ID</th>
@@ -339,7 +391,7 @@ function formatStatus($status) {
             <?php foreach ($allEmails as $email): ?>
                 <tr>
                     <td class="checkbox-col">
-                        <?php if ($email['status'] === ThreadEmailSending::STATUS_STAGING): ?>
+                        <?php if ($email['status'] === ThreadEmailSending::STATUS_STAGING || $email['status'] === ThreadEmailSending::STATUS_READY_FOR_SENDING): ?>
                             <div class="email-checkbox-container">
                                 <input type="checkbox" class="email-checkbox" name="email_ids[]" value="<?= $email['id'] ?>" form="bulk-actions-form">
                             </div>
