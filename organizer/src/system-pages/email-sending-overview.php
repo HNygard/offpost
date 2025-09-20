@@ -325,7 +325,7 @@ function formatStatus($status) {
         if (isset($_GET['success_bulk_action_staging']) && $_GET['success_bulk_action_staging'] != '0') {
             echo '<div class="alert alert-success">' 
                 . 'Successfully set ' . htmlspecialchars((int)$_GET['success_bulk_action_staging']) 
-                . ' email(s) back to "Staging".'
+                . ' email(s) back to "Staging"'
                 . '</div>';
         }
         if (isset($_GET['error_bulk_action_staging']) && $_GET['error_bulk_action_staging'] != '0') {

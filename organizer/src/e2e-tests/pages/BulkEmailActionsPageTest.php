@@ -331,8 +331,15 @@ class BulkEmailActionsPageTest extends E2EPageTestCase {
             ]
         );
         
-        // Follow the redirect
-        $response = $this->renderPage('/email-sending-overview');
+        // Extract redirect URL from Location header
+        $this->assertStringContainsString('Location: /email-sending-overview?success_bulk_action_staging=3', $response->headers);
+        
+        // Extract the redirect URL
+        preg_match('/Location: ([^\r\n]+)/', $response->headers, $matches);
+        $redirectUrl = trim($matches[1]);
+        
+        // Follow the redirect with the success parameters
+        $response = $this->renderPage($redirectUrl);
         
         // :: Assert
         // Verify in database that emails are back in staging
