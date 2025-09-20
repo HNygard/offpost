@@ -415,8 +415,8 @@ function formatStatus($status) {
                         }
                     ?></td>
                     <td class="actions-col">
-                        <?php if ($email['status'] === ThreadEmailSending::STATUS_SENT): ?>
-                            <a href="#" class="toggle-response" data-id="<?= $email['id'] ?>">Show Response</a>
+                        <?php if ($email['smtp_response'] || $email['smtp_debug'] || $email['error_message']): ?>
+                            <a href="#" class="toggle-response" data-id="<?= $email['id'] ?>">Show Details</a>
                             <dialog id="response-<?= $email['id'] ?>" class="smtp-response">
                                 <div class="dialog-header">
                                     <h3>Email Sending Details - ID: <?= $email['id'] ?></h3>
