@@ -7,9 +7,6 @@ on:
   pull_request:
     branches:
       - main
-  pull_request_target:
-    branches:
-      - main
 
 jobs:
   build:
@@ -21,7 +18,7 @@ jobs:
 
     steps:
     - name: Checkout code
-      uses: actions/checkout@v2
+      uses: actions/checkout@v4
 
     - name: Set up PHP
       uses: shivammathur/setup-php@v2
