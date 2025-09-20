@@ -1,6 +1,7 @@
 <?php
 
 require_once __DIR__ . '/../class/ThreadScheduledEmailReceiver.php';
+require_once __DIR__ . '/../class/AdminNotificationService.php';
 
 // Set up error reporting
 error_reporting(E_ALL);
@@ -10,37 +11,79 @@ ini_set('display_errors', 1);
 set_time_limit(0);
 ini_set('memory_limit', '768M');
 
-// Create the email receiver
-$emailReceiver = new ThreadScheduledEmailReceiver();
+try {
+    // Create the email receiver
+    $emailReceiver = new ThreadScheduledEmailReceiver();
 
-// Process the next folder
-// Note: We only process one folder at a time to avoid overloading the system
-$result = $emailReceiver->processNextFolder();
+    // Process the next folder
+    // Note: We only process one folder at a time to avoid overloading the system
+    $result = $emailReceiver->processNextFolder();
 
-if (!$result['success']) {
-    // Output the result
-    header('Content-Type: application/json');
-    echo json_encode($result, JSON_PRETTY_PRINT);
-    exit;
-}
+    if (!$result['success']) {
+        // Notify admin if there was an error in processing
+        $adminNotificationService = new AdminNotificationService();
+        $adminNotificationService->notifyAdminOfError(
+            'scheduled-email-receiver',
+            'Error in email processing: ' . $result['message'],
+            $result
+        );
+        
+        // Output the result
+        header('Content-Type: application/json');
+        echo json_encode($result, JSON_PRETTY_PRINT);
+        exit;
+    }
 
-$results = array($result);
+    $results = array($result);
 
-$result = $emailReceiver->processNextFolder();
+    $result = $emailReceiver->processNextFolder();
 
-$results[] = $result;
+    $results[] = $result;
 
-if ($result['success']) {
-    for($i = 0; $i < 10; $i++) {
-        $result = $emailReceiver->processNextFolder();
-        $results[] = $result;
+    if ($result['success']) {
+        for($i = 0; $i < 10; $i++) {
+            $result = $emailReceiver->processNextFolder();
+            $results[] = $result;
 
-        if (!$result['success']) {
-            break;
+            if (!$result['success']) {
+                // Notify admin if there was an error in processing
+                $adminNotificationService = new AdminNotificationService();
+                $adminNotificationService->notifyAdminOfError(
+                    'scheduled-email-receiver',
+                    'Error in email processing: ' . $result['message'],
+                    $result
+                );
+                break;
+            }
         }
     }
-}
 
-// Output the result
-header('Content-Type: application/json');
-echo json_encode($results, JSON_PRETTY_PRINT);
+    // Output the result
+    header('Content-Type: application/json');
+    echo json_encode($results, JSON_PRETTY_PRINT);
+    
+} catch (Exception $e) {
+    // Log the error and notify administrators
+    $adminNotificationService = new AdminNotificationService();
+    $adminNotificationService->notifyAdminOfError(
+        'scheduled-email-receiver',
+        'Unexpected error: ' . $e->getMessage(),
+        [
+            'file' => $e->getFile(),
+            'line' => $e->getLine(),
+            'stack_trace' => $e->getTraceAsString()
+        ]
+    );
+    
+    // Return error response
+    $errorResult = [
+        'success' => false,
+        'message' => 'Unexpected error occurred during scheduled email receiving',
+        'error' => $e->getMessage(),
+        'debug' => $e->getTraceAsString()
+    ];
+    
+    header('Content-Type: application/json');
+    http_response_code(500);
+    echo json_encode($errorResult, JSON_PRETTY_PRINT);
+}
