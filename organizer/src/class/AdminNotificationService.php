@@ -58,7 +58,7 @@ class AdminNotificationService {
         $success = true;
         foreach ($this->adminEmails as $adminEmail) {
             $result = $this->emailService->sendEmail(
-                'system@offpost.no',
+                'admin-notification-system@offpost.no',
                 'Offpost System',
                 $adminEmail,
                 $subject,
