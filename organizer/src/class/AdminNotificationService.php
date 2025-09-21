@@ -15,8 +15,10 @@ class AdminNotificationService {
      * @param IEmailService $emailService Email service instance (optional)
      */
     public function __construct(IEmailService $emailService = null) {
+        // Load admin configuration
+        require __DIR__ . '/../username-password.php';
+
         if ($emailService === null) {
-            require __DIR__ . '/../username-password.php';
             $this->emailService = new PHPMailerService(
                 $smtpServer,
                 $smtpUsername,
@@ -27,18 +29,13 @@ class AdminNotificationService {
         } else {
             $this->emailService = $emailService;
         }
-        
-        // Load admin configuration
-        require __DIR__ . '/../username-password.php';
-        
-        // For now, use a default admin email if not configured
-        // In production, this should be properly configured
-        if ($environment == 'development') {
-            $this->adminEmails = ['admin@dev.offpost.no'];
-        } else {
-            // In production, these should be real admin emails
-            $this->adminEmails = isset($adminEmails) ? $adminEmails : ['admin@offpost.no'];
+
+        if (!isset($adminEmails)) {
+            throw new Exception("Admin emails not configured in username-password.php");
         }
+
+        // Set admin emails
+        $this->adminEmails = $adminEmails;
     }
     
     /**

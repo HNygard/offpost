@@ -21,7 +21,7 @@ class AdminNotificationServiceTest extends PHPUnit\Framework\TestCase {
         $email = $mockEmailService->lastEmailData;
         $this->assertEquals('system@offpost.no', $email['from']);
         $this->assertEquals('Offpost System', $email['fromName']);
-        $this->assertEquals('admin@dev.offpost.no', $email['to']);
+        $this->assertEquals('admin@greenmail', $email['to']);
         $this->assertEquals('Offpost Error: scheduled-email-sending', $email['subject']);
         
         // Check that the body contains expected information
