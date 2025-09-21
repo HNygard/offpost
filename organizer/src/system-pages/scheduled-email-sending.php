@@ -15,7 +15,7 @@ try {
     // Note: We only send one at the time to not trigger to many alerts for spam.
     $result = $emailSender->sendNextScheduledEmail();
 
-    if (!$result['success']) {
+    if (!$result['success'] && $result['message'] !== 'No scheduled emails to send') {
         // Notify admin if there was an error in sending
         $adminNotificationService = new AdminNotificationService();
         $adminNotificationService->notifyAdminOfError(
