@@ -13,8 +13,6 @@ require_once __DIR__ . '/class/Imap/ImapEmail.php';
 // Require authentication
 requireAuth();
 
-use Laminas\Mail\Storage\Message;
-
 require_once __DIR__ . '/class/Threads.php';
 
 if (!isset($_GET['entityId']) || !isset($_GET['threadId'])) {
@@ -99,7 +97,7 @@ foreach ($thread->emails as $email) {
         echo '<pre>';
         echo '-------------------' . chr(10);
         echo "EMAIL HEADERS (RAW):\n";
-        $message = new \Laminas\Mail\Storage\Message(['raw' => ThreadEmailExtractorEmailBody::stripProblematicHeaders($eml)]);
+        $message = ThreadEmailExtractorEmailBody::readLaminasMessage_withErrorHandling($eml);
         echo $message->getHeaders()->toString();
         echo '</pre>';
         exit;

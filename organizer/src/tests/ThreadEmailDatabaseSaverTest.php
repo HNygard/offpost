@@ -62,8 +62,8 @@ class ThreadEmailDatabaseSaverTest extends PHPUnit\Framework\TestCase {
         
         // Insert a test email
         Database::execute(
-            "INSERT INTO thread_emails (id, thread_id, timestamp_received, content, id_old) 
-             VALUES (gen_random_uuid(), ?, NOW(), 'test content', ?)",
+            "INSERT INTO thread_emails (id, thread_id, timestamp_received, content, id_old)
+             VALUES (gen_random_uuid(), ?, NOW(), 'test content'::bytea, ?)",
             [$this->testThreadId, 'test-email-id']
         );
         
@@ -108,14 +108,14 @@ class ThreadEmailDatabaseSaverTest extends PHPUnit\Framework\TestCase {
         $this->assertEquals($this->testThreadId, $savedEmail['thread_id'], 'Email should be associated with the test thread');
         $this->assertEquals($direction, $savedEmail['email_type'], 'Email should have the correct direction');
         $this->assertEquals($filename, $savedEmail['id_old'], 'Email should have the correct id_old');
-        $this->assertEquals($rawEmail, $savedEmail['content'], 'Email should have the correct content');
+        $this->assertEquals($rawEmail, stream_get_contents($savedEmail['content']), 'Email should have the correct content');
     }
     
     public function testSaveAttachmentToDatabase() {
         // First create an email to attach to
         $emailId = Database::queryValue(
-            "INSERT INTO thread_emails (id, thread_id, timestamp_received, content) 
-             VALUES (gen_random_uuid(), ?, NOW(), 'test content') 
+            "INSERT INTO thread_emails (id, thread_id, timestamp_received, content)
+             VALUES (gen_random_uuid(), ?, NOW(), 'test content'::bytea)
              RETURNING id",
             [$this->testThreadId]
         );
