@@ -141,8 +141,17 @@ class ThreadEmailExtractorAttachmentPdf extends ThreadEmailExtractor {
             $returnCode = 0;
             exec($command, $output, $returnCode);
             
+            // Handle different return codes from pdftotext
             if ($returnCode !== 0) {
-                throw new Exception("pdftotext command failed with code $returnCode: " . implode("\n", $output));
+                // Check if this is the "May not be a PDF file" warning with exit code 1
+                $outputText = implode("\n", $output);
+                if ($returnCode === 1 && strpos($outputText, 'Syntax Warning: May not be a PDF file') !== false) {
+                    // This is a warning about file format, but pdftotext may have still extracted some text
+                    // Continue processing to see if an output file was created
+                } else {
+                    // This is a real error, throw exception
+                    throw new Exception("pdftotext command failed with code $returnCode: " . $outputText);
+                }
             }
             
             // Read extracted text
