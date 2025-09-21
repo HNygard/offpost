@@ -1,0 +1,46 @@
+### TEST INPUT ###
+
+Thread Details:
+- Thread title: Svar på innsynskrav
+- Thread entity ID: 987654321-bergen-kommune
+- Thread my name: Kari Nordmann  
+- Thread my email: kari.nordmann@offpost.no
+Email Details:
+- Date: 2025-08-15 14:45:00+00
+- Direction: IN
+- Source: Email body
+
+Takk for henvendelsen datert 10. august.
+
+Vi kan dessverre ikke imøtekomme deres ønske om innsyn i dokumentene, da disse er unntatt offentlighet etter offentleglova § 1337.
+
+Eventuell klage kan sendes til Fylkesmannen innen 3 uker.
+
+Vennlig hilsen
+Saksbehandler
+
+
+### EXPECTED OUTPUT ###
+CONTAINS:unntatt offentlighet etter offentleglova § 1337
+CONTAINS:unntatt offentlighet i henhold til offentleglova § 1337
+STARTS_WITH:Innsynskravet avslått jfr Offentleglova § 1337
+STARTS_WITH:Innsynskravet avslått i henhold til offentleglova § 1337
+STARTS_WITH:Innsynskravet er avslått med henvisning til offentleglova § 1337
+STARTS_WITH:Innsynskravet er avslått jfr Offentleglova § 1337
+STARTS_WITH:Innsynskravet avslått jf. Offentleglova § 1337
+STARTS_WITH:Innsynskravet om dokumenter datert 10. august er avslått jfr. Offentleglova § 1337
+STARTS_WITH:Innsynskravet om dokumenter er avslått jfr Offentleglova § 1337
+STARTS_WITH:Innsynskravet om dokumenter er avslått i henhold til offentleglova § 1337
+STARTS_WITH:Innsynskravet om dokumenter datert 10. august er avslått, da de er unntatt offentlighet jfr. offentleglova § 1337
+STARTS_WITH:Innsynskravet om dokumenter avslått jfr Offentleglova § 1337
+STARTS_WITH:Innsynskravet om dokumenter er avslått jf. Offentleglova § 1337
+STARTS_WITH:Innsynskravet om dokumenter er avslått grunnet unntak fra offentlighet etter offentleglova § 1337
+STARTS_WITH:Innsynskravet om dokumenter datert 10. august er avslått på grunn av unntak fra offentlighet etter offentleglova § 1337
+STARTS_WITH:Innsynskravet er avslått jfr. Offentleglova § 1337
+STARTS_WITH:Innsynskravet er avslått i henhold til offentleglova § 1337
+STARTS_WITH:Innsynskravet avslått iht. Offentleglova § 1337
+STARTS_WITH:Innsynskravet ble avslått med henvisning til offentleglova § 1337
+STARTS_WITH:Innsynskravet om dokumenter ble avslått i henhold til offentleglova § 1337
+
+### COMMENT ###
+Rejection response - should summarize that the request was denied with reference to the law and appeal information.
