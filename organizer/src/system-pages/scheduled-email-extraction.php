@@ -40,7 +40,7 @@ try {
         $result['extraction_type'] = $extractionType;
         $results[] = $result;
 
-        if (!$result['success']) {
+        if (!$result['success'] && $result['message'] !== 'No emails found that need extraction') {
             // Log the error and notify administrators
             $adminNotificationService = new AdminNotificationService();
             $adminNotificationService->notifyAdminOfError(
