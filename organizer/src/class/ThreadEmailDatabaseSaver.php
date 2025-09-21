@@ -265,24 +265,28 @@ class ThreadEmailDatabaseSaver {
                 content,
                 imap_headers,
                 id_old
-            ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+            ) VALUES (:thread_id, :timestamp_received, :datetime_received, :ignore, :email_type, :status_type, :status_text, :content, :imap_headers, :id_old)
             RETURNING id
         ";
         
         $params = [
-            $threadId,
-            date('Y-m-d H:i:s', $email->timestamp),
-            date('Y-m-d H:i:s', $email->timestamp),
-            'f', // PostgreSQL boolean false
-            $direction,
-            ThreadEmailStatusType::UNKNOWN->value,
-            'Uklassifisert',
-            $rawEmail,
-            json_encode($imap_headers, JSON_UNESCAPED_UNICODE ^ JSON_UNESCAPED_SLASHES),
-            $filename
+            ':thread_id' => $threadId,
+            ':timestamp_received' => date('Y-m-d H:i:s', $email->timestamp),
+            ':datetime_received' => date('Y-m-d H:i:s', $email->timestamp),
+            ':ignore' => 'f', // PostgreSQL boolean false
+            ':email_type' => $direction,
+            ':status_type' => ThreadEmailStatusType::UNKNOWN->value,
+            ':status_text' => 'Uklassifisert',
+            ':imap_headers' => json_encode($imap_headers, JSON_UNESCAPED_UNICODE ^ JSON_UNESCAPED_SLASHES),
+            ':id_old' => $filename
         ];
         
-        $result = Database::queryValue($query, $params);
+        // Handle binary content separately
+        $binaryParams = [
+            ':content' => $rawEmail
+        ];
+        
+        $result = Database::queryValueWithBinaryParam($query, $params, $binaryParams);
         
         if (!$result) {
             throw new Exception('Failed to save email to database');
