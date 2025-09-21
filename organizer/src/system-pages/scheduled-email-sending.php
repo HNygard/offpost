@@ -15,11 +15,22 @@ try {
     // Note: We only send one at the time to not trigger to many alerts for spam.
     $result = $emailSender->sendNextScheduledEmail();
 
+    if (!$result['success']) {
+        // Notify admin if there was an error in sending
+        $adminNotificationService = new AdminNotificationService();
+        $adminNotificationService->notifyAdminOfError(
+            'scheduled-email-sending',
+            'Error in email sending: ' . $result['message'],
+            $result
+        );
+    }
+
     // Output the result
     header('Content-Type: application/json');
     echo json_encode($result, JSON_PRETTY_PRINT);
     
-} catch (Exception $e) {
+}
+catch (Exception $e) {
     // Log the error and notify administrators
     $adminNotificationService = new AdminNotificationService();
     $adminNotificationService->notifyAdminOfError(
@@ -32,15 +43,5 @@ try {
         ]
     );
     
-    // Return error response
-    $errorResult = [
-        'success' => false,
-        'message' => 'Unexpected error occurred during scheduled email sending',
-        'error' => $e->getMessage(),
-        'debug' => $e->getTraceAsString()
-    ];
-    
-    header('Content-Type: application/json');
-    http_response_code(500);
-    echo json_encode($errorResult, JSON_PRETTY_PRINT);
+    throw $e;
 }

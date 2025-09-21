@@ -19,42 +19,20 @@ try {
     // Note: We only process one folder at a time to avoid overloading the system
     $result = $emailReceiver->processNextFolder();
 
-    if (!$result['success']) {
-        // Notify admin if there was an error in processing
-        $adminNotificationService = new AdminNotificationService();
-        $adminNotificationService->notifyAdminOfError(
-            'scheduled-email-receiver',
-            'Error in email processing: ' . $result['message'],
-            $result
-        );
-        
-        // Output the result
-        header('Content-Type: application/json');
-        echo json_encode($result, JSON_PRETTY_PRINT);
-        exit;
-    }
+    $results = array();
+    for($i = 0; $i < 10; $i++) {
+        $result = $emailReceiver->processNextFolder();
+        $results[] = $result;
 
-    $results = array($result);
-
-    $result = $emailReceiver->processNextFolder();
-
-    $results[] = $result;
-
-    if ($result['success']) {
-        for($i = 0; $i < 10; $i++) {
-            $result = $emailReceiver->processNextFolder();
-            $results[] = $result;
-
-            if (!$result['success']) {
-                // Notify admin if there was an error in processing
-                $adminNotificationService = new AdminNotificationService();
-                $adminNotificationService->notifyAdminOfError(
-                    'scheduled-email-receiver',
-                    'Error in email processing: ' . $result['message'],
-                    $result
-                );
-                break;
-            }
+        if (!$result['success']) {
+            // Notify admin if there was an error in processing
+            $adminNotificationService = new AdminNotificationService();
+            $adminNotificationService->notifyAdminOfError(
+                'scheduled-email-receiver',
+                'Error in email processing: ' . $result['message'],
+                $result
+            );
+            break;
         }
     }
 
@@ -74,16 +52,6 @@ try {
             'stack_trace' => $e->getTraceAsString()
         ]
     );
-    
-    // Return error response
-    $errorResult = [
-        'success' => false,
-        'message' => 'Unexpected error occurred during scheduled email receiving',
-        'error' => $e->getMessage(),
-        'debug' => $e->getTraceAsString()
-    ];
-    
-    header('Content-Type: application/json');
-    http_response_code(500);
-    echo json_encode($errorResult, JSON_PRETTY_PRINT);
+
+    throw $e;
 }

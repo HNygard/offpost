@@ -82,17 +82,6 @@ try {
             'debug_output' => $debugOutput
         ]
     );
-    
-    // Return error response
-    $errorResult = [
-        'success' => false,
-        'message' => 'Unexpected error occurred during scheduled IMAP handling',
-        'error' => $e->getMessage(),
-        'debug' => $debugOutput,
-        'stack_trace' => $e->getTraceAsString()
-    ];
-    
-    header('Content-Type: application/json');
-    http_response_code(500);
-    echo json_encode($errorResult, JSON_PRETTY_PRINT);
+
+    throw $e;
 }
