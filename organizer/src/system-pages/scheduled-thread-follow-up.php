@@ -15,7 +15,7 @@ try {
     // Note: We only process one at a time to avoid sending too many emails at once
     $result = $followUpSender->sendNextFollowUpEmail();
 
-    if (!$result['success']) {
+    if (!$result['success'] && $result['message'] !== 'No follow-up emails to send') {
         // Notify admin if there was an error in sending
         $adminNotificationService = new AdminNotificationService();
         $adminNotificationService->notifyAdminOfError(
