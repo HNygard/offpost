@@ -21,14 +21,10 @@ class ImapWrapper {
      * Check if an error indicates a connection issue that might be retryable
      */
     private function isRetryableError(string $error): bool {
+        // Only retry very specific connection-broken errors from the original issue
         $retryablePatterns = [
-            'CLOSED',
-            'connection broken',
-            'connection lost',
-            'connection reset',
-            'timeout',
-            'network error',
-            'server response'
+            '[CLOSED] IMAP connection broken',
+            'IMAP connection broken (server response)'
         ];
         
         $lowerError = strtolower($error);
@@ -59,6 +55,7 @@ class ImapWrapper {
                 if ($error !== false) {
                     if ($this->isRetryableError($error) && $attempt < self::MAX_RETRIES) {
                         $lastError = $error;
+                        error_log("IMAP retry attempt $attempt/$" . self::MAX_RETRIES . " for $operationName: $error");
                         $this->waitBeforeRetry($attempt);
                         continue;
                     } else {
@@ -71,6 +68,11 @@ class ImapWrapper {
                     }
                 }
                 
+                // Log successful retry if this wasn't the first attempt
+                if ($attempt > 1) {
+                    error_log("IMAP operation $operationName succeeded on attempt $attempt");
+                }
+                
                 return $result;
                 
             } catch (\Exception $e) {
@@ -79,6 +81,7 @@ class ImapWrapper {
                 // Check if this is a retryable error
                 if ($this->isRetryableError($errorMessage) && $attempt < self::MAX_RETRIES) {
                     $lastError = $errorMessage;
+                    error_log("IMAP retry attempt $attempt/$" . self::MAX_RETRIES . " for $operationName: $errorMessage");
                     $this->waitBeforeRetry($attempt);
                     continue;
                 } else {
