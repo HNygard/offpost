@@ -3,6 +3,9 @@
 namespace Imap;
 
 class ImapWrapper {
+    private const MAX_RETRIES = 5;
+    private const RETRY_DELAY_MS = 100; // Base delay in milliseconds
+    
     private function checkError(string $operation, ?array $params = null) {
         $error = \imap_last_error();
         if ($error !== false) {
@@ -12,6 +15,94 @@ class ImapWrapper {
             }
             throw new \Exception("IMAP error during $operation$context: $error");
         }
+    }
+    
+    /**
+     * Check if an error indicates a connection issue that might be retryable
+     */
+    private function isRetryableError(string $error): bool {
+        $retryablePatterns = [
+            'CLOSED',
+            'connection broken',
+            'connection lost',
+            'connection reset',
+            'timeout',
+            'network error',
+            'server response'
+        ];
+        
+        $lowerError = strtolower($error);
+        foreach ($retryablePatterns as $pattern) {
+            if (strpos($lowerError, strtolower($pattern)) !== false) {
+                return true;
+            }
+        }
+        
+        return false;
+    }
+    
+    /**
+     * Execute a read operation with retry logic
+     */
+    private function executeWithRetry(callable $operation, string $operationName, ?array $params = null) {
+        $lastError = null;
+        
+        for ($attempt = 1; $attempt <= self::MAX_RETRIES; $attempt++) {
+            try {
+                // Clear any previous IMAP errors
+                \imap_errors();
+                
+                $result = $operation();
+                
+                // Check for errors after the operation
+                $error = \imap_last_error();
+                if ($error !== false) {
+                    if ($this->isRetryableError($error) && $attempt < self::MAX_RETRIES) {
+                        $lastError = $error;
+                        $this->waitBeforeRetry($attempt);
+                        continue;
+                    } else {
+                        // Non-retryable error or max retries reached
+                        $context = '';
+                        if ($params) {
+                            $context = ' [' . implode(', ', $params) . ']';
+                        }
+                        throw new \Exception("IMAP error during $operationName$context: $error");
+                    }
+                }
+                
+                return $result;
+                
+            } catch (\Exception $e) {
+                $errorMessage = $e->getMessage();
+                
+                // Check if this is a retryable error
+                if ($this->isRetryableError($errorMessage) && $attempt < self::MAX_RETRIES) {
+                    $lastError = $errorMessage;
+                    $this->waitBeforeRetry($attempt);
+                    continue;
+                } else {
+                    // Re-throw if not retryable or max retries reached
+                    throw $e;
+                }
+            }
+        }
+        
+        // If we get here, we've exhausted all retries
+        $context = '';
+        if ($params) {
+            $context = ' [' . implode(', ', $params) . ']';
+        }
+        throw new \Exception("IMAP operation $operationName$context failed after " . self::MAX_RETRIES . " retries. Last error: $lastError");
+    }
+    
+    /**
+     * Wait before retrying with exponential backoff
+     */
+    private function waitBeforeRetry(int $attempt): void {
+        $delayMs = self::RETRY_DELAY_MS * pow(2, $attempt - 1); // Exponential backoff
+        $delayMs = min($delayMs, 5000); // Cap at 5 seconds
+        usleep($delayMs * 1000); // Convert to microseconds
     }
 
     public function list(mixed $imap_stream, string $ref, string $pattern): array|false {
@@ -77,9 +168,13 @@ class ImapWrapper {
     }
 
     public function search(mixed $imap_stream, string $criteria, int $options = SE_FREE, string $charset = ""): array|false {
-        $result = \imap_search($imap_stream, $criteria, $options, $charset);
-        $this->checkError('search');
-        return $result;
+        return $this->executeWithRetry(
+            function() use ($imap_stream, $criteria, $options, $charset) {
+                return \imap_search($imap_stream, $criteria, $options, $charset);
+            },
+            'search',
+            ["criteria: $criteria", "options: $options"]
+        );
     }
 
     public function msgno(mixed $imap_stream, int $uid): int {
@@ -89,15 +184,23 @@ class ImapWrapper {
     }
 
     public function headerinfo(mixed $imap_stream, int $msg_number): object|false {
-        $result = \imap_headerinfo($imap_stream, $msg_number);
-        $this->checkError('headerinfo');
-        return $result;
+        return $this->executeWithRetry(
+            function() use ($imap_stream, $msg_number) {
+                return \imap_headerinfo($imap_stream, $msg_number);
+            },
+            'headerinfo',
+            ["msg_number: $msg_number"]
+        );
     }
 
     public function body(mixed $imap_stream, int $msg_number, int $options = 0): string|false {
-        $result = \imap_body($imap_stream, $msg_number, $options);
-        $this->checkError('body');
-        return $result;
+        return $this->executeWithRetry(
+            function() use ($imap_stream, $msg_number, $options) {
+                return \imap_body($imap_stream, $msg_number, $options);
+            },
+            'body',
+            ["msg_number: $msg_number", "options: $options"]
+        );
     }
 
     public function utf8(string $text): string {
@@ -105,14 +208,22 @@ class ImapWrapper {
     }
 
     public function fetchstructure(mixed $imap_stream, int $msg_number, int $options = 0): object {
-        $result = \imap_fetchstructure($imap_stream, $msg_number, $options);
-        $this->checkError('fetchstructure');
-        return $result;
+        return $this->executeWithRetry(
+            function() use ($imap_stream, $msg_number, $options) {
+                return \imap_fetchstructure($imap_stream, $msg_number, $options);
+            },
+            'fetchstructure',
+            ["msg_number: $msg_number", "options: $options"]
+        );
     }
 
     public function fetchbody(mixed $imap_stream, int $msg_number, string $section, int $options = 0): string {
-        $result = \imap_fetchbody($imap_stream, $msg_number, $section, $options);
-        $this->checkError('fetchbody');
-        return $result;
+        return $this->executeWithRetry(
+            function() use ($imap_stream, $msg_number, $section, $options) {
+                return \imap_fetchbody($imap_stream, $msg_number, $section, $options);
+            },
+            'fetchbody',
+            ["msg_number: $msg_number", "section: $section", "options: $options"]
+        );
     }
 }
