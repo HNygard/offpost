@@ -44,15 +44,17 @@ class ImapWrapperRetryTest extends TestCase
         
         $wrapper = new ImapWrapper();
         
-        // Test retryable errors
+        // Test retryable errors - only specific patterns from the original issue
         $this->assertTrue($method->invoke($wrapper, '[CLOSED] IMAP connection broken'));
-        $this->assertTrue($method->invoke($wrapper, 'connection lost'));
-        $this->assertTrue($method->invoke($wrapper, 'connection reset'));
-        $this->assertTrue($method->invoke($wrapper, 'timeout occurred'));
-        $this->assertTrue($method->invoke($wrapper, 'network error'));
-        $this->assertTrue($method->invoke($wrapper, 'server response'));
+        $this->assertTrue($method->invoke($wrapper, 'IMAP connection broken (server response)'));
+        $this->assertTrue($method->invoke($wrapper, 'IMAP error during fetchbody: [CLOSED] IMAP connection broken (server response)'));
         
-        // Test non-retryable errors
+        // Test non-retryable errors - everything else should not be retryable
+        $this->assertFalse($method->invoke($wrapper, 'connection lost'));
+        $this->assertFalse($method->invoke($wrapper, 'connection reset'));
+        $this->assertFalse($method->invoke($wrapper, 'timeout occurred'));
+        $this->assertFalse($method->invoke($wrapper, 'network error'));
+        $this->assertFalse($method->invoke($wrapper, 'server response'));
         $this->assertFalse($method->invoke($wrapper, 'invalid credentials'));
         $this->assertFalse($method->invoke($wrapper, 'authentication failed'));
         $this->assertFalse($method->invoke($wrapper, 'mailbox not found'));
