@@ -65,7 +65,7 @@ class ThreadEmailProcessingErrorManager {
             );
             
             // Mark the error as resolved
-            self::dismissError($errorId, $userId);
+            self::dismissError($errorId);
             
             Database::commit();
             return true;
