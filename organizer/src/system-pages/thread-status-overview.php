@@ -22,23 +22,15 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             $threadId = $_POST['thread_id'];
             $description = $_POST['description'] ?? '';
             
-            if (ThreadEmailProcessingErrorManager::resolveError($errorId, $threadId, $userId, $description)) {
-                $message = 'Email processing error resolved successfully.';
-                $messageType = 'success';
-            } else {
-                $message = 'Failed to resolve email processing error.';
-                $messageType = 'error';
-            }
+            ThreadEmailProcessingErrorManager::resolveError($errorId, $threadId, $description);
+            $message = 'Email processing error resolved successfully.';
+            $messageType = 'success';
         } elseif ($_POST['action'] === 'dismiss_error' && isset($_POST['error_id'])) {
             $errorId = (int)$_POST['error_id'];
             
-            if (ThreadEmailProcessingErrorManager::dismissError($errorId, $userId)) {
-                $message = 'Email processing error dismissed successfully.';
-                $messageType = 'success';
-            } else {
-                $message = 'Failed to dismiss email processing error.';
-                $messageType = 'error';
-            }
+            ThreadEmailProcessingErrorManager::dismissError($errorId);
+            $message = 'Email processing error dismissed successfully.';
+            $messageType = 'success';
         }
     }
 }

@@ -42,46 +42,37 @@ class ThreadEmailProcessingErrorManager {
      * @param string $description Optional description for the mapping
      * @return bool True if successful
      */
-    public static function resolveError(int $errorId, string $threadId, string $userId, string $description = ''): bool {
+    public static function resolveError(int $errorId, string $threadId, string $description = ''): bool {
         try {
             Database::beginTransaction();
             
             // Get the error details
             $error = Database::queryRow(
-                "SELECT * FROM thread_email_processing_errors WHERE id = ? AND resolved = false",
+                "SELECT * FROM thread_email_processing_errors WHERE id = ?",
                 [$errorId]
             );
             
             if (!$error) {
                 Database::rollBack();
-                return false;
+                throw new Exception('Error not found or already resolved');
             }
             
             // Create the manual mapping
             Database::execute(
                 "INSERT INTO thread_email_mapping (email_identifier, thread_id, description) 
-                 VALUES (?, ?, ?) 
-                 ON CONFLICT (email_identifier) DO UPDATE SET 
-                    thread_id = EXCLUDED.thread_id,
-                    description = EXCLUDED.description",
+                 VALUES (?, ?, ?) ",
                 [$error['email_identifier'], $threadId, $description]
             );
             
             // Mark the error as resolved
-            Database::execute(
-                "UPDATE thread_email_processing_errors 
-                 SET resolved = true, resolved_by = ?, resolved_at = CURRENT_TIMESTAMP 
-                 WHERE id = ?",
-                [$userId, $errorId]
-            );
+            self::dismissError($errorId, $userId);
             
             Database::commit();
             return true;
             
         } catch (Exception $e) {
             Database::rollBack();
-            error_log("Failed to resolve email processing error: " . $e->getMessage());
-            return false;
+            throw $e;
         }
     }
     
@@ -89,24 +80,13 @@ class ThreadEmailProcessingErrorManager {
      * Delete/dismiss an error without creating a mapping
      * 
      * @param int $errorId Error ID
-     * @param string $userId User who dismissed the error
      * @return bool True if successful
      */
-    public static function dismissError(int $errorId, string $userId): bool {
-        try {
-            $result = Database::execute(
-                "UPDATE thread_email_processing_errors 
-                 SET resolved = true, resolved_by = ?, resolved_at = CURRENT_TIMESTAMP 
-                 WHERE id = ? AND resolved = false",
-                [$userId, $errorId]
-            );
-            
-            return $result > 0;
-            
-        } catch (Exception $e) {
-            error_log("Failed to dismiss email processing error: " . $e->getMessage());
-            return false;
-        }
+    public static function dismissError(int $errorId): bool {
+        Database::execute(
+            "DELETE FROM thread_email_processing_errors WHERE id = ?",
+            [$errorId]
+        );
     }
     
     /**
