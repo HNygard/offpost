@@ -81,9 +81,6 @@ foreach ($threadStatuses as $threadStatus) {
 $emailProcessingErrors = ThreadEmailProcessingErrorManager::getUnresolvedErrors();
 $emailProcessingErrorCount = count($emailProcessingErrors);
 
-// Get threads for dropdown selection
-$threadsForSelection = ThreadEmailProcessingErrorManager::getThreadsForSelection();
-
 // Function to truncate text
 function truncateText($text, $length = 50) {
     if (!$text) return '';
@@ -347,21 +344,14 @@ if (!empty($threadIds)) {
                             
                             <div>
                                 <label for="thread_<?= $error['id'] ?>">Assign to Thread:</label>
-                                <select name="thread_id" id="thread_<?= $error['id'] ?>" required>
-                                    <option value=".">Select a thread...</option>
-                                    <?php if ($error['suggested_thread_id']): ?>
-                                        <option value="<?= htmlspecialchars($error['suggested_thread_id']) ?>" selected>
-                                            [SUGGESTED] <?= htmlspecialchars($error['suggested_thread_title'] ?? 'Unknown Thread') ?>
-                                        </option>
-                                    <?php endif; ?>
-                                    <?php foreach ($threadsForSelection as $thread): ?>
-                                        <?php if ($thread['id'] !== $error['suggested_thread_id']): ?>
-                                            <option value="<?= htmlspecialchars($thread['id']) ?>">
-                                                <?= htmlspecialchars($thread['title'] ?? $thread['my_email']) ?> (<?= htmlspecialchars($thread['my_email']) ?>)
-                                            </option>
-                                        <?php endif; ?>
-                                    <?php endforeach; ?>
-                                </select>
+                                <input type="text" name="thread_id" id="thread_<?= $error['id'] ?>" 
+                                       value="<?= htmlspecialchars($error['suggested_thread_id'] ?? '') ?>" 
+                                       placeholder="Enter thread ID..." required style="width: 300px;">
+                                <?php if ($error['suggested_thread_id'] && $error['suggested_thread_title']): ?>
+                                    <small style="display: block; color: #666; margin-top: 2px;">
+                                        Suggested: <?= htmlspecialchars($error['suggested_thread_title']) ?>
+                                    </small>
+                                <?php endif; ?>
                             </div>
                             
                             <div>
