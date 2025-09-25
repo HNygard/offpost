@@ -55,7 +55,7 @@ class ImapWrapper {
                 if ($error !== false) {
                     if ($this->isRetryableError($error) && $attempt < self::MAX_RETRIES) {
                         $lastError = $error;
-                        error_log("IMAP retry attempt $attempt/$" . self::MAX_RETRIES . " for $operationName: $error");
+                        error_log("IMAP retry attempt $attempt/" . self::MAX_RETRIES . " for $operationName: $error");
                         $this->waitBeforeRetry($attempt);
                         continue;
                     } else {
