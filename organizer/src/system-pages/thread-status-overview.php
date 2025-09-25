@@ -4,9 +4,36 @@ require_once __DIR__ . '/../class/ThreadStatusRepository.php';
 require_once __DIR__ . '/../class/Thread.php';
 require_once __DIR__ . '/../class/ThreadEmail.php';
 require_once __DIR__ . '/../class/Database.php';
+require_once __DIR__ . '/../class/ThreadEmailProcessingErrorManager.php';
 
 // Require authentication
 requireAuth();
+
+// Handle form submissions for error resolution
+$message = '';
+$messageType = '';
+
+if ($_SERVER['REQUEST_METHOD'] === 'POST') {
+    if (isset($_POST['action'])) {
+        $userId = $_SESSION['user_id'] ?? 'system';
+        
+        if ($_POST['action'] === 'resolve_error' && isset($_POST['error_id']) && isset($_POST['thread_id'])) {
+            $errorId = (int)$_POST['error_id'];
+            $threadId = $_POST['thread_id'];
+            $description = $_POST['description'] ?? '';
+            
+            ThreadEmailProcessingErrorManager::resolveError($errorId, $threadId, $description);
+            $message = 'Email processing error resolved successfully.';
+            $messageType = 'success';
+        } elseif ($_POST['action'] === 'dismiss_error' && isset($_POST['error_id'])) {
+            $errorId = (int)$_POST['error_id'];
+            
+            ThreadEmailProcessingErrorManager::dismissError($errorId);
+            $message = 'Email processing error dismissed successfully.';
+            $messageType = 'success';
+        }
+    }
+}
 
 // Get all non-archived thread statuses
 $threadStatuses = ThreadStatusRepository::getAllThreadStatusesEfficient(null, null, false);
@@ -41,6 +68,10 @@ foreach ($threadStatuses as $threadStatus) {
         $statusCounts[$status]++;
     }
 }
+
+// Get email processing errors
+$emailProcessingErrors = ThreadEmailProcessingErrorManager::getUnresolvedErrors();
+$emailProcessingErrorCount = count($emailProcessingErrors);
 
 // Function to truncate text
 function truncateText($text, $length = 50) {
@@ -188,6 +219,66 @@ if (!empty($threadIds)) {
         th.actions-col, td.actions-col {
             width: 20%;
         }
+        
+        /* Email processing errors styling */
+        .error-section {
+            background-color: #fff3cd;
+            border: 1px solid #ffeaa7;
+            border-radius: 4px;
+            padding: 15px;
+            margin-bottom: 20px;
+        }
+        .error-section h2 {
+            color: #856404;
+            margin-top: 0;
+        }
+        .error-item {
+            background-color: #ffffff;
+            border: 1px solid #dee2e6;
+            border-radius: 4px;
+            padding: 15px;
+            margin-bottom: 15px;
+        }
+        .error-form {
+            display: flex;
+            gap: 10px;
+            align-items: flex-end;
+            margin-top: 10px;
+        }
+        .error-form select, .error-form input {
+            padding: 5px;
+            border: 1px solid #ddd;
+            border-radius: 3px;
+        }
+        .error-form button {
+            padding: 5px 10px;
+            border: none;
+            border-radius: 3px;
+            cursor: pointer;
+        }
+        .btn-resolve {
+            background-color: #28a745;
+            color: white;
+        }
+        .btn-dismiss {
+            background-color: #6c757d;
+            color: white;
+        }
+        .message {
+            padding: 10px;
+            border-radius: 4px;
+            margin-bottom: 15px;
+        }
+        .message.success {
+            background-color: #d4edda;
+            border: 1px solid #c3e6cb;
+            color: #155724;
+        }
+        .message.error {
+            background-color: #f8d7da;
+            border: 1px solid #f5c6cb;
+            color: #721c24;
+        }
     </style>
 </head>
 <body>
@@ -209,7 +300,65 @@ if (!empty($threadIds)) {
                     </div>
                 <?php endif; ?>
             <?php endforeach; ?>
+            <?php if ($emailProcessingErrorCount > 0): ?>
+                <div class="summary-item">
+                    <div class="summary-count" style="color: #856404;"><?= $emailProcessingErrorCount ?></div>
+                    <div class="summary-label">Email Processing Errors</div>
+                </div>
+            <?php endif; ?>
         </div>
+        
+        <?php if ($message): ?>
+            <div class="message <?= $messageType ?>">
+                <?= htmlspecialchars($message) ?>
+            </div>
+        <?php endif; ?>
+
+        <?php if ($emailProcessingErrorCount > 0): ?>
+            <div class="error-section">
+                <h2>Email Processing Errors (<?= $emailProcessingErrorCount ?>)</h2>
+                <p>The following emails could not be automatically assigned to threads and require manual intervention:</p>
+                
+                <?php foreach ($emailProcessingErrors as $error): ?>
+                    <div class="error-item">
+                        <div><strong>Email Subject:</strong> <?= htmlspecialchars($error['email_subject']) ?></div>
+                        <div><strong>Email Addresses:</strong> <?= htmlspecialchars($error['email_addresses']) ?></div>
+                        <div><strong>Error Type:</strong> <?= $error['error_type'] === 'no_matching_thread' ? 'No matching thread' : 'Multiple matching threads' ?></div>
+                        <div><strong>Folder:</strong> <?= htmlspecialchars($error['folder_name']) ?></div>
+                        <div><strong>Created:</strong> <?= date('Y-m-d H:i:s', strtotime($error['created_at'])) ?></div>
+                        
+                        <?php if ($error['suggested_thread_id'] && $error['suggested_thread_title']): ?>
+                            <div><strong>Suggested Thread:</strong> <?= htmlspecialchars($error['suggested_thread_title']) ?> (<?= substr($error['suggested_thread_id'], 0, 8) ?>...)</div>
+                        <?php endif; ?>
+                        
+                        <form class="error-form" method="post">
+                            <input type="hidden" name="error_id" value="<?= $error['id'] ?>">
+                            
+                            <div>
+                                <label for="thread_<?= $error['id'] ?>">Assign to Thread:</label>
+                                <input type="text" name="thread_id" id="thread_<?= $error['id'] ?>" 
+                                       value="<?= htmlspecialchars($error['suggested_thread_id'] ?? '') ?>" 
+                                       placeholder="Enter thread ID..." required style="width: 300px;">
+                                <?php if ($error['suggested_thread_id'] && $error['suggested_thread_title']): ?>
+                                    <small style="display: block; color: #666; margin-top: 2px;">
+                                        Suggested: <?= htmlspecialchars($error['suggested_thread_title']) ?>
+                                    </small>
+                                <?php endif; ?>
+                            </div>
+                            
+                            <div>
+                                <label for="description_<?= $error['id'] ?>">Description:</label>
+                                <input type="text" name="description" id="description_<?= $error['id'] ?>" placeholder="Optional description..." style="width: 200px;">
+                            </div>
+                            
+                            <button type="submit" name="action" value="resolve_error" class="btn-resolve">Resolve</button>
+                            <button type="submit" name="action" value="dismiss_error" class="btn-dismiss" 
+                                    onclick="return confirm('Are you sure you want to dismiss this error without creating a mapping?')">Dismiss</button>
+                        </form>
+                    </div>
+                <?php endforeach; ?>
+            </div>
+        <?php endif; ?>
 
         <table>
             <tr>
