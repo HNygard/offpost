@@ -1,12 +1,9 @@
 -- Migration: Add thread_email_processing_errors table
 -- This table stores email processing errors for GUI resolution
 
--- Create sequence for thread_email_processing_errors.id
-CREATE SEQUENCE IF NOT EXISTS thread_email_processing_errors_id_seq;
-
 -- Create thread_email_processing_errors table
 CREATE TABLE thread_email_processing_errors (
-    id integer NOT NULL DEFAULT nextval('thread_email_processing_errors_id_seq'::regclass),
+    id SERIAL PRIMARY KEY,
     email_identifier character varying(255) NOT NULL,
     email_subject text NOT NULL,
     email_addresses text NOT NULL,
@@ -20,9 +17,6 @@ CREATE TABLE thread_email_processing_errors (
     resolved_at timestamp with time zone,
     created_at timestamp with time zone NOT NULL DEFAULT CURRENT_TIMESTAMP
 );
-
--- Add primary key
-ALTER TABLE thread_email_processing_errors ADD CONSTRAINT thread_email_processing_errors_pkey PRIMARY KEY (id);
 
 -- Add foreign key constraint for suggested_thread_id (can be null)
 ALTER TABLE thread_email_processing_errors ADD CONSTRAINT thread_email_processing_errors_suggested_thread_id_fkey 
