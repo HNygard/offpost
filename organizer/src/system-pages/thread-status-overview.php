@@ -348,7 +348,7 @@ if (!empty($threadIds)) {
                             <div>
                                 <label for="thread_<?= $error['id'] ?>">Assign to Thread:</label>
                                 <select name="thread_id" id="thread_<?= $error['id'] ?>" required>
-                                    <option value="">Select a thread...</option>
+                                    <option value=".">Select a thread...</option>
                                     <?php if ($error['suggested_thread_id']): ?>
                                         <option value="<?= htmlspecialchars($error['suggested_thread_id']) ?>" selected>
                                             [SUGGESTED] <?= htmlspecialchars($error['suggested_thread_title'] ?? 'Unknown Thread') ?>
