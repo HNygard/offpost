@@ -40,7 +40,6 @@ class ThreadEmailProcessingErrorManager {
      * @param string $threadId Thread ID to map to
      * @param string $userId User who resolved the error
      * @param string $description Optional description for the mapping
-     * @return bool True if successful
      */
     public static function resolveError(int $errorId, string $threadId, string $description = ''): bool {
         try {
@@ -68,8 +67,6 @@ class ThreadEmailProcessingErrorManager {
             self::dismissError($errorId);
             
             Database::commit();
-            return true;
-            
         } catch (Exception $e) {
             Database::rollBack();
             throw $e;
@@ -80,7 +77,6 @@ class ThreadEmailProcessingErrorManager {
      * Delete/dismiss an error without creating a mapping
      * 
      * @param int $errorId Error ID
-     * @return bool True if successful
      */
     public static function dismissError(int $errorId): bool {
         Database::execute(
