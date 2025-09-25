@@ -36,9 +36,9 @@ class ImapEmail {
         
         // Basic email information
         $email->uid = $uid;
-        $email->subject = $headers->subject;
-        $email->timestamp = strtotime($headers->date);
-        $email->date = $headers->date;
+        $email->subject = isset($headers->subject) ? $headers->subject : '';
+        $email->timestamp = isset($headers->date) ? strtotime($headers->date) : time();
+        $email->date = isset($headers->date) ? $headers->date : date('r');
         
         // Clean up and convert character encodings
         $email->toaddress = isset($headers->toaddress) ? $connection->utf8($headers->toaddress) : null;
