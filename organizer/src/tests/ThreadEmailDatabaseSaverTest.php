@@ -183,4 +183,90 @@ class ThreadEmailDatabaseSaverTest extends PHPUnit\Framework\TestCase {
         
         $this->assertTrue((bool)$archivedThread['archived'], 'Thread should be marked as archived');
     }
+    
+    /**
+     * Test that email processing errors are persisted even when transaction is rolled back
+     */
+    public function testSaveEmailProcessingErrorPersistsOnRollback() {
+        // :: Setup
+        // Create a mock email that will trigger the multiple matching threads error
+        $mockEmail = new stdClass();
+        $mockEmail->uid = 'test-uid-123';
+        $mockEmail->timestamp = time();
+        $mockEmail->subject = 'Test Email Subject';
+        $mockEmail->mailHeaders = new stdClass();
+        
+        // Mock getEmailAddresses to return emails that will match multiple threads
+        $mockEmail->getEmailAddresses = function() {
+            return ['test@example.com'];
+        };
+        
+        // Create two threads with the same email to trigger multiple matches
+        $email = 'multithread' . time() . '@example.com';
+        $threadId1 = Database::queryValue(
+            "INSERT INTO threads (id, entity_id, title, my_name, my_email) 
+             VALUES (gen_random_uuid(), '000000000-test-entity-development', 'Test Thread 1', 'Test User', ?) 
+             RETURNING id",
+            [$email]
+        );
+        $threadId2 = Database::queryValue(
+            "INSERT INTO threads (id, entity_id, title, my_name, my_email) 
+             VALUES (gen_random_uuid(), '000000000-test-entity-development', 'Test Thread 2', 'Test User', ?) 
+             RETURNING id",
+            [$email]
+        );
+        
+        // Configure mocks to return our test email
+        $this->mockEmailProcessor->method('getEmails')
+            ->willReturn([$mockEmail]);
+        
+        $this->mockConnection->method('getRawEmail')
+            ->willReturn('Raw email content');
+        
+        // Mock the email object to be callable
+        $emailAddressesClosure = function($rawEmail) use ($email) {
+            return [$email];
+        };
+        
+        // Create a new mock email with callable method
+        $testEmail = $this->getMockBuilder(stdClass::class)
+            ->addMethods(['getEmailAddresses'])
+            ->getMock();
+        $testEmail->uid = 'test-uid-123';
+        $testEmail->timestamp = time();
+        $testEmail->subject = 'Test Email Subject';
+        $testEmail->mailHeaders = new stdClass();
+        $testEmail->method('getEmailAddresses')
+            ->willReturn([$email]);
+        
+        // Configure mocks
+        $this->mockEmailProcessor->method('getEmails')
+            ->willReturn([$testEmail]);
+        
+        // :: Act
+        $exceptionThrown = false;
+        $emailIdentifier = null;
+        try {
+            $this->threadEmailDatabaseSaver->saveThreadEmails('INBOX.test');
+        } catch (Exception $e) {
+            $exceptionThrown = true;
+            // Extract email identifier from the email
+            $emailIdentifier = date('Y-m-d__His', $testEmail->timestamp) . '__' . md5($testEmail->subject);
+        }
+        
+        // :: Assert
+        $this->assertTrue($exceptionThrown, 'Exception should be thrown for multiple matching threads');
+        
+        // Verify the error was saved to the database even though transaction was rolled back
+        $savedError = Database::queryOneOrNone(
+            "SELECT * FROM thread_email_processing_errors WHERE email_identifier = ?",
+            [$emailIdentifier]
+        );
+        
+        $this->assertNotNull($savedError, 'Error record should be persisted even after transaction rollback');
+        $this->assertEquals($emailIdentifier, $savedError['email_identifier'], 'Email identifier should match');
+        $this->assertEquals('multiple_matching_threads', $savedError['error_type'], 'Error type should be multiple_matching_threads');
+        $this->assertEquals($testEmail->subject, $savedError['email_subject'], 'Subject should match');
+        $this->assertStringContainsString($email, $savedError['email_addresses'], 'Email addresses should contain the test email');
+    }
 }
