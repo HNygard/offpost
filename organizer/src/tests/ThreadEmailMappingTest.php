@@ -45,7 +45,31 @@ class ThreadEmailMappingTest extends PHPUnit\Framework\TestCase {
     }
     
     protected function tearDown(): void {
-        // No need to rollback transaction here as saveThreadEmails handles its own transactions
+        // Clean up test data since we're not using transaction rollback
+        // Delete thread emails first (foreign key to threads)
+        if (isset($this->testThreadId)) {
+            Database::execute(
+                "DELETE FROM thread_emails WHERE thread_id = ?",
+                [$this->testThreadId]
+            );
+        }
+        
+        // Delete thread email mappings
+        Database::execute(
+            "DELETE FROM thread_email_mapping WHERE thread_id IN (
+                SELECT id FROM threads WHERE entity_id = '000000000-test-entity-development'
+            )"
+        );
+        
+        // Delete test threads created during tests
+        Database::execute(
+            "DELETE FROM threads WHERE entity_id = '000000000-test-entity-development'"
+        );
+        
+        // Delete any error records created during tests
+        Database::execute(
+            "DELETE FROM thread_email_processing_errors WHERE folder_name LIKE 'INBOX.Test%'"
+        );
     }
     
     /**
