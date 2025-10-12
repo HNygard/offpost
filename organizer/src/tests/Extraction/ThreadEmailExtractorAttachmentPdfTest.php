@@ -232,35 +232,6 @@ class ThreadEmailExtractorAttachmentPdfTest extends PHPUnit\Framework\TestCase {
         $this->assertEquals($expectedText, $cleanedText);
     }
     
-    public function testExtractTextFromPdfWithWarning() {
-        // This test verifies that pdftotext warnings about "May not be a PDF file" 
-        // are handled gracefully and don't cause the extraction to fail
-        
-        // Create a mock for the attachment data
-        $attachment = [
-            'attachment_id' => 123
-        ];
-        
-        // Create a partial mock that doesn't actually call pdftotext
-        $extractor = $this->getMockBuilder(ThreadEmailExtractorAttachmentPdf::class)
-            ->setConstructorArgs([$this->extractionService])
-            ->onlyMethods(['exec'])  // We'll mock exec to simulate pdftotext behavior
-            ->getMock();
-        
-        // Mock the database query to return PDF content
-        // Note: In a real test environment, we'd mock Database::queryOneOrNone
-        // For now, we'll test the logic assuming we have content
-        
-        // Create a reflection to access the protected method
-        $reflection = new ReflectionClass(ThreadEmailExtractorAttachmentPdf::class);
-        $method = $reflection->getMethod('extractTextFromPdf');
-        $method->setAccessible(true);
-        
-        // This is a simplified test - in practice we'd need to mock more components
-        // The key is verifying the warning handling logic works
-        $this->assertTrue(true, "Test placeholder for PDF warning handling");
-    }
-    
     public function testHandlePdfWarningDoesNotThrow() {
         // Test the specific logic for handling pdftotext warnings
         // This verifies our fix works correctly for the reported issue
