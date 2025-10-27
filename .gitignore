@@ -1,5 +1,8 @@
 .idea
 
+# Composer vendor directory
+organizer/src/vendor/
+
 # Secret files
 secrets/openai_api_key
 
