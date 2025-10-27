@@ -108,7 +108,14 @@ class ThreadEmailDatabaseSaver {
                         'Multiple matching threads found for email(s): ' . implode(', ', $all_emails)
                     );
 
-                    // Save error to database for GUI resolution
+                    // Commit current transaction to save error record separately
+                    // This ensures the error is persisted even if processing fails
+                    if (Database::getInstance()->inTransaction()) {
+                        Database::commit();
+                    }
+                    
+                    // Save error to database for GUI resolution in a separate transaction
+                    Database::beginTransaction();
                     $this->saveEmailProcessingError(
                         $email_identifier,
                         $email->subject,
@@ -118,6 +125,7 @@ class ThreadEmailDatabaseSaver {
                         $thread_id !== '?' ? $thread_id : null,
                         $folder
                     );
+                    Database::commit();
 
                     throw new Exception("Failed to process email:\n"
                         . $message . "\n"
