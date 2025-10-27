@@ -46,13 +46,28 @@ class ThreadEmailMappingTest extends PHPUnit\Framework\TestCase {
     
     protected function tearDown(): void {
         // Clean up test data since we're not using transaction rollback
-        // Delete thread emails first (foreign key to threads)
-        if (isset($this->testThreadId)) {
-            Database::execute(
-                "DELETE FROM thread_emails WHERE thread_id = ?",
-                [$this->testThreadId]
-            );
-        }
+        // Delete in proper order to respect foreign key constraints
+        
+        // Delete thread email history first (references thread_emails)
+        Database::execute(
+            "DELETE FROM thread_email_history WHERE thread_id IN (
+                SELECT id FROM threads WHERE entity_id = '000000000-test-entity-development'
+            )"
+        );
+        
+        // Delete thread emails (foreign key to threads)
+        Database::execute(
+            "DELETE FROM thread_emails WHERE thread_id IN (
+                SELECT id FROM threads WHERE entity_id = '000000000-test-entity-development'
+            )"
+        );
+        
+        // Delete thread history (foreign key to threads)
+        Database::execute(
+            "DELETE FROM thread_history WHERE thread_id IN (
+                SELECT id FROM threads WHERE entity_id = '000000000-test-entity-development'
+            )"
+        );
         
         // Delete thread email mappings
         Database::execute(
