@@ -115,26 +115,17 @@ class ThreadEmailDatabaseSaver {
                     }
                     
                     // Save error to database for GUI resolution in a separate transaction
-                    try {
-                        Database::beginTransaction();
-                        $this->saveEmailProcessingError(
-                            $email_identifier,
-                            $email->subject,
-                            implode(', ', $all_emails),
-                            $error_type,
-                            $message,
-                            $thread_id !== '?' ? $thread_id : null,
-                            $folder
-                        );
-                        Database::commit();
-                    } catch (Exception $errorSaveException) {
-                        // If saving the error fails, rollback the error transaction and continue
-                        // The error is already logged in saveEmailProcessingError's catch block
-                        if (Database::getInstance()->inTransaction()) {
-                            Database::rollBack();
-                        }
-                        // Don't let error saving failure prevent the main exception from being thrown
-                    }
+                    Database::beginTransaction();
+                    $this->saveEmailProcessingError(
+                        $email_identifier,
+                        $email->subject,
+                        implode(', ', $all_emails),
+                        $error_type,
+                        $message,
+                        $thread_id !== '?' ? $thread_id : null,
+                        $folder
+                    );
+                    Database::commit();
 
                     throw new Exception("Failed to process email:\n"
                         . $message . "\n"
