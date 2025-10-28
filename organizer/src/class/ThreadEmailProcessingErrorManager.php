@@ -46,7 +46,7 @@ class ThreadEmailProcessingErrorManager {
             Database::beginTransaction();
             
             // Get the error details
-            $error = Database::queryRow(
+            $error = Database::queryOneOrNone(
                 "SELECT * FROM thread_email_processing_errors WHERE id = ?",
                 [$errorId]
             );
