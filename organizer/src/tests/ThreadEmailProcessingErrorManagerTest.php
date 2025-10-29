@@ -21,7 +21,7 @@ class ThreadEmailProcessingErrorManagerTest extends PHPUnit\Framework\TestCase {
             INSERT INTO threads (id, title, my_email, entity_id, archived) 
             VALUES (?, ?, ?, ?, ?)
         ", [
-            'test-thread-id-12345678-1234-1234-1234-123456789012',
+            '12345678-1234-1234-1234-123456789012',
             'Test Thread for Error Resolution',
             'test@example.com',
             'test-entity',
@@ -58,7 +58,7 @@ class ThreadEmailProcessingErrorManagerTest extends PHPUnit\Framework\TestCase {
         // :: Act
         $result = ThreadEmailProcessingErrorManager::resolveError(
             $errorId,
-            'test-thread-id-12345678-1234-1234-1234-123456789012',
+            '12345678-1234-1234-1234-123456789012',
             'Test description'
         );
         
@@ -76,7 +76,7 @@ class ThreadEmailProcessingErrorManagerTest extends PHPUnit\Framework\TestCase {
             ['test-error-1']
         );
         $this->assertNotNull($mapping, "A mapping should be created");
-        $this->assertEquals('test-thread-id-12345678-1234-1234-1234-123456789012', $mapping['thread_id'], "Mapping should point to correct thread");
+        $this->assertEquals('12345678-1234-1234-1234-123456789012', $mapping['thread_id'], "Mapping should point to correct thread");
         $this->assertEquals('Test description', $mapping['description'], "Mapping should have the description");
     }
     
@@ -90,7 +90,7 @@ class ThreadEmailProcessingErrorManagerTest extends PHPUnit\Framework\TestCase {
         
         ThreadEmailProcessingErrorManager::resolveError(
             $nonExistentErrorId,
-            'test-thread-id-12345678-1234-1234-1234-123456789012',
+            '12345678-1234-1234-1234-123456789012',
             'Test description'
         );
     }
