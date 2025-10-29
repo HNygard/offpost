@@ -67,6 +67,7 @@ class ThreadEmailProcessingErrorManager {
             self::dismissError($errorId);
             
             Database::commit();
+            return true;
         } catch (Exception $e) {
             Database::rollBack();
             throw $e;
@@ -83,6 +84,7 @@ class ThreadEmailProcessingErrorManager {
             "DELETE FROM thread_email_processing_errors WHERE id = ?",
             [$errorId]
         );
+        return true;
     }
     
     /**
