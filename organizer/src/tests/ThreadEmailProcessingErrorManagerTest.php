@@ -5,6 +5,7 @@ require_once __DIR__ . '/../class/Database.php';
 require_once __DIR__ . '/../class/ThreadEmailProcessingErrorManager.php';
 
 class ThreadEmailProcessingErrorManagerTest extends PHPUnit\Framework\TestCase {
+    var $thread_id_random;
     protected function setUp(): void {
         parent::setUp();
         
