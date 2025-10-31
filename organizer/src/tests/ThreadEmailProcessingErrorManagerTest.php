@@ -8,9 +8,6 @@ class ThreadEmailProcessingErrorManagerTest extends PHPUnit\Framework\TestCase {
     protected function setUp(): void {
         parent::setUp();
         
-        // Start database transaction for test isolation
-        Database::beginTransaction();
-        
         // Clean up any existing test data
         Database::execute("DELETE FROM thread_email_processing_errors WHERE email_identifier LIKE 'test-%'");
         Database::execute("DELETE FROM thread_email_mapping WHERE email_identifier LIKE 'test-%'");
@@ -18,22 +15,15 @@ class ThreadEmailProcessingErrorManagerTest extends PHPUnit\Framework\TestCase {
         
         // Create a test thread
         Database::execute("
-            INSERT INTO threads (id, title, my_email, entity_id, archived) 
-            VALUES (?, ?, ?, ?, ?)
+            INSERT INTO threads (id, title, my_name, my_email, entity_id, archived) 
+            VALUES (gen_random_uuid(), ?, ?, ?, ?, ?)
         ", [
-            '12345678-1234-1234-1234-123456789012',
+            'Test User',
             'Test Thread for Error Resolution',
-            'test@example.com',
+            'ThreadEmailProcessingErrorManagerTest-' . mt_rand(1000, 9999) . time() . '@example.com',
             'test-entity',
             'f'  // PostgreSQL boolean: 'f' for false, 't' for true
         ]);
-    }
-    
-    protected function tearDown(): void {
-        // Roll back transaction to clean up test data
-        Database::rollBack();
-        
-        parent::tearDown();
     }
     
     public function testResolveErrorWithValidError(): void {
@@ -50,7 +40,7 @@ class ThreadEmailProcessingErrorManagerTest extends PHPUnit\Framework\TestCase {
             'no_matching_thread',
             'No matching thread found',
             'INBOX',
-            false
+            'false'
         ]);
         
         $errorId = Database::queryValue("SELECT id FROM thread_email_processing_errors WHERE email_identifier = ?", ['test-error-1']);
@@ -109,7 +99,7 @@ class ThreadEmailProcessingErrorManagerTest extends PHPUnit\Framework\TestCase {
             'no_matching_thread',
             'No matching thread found',
             'INBOX',
-            false
+            'false'
         ]);
         
         $errorId = Database::queryValue("SELECT id FROM thread_email_processing_errors WHERE email_identifier = ?", ['test-error-dismiss']);
@@ -139,7 +129,7 @@ class ThreadEmailProcessingErrorManagerTest extends PHPUnit\Framework\TestCase {
             'no_matching_thread',
             'No matching thread found',
             'INBOX',
-            false
+            'false'
         ]);
         
         Database::execute("
@@ -153,7 +143,7 @@ class ThreadEmailProcessingErrorManagerTest extends PHPUnit\Framework\TestCase {
             'multiple_matching_threads',
             'Multiple threads match',
             'INBOX',
-            false
+            'false'
         ]);
         
         // :: Act
@@ -183,7 +173,7 @@ class ThreadEmailProcessingErrorManagerTest extends PHPUnit\Framework\TestCase {
             'no_matching_thread',
             'No matching thread found',
             'INBOX',
-            false
+            'false'
         ]);
         
         // :: Act

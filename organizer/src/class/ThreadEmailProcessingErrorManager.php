@@ -41,7 +41,7 @@ class ThreadEmailProcessingErrorManager {
      * @param string $userId User who resolved the error
      * @param string $description Optional description for the mapping
      */
-    public static function resolveError(int $errorId, string $threadId, string $description = ''): bool {
+    public static function resolveError(int $errorId, string $threadId, string $description = '') {
         try {
             Database::beginTransaction();
             
@@ -52,7 +52,6 @@ class ThreadEmailProcessingErrorManager {
             );
             
             if (!$error) {
-                Database::rollBack();
                 throw new Exception('Error not found or already resolved');
             }
             
@@ -67,7 +66,6 @@ class ThreadEmailProcessingErrorManager {
             self::dismissError($errorId);
             
             Database::commit();
-            return true;
         } catch (Exception $e) {
             Database::rollBack();
             throw $e;
@@ -79,12 +77,11 @@ class ThreadEmailProcessingErrorManager {
      * 
      * @param int $errorId Error ID
      */
-    public static function dismissError(int $errorId): bool {
+    public static function dismissError(int $errorId) {
         Database::execute(
             "DELETE FROM thread_email_processing_errors WHERE id = ?",
             [$errorId]
         );
-        return true;
     }
     
     /**
