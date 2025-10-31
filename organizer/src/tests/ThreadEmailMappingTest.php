@@ -54,6 +54,15 @@ class ThreadEmailMappingTest extends PHPUnit\Framework\TestCase {
                 SELECT id FROM threads WHERE entity_id = '000000000-test-entity-development'
             )"
         );
+
+        // Delete thread email attachments (foreign key to thread_emails)
+        Database::execute(
+            "DELETE FROM thread_email_attachments WHERE email_id IN (
+                SELECT te.id FROM thread_emails te
+                JOIN threads t ON te.thread_id = t.id
+                WHERE t.entity_id = '000000000-test-entity-development'
+            )"
+        );
         
         // Delete thread emails (foreign key to threads)
         Database::execute(
