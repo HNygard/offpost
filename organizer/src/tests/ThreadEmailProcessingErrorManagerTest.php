@@ -14,10 +14,13 @@ class ThreadEmailProcessingErrorManagerTest extends PHPUnit\Framework\TestCase {
         Database::execute("DELETE FROM threads WHERE title LIKE 'Test Thread for Error%'");
         
         // Create a test thread
+        $thread = new Thread();
+        $this->thread_id_random = $thread->id;
         Database::execute("
             INSERT INTO threads (id, title, my_name, my_email, entity_id, archived) 
-            VALUES (gen_random_uuid(), ?, ?, ?, ?, ?)
+            VALUES (?, ?, ?, ?, ?, ?)
         ", [
+            $this->thread_id_random,
             'Test User',
             'Test Thread for Error Resolution',
             'ThreadEmailProcessingErrorManagerTest-' . mt_rand(1000, 9999) . time() . '@example.com',
@@ -48,7 +51,7 @@ class ThreadEmailProcessingErrorManagerTest extends PHPUnit\Framework\TestCase {
         // :: Act
         $result = ThreadEmailProcessingErrorManager::resolveError(
             $errorId,
-            '12345678-1234-1234-1234-123456789012',
+            $this->thread_id_random,
             'Test description'
         );
         
@@ -66,7 +69,7 @@ class ThreadEmailProcessingErrorManagerTest extends PHPUnit\Framework\TestCase {
             ['test-error-1']
         );
         $this->assertNotNull($mapping, "A mapping should be created");
-        $this->assertEquals('12345678-1234-1234-1234-123456789012', $mapping['thread_id'], "Mapping should point to correct thread");
+        $this->assertEquals($this->thread_id_random, $mapping['thread_id'], "Mapping should point to correct thread");
         $this->assertEquals('Test description', $mapping['description'], "Mapping should have the description");
     }
     
@@ -80,7 +83,7 @@ class ThreadEmailProcessingErrorManagerTest extends PHPUnit\Framework\TestCase {
         
         ThreadEmailProcessingErrorManager::resolveError(
             $nonExistentErrorId,
-            '12345678-1234-1234-1234-123456789012',
+            $this->thread_id_random,
             'Test description'
         );
     }
