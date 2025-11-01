@@ -338,7 +338,7 @@ if (!empty($threadIds)) {
                                 <label for="thread_<?= $error['id'] ?>">Assign to Thread:</label>
                                 <input type="text" name="thread_id" id="thread_<?= $error['id'] ?>" 
                                        value="<?= htmlspecialchars($error['suggested_thread_id'] ?? '') ?>" 
-                                       placeholder="Enter thread ID..." required style="width: 300px;">
+                                       placeholder="Enter thread ID..." style="width: 300px;">
                                 <?php if ($error['suggested_thread_id'] && $error['suggested_thread_title']): ?>
                                     <small style="display: block; color: #666; margin-top: 2px;">
                                         Suggested: <?= htmlspecialchars($error['suggested_thread_title']) ?>
