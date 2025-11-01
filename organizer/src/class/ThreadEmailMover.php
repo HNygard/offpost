@@ -41,7 +41,12 @@ class ThreadEmailMover {
         $maxed_out = false;
         $i = 0;
         foreach ($emails as $email) {
-            $rawEmail = $this->connection->getRawEmail($email->uid);
+            try {
+                $rawEmail = $this->connection->getRawEmail($email->uid);
+            }
+            catch (Exception $e) {
+                throw new Exception("Failed to fetch raw email UID {$email->uid} from {$mailbox}: " . $e->getMessage(), $e->getCode(), $e);
+            }
             $addresses = $email->getEmailAddresses($rawEmail);
             $targetFolder = 'INBOX';
             
