@@ -33,6 +33,10 @@ class ImapEmail {
      */
     public static function fromImap(ImapConnection $connection, int $uid, object $headers, string $body): self {
         $email = new self();
+
+        if (!isset($headers->fromaddress)) {
+            throw new Exception("Email UID {$uid} is missing 'from' address: " . json_encode($headers));
+        }
         
         // Basic email information
         $email->uid = $uid;
