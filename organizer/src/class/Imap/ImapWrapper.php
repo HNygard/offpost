@@ -24,6 +24,7 @@ class ImapWrapper {
         // Only retry very specific connection-broken errors from the original issue
         $retryablePatterns = [
             '[CLOSED] IMAP connection broken',
+            '[CLOSED] IMAP connection lost',
             'IMAP connection broken (server response)'
         ];
         

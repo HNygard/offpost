@@ -46,8 +46,10 @@ class ImapWrapperRetryTest extends TestCase
         
         // Test retryable errors - only specific patterns from the original issue
         $this->assertTrue($method->invoke($wrapper, '[CLOSED] IMAP connection broken'));
+        $this->assertTrue($method->invoke($wrapper, '[CLOSED] IMAP connection lost'));
         $this->assertTrue($method->invoke($wrapper, 'IMAP connection broken (server response)'));
         $this->assertTrue($method->invoke($wrapper, 'IMAP error during fetchbody: [CLOSED] IMAP connection broken (server response)'));
+        $this->assertTrue($method->invoke($wrapper, 'IMAP error during body: [CLOSED] IMAP connection lost'));
         
         // Test non-retryable errors - everything else should not be retryable
         $this->assertFalse($method->invoke($wrapper, 'connection lost'));
