@@ -88,7 +88,7 @@ class ThreadFileOperationsTest extends TestCase {
         $threads->threads = [$thread];
         
         file_put_contents(
-            joinPaths($this->threadsDir, 'threads-test-entity.json'),
+            joinPaths($this->threadsDir, 'threads-000000000-test-entity-development.json'),
             json_encode($threads)
         );
 
@@ -154,7 +154,7 @@ class ThreadFileOperationsTest extends TestCase {
         $threads->entity_id = '000000000-test-entity-development';
         $threads->threads = [$thread];
         file_put_contents(
-            joinPaths($this->threadsDir, 'threads-test-entity.json'),
+            joinPaths($this->threadsDir, 'threads-000000000-test-entity-development.json'),
             json_encode($threads)
         );
 
