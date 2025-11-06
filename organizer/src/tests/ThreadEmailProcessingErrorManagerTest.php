@@ -25,7 +25,7 @@ class ThreadEmailProcessingErrorManagerTest extends PHPUnit\Framework\TestCase {
             'Test User',
             'Test Thread for Error Resolution',
             'ThreadEmailProcessingErrorManagerTest-' . mt_rand(1000, 9999) . time() . '@example.com',
-            'test-entity',
+            '000000000-test-entity-development',
             'f'  // PostgreSQL boolean: 'f' for false, 't' for true
         ]);
     }
