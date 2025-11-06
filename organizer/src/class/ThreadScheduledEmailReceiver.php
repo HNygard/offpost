@@ -188,6 +188,7 @@ class ThreadScheduledEmailReceiver {
                AND fs.folder_name != 'Sent'
                AND fs.folder_name != 'INBOX.Drafts'
                AND fs.folder_name != 'INBOX.Trash'
+               AND fs.folder_name != 'INBOX.Spam'
                AND fs.requested_update_time IS NOT NULL
              ORDER BY fs.requested_update_time ASC
              LIMIT 1"
@@ -202,6 +203,9 @@ class ThreadScheduledEmailReceiver {
                    AND fs.folder_name NOT LIKE 'INBOX.Archive.%'
                    AND fs.folder_name != 'INBOX.Sent'
                    AND fs.folder_name != 'Sent'
+                   AND fs.folder_name != 'INBOX.Drafts'
+                   AND fs.folder_name != 'INBOX.Trash'
+                   AND fs.folder_name != 'INBOX.Spam'
                    AND fs.requested_update_time IS NULL
                    AND fs.folder_name NOT IN (
                           -- Exclude folders with recent errors, but do try to run again
