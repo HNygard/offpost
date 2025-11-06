@@ -1,6 +1,6 @@
 {
     "title_prefix": "Test",
-    "entity_id": "test-entity",
+    "entity_id": "000000000-test-entity-development",
     "threads": [
         {
             "title": "Test Thread",

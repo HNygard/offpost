@@ -78,7 +78,7 @@ class ThreadEmailSaverTest extends TestCase {
         $db = new Database();
         $db->execute(
             "INSERT INTO threads (id, entity_id, title, my_name, my_email, sent) VALUES (?, ?, ?, ?, ?, ?)",
-            [$thread->id, 'test-entity', 'Test Thread', 'Test User', $thread->my_email, 'f']
+            [$thread->id, '000000000-test-entity-development', 'Test Thread', 'Test User', $thread->my_email, 'f']
         );
         $folder = 'INBOX.Test';
 
@@ -145,7 +145,7 @@ class ThreadEmailSaverTest extends TestCase {
         $db = new Database();
         $db->execute(
             "INSERT INTO threads (id, entity_id, title, my_name, my_email, sent) VALUES (?, ?, ?, ?, ?, ?)",
-            [$thread->id, 'test-entity', 'Test Thread', 'Test User', $thread->my_email, 'f']
+            [$thread->id, '000000000-test-entity-development', 'Test Thread', 'Test User', $thread->my_email, 'f']
         );
         $folder = 'INBOX.Test';
 

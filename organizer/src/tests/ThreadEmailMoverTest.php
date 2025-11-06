@@ -35,7 +35,7 @@ class ThreadEmailMoverTest extends TestCase {
         // Create test thread data
         $threads = [
             (object)[
-                'entity_id' => 'test-entity',
+                'entity_id' => '000000000-test-entity-development',
                 'threads' => [
                     (object)[
                         'title' => 'Thread 1',
