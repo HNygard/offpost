@@ -43,9 +43,6 @@ WORKDIR /php-frontend
 # Copy application files with correct ownership
 COPY --chown=www-data:www-data src/ ./
 
-# Copy test entities file for E2E tests
-COPY --chown=www-data:www-data ../data/entities_test.json /data/entities_test.json
-
 # Create vendor directory with correct permissions
 RUN mkdir -p vendor && chown -R www-data:www-data .
 
