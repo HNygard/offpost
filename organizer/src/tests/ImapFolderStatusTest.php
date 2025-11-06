@@ -7,7 +7,7 @@ require_once __DIR__ . '/../class/Database.php';
 class ImapFolderStatusTest extends PHPUnit\Framework\TestCase {
     private $testFolderName;
     private $testThreadId;
-    private $testEntityId = 'test-entity';
+    private $testEntityId = '000000000-test-entity-development';
     
     protected function setUp(): void {
         parent::setUp();
