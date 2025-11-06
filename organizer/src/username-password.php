@@ -25,6 +25,8 @@ if ($environment == 'development') {
     $smtpPort = '3025';  // GreenMail SMTP port
     $smtpSecure = '';    // No encryption for GreenMail on port 3025
 
+    $adminEmails = array('admin@greenmail');
+
     // Server-to-server URL using Docker service name, the others are for the browser on host.
     $oidc_auth_url = 'http://localhost:25083/oidc/auth';
     $oidc_token_endpoint = 'http://auth:3000/oidc/token';

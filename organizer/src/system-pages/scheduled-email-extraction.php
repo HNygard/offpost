@@ -7,6 +7,7 @@ require_once __DIR__ . '/../class/Extraction/ThreadEmailExtractorPromptSaksnumme
 require_once __DIR__ . '/../class/Extraction/ThreadEmailExtractorPromptEmailLatestReply.php';
 require_once __DIR__ . '/../class/Extraction/ThreadEmailExtractorPromptCopyAskingFor.php';
 require_once __DIR__ . '/../class/Extraction/ThreadEmailExtractorPromptSummary.php';
+require_once __DIR__ . '/../class/AdminNotificationService.php';
 
 // Set up error reporting
 error_reporting(E_ALL);
@@ -34,37 +35,43 @@ if ($extractor === null) {
 }
 $extractor = $extractor();
 
-// Process the next extraction
-$result = $extractor->processNextEmailExtraction();
-
-// Add the extraction type to the result
-$result['extraction_type'] = $extractionType;
-
-if (!$result['success']) {
-    // Output the result
-    header('Content-Type: application/json');
-    echo json_encode($result, JSON_PRETTY_PRINT);
-    exit;
-}
-
-$results = array($result);
-
-$result = $extractor->processNextEmailExtraction();
-$result['extraction_type'] = $extractionType;
-$results[] = $result;
-
-if ($result['success']) {
+try {
+    $results = array();
     for($i = 0; $i < 10; $i++) {
         $result = $extractor->processNextEmailExtraction();
         $result['extraction_type'] = $extractionType;
         $results[] = $result;
 
-        if (!$result['success']) {
+        if (!$result['success'] && $result['message'] !== 'No emails found that need extraction') {
+            // Log the error and notify administrators
+            $adminNotificationService = new AdminNotificationService();
+            $adminNotificationService->notifyAdminOfError(
+                'scheduled-email-extraction',
+                'Unsuccessful email extraction',
+                $result
+            );
+
             break;
         }
     }
-}
 
-// Output the result
-header('Content-Type: application/json');
-echo json_encode($results, JSON_PRETTY_PRINT);
+    // Output the result
+    header('Content-Type: application/json');
+    echo json_encode($results, JSON_PRETTY_PRINT);
+    
+} catch (Exception $e) {
+    // Log the error and notify administrators
+    $adminNotificationService = new AdminNotificationService();
+    $adminNotificationService->notifyAdminOfError(
+        'scheduled-email-extraction',
+        'Unexpected error: ' . $e->getMessage(),
+        [
+            'extraction_type' => $extractionType,
+            'file' => $e->getFile(),
+            'line' => $e->getLine(),
+            'stack_trace' => $e->getTraceAsString()
+        ]
+    );
+
+    throw $e;
+}

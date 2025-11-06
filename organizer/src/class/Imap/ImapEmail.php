@@ -3,9 +3,11 @@
 namespace Imap;
 
 require_once __DIR__ . '/../../vendor/autoload.php';
+require_once __DIR__ . '/../Extraction/ThreadEmailExtractorEmailBody.php';
 
 use Exception;
 use Laminas\Mail\Storage\Message;
+use ThreadEmailExtractorEmailBody;
 
 class ImapEmail {
     public int $uid;
@@ -31,12 +33,16 @@ class ImapEmail {
      */
     public static function fromImap(ImapConnection $connection, int $uid, object $headers, string $body): self {
         $email = new self();
+
+        if (!isset($headers->fromaddress)) {
+            throw new Exception("Email UID {$uid} is missing 'from' address: " . json_encode($headers));
+        }
         
         // Basic email information
         $email->uid = $uid;
-        $email->subject = $headers->subject;
-        $email->timestamp = strtotime($headers->date);
-        $email->date = $headers->date;
+        $email->subject = isset($headers->subject) ? $headers->subject : '';
+        $email->timestamp = isset($headers->date) ? strtotime($headers->date) : time();
+        $email->date = isset($headers->date) ? $headers->date : date('r');
         
         // Clean up and convert character encodings
         $email->toaddress = isset($headers->toaddress) ? $connection->utf8($headers->toaddress) : null;
@@ -117,7 +123,7 @@ class ImapEmail {
 
         if ($rawEmail !== null) {
             try {
-                $message = new \Laminas\Mail\Storage\Message(['raw' => $rawEmail]);
+                $message = ThreadEmailExtractorEmailBody::readLaminasMessage_withErrorHandling($rawEmail);
                 $x_forwarded_for = $message->getHeaders()->get('x-forwarded-for');
                 if ($x_forwarded_for !== false ) {
                     if ($x_forwarded_for instanceof ArrayIterator) {

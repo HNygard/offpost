@@ -98,8 +98,8 @@ class ThreadStatusRepositoryTest extends PHPUnit\Framework\TestCase {
         }
         
         return Database::queryValue(
-            "INSERT INTO thread_emails (thread_id, timestamp_received, datetime_received, email_type, status_type, status_text, description, content) 
-            VALUES (?, ?, ?, ?, ?, ?, ?, ?) RETURNING id",
+            "INSERT INTO thread_emails (thread_id, timestamp_received, datetime_received, email_type, status_type, status_text, description, content)
+            VALUES (?, ?, ?, ?, ?, ?, ?, ?::bytea) RETURNING id",
             [
                 $threadId,
                 $timestamp,
@@ -577,5 +577,258 @@ class ThreadStatusRepositoryTest extends PHPUnit\Framework\TestCase {
         
         // :: Assert
         $this->assertEquals(ThreadStatusRepository::STATUS_OK, $status, "Status should be STATUS_OK when all folders are in sync and multiple emails exist");
+    }
+    
+    /**
+     * Create a test thread with user authorization
+     * 
+     * @param string $userId User ID to authorize access for
+     * @param bool $isPublic Whether the thread should be public
+     * @param bool $isArchived Whether the thread should be archived
+     * @return string Thread ID
+     */
+    private function createTestThreadWithAuthorization(string $userId, bool $isPublic = false, bool $isArchived = false): string {
+        $threadId = $this->createTestThread();
+        
+        // Update thread public and archived status
+        Database::execute(
+            "UPDATE threads SET public = ?, archived = ? WHERE id = ?",
+            [$isPublic ? 't' : 'f', $isArchived ? 't' : 'f', $threadId]
+        );
+        
+        // Add user authorization if not public
+        if (!$isPublic) {
+            Database::execute(
+                "INSERT INTO thread_authorizations (thread_id, user_id) VALUES (?, ?)",
+                [$threadId, $userId]
+            );
+        }
+        
+        return $threadId;
+    }
+    
+    /**
+     * Add a test email with IMAP headers to a specific thread
+     * 
+     * @param string $threadId Thread ID
+     * @param string $emailType 'IN' or 'OUT'
+     * @param string $fromName Sender name
+     * @param string $fromEmail Sender email
+     * @param string $subject Email subject
+     * @param string|null $timestamp Custom timestamp (optional)
+     * @return string Email ID
+     */
+    private function addTestEmailWithHeaders(string $threadId, string $emailType, string $fromName, string $fromEmail, string $subject, ?string $timestamp = null): string {
+        if ($timestamp === null) {
+            $timestamp = date('Y-m-d H:i:s');
+        }
+        
+        // Split email into mailbox and host parts for proper IMAP format
+        $emailParts = explode('@', $fromEmail);
+        $mailbox = $emailParts[0] ?? 'unknown';
+        $host = $emailParts[1] ?? 'unknown.com';
+        
+        $imapHeaders = json_encode([
+            'from' => [
+                ['mailbox' => $mailbox, 'host' => $host, 'personal' => $fromName]
+            ],
+            'subject' => $subject
+        ]);
+        
+        return Database::queryValue(
+            "INSERT INTO thread_emails (thread_id, timestamp_received, datetime_received, email_type, status_type, status_text, description, content, imap_headers)
+            VALUES (?, ?, ?, ?, ?, ?, ?, ?::bytea, ?) RETURNING id",
+            [
+                $threadId,
+                $timestamp,
+                $timestamp,
+                $emailType,
+                'unknown',
+                'Test status',
+                'Test email description',
+                'Test email content',
+                $imapHeaders
+            ]
+        );
+    }
+    
+    public function testGetRecentIncomingEmailsForUser_HappyPath(): void {
+        // :: Setup
+        $userId = 'test-user-123';
+        $threadId = $this->createTestThreadWithAuthorization($userId, false, false);
+        
+        // Add an incoming email
+        $emailId = $this->addTestEmailWithHeaders($threadId, 'IN', 'John Doe', 'john@example.com', 'Test Subject');
+        
+        // :: Act
+        $emails = ThreadStatusRepository::getRecentIncomingEmailsForUser($userId);
+        
+        // :: Assert
+        $this->assertIsArray($emails, "Should return an array");
+        $this->assertCount(1, $emails, "Should return exactly 1 email");
+        
+        $email = $emails[0];
+        $this->assertEquals($emailId, $email->email_id);
+        $this->assertEquals($threadId, $email->thread_id);
+        $this->assertEquals('IN', $email->email_type);
+        $this->assertEquals('John Doe', $email->from_name);
+        $this->assertEquals('john@example.com', $email->from_email);
+        $this->assertEquals('Test Subject', $email->subject);
+        $this->assertEquals('Test Thread Status Repository', $email->thread_title);
+        $this->assertEquals($this->testEntityId, $email->entity_id);
+    }
+    
+    public function testGetRecentIncomingEmailsForUser_OnlyIncomingEmails(): void {
+        // :: Setup
+        $userId = 'test-user-123';
+        $threadId = $this->createTestThreadWithAuthorization($userId, false, false);
+        
+        // Add both incoming and outgoing emails
+        $this->addTestEmailWithHeaders($threadId, 'OUT', 'Me', 'me@example.com', 'Outgoing Email');
+        $incomingEmailId = $this->addTestEmailWithHeaders($threadId, 'IN', 'John Doe', 'john@example.com', 'Incoming Email');
+        
+        // :: Act
+        $emails = ThreadStatusRepository::getRecentIncomingEmailsForUser($userId);
+        
+        // :: Assert
+        $this->assertCount(1, $emails, "Should return only the incoming email");
+        $this->assertEquals($incomingEmailId, $emails[0]->email_id);
+        $this->assertEquals('IN', $emails[0]->email_type);
+        $this->assertEquals('Incoming Email', $emails[0]->subject);
+    }
+    
+    public function testGetRecentIncomingEmailsForUser_UserAuthorizationFiltering(): void {
+        // :: Setup
+        $userId1 = 'test-user-123';
+        $userId2 = 'test-user-456';
+        
+        // Create thread accessible only to user1
+        $threadId1 = $this->createTestThreadWithAuthorization($userId1, false, false);
+        $this->addTestEmailWithHeaders($threadId1, 'IN', 'John Doe', 'john@example.com', 'Email for User 1');
+        
+        // Create thread accessible only to user2
+        $threadId2 = $this->createTestThreadWithAuthorization($userId2, false, false);
+        $this->addTestEmailWithHeaders($threadId2, 'IN', 'Jane Doe', 'jane@example.com', 'Email for User 2');
+        
+        // :: Act
+        $emailsUser1 = ThreadStatusRepository::getRecentIncomingEmailsForUser($userId1);
+        $emailsUser2 = ThreadStatusRepository::getRecentIncomingEmailsForUser($userId2);
+        
+        // :: Assert
+        $this->assertCount(1, $emailsUser1, "User 1 should see only their authorized email");
+        $this->assertCount(1, $emailsUser2, "User 2 should see only their authorized email");
+        $this->assertEquals('Email for User 1', $emailsUser1[0]->subject);
+        $this->assertEquals('Email for User 2', $emailsUser2[0]->subject);
+    }
+    
+    public function testGetRecentIncomingEmailsForUser_PublicThreadAccess(): void {
+        // :: Setup
+        $userId = 'test-user-123';
+        
+        // Create public thread (no explicit authorization needed)
+        $threadId = $this->createTestThreadWithAuthorization($userId, true, false);
+        $emailId = $this->addTestEmailWithHeaders($threadId, 'IN', 'Public Sender', 'public@example.com', 'Public Email');
+        
+        // Test with different user who has no explicit authorization
+        $differentUserId = 'different-user-456';
+        
+        // :: Act
+        $emails = ThreadStatusRepository::getRecentIncomingEmailsForUser($differentUserId);
+        
+        // :: Assert
+        $this->assertCount(1, $emails, "Should see email from public thread even without explicit authorization");
+        $this->assertEquals($emailId, $emails[0]->email_id);
+        $this->assertEquals('Public Email', $emails[0]->subject);
+    }
+    
+    public function testGetRecentIncomingEmailsForUser_ArchivedThreadFiltering(): void {
+        // :: Setup
+        $userId = 'test-user-123';
+        
+        // Create archived thread
+        $archivedThreadId = $this->createTestThreadWithAuthorization($userId, false, true);
+        $this->addTestEmailWithHeaders($archivedThreadId, 'IN', 'Archived Sender', 'archived@example.com', 'Archived Email');
+        
+        // Create active thread
+        $activeThreadId = $this->createTestThreadWithAuthorization($userId, false, false);
+        $activeEmailId = $this->addTestEmailWithHeaders($activeThreadId, 'IN', 'Active Sender', 'active@example.com', 'Active Email');
+        
+        // :: Act
+        $emails = ThreadStatusRepository::getRecentIncomingEmailsForUser($userId);
+        
+        // :: Assert
+        $this->assertCount(1, $emails, "Should only return emails from non-archived threads");
+        $this->assertEquals($activeEmailId, $emails[0]->email_id);
+        $this->assertEquals('Active Email', $emails[0]->subject);
+    }
+    
+    public function testGetRecentIncomingEmailsForUser_OrderingAndLimit(): void {
+        // :: Setup
+        $userId = 'test-user-123';
+        $threadId = $this->createTestThreadWithAuthorization($userId, false, false);
+        
+        // Add emails with different timestamps
+        $olderTime = date('Y-m-d H:i:s', strtotime('-2 hours'));
+        $newerTime = date('Y-m-d H:i:s', strtotime('-1 hour'));
+        
+        $olderEmailId = $this->addTestEmailWithHeaders($threadId, 'IN', 'Older Sender', 'older@example.com', 'Older Email', $olderTime);
+        $newerEmailId = $this->addTestEmailWithHeaders($threadId, 'IN', 'Newer Sender', 'newer@example.com', 'Newer Email', $newerTime);
+        
+        // :: Act
+        $emails = ThreadStatusRepository::getRecentIncomingEmailsForUser($userId, 1); // Limit to 1
+        
+        // :: Assert
+        $this->assertCount(1, $emails, "Should respect the limit parameter");
+        $this->assertEquals($newerEmailId, $emails[0]->email_id, "Should return the most recent email first");
+        $this->assertEquals('Newer Email', $emails[0]->subject);
+    }
+    
+    public function testGetRecentIncomingEmailsForUser_MalformedImapHeaders(): void {
+        // :: Setup
+        $userId = 'test-user-123';
+        $threadId = $this->createTestThreadWithAuthorization($userId, false, false);
+        
+        // Add email with malformed/missing IMAP headers
+        $emailId = Database::queryValue(
+            "INSERT INTO thread_emails (thread_id, timestamp_received, datetime_received, email_type, status_type, status_text, description, content, imap_headers) 
+            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?) RETURNING id",
+            [
+                $threadId,
+                date('Y-m-d H:i:s'),
+                date('Y-m-d H:i:s'),
+                'IN',
+                'unknown',
+                'Test status',
+                'Test email description',
+                'Test email content',
+                '{"invalid": "json"}'  // Malformed headers
+            ]
+        );
+        
+        // :: Act
+        $emails = ThreadStatusRepository::getRecentIncomingEmailsForUser($userId);
+        
+        // :: Assert
+        $this->assertCount(1, $emails, "Should handle malformed IMAP headers gracefully");
+        $email = $emails[0];
+        $this->assertEquals('unknown', $email->from_email, "Should use default values for malformed headers");
+        $this->assertEquals('Unknown Sender', $email->from_name);
+        $this->assertEquals('No subject', $email->subject);
+    }
+    
+    public function testGetRecentIncomingEmailsForUser_EmptyResult(): void {
+        // :: Setup
+        $userId = 'test-user-with-no-access';
+        
+        // Create thread without authorization for this user
+        $threadId = $this->createTestThreadWithAuthorization('different-user', false, false);
+        $this->addTestEmailWithHeaders($threadId, 'IN', 'Sender', 'sender@example.com', 'Subject');
+        
+        // :: Act
+        $emails = ThreadStatusRepository::getRecentIncomingEmailsForUser($userId);
+        
+        // :: Assert
+        $this->assertIsArray($emails, "Should return an array even when empty");
+        $this->assertCount(0, $emails, "Should return empty array when user has no access to any emails");
     }
 }

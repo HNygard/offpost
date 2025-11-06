@@ -1,4 +1,7 @@
 {
+    "name": "hnygard/offpost-organizer",
+    "description": "Organizer component for the Offpost email thread management system",
+    "license": "proprietary",
     "require": {
         "phpmailer/phpmailer": "^6.10",
         "laminas/laminas-mail": "2.25.1",

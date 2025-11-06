@@ -1,6 +1,7 @@
 <?php
 
 require_once __DIR__ . '/Database.php';
+require_once __DIR__ . '/ThreadUtils.php';
 
 /**
  * Repository class for retrieving thread statuses
@@ -202,6 +203,112 @@ class ThreadStatusRepository {
     public static function getThreadsByStatus(string $status): array {
         // Use the new status filter parameter for better efficiency
         return self::getAllThreadStatusesEfficient(null, $status);
+    }
+    
+    /**
+     * Get recent incoming emails from threads that the user has access to
+     * 
+     * @param string $userId The user ID to check access for
+     * @param int $limit Maximum number of emails to return (default 20)
+     * @return array Array of objects containing thread and email information
+     */
+    public static function getRecentIncomingEmailsForUser(string $userId, int $limit = 20): array {
+        $query = "
+            SELECT 
+                te.id as email_id,
+                te.thread_id,
+                te.timestamp_received,
+                te.datetime_received,
+                te.email_type,
+                te.status_type as email_status_type,
+                te.status_text as email_status_text,
+                te.description as email_description,
+                te.imap_headers,
+                t.title as thread_title,
+                t.entity_id,
+                t.labels as thread_labels,
+                t.my_name,
+                t.my_email,
+                t.request_law_basis,
+                t.request_follow_up_plan,
+                t.sending_status as thread_sending_status,
+                t.archived as thread_archived
+            FROM thread_emails te
+            JOIN threads t ON te.thread_id = t.id
+            LEFT JOIN thread_authorizations ta ON t.id = ta.thread_id AND ta.user_id = ?
+            WHERE te.email_type = 'IN'
+            AND t.archived = false
+            AND (t.public = true OR ta.thread_id IS NOT NULL)
+            ORDER BY te.timestamp_received DESC
+            LIMIT ?
+        ";
+        
+        $results = Database::query($query, [$userId, $limit]);
+        
+        $emails = [];
+        foreach ($results as $row) {
+            $email = new stdClass();
+            
+            // Email information
+            $email->email_id = $row['email_id'];
+            $email->timestamp_received = $row['timestamp_received'];
+            $email->datetime_received = $row['datetime_received'];
+            $email->email_type = $row['email_type'];
+            $email->email_status_type = $row['email_status_type'];
+            $email->email_status_text = $row['email_status_text'];
+            $email->email_description = $row['email_description'];
+            
+            // Parse IMAP headers to get from/subject information using utility functions
+            $email->from_email = 'unknown';
+            $email->from_name = 'Unknown Sender';
+            $email->subject = 'No subject';
+            
+            if (!empty($row['imap_headers'])) {
+                // Use utility functions to properly parse and decode headers
+                $fromAddress = getEmailFromAddressFromImapHeaders($row['imap_headers']);
+                if (!empty($fromAddress)) {
+                    // Parse the formatted address "Name <email>" or just "email"
+                    if (preg_match('/^(.+?)\s*<(.+?)>$/', $fromAddress, $matches)) {
+                        $email->from_name = trim($matches[1]);
+                        $email->from_email = trim($matches[2]);
+                    } else {
+                        $email->from_email = $fromAddress;
+                        $email->from_name = $fromAddress;
+                    }
+                }
+                
+                $subject = getEmailSubjectFromImapHeaders($row['imap_headers']);
+                if (!empty($subject)) {
+                    $email->subject = $subject;
+                }
+            }
+            
+            // Thread information
+            $email->thread_id = $row['thread_id'];
+            $email->thread_title = $row['thread_title'];
+            $email->entity_id = $row['entity_id'];
+            
+            // Parse thread labels safely
+            $labelsStr = $row['thread_labels'];
+            $email->thread_labels = [];
+            if (!empty($labelsStr) && $labelsStr !== '{}') {
+                $labelArray = explode(',', trim($labelsStr, '{}'));
+                $email->thread_labels = array_filter(array_map(function($label) {
+                    return trim(trim($label), '\"');
+                }, $labelArray));
+            }
+            
+            $email->my_name = $row['my_name'];
+            $email->my_email = $row['my_email'];
+            $email->request_law_basis = $row['request_law_basis'];
+            $email->request_follow_up_plan = $row['request_follow_up_plan'];
+            $email->thread_sending_status = $row['thread_sending_status'];
+            $email->thread_archived = (bool)$row['thread_archived'];
+            
+            $emails[] = $email;
+        }
+        
+        return $emails;
     }
 }
 

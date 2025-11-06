@@ -1,6 +1,6 @@
 -- ******************************************************************
 -- AUTOMATICALLY GENERATED FILE - DO NOT MODIFY
--- Generated on: 2025-04-30 18:42:22
+-- Generated on: 2025-09-25 18:33:43
 -- 
 -- This file contains the current database schema after all migrations.
 -- It is NOT meant to be executed as a migration script.
@@ -145,6 +145,25 @@ CREATE INDEX thread_email_mapping_email_identifier_idx ON thread_email_mapping U
 CREATE INDEX thread_email_mapping_thread_id_idx ON thread_email_mapping USING btree (thread_id);
 CREATE INDEX thread_email_mapping_unique_idx ON thread_email_mapping USING btree (email_identifier);
 
+CREATE TABLE thread_email_processing_errors (
+    id integer NOT NULL DEFAULT nextval('thread_email_processing_errors_id_seq'::regclass),
+    email_identifier character varying(255) NOT NULL,
+    email_subject text NOT NULL,
+    email_addresses text NOT NULL,
+    error_type character varying(50) NOT NULL,
+    error_message text NOT NULL,
+    suggested_thread_id uuid,
+    suggested_query text,
+    folder_name character varying(255),
+    resolved boolean DEFAULT false,
+    resolved_by character varying(255),
+    resolved_at timestamp with time zone,
+    created_at timestamp with time zone NOT NULL DEFAULT CURRENT_TIMESTAMP
+);
+
+ALTER TABLE thread_email_processing_errors ADD CONSTRAINT thread_email_processing_errors_pkey PRIMARY KEY (id);
+CREATE INDEX thread_email_processing_errors_unique_idx ON thread_email_processing_errors USING btree (email_identifier) WHERE (resolved = false);
+
 CREATE TABLE thread_email_sendings (
     id integer NOT NULL DEFAULT nextval('thread_email_sendings_id_seq'::regclass),
     thread_id uuid NOT NULL,
@@ -177,10 +196,12 @@ CREATE TABLE thread_emails (
     status_text text,
     description text,
     answer text,
-    content text NOT NULL,
+    content_old_utf8 text,
     created_at timestamp with time zone NOT NULL DEFAULT CURRENT_TIMESTAMP,
     id_old character varying(255),
-    imap_headers jsonb
+    imap_headers jsonb,
+    content bytea NOT NULL,
+    content_read_status character varying(10) DEFAULT NULL::character varying
 );
 
 ALTER TABLE thread_emails ADD CONSTRAINT thread_emails_pkey PRIMARY KEY (id);

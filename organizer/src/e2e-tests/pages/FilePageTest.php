@@ -73,14 +73,14 @@ class FilePageTest extends E2EPageTestCase {
         ];
 
         // Update content to empty
-        Database::query("UPDATE thread_emails SET content = '' WHERE id = ?", [$file['email_id']]);
+        Database::query("UPDATE thread_emails SET content = ''::bytea WHERE id = ?", [$file['email_id']]);
 
         // Need file ID to download
         $response = $this->renderPage('/file?entityId=' . $file['entity_id'] . '&threadId=' . $file['thread_id'] . '&body=' . $file['email_id'], 
         'dev-user-id', 'GET', '500 Internal Server Error');
 
         // Correct error message
-        $this->assertStringContainsString("Thread Email have no content [thread_id={$testData['thread']->id}, email_id={$testData['email_id']}", $response->body);
+        $this->assertStringContainsString("Empty email content provided for extraction", $response->body);
     }
 
 }

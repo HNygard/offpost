@@ -69,6 +69,13 @@ class BulkEmailActionsPageTest extends E2EPageTestCase {
             "Set ready for sending action should be available"
         );
         
+        // Check for the new staging action
+        $this->assertStringContainsString(
+            'value="set_staging">Set back to staging</option>',
+            $response->body,
+            "Set back to staging action should be available"
+        );
+        
         // Check for the selected count container
         $this->assertStringContainsString(
             '<div class="selected-count-container" id="selected-count-container">',
@@ -76,14 +83,14 @@ class BulkEmailActionsPageTest extends E2EPageTestCase {
             "Selected count container should be present"
         );
         
-        // Check for individual email checkboxes (only for STAGING emails)
+        // Check for individual email checkboxes (for STAGING and READY_FOR_SENDING emails)
         $this->assertStringContainsString(
             'class="email-checkbox" name="email_ids[]"',
             $response->body,
             "Email checkboxes should be present"
         );
         
-        // Verify that checkboxes are only present for STAGING emails
+        // Verify that checkboxes are present for STAGING emails
         foreach ($this->testEmails as $email) {
             $this->assertStringContainsString(
                 'value="' . $email->id . '"',
@@ -137,14 +144,14 @@ class BulkEmailActionsPageTest extends E2EPageTestCase {
             );
         }
         
-        // Verify that emails no longer have checkboxes (since they're not STAGING anymore)
+        // Verify that emails now have checkboxes (since they're READY_FOR_SENDING and actionable)
         foreach ($this->testEmails as $email) {
-            // The checkbox should not be present for non-STAGING emails
+            // The checkbox should be present for READY_FOR_SENDING emails since they can be set back to staging
             $checkboxPattern = 'name="email_ids[]" value="' . $email->id . '"';
-            $this->assertStringNotContainsString(
+            $this->assertStringContainsString(
                 $checkboxPattern,
                 $response->body,
-                "Checkbox for email ID {$email->id} should not be present since it's no longer STAGING"
+                "Checkbox for email ID {$email->id} should be present since it's READY_FOR_SENDING and actionable"
             );
         }
     }
@@ -294,6 +301,83 @@ class BulkEmailActionsPageTest extends E2EPageTestCase {
                 ThreadEmailSending::STATUS_STAGING,
                 $unchangedEmail->status,
                 "Email {$email->id} should still be in STAGING status after invalid action"
+            );
+        }
+    }
+    
+    public function testBulkSetStagingFromReadyForSendingUI() {
+        // :: Setup
+        // First set some emails to READY_FOR_SENDING status
+        foreach ($this->testEmails as $email) {
+            ThreadEmailSending::updateStatus($email->id, ThreadEmailSending::STATUS_READY_FOR_SENDING);
+        }
+        
+        // Prepare email IDs for the POST request
+        $emailIds = [];
+        foreach ($this->testEmails as $email) {
+            $emailIds[] = $email->id;
+        }
+        
+        // :: Act
+        // Submit the bulk action form to set back to staging
+        $response = $this->renderPage(
+            '/email-sending-overview',
+            'dev-user-id',
+            'POST',
+            '302 Found',
+            [
+                'action' => 'set_staging',
+                'email_ids' => $emailIds
+            ]
+        );
+        
+        // Extract redirect URL from Location header
+        $this->assertStringContainsString('Location: /email-sending-overview?success_bulk_action_staging=3', $response->headers);
+        
+        // Extract the redirect URL
+        preg_match('/Location: ([^\r\n]+)/', $response->headers, $matches);
+        $redirectUrl = trim($matches[1]);
+        
+        // Follow the redirect with the success parameters
+        $response = $this->renderPage($redirectUrl);
+        
+        // :: Assert
+        // Verify in database that emails are back in staging
+        foreach ($this->testEmails as $email) {
+            $updatedEmail = ThreadEmailSending::getById($email->id);
+            $this->assertEquals(
+                ThreadEmailSending::STATUS_STAGING,
+                $updatedEmail->status,
+                "Email {$email->id} should be marked as staging"
+            );
+        }
+        
+        // Verify success message is shown
+        $this->assertStringContainsString(
+            'Successfully set 3 email(s) back to "Staging"',
+            $response->body,
+            "Success message should be displayed"
+        );
+    }
+    
+    public function testCheckboxesVisibleForReadyForSendingEmails() {
+        // :: Setup
+        // Set some emails to READY_FOR_SENDING status
+        foreach ($this->testEmails as $email) {
+            ThreadEmailSending::updateStatus($email->id, ThreadEmailSending::STATUS_READY_FOR_SENDING);
+        }
+        
+        // :: Act
+        $response = $this->renderPage('/email-sending-overview');
+        
+        // :: Assert
+        // Verify that checkboxes are present for READY_FOR_SENDING emails
+        foreach ($this->testEmails as $email) {
+            $checkboxPattern = 'name="email_ids[]" value="' . $email->id . '"';
+            $this->assertStringContainsString(
+                $checkboxPattern,
+                $response->body,
+                "Checkbox for email ID {$email->id} should be present since it's READY_FOR_SENDING"
             );
         }
     }

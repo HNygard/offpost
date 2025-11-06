@@ -5,7 +5,7 @@ echo "$(date) Scheduled sending of EMAIL"
 curl "http://organizer/scheduled-email-sending" -s 2>&1
 echo ""
 
-echo "$(date) Scheduled IMAP handling"
+echo "$(date) Scheduled IMAP handling (create folders, process sent, process inbox)"
 curl "http://organizer/scheduled-imap-handling" -s 2>&1
 echo ""
 

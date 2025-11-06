@@ -109,7 +109,7 @@ class Database {
      * @param array $binaryParams Binary parameters with keys matching placeholders in SQL
      * @return mixed Query result
      */
-    public static function queryValueWithBinary(string $sql, array $params = [], array $binaryParams = []): mixed {
+    public static function queryValueWithBinaryParam(string $sql, array $params = [], array $binaryParams = []): mixed {
         $stmt = self::prepare($sql);
         
         // Bind regular parameters

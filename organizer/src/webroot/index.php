@@ -27,6 +27,7 @@ try {
         '/thread-status-overview' => '/../system-pages/thread-status-overview.php',
         '/openai-request-log-overview' => '/../system-pages/openai-request-log-overview.php',
         '/update-imap' => '/../update-imap.php', // Temporary while we wait for new imap integration
+        '/email-content-debug' => '/../system-pages/email-content-debug.php',
     ];
 
     // Check if the path is a scheduled system page
@@ -61,6 +62,7 @@ try {
             '/file' => '/../file.php',
             '/entities' => '/../entities.php',
             '/thread-bulk-actions' => '/../thread-bulk-actions.php',
+            '/recent-activity' => '/../recent-activity.php',
         ];
 
         if (array_key_exists($path, $regularPages)) {
