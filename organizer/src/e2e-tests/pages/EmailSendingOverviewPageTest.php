@@ -39,7 +39,7 @@ class EmailSendingOverviewPageTest extends E2EPageTestCase {
                 VALUES (?, ?, ?, ?, ?, ?)",
                 [
                     $threadId,
-                    'test-entity',
+                    '000000000-test-entity-development',
                     'Test Thread',
                     'Test User',
                     'test@example.com',
