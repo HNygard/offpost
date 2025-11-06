@@ -84,23 +84,23 @@ class ThreadFileOperationsTest extends TestCase {
         $thread = new Thread();
         $thread->title = 'Test Thread';
         $threads = new Threads();
-        $threads->entity_id = 'test-entity';
+        $threads->entity_id = '000000000-test-entity-development';
         $threads->threads = [$thread];
         
         file_put_contents(
-            joinPaths($this->threadsDir, 'threads-test-entity.json'),
+            joinPaths($this->threadsDir, 'threads-000000000-test-entity-development.json'),
             json_encode($threads)
         );
-        
-        $result = $this->fileOps->getThreadsForEntity('test-entity');
+
+        $result = $this->fileOps->getThreadsForEntity('000000000-test-entity-development');
         $this->assertNotNull($result);
-        $this->assertEquals('test-entity', $result->entity_id);
+        $this->assertEquals('000000000-test-entity-development', $result->entity_id);
         $this->assertEquals('Test Thread', $result->threads[0]->title);
     }
 
     public function testGetThreadFile() {
         // Create test thread directory and file
-        $entityId = 'test-entity';
+        $entityId = '000000000-test-entity-development';
         $threadId = 'test-thread';
         $attachmentName = 'test.txt';
         $content = 'Test content';
@@ -151,20 +151,20 @@ class ThreadFileOperationsTest extends TestCase {
         $thread->title = 'Test Thread';
         $thread->sentComment = 'Test Comment';
         $threads = new Threads();
-        $threads->entity_id = 'test-entity';
+        $threads->entity_id = '000000000-test-entity-development';
         $threads->threads = [$thread];
         file_put_contents(
-            joinPaths($this->threadsDir, 'threads-test-entity.json'),
+            joinPaths($this->threadsDir, 'threads-000000000-test-entity-development.json'),
             json_encode($threads)
         );
 
-        $result = $this->fileOps->getThreadsForEntity('test-entity');
+        $result = $this->fileOps->getThreadsForEntity('000000000-test-entity-development');
         $this->assertNotNull($result);
         $this->assertEquals('Test Comment', $result->threads[0]->sentComment);
     }
 
     public function testCreateThread() {
-        $entityId = 'test-entity';
+        $entityId = '000000000-test-entity-development';
         $thread = new Thread();
         $thread->title = 'Test Thread';
         $thread->sentComment = 'Test Comment';
@@ -182,7 +182,7 @@ class ThreadFileOperationsTest extends TestCase {
     }
 
     public function testSaveEntityThreads() {
-        $entityId = 'test-entity';
+        $entityId = '000000000-test-entity-development';
         $threads = new Threads();
         $threads->entity_id = $entityId;
         $thread = new Thread();

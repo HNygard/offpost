@@ -26,7 +26,7 @@ class EmailSendingOverviewPageTest extends E2EPageTestCase {
         // Create a test thread email sending record
         $threadId = '00000000-0000-0000-0000-000000000001'; // Use a fixed UUID for testing
         
-        // Check if the thread exists, if not create it
+        // Check if the thread exists
         $threadExists = Database::queryValue(
             "SELECT COUNT(*) FROM threads WHERE id = ?",
             [$threadId]
@@ -39,12 +39,18 @@ class EmailSendingOverviewPageTest extends E2EPageTestCase {
                 VALUES (?, ?, ?, ?, ?, ?)",
                 [
                     $threadId,
-                    'test-entity',
+                    '000000000-test-entity-development',
                     'Test Thread',
                     'Test User',
                     'test@example.com',
                     'SENT'
                 ]
+            );
+        } else {
+            // Update existing thread to ensure correct entity_id
+            Database::execute(
+                "UPDATE threads SET entity_id = ? WHERE id = ?",
+                ['000000000-test-entity-development', $threadId]
             );
         }
         
