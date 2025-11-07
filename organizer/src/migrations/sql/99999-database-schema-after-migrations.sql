@@ -1,6 +1,6 @@
 -- ******************************************************************
 -- AUTOMATICALLY GENERATED FILE - DO NOT MODIFY
--- Generated on: 2025-09-10 16:19:43
+-- Generated on: 2025-09-25 18:33:43
 -- 
 -- This file contains the current database schema after all migrations.
 -- It is NOT meant to be executed as a migration script.
@@ -144,6 +144,25 @@ ALTER TABLE thread_email_mapping ADD CONSTRAINT thread_email_mapping_thread_id_f
 CREATE INDEX thread_email_mapping_email_identifier_idx ON thread_email_mapping USING btree (email_identifier);
 CREATE INDEX thread_email_mapping_thread_id_idx ON thread_email_mapping USING btree (thread_id);
 CREATE INDEX thread_email_mapping_unique_idx ON thread_email_mapping USING btree (email_identifier);
+
+CREATE TABLE thread_email_processing_errors (
+    id integer NOT NULL DEFAULT nextval('thread_email_processing_errors_id_seq'::regclass),
+    email_identifier character varying(255) NOT NULL,
+    email_subject text NOT NULL,
+    email_addresses text NOT NULL,
+    error_type character varying(50) NOT NULL,
+    error_message text NOT NULL,
+    suggested_thread_id uuid,
+    suggested_query text,
+    folder_name character varying(255),
+    resolved boolean DEFAULT false,
+    resolved_by character varying(255),
+    resolved_at timestamp with time zone,
+    created_at timestamp with time zone NOT NULL DEFAULT CURRENT_TIMESTAMP
+);
+
+ALTER TABLE thread_email_processing_errors ADD CONSTRAINT thread_email_processing_errors_pkey PRIMARY KEY (id);
+CREATE INDEX thread_email_processing_errors_unique_idx ON thread_email_processing_errors USING btree (email_identifier) WHERE (resolved = false);
 
 CREATE TABLE thread_email_sendings (
     id integer NOT NULL DEFAULT nextval('thread_email_sendings_id_seq'::regclass),

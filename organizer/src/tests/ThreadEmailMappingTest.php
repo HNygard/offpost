@@ -45,7 +45,55 @@ class ThreadEmailMappingTest extends PHPUnit\Framework\TestCase {
     }
     
     protected function tearDown(): void {
-        // No need to rollback transaction here as saveThreadEmails handles its own transactions
+        // Clean up test data since we're not using transaction rollback
+        // Delete in proper order to respect foreign key constraints
+        
+        // Delete thread email history first (references thread_emails)
+        Database::execute(
+            "DELETE FROM thread_email_history WHERE thread_id IN (
+                SELECT id FROM threads WHERE entity_id = '000000000-test-entity-development'
+            )"
+        );
+
+        // Delete thread email attachments (foreign key to thread_emails)
+        Database::execute(
+            "DELETE FROM thread_email_attachments WHERE email_id IN (
+                SELECT te.id FROM thread_emails te
+                JOIN threads t ON te.thread_id = t.id
+                WHERE t.entity_id = '000000000-test-entity-development'
+            )"
+        );
+        
+        // Delete thread emails (foreign key to threads)
+        Database::execute(
+            "DELETE FROM thread_emails WHERE thread_id IN (
+                SELECT id FROM threads WHERE entity_id = '000000000-test-entity-development'
+            )"
+        );
+        
+        // Delete thread history (foreign key to threads)
+        Database::execute(
+            "DELETE FROM thread_history WHERE thread_id IN (
+                SELECT id FROM threads WHERE entity_id = '000000000-test-entity-development'
+            )"
+        );
+        
+        // Delete thread email mappings
+        Database::execute(
+            "DELETE FROM thread_email_mapping WHERE thread_id IN (
+                SELECT id FROM threads WHERE entity_id = '000000000-test-entity-development'
+            )"
+        );
+        
+        // Delete test threads created during tests
+        Database::execute(
+            "DELETE FROM threads WHERE entity_id = '000000000-test-entity-development'"
+        );
+        
+        // Delete any error records created during tests
+        Database::execute(
+            "DELETE FROM thread_email_processing_errors WHERE folder_name LIKE 'INBOX.Test%'"
+        );
     }
     
     /**

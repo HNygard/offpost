@@ -70,7 +70,7 @@ class ThreadsTest extends TestCase {
 
     public function testSaveEntityThreads() {
         // Arrange
-        $entityId = 'test-entity';
+        $entityId = '000000000-test-entity-development';
         $threads = new Threads();
         $threads->entity_id = $entityId;
         $threads->threads = [];
@@ -87,7 +87,7 @@ class ThreadsTest extends TestCase {
 
     public function testCreateThreadForNewEntity() {
         // Arrange
-        $entityId = 'test-entity';
+        $entityId = '000000000-test-entity-development';
         $thread = new Thread();
         $thread->title = 'Test Thread';
         $thread->my_name = 'Test User';
@@ -111,7 +111,7 @@ class ThreadsTest extends TestCase {
 
     public function testCreateThreadForExistingEntity() {
         // Arrange
-        $entityId = 'test-entity';
+        $entityId = '000000000-test-entity-development';
         
         // Create existing thread
         $existingThread = new Thread();

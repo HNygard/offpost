@@ -1,6 +1,7 @@
 <?php
 
 require_once __DIR__ . '/Database.php';
+require_once __DIR__ . '/ThreadUtils.php';
 
 /**
  * Repository class for retrieving thread statuses
@@ -257,19 +258,28 @@ class ThreadStatusRepository {
             $email->email_status_text = $row['email_status_text'];
             $email->email_description = $row['email_description'];
             
-            // Parse IMAP headers to get from/subject information
-            $imapHeaders = !empty($row['imap_headers']) ? json_decode($row['imap_headers'], true) : null;
+            // Parse IMAP headers to get from/subject information using utility functions
             $email->from_email = 'unknown';
             $email->from_name = 'Unknown Sender';
             $email->subject = 'No subject';
             
-            if ($imapHeaders && is_array($imapHeaders)) {
-                if (isset($imapHeaders['from']) && is_array($imapHeaders['from']) && !empty($imapHeaders['from'])) {
-                    $email->from_email = $imapHeaders['from'][0]['email'] ?? 'unknown';
-                    $email->from_name = $imapHeaders['from'][0]['name'] ?? $email->from_email;
+            if (!empty($row['imap_headers'])) {
+                // Use utility functions to properly parse and decode headers
+                $fromAddress = getEmailFromAddressFromImapHeaders($row['imap_headers']);
+                if (!empty($fromAddress)) {
+                    // Parse the formatted address "Name <email>" or just "email"
+                    if (preg_match('/^(.+?)\s*<(.+?)>$/', $fromAddress, $matches)) {
+                        $email->from_name = trim($matches[1]);
+                        $email->from_email = trim($matches[2]);
+                    } else {
+                        $email->from_email = $fromAddress;
+                        $email->from_name = $fromAddress;
+                    }
                 }
-                if (isset($imapHeaders['subject'])) {
-                    $email->subject = $imapHeaders['subject'];
+                
+                $subject = getEmailSubjectFromImapHeaders($row['imap_headers']);
+                if (!empty($subject)) {
+                    $email->subject = $subject;
                 }
             }
             

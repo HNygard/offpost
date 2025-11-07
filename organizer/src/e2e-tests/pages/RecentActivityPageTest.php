@@ -34,7 +34,7 @@ class RecentActivityPageTest extends E2EPageTestCase {
         $uniqueId = uniqid();
         $imapHeaders = json_encode([
             'from' => [
-                ['name' => 'Test Sender ' . $uniqueId, 'email' => 'test' . $uniqueId . '@example.com']
+                ['personal' => 'Test Sender ' . $uniqueId, 'mailbox' => 'test' . $uniqueId, 'host' => 'example.com']
             ],
             'subject' => 'Test Email Subject' . $subjectSuffix . ' ' . $uniqueId
         ]);
