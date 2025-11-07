@@ -25,7 +25,8 @@ class ImapWrapper {
         $retryablePatterns = [
             '[CLOSED] IMAP connection broken',
             '[CLOSED] IMAP connection lost',
-            'IMAP connection broken (server response)'
+            'IMAP connection broken (server response)',
+            'No body information available'
         ];
         
         $lowerError = strtolower($error);
