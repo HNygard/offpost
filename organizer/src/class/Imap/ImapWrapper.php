@@ -162,7 +162,22 @@ class ImapWrapper {
 
     public function mailMove(mixed $imap_stream, string $msglist, string $mailbox, int $options = 0): bool {
         $result = \imap_mail_move($imap_stream, $msglist, $mailbox, $options);
-        $this->checkError('mailMove');
+        
+        // Check for errors
+        $error = \imap_last_error();
+        if ($error !== false) {
+            // Check if this is an EXPUNGEISSUED error - message was already deleted
+            if (strpos($error, '[EXPUNGEISSUED]') !== false) {
+                // This is not a critical error - the message is already gone
+                // Log it and return false to indicate the move didn't happen
+                error_log("IMAP mailMove: Message already deleted/expunged (UID: $msglist): $error");
+                return false;
+            }
+            
+            // For other errors, throw an exception
+            throw new \Exception("IMAP error during mailMove: $error");
+        }
+        
         return $result;
     }
 

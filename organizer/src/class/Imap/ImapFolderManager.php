@@ -52,7 +52,7 @@ class ImapFolderManager {
     /**
      * Move email to specified folder
      */
-    public function moveEmail(int $uid, string $targetFolder): void {
+    public function moveEmail(int $uid, string $targetFolder): bool {
         if (!$this->connection->getConnection()) {
             throw new \Exception('No active IMAP connection');
         }
@@ -62,7 +62,7 @@ class ImapFolderManager {
         $this->ensureFolderSubscribed($targetFolder);
         
         // Perform the move using ImapConnection's methods
-        $this->connection->moveEmail($uid, $targetFolder);
+        return $this->connection->moveEmail($uid, $targetFolder);
     }
 
     /**

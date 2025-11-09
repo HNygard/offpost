@@ -177,14 +177,15 @@ class ImapConnection {
      * 
      * @param int $uid UID of the email to move
      * @param string $targetFolder Name of the target folder
+     * @return bool True if email was moved, false if email no longer exists
      * @throws \Exception if operation fails
      */
-    public function moveEmail(int $uid, string $targetFolder) {
+    public function moveEmail(int $uid, string $targetFolder): bool {
         if (!$this->connection) {
             throw new \Exception('No active IMAP connection');
         }
 
-        $this->wrapper->mailMove($this->connection, (string)$uid, $targetFolder, CP_UID);
+        return $this->wrapper->mailMove($this->connection, (string)$uid, $targetFolder, CP_UID);
     }
 
     /**
