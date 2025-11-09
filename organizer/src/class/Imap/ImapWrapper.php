@@ -6,9 +6,21 @@ class ImapWrapper {
     private const MAX_RETRIES = 5;
     private const RETRY_DELAY_MS = 100; // Base delay in milliseconds
     
-    private function checkError(string $operation, ?array $params = null) {
+    private function checkError(string $operation, ?array $params = null, bool $ignoreExpungeIssued = false) {
         $error = \imap_last_error();
         if ($error !== false) {
+            // Check if this is an EXPUNGEISSUED error and we should ignore it
+            if ($ignoreExpungeIssued && strpos($error, '[EXPUNGEISSUED]') !== false) {
+                // This is not a critical error - the message is already gone
+                // Log it but don't throw an exception
+                $context = '';
+                if ($params) {
+                    $context = ' [' . implode(', ', $params) . ']';
+                }
+                error_log("IMAP $operation$context: Message already deleted/expunged: $error");
+                return;
+            }
+            
             $context = '';
             if ($params) {
                 $context = ' [' . implode(', ', $params) . ']';
@@ -162,7 +174,7 @@ class ImapWrapper {
 
     public function mailMove(mixed $imap_stream, string $msglist, string $mailbox, int $options = 0): bool {
         $result = \imap_mail_move($imap_stream, $msglist, $mailbox, $options);
-        $this->checkError('mailMove');
+        $this->checkError('mailMove', null, true);
         return $result;
     }
 
