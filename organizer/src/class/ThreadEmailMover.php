@@ -67,12 +67,10 @@ class ThreadEmailMover {
             }
 
             // Move the email to the target folder
-            $moved = $this->folderManager->moveEmail($email->uid, $targetFolder);
+            $this->folderManager->moveEmail($email->uid, $targetFolder);
             
-            // Request an update for the target folder only if email was actually moved
-            if ($moved) {
-                ImapFolderStatus::createOrUpdate($targetFolder, requestUpdate: true);
-            }
+            // Request an update for the target folder
+            ImapFolderStatus::createOrUpdate($targetFolder, requestUpdate: true);
 
             $i++;
             if ($i == 100) {
