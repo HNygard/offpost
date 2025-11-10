@@ -53,23 +53,17 @@ class ImapWrapperDebugTest extends TestCase
         $method = $reflection->getMethod('logDebug');
         $method->setAccessible(true);
         
-        // Capture error_log output
-        $originalErrorLog = ini_get('error_log');
-        $tempLogFile = tempnam(sys_get_temp_dir(), 'imap_test_');
-        ini_set('error_log', $tempLogFile);
+        // Capture echo output
+        ob_start();
         
         // Call logDebug
         $method->invoke($wrapper, 'test_operation', ['param1: value1']);
         
-        // Read the log file
-        $logContent = file_get_contents($tempLogFile);
+        // Get the output
+        $output = ob_get_clean();
         
-        // Restore error_log setting
-        ini_set('error_log', $originalErrorLog);
-        unlink($tempLogFile);
-        
-        // Assert that nothing was logged when debug is disabled
-        $this->assertEmpty($logContent);
+        // Assert that nothing was output when debug is disabled
+        $this->assertEmpty($output);
     }
     
     public function testLogDebugWithDebugEnabled()
@@ -79,25 +73,19 @@ class ImapWrapperDebugTest extends TestCase
         $method = $reflection->getMethod('logDebug');
         $method->setAccessible(true);
         
-        // Capture error_log output
-        $originalErrorLog = ini_get('error_log');
-        $tempLogFile = tempnam(sys_get_temp_dir(), 'imap_test_');
-        ini_set('error_log', $tempLogFile);
+        // Capture echo output
+        ob_start();
         
         // Call logDebug
         $method->invoke($wrapper, 'test_operation', ['param1: value1', 'param2: value2']);
         
-        // Read the log file
-        $logContent = file_get_contents($tempLogFile);
+        // Get the output
+        $output = ob_get_clean();
         
-        // Restore error_log setting
-        ini_set('error_log', $originalErrorLog);
-        unlink($tempLogFile);
-        
-        // Assert that the log contains the expected message
-        $this->assertStringContainsString('IMAP DEBUG: test_operation', $logContent);
-        $this->assertStringContainsString('param1: value1', $logContent);
-        $this->assertStringContainsString('param2: value2', $logContent);
+        // Assert that the output contains the expected message
+        $this->assertStringContainsString('IMAP DEBUG: test_operation', $output);
+        $this->assertStringContainsString('param1: value1', $output);
+        $this->assertStringContainsString('param2: value2', $output);
     }
     
     public function testLogDebugWithNoParams()
@@ -107,23 +95,18 @@ class ImapWrapperDebugTest extends TestCase
         $method = $reflection->getMethod('logDebug');
         $method->setAccessible(true);
         
-        // Capture error_log output
-        $originalErrorLog = ini_get('error_log');
-        $tempLogFile = tempnam(sys_get_temp_dir(), 'imap_test_');
-        ini_set('error_log', $tempLogFile);
+        // Capture echo output
+        ob_start();
         
         // Call logDebug with no params
         $method->invoke($wrapper, 'test_operation', null);
         
-        // Read the log file
-        $logContent = file_get_contents($tempLogFile);
+        // Get the output
+        $output = ob_get_clean();
         
-        // Restore error_log setting
-        ini_set('error_log', $originalErrorLog);
-        unlink($tempLogFile);
-        
-        // Assert that the log contains the operation name without brackets
-        $this->assertStringContainsString('IMAP DEBUG: test_operation', $logContent);
-        $this->assertStringNotContainsString('[', $logContent);
+        // Assert that the output contains the operation name without parameter brackets
+        $this->assertStringContainsString('IMAP DEBUG: test_operation', $output);
+        // The output should end right after the operation name (followed by newline), no parameter context
+        $this->assertMatchesRegularExpression('/IMAP DEBUG: test_operation\s*$/', trim($output));
     }
 }

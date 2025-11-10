@@ -24,7 +24,7 @@ class ImapWrapper {
             if ($params && !empty($params)) {
                 $context = ' [' . implode(', ', $params) . ']';
             }
-            error_log("IMAP DEBUG: $operation$context");
+            echo "IMAP DEBUG: $operation$context\n";
         }
     }
     
