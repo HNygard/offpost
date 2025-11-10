@@ -26,7 +26,7 @@ try {
     ob_start();
 
     // Initialize IMAP connection and components
-    $connection = new ImapConnection($imapServer, $imap_username, $imap_password, true);
+    $connection = new ImapConnection($imapServer, $imap_username, $imap_password, false);
     $connection->openConnection();
 
     // Get all threads
