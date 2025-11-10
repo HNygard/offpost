@@ -173,6 +173,8 @@ class ImapWrapper {
     }
 
     public function utf7Encode(string $string): string {
+        $stringPreview = strlen($string) > 50 ? substr($string, 0, 50) . '...' : $string;
+        $this->logDebug('utf7Encode', ["string: $stringPreview"]);
         return \imap_utf7_encode($string);
     }
 
