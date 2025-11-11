@@ -6,7 +6,7 @@ require_once __DIR__ . '/Imap/ImapFolderManager.php';
 require_once __DIR__ . '/Imap/ImapEmailProcessor.php';
 require_once __DIR__ . '/ImapFolderStatus.php';
 require_once __DIR__ . '/ThreadFolderManager.php';
-require_once __DIR__ . '/Database.php';
+require_once __DIR__ . '/ThreadEmailProcessingErrorManager.php';
 require_once __DIR__ . '/../vendor/autoload.php';
 
 use Imap\ImapConnection;
@@ -129,32 +129,14 @@ class ThreadEmailMover {
         
         $errorMessage = 'No matching thread found for email(s): ' . implode(', ', $relevantAddresses);
         
-        try {
-            Database::execute(
-                "INSERT INTO thread_email_processing_errors 
-                (email_identifier, email_subject, email_addresses, error_type, error_message, suggested_thread_id, suggested_query, folder_name) 
-                VALUES (?, ?, ?, ?, ?, ?, ?, ?) 
-                ON CONFLICT (email_identifier) WHERE resolved = false DO UPDATE SET 
-                    email_subject = EXCLUDED.email_subject,
-                    email_addresses = EXCLUDED.email_addresses,
-                    error_message = EXCLUDED.error_message,
-                    suggested_thread_id = EXCLUDED.suggested_thread_id,
-                    suggested_query = EXCLUDED.suggested_query,
-                    folder_name = EXCLUDED.folder_name",
-                [
-                    $emailIdentifier,
-                    $email->subject,
-                    implode(', ', $relevantAddresses),
-                    'unmatched_inbox_email',
-                    $errorMessage,
-                    null, // No suggested thread ID
-                    null, // No suggested query
-                    $folderName
-                ]
-            );
-        } catch (Exception $e) {
-            // Log the error but don't fail the main process
-            error_log("Failed to save unmatched email error: " . $e->getMessage());
-        }
+        ThreadEmailProcessingErrorManager::saveEmailProcessingError(
+            $emailIdentifier,
+            $email->subject,
+            implode(', ', $relevantAddresses),
+            'unmatched_inbox_email',
+            $errorMessage,
+            null, // No suggested thread ID
+            $folderName
+        );
     }
 }

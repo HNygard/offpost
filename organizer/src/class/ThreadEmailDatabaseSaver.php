@@ -14,6 +14,7 @@ require_once __DIR__ . '/ThreadEmailAttachment.php';
 require_once __DIR__ . '/ImapFolderStatus.php';
 require_once __DIR__ . '/ThreadFolderManager.php';
 require_once __DIR__ . '/ThreadStorageManager.php';
+require_once __DIR__ . '/ThreadEmailProcessingErrorManager.php';
 
 use Imap\ImapConnection;
 use Imap\ImapEmailProcessor;
@@ -395,37 +396,14 @@ class ThreadEmailDatabaseSaver {
         ?string $suggestedThreadId,
         string $folderName
     ): void {
-        $suggestedQuery = null;
-        if ($suggestedThreadId) {
-            $suggestedQuery = "INSERT INTO thread_email_mapping (email_identifier, thread_id, description) VALUES ('$emailIdentifier', '$suggestedThreadId', '');";
-        }
-
-        try {
-            Database::execute(
-                "INSERT INTO thread_email_processing_errors 
-                (email_identifier, email_subject, email_addresses, error_type, error_message, suggested_thread_id, suggested_query, folder_name) 
-                VALUES (?, ?, ?, ?, ?, ?, ?, ?) 
-                ON CONFLICT (email_identifier) WHERE resolved = false DO UPDATE SET 
-                    email_subject = EXCLUDED.email_subject,
-                    email_addresses = EXCLUDED.email_addresses,
-                    error_message = EXCLUDED.error_message,
-                    suggested_thread_id = EXCLUDED.suggested_thread_id,
-                    suggested_query = EXCLUDED.suggested_query,
-                    folder_name = EXCLUDED.folder_name",
-                [
-                    $emailIdentifier,
-                    $emailSubject,
-                    $emailAddresses,
-                    $errorType,
-                    $errorMessage,
-                    $suggestedThreadId,
-                    $suggestedQuery,
-                    $folderName
-                ]
-            );
-        } catch (Exception $e) {
-            // Log the error but don't fail the main process
-            error_log("Failed to save email processing error: " . $e->getMessage());
-        }
+        ThreadEmailProcessingErrorManager::saveEmailProcessingError(
+            $emailIdentifier,
+            $emailSubject,
+            $emailAddresses,
+            $errorType,
+            $errorMessage,
+            $suggestedThreadId,
+            $folderName
+        );
     }
 }

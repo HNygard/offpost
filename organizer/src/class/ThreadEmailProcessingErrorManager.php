@@ -100,4 +100,58 @@ class ThreadEmailProcessingErrorManager {
             [$limit]
         );
     }
+    
+    /**
+     * Save email processing error to database for GUI resolution
+     * 
+     * @param string $emailIdentifier Email identifier
+     * @param string $emailSubject Email subject
+     * @param string $emailAddresses Comma-separated email addresses
+     * @param string $errorType Type of error (no_matching_thread, multiple_matching_threads, unmatched_inbox_email)
+     * @param string $errorMessage Error message
+     * @param string|null $suggestedThreadId Suggested thread ID for resolution
+     * @param string $folderName IMAP folder name
+     */
+    public static function saveEmailProcessingError(
+        string $emailIdentifier,
+        string $emailSubject,
+        string $emailAddresses,
+        string $errorType,
+        string $errorMessage,
+        ?string $suggestedThreadId,
+        string $folderName
+    ): void {
+        $suggestedQuery = null;
+        if ($suggestedThreadId) {
+            $suggestedQuery = "INSERT INTO thread_email_mapping (email_identifier, thread_id, description) VALUES ('$emailIdentifier', '$suggestedThreadId', '');";
+        }
+
+        try {
+            Database::execute(
+                "INSERT INTO thread_email_processing_errors 
+                (email_identifier, email_subject, email_addresses, error_type, error_message, suggested_thread_id, suggested_query, folder_name) 
+                VALUES (?, ?, ?, ?, ?, ?, ?, ?) 
+                ON CONFLICT (email_identifier) WHERE resolved = false DO UPDATE SET 
+                    email_subject = EXCLUDED.email_subject,
+                    email_addresses = EXCLUDED.email_addresses,
+                    error_message = EXCLUDED.error_message,
+                    suggested_thread_id = EXCLUDED.suggested_thread_id,
+                    suggested_query = EXCLUDED.suggested_query,
+                    folder_name = EXCLUDED.folder_name",
+                [
+                    $emailIdentifier,
+                    $emailSubject,
+                    $emailAddresses,
+                    $errorType,
+                    $errorMessage,
+                    $suggestedThreadId,
+                    $suggestedQuery,
+                    $folderName
+                ]
+            );
+        } catch (Exception $e) {
+            // Log the error but don't fail the main process
+            error_log("Failed to save email processing error: " . $e->getMessage());
+        }
+    }
 }
