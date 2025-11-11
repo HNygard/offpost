@@ -238,14 +238,6 @@ class ThreadEmailMoverTest extends TestCase {
      * @group integration
      */
     public function testProcessMailboxSavesErrorForUnmatchedInboxEmail() {
-        // Skip if no database connection available
-        try {
-            Database::getInstance();
-        } catch (Exception $e) {
-            $this->markTestSkipped('Database connection not available');
-            return;
-        }
-
         // Create mock ImapEmail with unmatched address
         $mockEmail = $this->createMock(\Imap\ImapEmail::class);
         $mockEmail->uid = 1;
