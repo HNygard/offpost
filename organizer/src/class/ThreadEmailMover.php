@@ -36,6 +36,14 @@ class ThreadEmailMover {
      * @return array Array of unmatched email addresses that need new threads
      */
     public function processMailbox(string $mailbox, array $emailToFolder): array {
+        // Only process emails from INBOX - never move emails from other folders
+        if ($mailbox !== 'INBOX') {
+            return array(
+                'unmatched' => [],
+                'maxed_out' => false,
+            );
+        }
+        
         $unmatchedAddresses = [];
         $emails = $this->emailProcessor->getEmails($mailbox);
         
