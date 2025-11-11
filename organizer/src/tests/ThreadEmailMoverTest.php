@@ -19,6 +19,10 @@ class ThreadEmailMoverTest extends TestCase {
     protected function setUp(): void {
         parent::setUp();
         
+        // Skip ImapFolderStatus database operations for unit tests
+        // This allows testing ThreadEmailMover without database dependency
+        ImapFolderStatus::$skipDatabaseOperations = true;
+        
         // Create mocks
         $this->mockConnection = $this->createMock(ImapConnection::class);
         $this->mockFolderManager = $this->createMock(ImapFolderManager::class);
@@ -30,6 +34,12 @@ class ThreadEmailMoverTest extends TestCase {
             $this->mockFolderManager,
             $this->mockEmailProcessor
         );
+    }
+
+    protected function tearDown(): void {
+        // Reset the flag to not affect other tests
+        ImapFolderStatus::$skipDatabaseOperations = false;
+        parent::tearDown();
     }
 
     public function testBuildEmailToFolderMapping() {
@@ -288,5 +298,171 @@ class ThreadEmailMoverTest extends TestCase {
             // Clean up: rollback the transaction
             Database::rollBack();
         }
+    }
+
+    // Tests for non-INBOX mailboxes
+
+    /**
+     * Data provider for non-INBOX mailbox tests
+     * 
+     * @return array Test cases with [description, sourceMailbox, emailAddresses, emailToFolderMapping, expectedTargetFolder, expectedUnmatchedCount, expectedUnmatchedEmail]
+     */
+    public static function nonInboxMailboxProvider(): array {
+        return [
+            'email matching current thread stays in folder' => [
+                'INBOX.Test - Thread 1',
+                ['test1@example.com'],
+                ['test1@example.com' => 'INBOX.Test - Thread 1'],
+                'INBOX.Test - Thread 1',
+                0,
+                null
+            ],
+            'email matching different thread moves to that thread' => [
+                'INBOX.Test - Thread 1',
+                ['test2@example.com'],
+                [
+                    'test1@example.com' => 'INBOX.Test - Thread 1',
+                    'test2@example.com' => 'INBOX.Test - Thread 2'
+                ],
+                'INBOX.Test - Thread 2',
+                0,
+                null
+            ],
+            'unmatched email moves to INBOX' => [
+                'INBOX.Test - Thread 1',
+                ['unmatched@example.com'],
+                ['test1@example.com' => 'INBOX.Test - Thread 1'],
+                'INBOX',
+                1,
+                'unmatched@example.com'
+            ],
+        ];
+    }
+
+    /**
+     * @dataProvider nonInboxMailboxProvider
+     */
+    public function testProcessNonInboxMailbox(
+        string $sourceMailbox,
+        array $emailAddresses,
+        array $emailToFolderMapping,
+        string $expectedTargetFolder,
+        int $expectedUnmatchedCount,
+        ?string $expectedUnmatchedEmail
+    ) {
+        $mockEmail = $this->createMock(\Imap\ImapEmail::class);
+        $mockEmail->uid = 1;
+        $mockEmail->subject = 'Test Subject';
+        $mockEmail->timestamp = time();
+        
+        $mockEmail->expects($this->once())
+            ->method('getEmailAddresses')
+            ->willReturn($emailAddresses);
+            
+        $this->mockEmailProcessor->expects($this->once())
+            ->method('getEmails')
+            ->with($sourceMailbox)
+            ->willReturn([$mockEmail]);
+
+        $this->mockFolderManager->expects($this->once())
+            ->method('moveEmail')
+            ->with(1, $expectedTargetFolder);
+
+        $result = $this->threadEmailMover->processMailbox($sourceMailbox, $emailToFolderMapping);
+
+        $this->assertCount($expectedUnmatchedCount, $result['unmatched']);
+        if ($expectedUnmatchedEmail !== null) {
+            $this->assertEquals($expectedUnmatchedEmail, $result['unmatched'][0]);
+        }
+    }
+
+    public function testProcessNonInboxMailboxWithMultipleEmails() {
+        // Test: Multiple emails in a thread folder with different destinations
+        $mockEmail1 = $this->createMock(\Imap\ImapEmail::class);
+        $mockEmail1->uid = 1;
+        $mockEmail1->subject = 'Test Subject 1';
+        $mockEmail1->timestamp = time();
+        
+        $mockEmail2 = $this->createMock(\Imap\ImapEmail::class);
+        $mockEmail2->uid = 2;
+        $mockEmail2->subject = 'Test Subject 2';
+        $mockEmail2->timestamp = time();
+        
+        $mockEmail3 = $this->createMock(\Imap\ImapEmail::class);
+        $mockEmail3->uid = 3;
+        $mockEmail3->subject = 'Test Subject 3';
+        $mockEmail3->timestamp = time();
+        
+        $mockEmail1->expects($this->once())
+            ->method('getEmailAddresses')
+            ->willReturn(['stays@example.com']);
+        
+        $mockEmail2->expects($this->once())
+            ->method('getEmailAddresses')
+            ->willReturn(['moves@example.com']);
+        
+        $mockEmail3->expects($this->once())
+            ->method('getEmailAddresses')
+            ->willReturn(['unmatched@example.com']);
+            
+        $this->mockEmailProcessor->expects($this->once())
+            ->method('getEmails')
+            ->with('INBOX.Entity - Thread A')
+            ->willReturn([$mockEmail1, $mockEmail2, $mockEmail3]);
+
+        // Use a callback matcher to verify the moves
+        $expectedMoves = [
+            [1, 'INBOX.Entity - Thread A'],  // stays in same folder
+            [2, 'INBOX.Entity - Thread B'],  // moves to different thread
+            [3, 'INBOX']                      // moves to INBOX
+        ];
+        $moveIndex = 0;
+        
+        $this->mockFolderManager->expects($this->exactly(3))
+            ->method('moveEmail')
+            ->willReturnCallback(function($uid, $folder) use (&$moveIndex, $expectedMoves) {
+                $this->assertEquals($expectedMoves[$moveIndex][0], $uid, "Move #{$moveIndex}: UID mismatch");
+                $this->assertEquals($expectedMoves[$moveIndex][1], $folder, "Move #{$moveIndex}: Folder mismatch");
+                $moveIndex++;
+            });
+
+        $emailToFolder = [
+            'stays@example.com' => 'INBOX.Entity - Thread A',
+            'moves@example.com' => 'INBOX.Entity - Thread B'
+        ];
+
+        $result = $this->threadEmailMover->processMailbox('INBOX.Entity - Thread A', $emailToFolder);
+
+        // Only the unmatched address should be reported
+        $this->assertCount(1, $result['unmatched']);
+        $this->assertEquals('unmatched@example.com', $result['unmatched'][0]);
+    }
+
+    public function testProcessSubfolderMailbox() {
+        // Test: Processing emails from a subfolder like "INBOX.Projects.CustomerA - Thread"
+        $mockEmail = $this->createMock(\Imap\ImapEmail::class);
+        $mockEmail->uid = 1;
+        
+        $mockEmail->expects($this->once())
+            ->method('getEmailAddresses')
+            ->willReturn(['customer@example.com']);
+            
+        $this->mockEmailProcessor->expects($this->once())
+            ->method('getEmails')
+            ->with('INBOX.Projects.CustomerA - Thread')
+            ->willReturn([$mockEmail]);
+
+        $this->mockFolderManager->expects($this->once())
+            ->method('moveEmail')
+            ->with(1, 'INBOX.Projects.CustomerB - Thread');
+
+        $emailToFolder = [
+            'customer@example.com' => 'INBOX.Projects.CustomerB - Thread'
+        ];
+
+        $result = $this->threadEmailMover->processMailbox('INBOX.Projects.CustomerA - Thread', $emailToFolder);
+
+        // No unmatched addresses
+        $this->assertEmpty($result['unmatched']);
     }
 }
