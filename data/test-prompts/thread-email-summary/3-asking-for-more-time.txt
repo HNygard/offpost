@@ -1,0 +1,36 @@
+### TEST INPUT ###
+
+Thread Details:
+- Thread title: Forespørsel om forlengelse
+- Thread entity ID: 888999111-drammen-kommune
+- Thread my name: Kari Olsen
+- Thread my email: kari.olsen@offpost.no
+Email Details:
+- Date: 2025-08-15 11:15:00+00
+- Direction: IN
+- Source: Email body
+
+Hei,
+
+Vi trenger mer tid til å behandle deres innsynskrav. Saken er mer kompleks enn først antatt og vi ber om utsettelse av fristen til 30. september.
+
+Vi kommer tilbake med mer informasjon innen kort tid.
+
+Vennlig hilsen
+Saksbehandler Kommune
+
+
+### EXPECTED OUTPUT ###
+STARTS_WITH:Forespørsel om utsettelse av frist for innsynskrav til 30. september grunnet kompleks sak.
+STARTS_WITH:Forespørsel om forlengelse av fristen for innsynskrav til 30. september på grunn av kompleksitet i saken.
+STARTS_WITH:Forespørsel om forlengelse av fristen for behandling av innsynskravet til 30. september på grunn av kompleksitet i saken.
+CONTAINS:frist for innsynskrav til 30. september
+CONTAINS:fristen for behandling av innsynskravet til 30. september
+CONTAINS:fristen for behandling av innsynskrav til 30. september
+CONTAINS:fristen for innsynskrav til 30. september
+CONTAINS:fristen for innsynskravet til 30. september
+CONTAINS:fristen for å behandle innsynskravet til 30. september
+CONTAINS:frist for behandling av innsynskrav inntil 30. september
+
+### COMMENT ###
+Request for more time - should be categorized as ASKING_FOR_MORE_TIME and summarize the time extension request.

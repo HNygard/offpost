@@ -6,6 +6,7 @@ require_once __DIR__ . '/../class/Extraction/ThreadEmailExtractorAttachmentPdf.p
 require_once __DIR__ . '/../class/Extraction/ThreadEmailExtractorPromptSaksnummer.php';
 require_once __DIR__ . '/../class/Extraction/ThreadEmailExtractorPromptEmailLatestReply.php';
 require_once __DIR__ . '/../class/Extraction/ThreadEmailExtractorPromptCopyAskingFor.php';
+require_once __DIR__ . '/../class/Extraction/ThreadEmailExtractorPromptSummary.php';
 require_once __DIR__ . '/../class/AdminNotificationService.php';
 
 // Set up error reporting
@@ -18,6 +19,7 @@ $extractors = array(
     'prompt_saksnummer' => function() { return new ThreadEmailExtractorPromptSaksnummer(); },
     'prompt_email_latest_reply' => function() { return new ThreadEmailExtractorPromptEmailLatestReply(); },
     'prompt_copy_asking_for' => function() { return new ThreadEmailExtractorPromptCopyAskingFor(); },
+    'prompt_summary' => function() { return new ThreadEmailExtractorPromptSummary(); },
 );
 
 // Get the extraction type from the query string, default to 'email_body'

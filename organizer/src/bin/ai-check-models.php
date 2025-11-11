@@ -149,6 +149,13 @@ if (isset($options['prompt-tester'])) {
                         $response_ok = true;
                     }
                 }
+                if (str_starts_with($expected_output, 'CONTAINS:')) {
+                    $expected_output_with_keyword = trim(str_replace('CONTAINS:', '', $expected_output));
+                    if (str_contains($response, $expected_output_with_keyword)) {
+                        echo " - OK   - " . $response;
+                        $response_ok = true;
+                    }
+                }
                 if ($response == $expected_output) {
                     echo " - OK   - " . $response;
                     $response_ok = true;
