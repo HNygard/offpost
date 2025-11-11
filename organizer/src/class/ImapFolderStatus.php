@@ -13,8 +13,8 @@ class ImapFolderStatus {
      * @return bool Success status
      */
     public static function createOrUpdate(string $folderName, $threadId = null, bool $updateLastChecked = false, $requestUpdate = false): bool {
-        // Skip database operations in test environment
-        if (defined('PHPUNIT_RUNNING') && PHPUNIT_RUNNING === true) {
+        // Skip database operations when explicitly disabled for testing (ThreadEmailMoverTest)
+        if (defined('SKIP_IMAP_FOLDER_STATUS_DB') && SKIP_IMAP_FOLDER_STATUS_DB === true) {
             return true;
         }
         

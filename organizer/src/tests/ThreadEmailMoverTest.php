@@ -6,6 +6,11 @@ use Imap\ImapFolderManager;
 use Imap\ImapEmailProcessor;
 
 require_once(__DIR__ . '/bootstrap.php');
+
+// Define a specific constant for ThreadEmailMoverTest to skip ImapFolderStatus database operations
+// This allows testing ThreadEmailMover without database dependency
+define('SKIP_IMAP_FOLDER_STATUS_DB', true);
+
 require_once(__DIR__ . '/../class/ThreadEmailMover.php');
 require_once(__DIR__ . '/../class/Database.php');
 
@@ -342,6 +347,8 @@ class ThreadEmailMoverTest extends TestCase {
     ) {
         $mockEmail = $this->createMock(\Imap\ImapEmail::class);
         $mockEmail->uid = 1;
+        $mockEmail->subject = 'Test Subject';
+        $mockEmail->timestamp = time();
         
         $mockEmail->expects($this->once())
             ->method('getEmailAddresses')
@@ -368,10 +375,18 @@ class ThreadEmailMoverTest extends TestCase {
         // Test: Multiple emails in a thread folder with different destinations
         $mockEmail1 = $this->createMock(\Imap\ImapEmail::class);
         $mockEmail1->uid = 1;
+        $mockEmail1->subject = 'Test Subject 1';
+        $mockEmail1->timestamp = time();
+        
         $mockEmail2 = $this->createMock(\Imap\ImapEmail::class);
         $mockEmail2->uid = 2;
+        $mockEmail2->subject = 'Test Subject 2';
+        $mockEmail2->timestamp = time();
+        
         $mockEmail3 = $this->createMock(\Imap\ImapEmail::class);
         $mockEmail3->uid = 3;
+        $mockEmail3->subject = 'Test Subject 3';
+        $mockEmail3->timestamp = time();
         
         $mockEmail1->expects($this->once())
             ->method('getEmailAddresses')
