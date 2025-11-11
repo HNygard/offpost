@@ -34,7 +34,7 @@ class ImapConnection {
         $this->email = $email;
         $this->password = $password;
         $this->debug = $debug;
-        $this->wrapper = $wrapper ?? new ImapWrapper();
+        $this->wrapper = $wrapper ?? new ImapWrapper($debug);
     }
 
     /**

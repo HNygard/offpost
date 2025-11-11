@@ -38,7 +38,7 @@ class ThreadScheduledEmailReceiver {
         if ($connection === null || $emailProcessor === null || $attachmentHandler === null) {
             // Initialize IMAP connection and components if not provided
             require __DIR__ . '/../username-password.php';
-            $this->connection = new ImapConnection($imapServer, $imap_username, $imap_password, true);
+            $this->connection = new ImapConnection($imapServer, $imap_username, $imap_password, false);
             $this->connection->openConnection();
             
             $this->emailProcessor = new ImapEmailProcessor($this->connection);
