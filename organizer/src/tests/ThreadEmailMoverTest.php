@@ -6,11 +6,6 @@ use Imap\ImapFolderManager;
 use Imap\ImapEmailProcessor;
 
 require_once(__DIR__ . '/bootstrap.php');
-
-// Define a specific constant for ThreadEmailMoverTest to skip ImapFolderStatus database operations
-// This allows testing ThreadEmailMover without database dependency
-define('SKIP_IMAP_FOLDER_STATUS_DB', true);
-
 require_once(__DIR__ . '/../class/ThreadEmailMover.php');
 require_once(__DIR__ . '/../class/Database.php');
 
@@ -24,6 +19,10 @@ class ThreadEmailMoverTest extends TestCase {
     protected function setUp(): void {
         parent::setUp();
         
+        // Skip ImapFolderStatus database operations for unit tests
+        // This allows testing ThreadEmailMover without database dependency
+        ImapFolderStatus::$skipDatabaseOperations = true;
+        
         // Create mocks
         $this->mockConnection = $this->createMock(ImapConnection::class);
         $this->mockFolderManager = $this->createMock(ImapFolderManager::class);
@@ -35,6 +34,12 @@ class ThreadEmailMoverTest extends TestCase {
             $this->mockFolderManager,
             $this->mockEmailProcessor
         );
+    }
+
+    protected function tearDown(): void {
+        // Reset the flag to not affect other tests
+        ImapFolderStatus::$skipDatabaseOperations = false;
+        parent::tearDown();
     }
 
     public function testBuildEmailToFolderMapping() {
