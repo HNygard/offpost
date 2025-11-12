@@ -158,11 +158,6 @@ foreach ($emailProcessingErrors as &$error) {
                 'match_count' => (int)$cand['match_count']
             ];
         }
-
-        // Set backward-compatible fields from top suggestion
-        $top = $error['suggested_threads'][0];
-        $error['suggested_thread_id'] = $top['thread_id'];
-        $error['suggested_thread_title'] = $top['title'];
     }
 }
 unset($error);
