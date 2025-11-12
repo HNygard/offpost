@@ -73,6 +73,100 @@ foreach ($threadStatuses as $threadStatus) {
 $emailProcessingErrors = ThreadEmailProcessingErrorManager::getUnresolvedErrors();
 $emailProcessingErrorCount = count($emailProcessingErrors);
 
+// Build suggestions for each unresolved error based on matching recipients
+foreach ($emailProcessingErrors as &$error) {
+    $error['suggested_threads'] = [];
+
+    // Extract email addresses from the stored email_addresses string
+    $matches = [];
+    preg_match_all('/[A-Za-z0-9._%+\-]+@[A-Za-z0-9.\-]+\.[A-Za-z]{2,}/', $error['email_addresses'] ?? '', $matches);
+    $recipients = array_map('strtolower', array_unique($matches[0] ?? []));
+
+    if (empty($recipients)) {
+        continue;
+    }
+
+    // Query thread_emails using JSONB contains operator to find threads with matching email addresses
+    // We'll look for matches in the from, to, cc, and reply_to fields within imap_headers
+    $candidateThreads = [];
+    
+    foreach ($recipients as $recipient) {
+        // Search for this recipient in imap_headers JSONB field
+        // The imap_headers structure contains arrays like: {"from": [{"mailbox": "user", "host": "domain.com"}], ...}
+        $recipientParts = explode('@', $recipient);
+        if (count($recipientParts) !== 2) continue;
+        
+        $mailbox = $recipientParts[0];
+        $host = $recipientParts[1];
+        
+        // Build a query that checks if the email appears in from, to, cc, or reply_to fields
+        // We use jsonb_path_exists to check if any email object matches
+        $query = "
+            SELECT DISTINCT te.thread_id, te.created_at
+            FROM thread_emails te
+            WHERE te.imap_headers IS NOT NULL
+            AND (
+                te.imap_headers::text ILIKE ?
+            )
+            ORDER BY te.created_at DESC
+            LIMIT 20
+        ";
+        
+        $searchPattern = '%' . $mailbox . '@' . $host . '%';
+        $results = Database::query($query, [$searchPattern]);
+        
+        foreach ($results as $row) {
+            $threadId = $row['thread_id'];
+            if (!isset($candidateThreads[$threadId])) {
+                $candidateThreads[$threadId] = [
+                    'thread_id' => $threadId,
+                    'match_count' => 0,
+                    'last_email' => $row['created_at']
+                ];
+            }
+            $candidateThreads[$threadId]['match_count']++;
+        }
+    }
+
+    // Sort candidates by match count (descending) and last email date (descending)
+    usort($candidateThreads, function($a, $b) {
+        if ($a['match_count'] !== $b['match_count']) {
+            return $b['match_count'] - $a['match_count'];
+        }
+        return strcmp($b['last_email'], $a['last_email']);
+    });
+
+    // Limit to top 5 candidates
+    $candidateThreads = array_slice($candidateThreads, 0, 5);
+
+    if (!empty($candidateThreads)) {
+        $threadIds = array_column($candidateThreads, 'thread_id');
+        $placeholders2 = implode(',', array_fill(0, count($threadIds), '?'));
+        $threadsQuery = "SELECT id, title FROM threads WHERE id IN ($placeholders2)";
+        $threadRows = Database::query($threadsQuery, $threadIds);
+
+        $titles = [];
+        foreach ($threadRows as $t) {
+            $titles[$t['id']] = $t['title'];
+        }
+
+        foreach ($candidateThreads as $cand) {
+            $tid = $cand['thread_id'];
+            $error['suggested_threads'][] = [
+                'thread_id'   => $tid,
+                'title'       => isset($titles[$tid]) ? $titles[$tid] : 'Unknown Thread',
+                'match_count' => (int)$cand['match_count']
+            ];
+        }
+
+        // Set backward-compatible fields from top suggestion
+        $top = $error['suggested_threads'][0];
+        $error['suggested_thread_id'] = $top['thread_id'];
+        $error['suggested_thread_title'] = $top['title'];
+    }
+}
+unset($error);
+
 // Function to truncate text
 function truncateText($text, $length = 50) {
     if (!$text) return '';
@@ -327,7 +421,19 @@ if (!empty($threadIds)) {
                         <div><strong>Folder:</strong> <?= htmlspecialchars($error['folder_name']) ?></div>
                         <div><strong>Created:</strong> <?= date('Y-m-d H:i:s', strtotime($error['created_at'])) ?></div>
                         
-                        <?php if ($error['suggested_thread_id'] && $error['suggested_thread_title']): ?>
+                        <?php if (!empty($error['suggested_threads'])): ?>
+                            <div><strong>Suggested Threads:</strong></div>
+                            <ul style="margin: 5px 0 10px 18px;">
+                                <?php foreach ($error['suggested_threads'] as $sugg): ?>
+                                    <li>
+                                        <a href="#" class="use-suggestion" data-error-id="<?= $error['id'] ?>" data-thread-id="<?= htmlspecialchars($sugg['thread_id']) ?>" onclick="return false;">
+                                            <?= htmlspecialchars(truncateText($sugg['title'], 60)) ?> (matches: <?= $sugg['match_count'] ?>)
+                                        </a>
+                                        &nbsp; <small style="color:#666">(<?= substr($sugg['thread_id'], 0, 8) ?>...)</small>
+                                    </li>
+                                <?php endforeach; ?>
+                            </ul>
+                        <?php elseif (!empty($error['suggested_thread_title'])): ?>
                             <div><strong>Suggested Thread:</strong> <?= htmlspecialchars($error['suggested_thread_title']) ?> (<?= substr($error['suggested_thread_id'], 0, 8) ?>...)</div>
                         <?php endif; ?>
                         
@@ -467,6 +573,27 @@ if (!empty($threadIds)) {
                         e.clientY > dialogDimensions.bottom
                     ) {
                         dialog.close();
+                    }
+                });
+            });
+            
+            // Add click handlers for suggestion links
+            const suggestionLinks = document.querySelectorAll('.use-suggestion');
+            suggestionLinks.forEach(link => {
+                link.addEventListener('click', function(e) {
+                    e.preventDefault();
+                    const errorId = this.getAttribute('data-error-id');
+                    const threadId = this.getAttribute('data-thread-id');
+                    
+                    // Find the corresponding thread input field
+                    const threadInput = document.getElementById('thread_' + errorId);
+                    if (threadInput) {
+                        threadInput.value = threadId;
+                        // Highlight the input briefly to show it was updated
+                        threadInput.style.backgroundColor = '#ffffcc';
+                        setTimeout(function() {
+                            threadInput.style.backgroundColor = '';
+                        }, 500);
                     }
                 });
             });
