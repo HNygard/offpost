@@ -131,15 +131,15 @@ graph TD;
     PDF --> PDFToText[PDF to Text]
     PDF --> PDFAttachment[PDF Attachment]
     
-    PDFAttachment --> AttachImage[Image]
-    AttachImage --> AttachImageToText[Image to Text]
+    PDFAttachment --> PDFImage[PDF Image]
+    PDFImage --> PDFImageToText[Image to Text]
     
     Word --> WordToText[Word to Text]
     
     ImageToText --> AIAnalyzer[AI Analyzer]
     AIImageDesc --> AIAnalyzer
     PDFToText --> AIAnalyzer
-    AttachImageToText --> AIAnalyzer
+    PDFImageToText --> AIAnalyzer
     WordToText --> AIAnalyzer
 ```
 
