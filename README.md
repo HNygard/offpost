@@ -115,6 +115,34 @@ http://localhost:25081/start-thread.php?my_email=asmund.visnes%40offpost.no&my_n
      - Set sent = true
      - Update status_type and status_text
 
+### Document Flow Processing
+
+The diagram below illustrates how the scraper processes different document types through various stages to the AI analyzer. This shows the complete flow from document ingestion to analysis.
+
+```mermaid
+graph TD;
+    Scraper[Scraper] --> Image[Image]
+    Scraper --> PDF[PDF]
+    Scraper --> Word[Word Document]
+    
+    Image --> ImageToText[Image to Text]
+    Image --> AIImageDesc[AI Image Description]
+    
+    PDF --> PDFToText[PDF to Text]
+    PDF --> PDFAttachment[PDF Attachment]
+    
+    PDFAttachment --> AttachImage[Image]
+    AttachImage --> AttachImageToText[Image to Text]
+    
+    Word --> WordToText[Word to Text]
+    
+    ImageToText --> AIAnalyzer[AI Analyzer]
+    AIImageDesc --> AIAnalyzer
+    PDFToText --> AIAnalyzer
+    AttachImageToText --> AIAnalyzer
+    WordToText --> AIAnalyzer
+```
+
 ### Extracting information from emails
 
 From an email there are multiple ways to extract text. The diagram below shows the different paths for text extraction from emails, including plain text conversion, HTML parsing, and handling of attachments like PDFs and images.
