@@ -34,12 +34,12 @@ class EntityTest extends PHPUnit\Framework\TestCase {
         file_put_contents($this->testJsonPath, json_encode($this->testEntities));
 
         // Set the Entity class to use our test JSON file
-        $property->setValue($this->testJsonPath);
+        $property->setValue(null, $this->testJsonPath);
 
         // Reset the entities cache
         $cacheProperty = $reflection->getProperty('entities');
         $cacheProperty->setAccessible(true);
-        $cacheProperty->setValue(null);
+        $cacheProperty->setValue(null, null);
     }
 
     protected function tearDown(): void {
@@ -47,12 +47,12 @@ class EntityTest extends PHPUnit\Framework\TestCase {
         $reflection = new ReflectionClass('Entity');
         $property = $reflection->getProperty('jsonPath');
         $property->setAccessible(true);
-        $property->setValue($this->originalJsonPath);
+        $property->setValue(null, $this->originalJsonPath);
 
         // Reset the entities cache
         $cacheProperty = $reflection->getProperty('entities');
         $cacheProperty->setAccessible(true);
-        $cacheProperty->setValue(null);
+        $cacheProperty->setValue(null, null);
 
         // Remove the test JSON file
         if (file_exists($this->testJsonPath)) {

@@ -490,8 +490,8 @@ class ThreadEmailMoverTest extends TestCase {
         try {
             // Create a test thread
             $threadId = Database::queryValue(
-                "INSERT INTO threads (id, entity_id, title, my_name, my_email) 
-                 VALUES (gen_random_uuid(), '000000000-test-entity-development', 'Mapped Test Thread', 'Test User', ?) 
+                "INSERT INTO threads (id, entity_id, title, my_name, my_email, archived) 
+                 VALUES (gen_random_uuid(), '000000000-test-entity-development', 'Mapped Test Thread', 'Test User', ?, FALSE) 
                  RETURNING id",
                 [$testThreadEmail]
             );
@@ -563,16 +563,16 @@ class ThreadEmailMoverTest extends TestCase {
         try {
             // Create thread 1
             $thread1Id = Database::queryValue(
-                "INSERT INTO threads (id, entity_id, title, my_name, my_email) 
-                 VALUES (gen_random_uuid(), '000000000-test-entity-development', 'Thread 1', 'User 1', ?) 
+                "INSERT INTO threads (id, entity_id, title, my_name, my_email, archived) 
+                 VALUES (gen_random_uuid(), '000000000-test-entity-development', 'Thread 1', 'User 1', ?, FALSE) 
                  RETURNING id",
                 [$thread1Email]
             );
             
             // Create thread 2
             $thread2Id = Database::queryValue(
-                "INSERT INTO threads (id, entity_id, title, my_name, my_email) 
-                 VALUES (gen_random_uuid(), '000000000-test-entity-development', 'Thread 2', 'User 2', ?) 
+                "INSERT INTO threads (id, entity_id, title, my_name, my_email, archived) 
+                 VALUES (gen_random_uuid(), '000000000-test-entity-development', 'Thread 2', 'User 2', ?, FALSE) 
                  RETURNING id",
                 [$thread2Email]
             );

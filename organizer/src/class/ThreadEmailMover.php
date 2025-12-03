@@ -61,8 +61,8 @@ class ThreadEmailMover {
             // First check if the email is manually mapped to a thread (if database operations are enabled)
             if (!self::$skipDatabaseOperations && isset($email->timestamp) && isset($email->subject)) {
                 $email_identifier = date('Y-m-d__His', $email->timestamp) . '__' . md5($email->subject);
-                $mapped_thread = Database::queryOne(
-                    "SELECT t.entity_id, t.title, t.my_email 
+                $mapped_thread = Database::queryOneOrNone(
+                    "SELECT t.entity_id, t.title, t.my_email, t.archived 
                      FROM thread_email_mapping m 
                      JOIN threads t ON m.thread_id = t.id 
                      WHERE m.email_identifier = ?",
@@ -73,7 +73,7 @@ class ThreadEmailMover {
                     // Use the mapped thread's folder
                     $targetFolder = ThreadFolderManager::getThreadEmailFolder(
                         $mapped_thread['entity_id'], 
-                        (object)['title' => $mapped_thread['title']]
+                        (object)['title' => $mapped_thread['title'], 'archived' => $mapped_thread['archived']]
                     );
                 }
             }
