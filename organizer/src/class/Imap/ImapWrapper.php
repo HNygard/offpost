@@ -6,9 +6,43 @@ class ImapWrapper {
     private const MAX_RETRIES = 5;
     private const RETRY_DELAY_MS = 100; // Base delay in milliseconds
     
-    private function checkError(string $operation, ?array $params = null) {
+    private bool $debug;
+    
+    /**
+     * @param bool $debug Whether to enable debug logging
+     */
+    public function __construct(bool $debug = false) {
+        $this->debug = $debug;
+    }
+    
+    /**
+     * Log debug message if debug is enabled
+     */
+    private function logDebug(string $operation, ?array $params = null): void {
+        if ($this->debug) {
+            $context = '';
+            if ($params && !empty($params)) {
+                $context = ' [' . implode(', ', $params) . ']';
+            }
+            echo "IMAP DEBUG: $operation$context\n";
+        }
+    }
+    
+    private function checkError(string $operation, ?array $params = null, bool $ignoreExpungeIssued = false) {
         $error = \imap_last_error();
         if ($error !== false) {
+            // Check if this is an EXPUNGEISSUED error and we should ignore it
+            if ($ignoreExpungeIssued && strpos($error, '[EXPUNGEISSUED]') !== false) {
+                // This is not a critical error - the message is already gone
+                // Log it but don't throw an exception
+                $context = '';
+                if ($params) {
+                    $context = ' [' . implode(', ', $params) . ']';
+                }
+                error_log("IMAP $operation$context: Message already deleted/expunged: $error");
+                return;
+            }
+            
             $context = '';
             if ($params) {
                 $context = ' [' . implode(', ', $params) . ']';
@@ -24,7 +58,11 @@ class ImapWrapper {
         // Only retry very specific connection-broken errors from the original issue
         $retryablePatterns = [
             '[CLOSED] IMAP connection broken',
-            'IMAP connection broken (server response)'
+            '[CLOSED] IMAP connection lost',
+            'IMAP connection broken (server response)',
+            'No body information available',
+            "Couldn't open stream",  // For imap_open connection failures
+            'Failed to open IMAP connection' // Our custom error message wrapper
         ];
         
         $lowerError = strtolower($error);
@@ -109,40 +147,58 @@ class ImapWrapper {
     }
 
     public function list(mixed $imap_stream, string $ref, string $pattern): array|false {
+        $this->logDebug('list', ["ref: $ref", "pattern: $pattern"]);
         $result = \imap_list($imap_stream, $ref, $pattern);
         $this->checkError('list');
         return $result;
     }
 
     public function lsub(mixed $imap_stream, string $ref, string $pattern): array|false {
+        $this->logDebug('lsub', ["ref: $ref", "pattern: $pattern"]);
         $result = \imap_lsub($imap_stream, $ref, $pattern);
         $this->checkError('lsub');
         return $result;
     }
 
     public function createMailbox(mixed $imap_stream, string $mailbox): bool {
+        $this->logDebug('createMailbox', ["mailbox: $mailbox"]);
         $result = \imap_createmailbox($imap_stream, $mailbox);
         $this->checkError('createMailbox(' . $mailbox . ')');
         return $result;
     }
 
     public function subscribe(mixed $imap_stream, string $mailbox): bool {
+        $this->logDebug('subscribe', ["mailbox: $mailbox"]);
         $result = \imap_subscribe($imap_stream, $mailbox);
         $this->checkError('subscribe(' . $mailbox . ')');
         return $result;
     }
 
     public function utf7Encode(string $string): string {
+        $stringPreview = strlen($string) > 50 ? substr($string, 0, 50) . '...' : $string;
+        $this->logDebug('utf7Encode', ["string: $stringPreview"]);
         return \imap_utf7_encode($string);
     }
 
     public function open(string $mailbox, string $username, string $password, int $options = 0, int $retries = 0, array $flags = []): mixed {
-        $result = \imap_open($mailbox, $username, $password, $options, $retries, $flags);
-        $this->checkError('open', ['mailbox: ' . $mailbox, 'username: ' . $username]);
-        return $result;
+        $this->logDebug('open', ['mailbox: ' . $mailbox, 'username: ' . $username]);
+        
+        return $this->executeWithRetry(
+            function() use ($mailbox, $username, $password, $options, $retries, $flags) {
+                $result = \imap_open($mailbox, $username, $password, $options, $retries, $flags);
+                if ($result === false) {
+                    $error = \imap_last_error();
+                    throw new \Exception("Failed to open IMAP connection: " . ($error ?: "Unknown error"));
+                }
+                return $result;
+            },
+            'open',
+            ['mailbox: ' . $mailbox, 'username: ' . $username]
+        );
     }
 
     public function close(mixed $imap_stream, int $flags = 0): bool {
+        $this->logDebug('close', ["flags: $flags"]);
         $result = \imap_close($imap_stream, $flags);
         try {
             $this->checkError('close');
@@ -159,18 +215,21 @@ class ImapWrapper {
     }
 
     public function mailMove(mixed $imap_stream, string $msglist, string $mailbox, int $options = 0): bool {
+        $this->logDebug('mailMove', ["msglist: $msglist", "mailbox: $mailbox", "options: $options"]);
         $result = \imap_mail_move($imap_stream, $msglist, $mailbox, $options);
-        $this->checkError('mailMove');
+        $this->checkError('mailMove', null, true);
         return $result;
     }
 
     public function renameMailbox(mixed $imap_stream, string $old_name, string $new_name): bool {
+        $this->logDebug('renameMailbox', ["old_name: $old_name", "new_name: $new_name"]);
         $result = \imap_renamemailbox($imap_stream, $old_name, $new_name);
         $this->checkError('renameMailbox');
         return $result;
     }
 
     public function search(mixed $imap_stream, string $criteria, int $options = SE_FREE, string $charset = ""): array|false {
+        $this->logDebug('search', ["criteria: $criteria", "options: $options"]);
         return $this->executeWithRetry(
             function() use ($imap_stream, $criteria, $options, $charset) {
                 return \imap_search($imap_stream, $criteria, $options, $charset);
@@ -181,12 +240,14 @@ class ImapWrapper {
     }
 
     public function msgno(mixed $imap_stream, int $uid): int {
+        $this->logDebug('msgno', ["uid: $uid"]);
         $result = \imap_msgno($imap_stream, $uid);
         $this->checkError('msgno');
         return $result;
     }
 
     public function headerinfo(mixed $imap_stream, int $msg_number): object|false {
+        $this->logDebug('headerinfo', ["msg_number: $msg_number"]);
         return $this->executeWithRetry(
             function() use ($imap_stream, $msg_number) {
                 return \imap_headerinfo($imap_stream, $msg_number);
@@ -197,6 +258,7 @@ class ImapWrapper {
     }
 
     public function body(mixed $imap_stream, int $msg_number, int $options = 0): string|false {
+        $this->logDebug('body', ["msg_number: $msg_number", "options: $options"]);
         return $this->executeWithRetry(
             function() use ($imap_stream, $msg_number, $options) {
                 return \imap_body($imap_stream, $msg_number, $options);
@@ -207,10 +269,13 @@ class ImapWrapper {
     }
 
     public function utf8(string $text): string {
+        $textPreview = strlen($text) > 50 ? substr($text, 0, 50) . '...' : $text;
+        $this->logDebug('utf8', ["text: $textPreview"]);
         return \imap_utf8($text);
     }
 
     public function fetchstructure(mixed $imap_stream, int $msg_number, int $options = 0): object {
+        $this->logDebug('fetchstructure', ["msg_number: $msg_number", "options: $options"]);
         return $this->executeWithRetry(
             function() use ($imap_stream, $msg_number, $options) {
                 return \imap_fetchstructure($imap_stream, $msg_number, $options);
@@ -221,6 +286,7 @@ class ImapWrapper {
     }
 
     public function fetchbody(mixed $imap_stream, int $msg_number, string $section, int $options = 0): string {
+        $this->logDebug('fetchbody', ["msg_number: $msg_number", "section: $section", "options: $options"]);
         return $this->executeWithRetry(
             function() use ($imap_stream, $msg_number, $section, $options) {
                 return \imap_fetchbody($imap_stream, $msg_number, $section, $options);

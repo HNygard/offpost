@@ -6,6 +6,8 @@ require_once __DIR__ . '/Imap/ImapFolderManager.php';
 require_once __DIR__ . '/Imap/ImapEmailProcessor.php';
 require_once __DIR__ . '/ImapFolderStatus.php';
 require_once __DIR__ . '/ThreadFolderManager.php';
+require_once __DIR__ . '/ThreadEmailProcessingErrorManager.php';
+require_once __DIR__ . '/Database.php';
 require_once __DIR__ . '/../vendor/autoload.php';
 
 use Imap\ImapConnection;
@@ -16,6 +18,12 @@ class ThreadEmailMover {
     private \Imap\ImapConnection $connection;
     private \Imap\ImapFolderManager $folderManager;
     private \Imap\ImapEmailProcessor $emailProcessor;
+    
+    /**
+     * Flag to skip database operations for unit tests
+     * @var bool
+     */
+    public static $skipDatabaseOperations = false;
 
     public function __construct(
         \Imap\ImapConnection $connection,
@@ -50,19 +58,49 @@ class ThreadEmailMover {
             $addresses = $email->getEmailAddresses($rawEmail);
             $targetFolder = 'INBOX';
             
-            foreach ($addresses as $address) {
-                if (isset($emailToFolder[$address])) {
-                    $targetFolder = $emailToFolder[$address];
-                    break;
+            // First check if the email is manually mapped to a thread (if database operations are enabled)
+            if (!self::$skipDatabaseOperations && isset($email->timestamp) && isset($email->subject)) {
+                $email_identifier = date('Y-m-d__His', $email->timestamp) . '__' . md5($email->subject);
+                $mapped_thread = Database::queryOneOrNone(
+                    "SELECT t.entity_id, t.title, t.my_email, t.archived 
+                     FROM thread_email_mapping m 
+                     JOIN threads t ON m.thread_id = t.id 
+                     WHERE m.email_identifier = ?",
+                    [$email_identifier]
+                );
+                
+                if ($mapped_thread) {
+                    // Use the mapped thread's folder
+                    $targetFolder = ThreadFolderManager::getThreadEmailFolder(
+                        $mapped_thread['entity_id'], 
+                        (object)['title' => $mapped_thread['title'], 'archived' => $mapped_thread['archived']]
+                    );
+                }
+            }
+            
+            // If no mapping found, fall back to checking email addresses
+            if ($targetFolder === 'INBOX') {
+                foreach ($addresses as $address) {
+                    if (isset($emailToFolder[$address])) {
+                        $targetFolder = $emailToFolder[$address];
+                        break;
+                    }
                 }
             }
             
             if ($targetFolder === 'INBOX') {
                 // Only add addresses that aren't in emailToFolder and aren't DMARC
+                $hasUnmatchedAddress = false;
                 foreach ($addresses as $address) {
                     if (!isset($emailToFolder[$address]) && $address !== 'dmarc@offpost.no') {
                         $unmatchedAddresses[] = $address;
+                        $hasUnmatchedAddress = true;
                     }
+                }
+                
+                // Save email processing error for unmatched emails in INBOX
+                if ($hasUnmatchedAddress) {
+                    $this->saveUnmatchedEmailError($email, $addresses, $mailbox);
                 }
             }
 
@@ -101,5 +139,34 @@ class ThreadEmailMover {
         }
         
         return $emailToFolder;
+    }
+
+    /**
+     * Save unmatched email error to database for GUI resolution
+     * 
+     * @param object $email Email object
+     * @param array $addresses Email addresses
+     * @param string $folderName IMAP folder name
+     */
+    private function saveUnmatchedEmailError(object $email, array $addresses, string $folderName): void {
+        // Generate email identifier (same format as in ThreadEmailDatabaseSaver)
+        $emailIdentifier = date('Y-m-d__His', $email->timestamp) . '__' . md5($email->subject);
+        
+        // Filter out DMARC addresses from the list
+        $relevantAddresses = array_filter($addresses, function($addr) {
+            return $addr !== 'dmarc@offpost.no';
+        });
+        
+        $errorMessage = 'No matching thread found for email(s): ' . implode(', ', $relevantAddresses);
+        
+        ThreadEmailProcessingErrorManager::saveEmailProcessingError(
+            $emailIdentifier,
+            $email->subject,
+            implode(', ', $relevantAddresses),
+            'unmatched_inbox_email',
+            $errorMessage,
+            null, // No suggested thread ID
+            $folderName
+        );
     }
 }

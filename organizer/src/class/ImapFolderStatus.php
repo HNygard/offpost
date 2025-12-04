@@ -4,6 +4,12 @@ require_once __DIR__ . '/Database.php';
 
 class ImapFolderStatus {
     /**
+     * Flag to skip database operations for unit testing
+     * @var bool
+     */
+    public static $skipDatabaseOperations = false;
+
+    /**
      * Create or update a folder status record
      * 
      * @param string $folderName The IMAP folder name
@@ -13,6 +19,11 @@ class ImapFolderStatus {
      * @return bool Success status
      */
     public static function createOrUpdate(string $folderName, $threadId = null, bool $updateLastChecked = false, $requestUpdate = false): bool {
+        // Skip database operations when explicitly disabled for testing (ThreadEmailMoverTest)
+        if (self::$skipDatabaseOperations) {
+            return true;
+        }
+        
         // Check if record exists
         $exists = Database::queryOneOrNone(
             "SELECT * FROM imap_folder_status WHERE folder_name = ?",

@@ -115,7 +115,7 @@ class EmailSendingOverviewPageTest extends E2EPageTestCase {
         $this->assertStringContainsString('recipient@example', $response->body); // Account for truncation
         $this->assertStringContainsString('sender@example', $response->body); // Account for truncation
         $this->assertStringContainsString('SENT', $response->body);
-        $this->assertStringContainsString('Show Response', $response->body);
+        $this->assertStringContainsString('Show Details', $response->body);
     }
 
     public function testPageNotLoggedIn() {

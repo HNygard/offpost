@@ -38,7 +38,7 @@ class ThreadScheduledEmailReceiver {
         if ($connection === null || $emailProcessor === null || $attachmentHandler === null) {
             // Initialize IMAP connection and components if not provided
             require __DIR__ . '/../username-password.php';
-            $this->connection = new ImapConnection($imapServer, $imap_username, $imap_password, true);
+            $this->connection = new ImapConnection($imapServer, $imap_username, $imap_password, false);
             $this->connection->openConnection();
             
             $this->emailProcessor = new ImapEmailProcessor($this->connection);
@@ -188,6 +188,7 @@ class ThreadScheduledEmailReceiver {
                AND fs.folder_name != 'Sent'
                AND fs.folder_name != 'INBOX.Drafts'
                AND fs.folder_name != 'INBOX.Trash'
+               AND fs.folder_name != 'INBOX.Spam'
                AND fs.requested_update_time IS NOT NULL
              ORDER BY fs.requested_update_time ASC
              LIMIT 1"
@@ -202,6 +203,9 @@ class ThreadScheduledEmailReceiver {
                    AND fs.folder_name NOT LIKE 'INBOX.Archive.%'
                    AND fs.folder_name != 'INBOX.Sent'
                    AND fs.folder_name != 'Sent'
+                   AND fs.folder_name != 'INBOX.Drafts'
+                   AND fs.folder_name != 'INBOX.Trash'
+                   AND fs.folder_name != 'INBOX.Spam'
                    AND fs.requested_update_time IS NULL
                    AND fs.folder_name NOT IN (
                           -- Exclude folders with recent errors, but do try to run again

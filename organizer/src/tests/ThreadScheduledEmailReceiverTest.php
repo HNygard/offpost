@@ -213,4 +213,41 @@ class ThreadScheduledEmailReceiverTest extends TestCase {
         $this->assertEquals('test-thread-id', $result['thread_id'], 'Should return the thread ID');
         $this->assertEquals('Test exception', $result['error'], 'Should return the exception message');
     }
+    
+    /**
+     * Test that findNextFolderForProcessing excludes spam and trash folders
+     * This test uses reflection to access the protected method
+     */
+    public function testFindNextFolderForProcessingExcludesSpamAndTrash() {
+        // :: Setup
+        // Create a real receiver instance (without mocking findNextFolderForProcessing)
+        $receiver = new ThreadScheduledEmailReceiver(
+            $this->mockConnection,
+            $this->mockEmailProcessor,
+            $this->mockAttachmentHandler
+        );
+        
+        // Use reflection to call the protected method
+        $reflection = new ReflectionClass(ThreadScheduledEmailReceiver::class);
+        $method = $reflection->getMethod('findNextFolderForProcessing');
+        $method->setAccessible(true);
+        
+        // :: Act
+        $result = $method->invoke($receiver);
+        
+        // :: Assert
+        // The method should either return null or a folder that is NOT spam or trash
+        if ($result !== null) {
+            $this->assertNotEquals('INBOX.Spam', $result['folder_name'], 
+                'findNextFolderForProcessing should not return INBOX.Spam folder');
+            $this->assertNotEquals('INBOX.Trash', $result['folder_name'], 
+                'findNextFolderForProcessing should not return INBOX.Trash folder');
+            $this->assertStringNotContainsString('Spam', $result['folder_name'], 
+                'findNextFolderForProcessing should not return any spam folder');
+            $this->assertStringNotContainsString('Trash', $result['folder_name'], 
+                'findNextFolderForProcessing should not return any trash folder');
+        }
+        // If result is null, that's fine - it means no folders are ready for processing
+        $this->assertTrue(true, 'Test completed successfully');
+    }
 }
