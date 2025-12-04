@@ -1,10 +1,10 @@
 <?php
-require_once __DIR__ . '/../../../class/Ai/OpenAiIntegration.php';
-require_once __DIR__ . '/../../../class/Extraction/Prompts/OpenAiPrompt.php';
-require_once __DIR__ . '/../../../class/Extraction/Prompts/SaksnummerPrompt.php';
-require_once __DIR__ . '/../../../class/Extraction/Prompts/EmailLatestReplyPrompt.php';
-require_once __DIR__ . '/../../../class/Extraction/Prompts/CopyAskingForPrompt.php';
-require_once __DIR__ . '/../../../class/Extraction/Prompts/ThreadEmailSummaryPrompt.php';
+require_once __DIR__ . '/../../Ai/OpenAiIntegration.php';
+require_once __DIR__ . '/OpenAiPrompt.php';
+require_once __DIR__ . '/SaksnummerPrompt.php';
+require_once __DIR__ . '/EmailLatestReplyPrompt.php';
+require_once __DIR__ . '/CopyAskingForPrompt.php';
+require_once __DIR__ . '/ThreadEmailSummaryPrompt.php';
 
 use Offpost\Ai\OpenAiIntegration;
 
