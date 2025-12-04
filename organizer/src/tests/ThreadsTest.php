@@ -69,7 +69,7 @@ class ThreadsTest extends TestCase {
 
     public function testCreateThreadForNewEntity() {
         // Arrange
-        $entityId = '000000000-test-entity-development';
+        $entityId = '000000000-test-entity-' . uniqid();
         $thread = new Thread();
         $thread->title = 'Test Thread';
         $thread->my_name = 'Test User';
@@ -93,7 +93,7 @@ class ThreadsTest extends TestCase {
 
     public function testCreateThreadForExistingEntity() {
         // Arrange
-        $entityId = '000000000-test-entity-development';
+        $entityId = '000000000-test-entity-' . uniqid();
         
         // Create existing thread
         $existingThread = new Thread();
