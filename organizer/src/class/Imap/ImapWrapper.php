@@ -60,7 +60,9 @@ class ImapWrapper {
             '[CLOSED] IMAP connection broken',
             '[CLOSED] IMAP connection lost',
             'IMAP connection broken (server response)',
-            'No body information available'
+            'No body information available',
+            "Couldn't open stream",  // For imap_open connection failures
+            'Failed to open IMAP connection' // Our custom error message wrapper
         ];
         
         $lowerError = strtolower($error);
@@ -180,9 +182,19 @@ class ImapWrapper {
 
     public function open(string $mailbox, string $username, string $password, int $options = 0, int $retries = 0, array $flags = []): mixed {
         $this->logDebug('open', ['mailbox: ' . $mailbox, 'username: ' . $username]);
-        $result = \imap_open($mailbox, $username, $password, $options, $retries, $flags);
-        $this->checkError('open', ['mailbox: ' . $mailbox, 'username: ' . $username]);
-        return $result;
+        
+        return $this->executeWithRetry(
+            function() use ($mailbox, $username, $password, $options, $retries, $flags) {
+                $result = \imap_open($mailbox, $username, $password, $options, $retries, $flags);
+                if ($result === false) {
+                    $error = \imap_last_error();
+                    throw new \Exception("Failed to open IMAP connection: " . ($error ?: "Unknown error"));
+                }
+                return $result;
+            },
+            'open',
+            ['mailbox: ' . $mailbox, 'username: ' . $username]
+        );
     }
 
     public function close(mixed $imap_stream, int $flags = 0): bool {
