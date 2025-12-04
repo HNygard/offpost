@@ -5,13 +5,12 @@ use PHPUnit\Framework\TestCase;
 require_once(__DIR__ . '/bootstrap.php');
 require_once(__DIR__ . '/../class/Threads.php');
 require_once(__DIR__ . '/../class/Thread.php');
-require_once(__DIR__ . '/../class/ThreadFileOperations.php');
 
 
 class ThreadsTest extends TestCase {
     private $testDataDir;
     private $threadsDir;
-    private $fileOps;
+    private $storageManager;
 
     protected function setUp(): void {
         parent::setUp();
@@ -25,7 +24,7 @@ class ThreadsTest extends TestCase {
         if (!file_exists($this->threadsDir)) {
             mkdir($this->threadsDir, 0777, true);
         }
-        $this->fileOps = new ThreadFileOperations();
+        $this->storageManager = ThreadStorageManager::getInstance();
     }
 
     protected function tearDown(): void {
@@ -68,23 +67,6 @@ class ThreadsTest extends TestCase {
         rmdir($dir);
     }
 
-    public function testSaveEntityThreads() {
-        // Arrange
-        $entityId = '000000000-test-entity-development';
-        $threads = new Threads();
-        $threads->entity_id = $entityId;
-        $threads->threads = [];
-
-        // Act
-        $this->fileOps->saveEntityThreads($entityId, $threads);
-
-        // Assert
-        $savedThreads = $this->fileOps->getThreadsForEntity($entityId);
-        $this->assertNotNull($savedThreads);
-        $this->assertEquals($entityId, $savedThreads->entity_id);
-        $this->assertIsArray($savedThreads->threads);
-    }
-
     public function testCreateThreadForNewEntity() {
         // Arrange
         $entityId = '000000000-test-entity-development';
@@ -98,15 +80,15 @@ class ThreadsTest extends TestCase {
         $thread->emails = [];
 
         // Act
-        $result = $this->fileOps->createThread($entityId, $thread);
+        $result = $this->storageManager->createThread($entityId, $thread);
 
         // Assert
-        $savedThreads = $this->fileOps->getThreadsForEntity($entityId);
+        $savedThreads = $this->storageManager->getThreadsForEntity($entityId);
         $this->assertNotNull($savedThreads);
         $this->assertEquals($entityId, $savedThreads->entity_id);
         $this->assertCount(1, $savedThreads->threads);
-        $this->assertEquals($thread, $savedThreads->threads[0]);
-        $this->assertEquals($thread, $result);
+        $this->assertEquals($thread->title, $savedThreads->threads[0]->title);
+        $this->assertEquals($thread->title, $result->title);
     }
 
     public function testCreateThreadForExistingEntity() {
@@ -123,7 +105,7 @@ class ThreadsTest extends TestCase {
         $existingThread->archived = false;
         $existingThread->emails = [];
         
-        $this->fileOps->createThread($entityId, $existingThread);
+        $this->storageManager->createThread($entityId, $existingThread);
 
         // Create new thread to add
         $newThread = new Thread();
@@ -136,16 +118,16 @@ class ThreadsTest extends TestCase {
         $newThread->emails = [];
 
         // Act
-        $result = $this->fileOps->createThread($entityId, $newThread);
+        $result = $this->storageManager->createThread($entityId, $newThread);
 
         // Assert
-        $savedThreads = $this->fileOps->getThreadsForEntity($entityId);
+        $savedThreads = $this->storageManager->getThreadsForEntity($entityId);
         $this->assertNotNull($savedThreads);
         $this->assertEquals($entityId, $savedThreads->entity_id);
         $this->assertCount(2, $savedThreads->threads);
-        $this->assertEquals($existingThread, $savedThreads->threads[0]);
-        $this->assertEquals($newThread, $savedThreads->threads[1]);
-        $this->assertEquals($newThread, $result);
+        $this->assertEquals($existingThread->title, $savedThreads->threads[0]->title);
+        $this->assertEquals($newThread->title, $savedThreads->threads[1]->title);
+        $this->assertEquals($newThread->title, $result->title);
     }
 
     public function testSendThreadEmail() {

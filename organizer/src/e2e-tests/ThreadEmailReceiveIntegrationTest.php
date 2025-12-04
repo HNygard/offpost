@@ -312,9 +312,6 @@ startxref
         $threadEmailSaver->saveThreadEmails($threadDir, $createdThread, $threadFolder);
         $threadEmailSaver->finishThreadProcessing($threadDir, $createdThread);
 
-        // Save entity thread
-        saveEntityThreads($entityThreads->entity_id, $entityThreads);
-
         // :: Assert
         
         // Verify thread folder structure and files
