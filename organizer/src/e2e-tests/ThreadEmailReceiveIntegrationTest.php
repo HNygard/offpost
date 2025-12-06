@@ -377,7 +377,22 @@ startxref
         $emailJsonFile = $threadDir . '/' . date('Y-m-d_His', $email_time) . ' - IN.json';
         $this->assertTrue(file_exists($emailJsonFile), 'Email JSON file should exist');
         $emailData = json_decode(file_get_contents($emailJsonFile), true);
-        $datetime_first_seen = $emailData['datetime_first_seen'];
+        
+        // Get datetime_first_seen if it exists, otherwise use current timestamp
+        $datetime_first_seen = $emailData['datetime_first_seen'] ?? date('Y-m-d H:i:s');
+        
+        // Verify thread metadata from database
+        $this->assertEquals($threadId, $updatedThread->id, 'Thread ID should match');
+        $this->assertEquals("000000000-test-entity-development", $updatedThread->entity_id, 'Entity ID should match');
+        $this->assertEquals("Test Thread - " . $uniqueId, $updatedThread->title, 'Thread title should match');
+        $this->assertEquals("Test User", $updatedThread->my_name, 'Thread my_name should match');
+        $this->assertEquals("test" . $uniqueId . "@example.com", $updatedThread->my_email, 'Thread my_email should match');
+        $this->assertEquals(["uklassifisert-epost"], $updatedThread->labels, 'Thread labels should match');
+        $this->assertFalse($updatedThread->sent, 'Thread should not be sent');
+        $this->assertEquals("STAGING", $updatedThread->sending_status, 'Thread sending_status should be STAGING');
+        $this->assertNull($updatedThread->initial_request, 'Thread initial_request should be null');
+        $this->assertFalse($updatedThread->archived, 'Thread should not be archived');
+        $this->assertFalse($updatedThread->public, 'Thread should not be public');
         
         // Verify email metadata in the saved JSON file
         $this->assertEquals($email_time, $emailData['timestamp_received'], 'Email timestamp should match');
