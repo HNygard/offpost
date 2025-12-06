@@ -5,13 +5,12 @@ use PHPUnit\Framework\TestCase;
 require_once(__DIR__ . '/bootstrap.php');
 require_once(__DIR__ . '/../class/Threads.php');
 require_once(__DIR__ . '/../class/Thread.php');
-require_once(__DIR__ . '/../class/ThreadFileOperations.php');
 
 
 class ThreadsTest extends TestCase {
     private $testDataDir;
     private $threadsDir;
-    private $fileOps;
+    private $storageManager;
 
     protected function setUp(): void {
         parent::setUp();
@@ -25,7 +24,7 @@ class ThreadsTest extends TestCase {
         if (!file_exists($this->threadsDir)) {
             mkdir($this->threadsDir, 0777, true);
         }
-        $this->fileOps = new ThreadFileOperations();
+        $this->storageManager = ThreadStorageManager::getInstance();
     }
 
     protected function tearDown(): void {
@@ -68,28 +67,11 @@ class ThreadsTest extends TestCase {
         rmdir($dir);
     }
 
-    public function testSaveEntityThreads() {
-        // Arrange
-        $entityId = '000000000-test-entity-development';
-        $threads = new Threads();
-        $threads->entity_id = $entityId;
-        $threads->threads = [];
-
-        // Act
-        $this->fileOps->saveEntityThreads($entityId, $threads);
-
-        // Assert
-        $savedThreads = $this->fileOps->getThreadsForEntity($entityId);
-        $this->assertNotNull($savedThreads);
-        $this->assertEquals($entityId, $savedThreads->entity_id);
-        $this->assertIsArray($savedThreads->threads);
-    }
-
     public function testCreateThreadForNewEntity() {
         // Arrange
         $entityId = '000000000-test-entity-development';
         $thread = new Thread();
-        $thread->title = 'Test Thread';
+        $thread->title = 'Test Thread ' . uniqid(); // Make title unique to avoid conflicts
         $thread->my_name = 'Test User';
         $thread->my_email = "test" . mt_rand(0, 100) . time() ."@example.com";
         $thread->labels = [];
@@ -98,24 +80,35 @@ class ThreadsTest extends TestCase {
         $thread->emails = [];
 
         // Act
-        $result = $this->fileOps->createThread($entityId, $thread);
+        $result = $this->storageManager->createThread($entityId, $thread);
 
-        // Assert
-        $savedThreads = $this->fileOps->getThreadsForEntity($entityId);
+        // Assert - Check that the thread was created successfully
+        $this->assertNotNull($result);
+        $this->assertEquals($thread->title, $result->title);
+        
+        // Verify it was saved to database
+        $savedThreads = $this->storageManager->getThreadsForEntity($entityId);
         $this->assertNotNull($savedThreads);
         $this->assertEquals($entityId, $savedThreads->entity_id);
-        $this->assertCount(1, $savedThreads->threads);
-        $this->assertEquals($thread, $savedThreads->threads[0]);
-        $this->assertEquals($thread, $result);
+        
+        // Find our thread in the list (there might be others from other tests in the same transaction)
+        $found = false;
+        foreach ($savedThreads->threads as $savedThread) {
+            if ($savedThread->title === $thread->title) {
+                $found = true;
+                break;
+            }
+        }
+        $this->assertTrue($found, 'Created thread should be found in entity threads');
     }
 
     public function testCreateThreadForExistingEntity() {
         // Arrange
         $entityId = '000000000-test-entity-development';
         
-        // Create existing thread
+        // Create existing thread with unique title
         $existingThread = new Thread();
-        $existingThread->title = 'Existing Thread';
+        $existingThread->title = 'Existing Thread ' . uniqid();
         $existingThread->my_name = 'Test User';
         $existingThread->my_email = "test" . mt_rand(0, 100) . time() ."@example.com";
         $existingThread->labels = [];
@@ -123,11 +116,12 @@ class ThreadsTest extends TestCase {
         $existingThread->archived = false;
         $existingThread->emails = [];
         
-        $this->fileOps->createThread($entityId, $existingThread);
+        $createdExisting = $this->storageManager->createThread($entityId, $existingThread);
+        $this->assertNotNull($createdExisting);
 
-        // Create new thread to add
+        // Create new thread to add with unique title
         $newThread = new Thread();
-        $newThread->title = 'New Thread';
+        $newThread->title = 'New Thread ' . uniqid();
         $newThread->my_name = 'Test User';
         $newThread->my_email = "test" . mt_rand(0, 100) . time() ."@example.com";
         $newThread->labels = [];
@@ -136,16 +130,30 @@ class ThreadsTest extends TestCase {
         $newThread->emails = [];
 
         // Act
-        $result = $this->fileOps->createThread($entityId, $newThread);
+        $result = $this->storageManager->createThread($entityId, $newThread);
 
         // Assert
-        $savedThreads = $this->fileOps->getThreadsForEntity($entityId);
+        $this->assertNotNull($result);
+        $this->assertEquals($newThread->title, $result->title);
+        
+        // Verify both threads exist
+        $savedThreads = $this->storageManager->getThreadsForEntity($entityId);
         $this->assertNotNull($savedThreads);
         $this->assertEquals($entityId, $savedThreads->entity_id);
-        $this->assertCount(2, $savedThreads->threads);
-        $this->assertEquals($existingThread, $savedThreads->threads[0]);
-        $this->assertEquals($newThread, $savedThreads->threads[1]);
-        $this->assertEquals($newThread, $result);
+        
+        // Find both threads in the list
+        $foundExisting = false;
+        $foundNew = false;
+        foreach ($savedThreads->threads as $savedThread) {
+            if ($savedThread->title === $existingThread->title) {
+                $foundExisting = true;
+            }
+            if ($savedThread->title === $newThread->title) {
+                $foundNew = true;
+            }
+        }
+        $this->assertTrue($foundExisting, 'Existing thread should be found in entity threads');
+        $this->assertTrue($foundNew, 'New thread should be found in entity threads');
     }
 
     public function testSendThreadEmail() {

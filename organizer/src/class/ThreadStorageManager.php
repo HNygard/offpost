@@ -1,19 +1,13 @@
 <?php
 
-require_once __DIR__ . '/ThreadFileOperations.php';
 require_once __DIR__ . '/ThreadDatabaseOperations.php';
 
 class ThreadStorageManager {
     private static $instance = null;
-    private $fileOps;
     private $dbOps;
-    private $useDatabase;
     
     private function __construct() {
-        $this->fileOps = new ThreadFileOperations();
         $this->dbOps = new ThreadDatabaseOperations();
-        // Default to database storage for optimized queries
-        $this->useDatabase = true;
     }
     
     public static function getInstance() {
@@ -28,23 +22,19 @@ class ThreadStorageManager {
      * @return Threads[]
      */
     public function getThreads($userId = null) {
-        return $this->useDatabase ? $this->dbOps->getThreads($userId) : $this->fileOps->getThreads($userId);
+        return $this->dbOps->getThreads($userId);
     }
     
     public function getThreadsForEntity($entityId) {
-        return $this->useDatabase ? $this->dbOps->getThreadsForEntity($entityId) : $this->fileOps->getThreadsForEntity($entityId);
+        return $this->dbOps->getThreadsForEntity($entityId);
     }
     
     public function createThread($entityId, Thread $thread, $userId = 'system') {
-        return $this->useDatabase ? 
-            $this->dbOps->createThread($entityId, $thread, $userId) : 
-            $this->fileOps->createThread($entityId, $thread, $userId);
+        return $this->dbOps->createThread($entityId, $thread, $userId);
     }
 
     public function updateThread(Thread $thread, $userId = 'system') {
-        return $this->useDatabase ?
-            $this->dbOps->updateThread($thread, $userId) :
-            $this->fileOps->updateThread($thread, $userId);
+        return $this->dbOps->updateThread($thread, $userId);
     }
 
     public function getThreadEmailContent($thread_id, $email_id) {

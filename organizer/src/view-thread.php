@@ -13,15 +13,15 @@ require_once __DIR__ . '/class/SuggestedReplyGenerator.php';
 // Require authentication
 requireAuth();
 
-// Get thread ID and entity ID from URL parameters
-$threadId = isset($_GET['threadId']) ? $_GET['threadId'] : null;
+// Get thread ID from URL parameters (entity ID is optional for backwards compatibility)
+$threadId = isset($_GET['threadId']) ? $_GET['threadId'] : (isset($_GET['id']) ? $_GET['id'] : null);
 $entityId = isset($_GET['entityId']) ? $_GET['entityId'] : null;
 $userId = $_SESSION['user']['sub']; // OpenID Connect subject identifier
 
-if (!$threadId || !$entityId) {
+if (!$threadId) {
     http_response_code(400);
     header('Content-Type: text/plain');
-    die('Thread ID and Entity ID are required');
+    die('Thread ID is required');
 }
 
 $storageManager = ThreadStorageManager::getInstance();
@@ -30,16 +30,21 @@ $allThreads = $storageManager->getThreads();
 $thread = null;
 $threadEntity = null;
 
-// Find the specific thread
+// Find the specific thread by ID (with optional entity filter for faster lookup)
 /* @var Threads[] $threads */
 foreach ($allThreads as $file => $threads) {
-    if ($threads->entity_id === $entityId) {
-        foreach ($threads->threads as $t) {
-            if ($t->id === $threadId) {
-                $thread = $t;
-                $threadEntity = $threads;
-                break 2;
-            }
+    // If entityId is provided, filter by it for backwards compatibility
+    if ($entityId && $threads->entity_id !== $entityId) {
+        continue;
+    }
+    
+    foreach ($threads->threads as $t) {
+        if ($t->id === $threadId) {
+            $thread = $t;
+            $threadEntity = $threads;
+            // Set entityId from found thread for use in the rest of the page
+            $entityId = $threads->entity_id;
+            break 2;
         }
     }
 }
