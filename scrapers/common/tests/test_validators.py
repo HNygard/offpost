@@ -2,7 +2,7 @@
 
 import unittest
 
-from ..validators import (
+from scrapers.common.validators import (
     validate_entity,
     validate_email,
     validate_org_num,

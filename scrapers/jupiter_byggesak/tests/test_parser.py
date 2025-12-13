@@ -4,8 +4,8 @@ import unittest
 import os
 from datetime import datetime
 
-from ..parser import parse_search_results, parse_case_details, _parse_date
-from ...common.exceptions import ParsingError
+from scrapers.jupiter_byggesak.parser import parse_search_results, parse_case_details, _parse_date
+from scrapers.common.exceptions import ParsingError
 
 
 class TestParseSearchResults(unittest.TestCase):

@@ -3,11 +3,11 @@
 import logging
 from typing import List, Optional, Dict, Any
 
-from ..common.http_client import get_http_session, safe_get, RateLimiter
-from ..common.exceptions import ConfigurationError, NetworkError, ParsingError
-from .config import MUNICIPALITY_CONFIGS, DEFAULT_CONFIG
-from .parser import parse_search_results, parse_case_details
-from .models import BuildingCase, SearchResult
+from scrapers.common.http_client import get_http_session, safe_get, RateLimiter
+from scrapers.common.exceptions import ConfigurationError, NetworkError, ParsingError
+from scrapers.jupiter_byggesak.config import MUNICIPALITY_CONFIGS, DEFAULT_CONFIG
+from scrapers.jupiter_byggesak.parser import parse_search_results, parse_case_details
+from scrapers.jupiter_byggesak.models import BuildingCase, SearchResult
 
 
 logger = logging.getLogger(__name__)

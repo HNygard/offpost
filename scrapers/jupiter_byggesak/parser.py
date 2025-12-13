@@ -6,8 +6,8 @@ from datetime import datetime
 from typing import List, Optional
 from bs4 import BeautifulSoup
 
-from ..common.exceptions import ParsingError
-from .models import SearchResult, BuildingCase
+from scrapers.common.exceptions import ParsingError
+from scrapers.jupiter_byggesak.models import SearchResult, BuildingCase
 
 
 logger = logging.getLogger(__name__)

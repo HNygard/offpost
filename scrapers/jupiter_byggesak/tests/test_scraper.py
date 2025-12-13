@@ -4,8 +4,8 @@ import unittest
 from unittest.mock import patch, Mock, MagicMock
 import requests
 
-from ..scraper import JupiterByggesakScraper
-from ...common.exceptions import ConfigurationError, NetworkError, ParsingError
+from scrapers.jupiter_byggesak.scraper import JupiterByggesakScraper
+from scrapers.common.exceptions import ConfigurationError, NetworkError, ParsingError
 
 
 class TestJupiterByggesakScraperInit(unittest.TestCase):
@@ -55,7 +55,7 @@ class TestJupiterByggesakScraperSearchResults(unittest.TestCase):
         with open(fixture_path, 'r', encoding='utf-8') as f:
             self.mock_html = f.read()
     
-    @patch('scrapers.common.http_client.safe_get')
+    @patch('scrapers.jupiter_byggesak.scraper.safe_get')
     def test_scrape_search_results_success(self, mock_safe_get):
         """Test successful search results scraping."""
         # :: Setup
@@ -75,7 +75,7 @@ class TestJupiterByggesakScraperSearchResults(unittest.TestCase):
         # Verify safe_get was called correctly
         mock_safe_get.assert_called_once()
     
-    @patch('scrapers.common.http_client.safe_get')
+    @patch('scrapers.jupiter_byggesak.scraper.safe_get')
     def test_scrape_search_results_with_params(self, mock_safe_get):
         """Test search results scraping with parameters."""
         # :: Setup
@@ -95,7 +95,7 @@ class TestJupiterByggesakScraperSearchResults(unittest.TestCase):
         call_args = mock_safe_get.call_args
         self.assertEqual(call_args.kwargs['params'], search_params)
     
-    @patch('scrapers.common.http_client.safe_get')
+    @patch('scrapers.jupiter_byggesak.scraper.safe_get')
     def test_scrape_search_results_network_error(self, mock_safe_get):
         """Test handling of network errors."""
         # :: Setup
@@ -123,7 +123,7 @@ class TestJupiterByggesakScraperCaseDetails(unittest.TestCase):
         with open(fixture_path, 'r', encoding='utf-8') as f:
             self.mock_html = f.read()
     
-    @patch('scrapers.common.http_client.safe_get')
+    @patch('scrapers.jupiter_byggesak.scraper.safe_get')
     def test_scrape_case_details_success(self, mock_safe_get):
         """Test successful case details scraping."""
         # :: Setup
@@ -142,7 +142,7 @@ class TestJupiterByggesakScraperCaseDetails(unittest.TestCase):
         self.assertIsNotNone(case.source_url)
         self.assertIn('12345', case.source_url)
     
-    @patch('scrapers.common.http_client.safe_get')
+    @patch('scrapers.jupiter_byggesak.scraper.safe_get')
     def test_scrape_case_details_network_error(self, mock_safe_get):
         """Test handling of network errors in case details."""
         # :: Setup
@@ -178,7 +178,7 @@ class TestJupiterByggesakScraperMultipleCases(unittest.TestCase):
         with open(case_fixture, 'r', encoding='utf-8') as f:
             self.case_html = f.read()
     
-    @patch('scrapers.common.http_client.safe_get')
+    @patch('scrapers.jupiter_byggesak.scraper.safe_get')
     def test_scrape_multiple_cases_success(self, mock_safe_get):
         """Test scraping multiple cases successfully."""
         # :: Setup
@@ -199,7 +199,7 @@ class TestJupiterByggesakScraperMultipleCases(unittest.TestCase):
         self.assertEqual(len(cases), 3, f"Expected 3 cases, got {len(cases)}")
         self.assertEqual(mock_safe_get.call_count, 4)  # 1 search + 3 cases
     
-    @patch('scrapers.common.http_client.safe_get')
+    @patch('scrapers.jupiter_byggesak.scraper.safe_get')
     def test_scrape_multiple_cases_with_limit(self, mock_safe_get):
         """Test scraping multiple cases with max_cases limit."""
         # :: Setup
@@ -220,7 +220,7 @@ class TestJupiterByggesakScraperMultipleCases(unittest.TestCase):
         self.assertEqual(len(cases), 2, "Should only scrape 2 cases")
         self.assertEqual(mock_safe_get.call_count, 3)  # 1 search + 2 cases
     
-    @patch('scrapers.common.http_client.safe_get')
+    @patch('scrapers.jupiter_byggesak.scraper.safe_get')
     def test_scrape_multiple_cases_partial_failure(self, mock_safe_get):
         """Test that scraping continues even if individual cases fail."""
         # :: Setup
@@ -255,7 +255,7 @@ class TestJupiterByggesakScraperExport(unittest.TestCase):
         """Set up test fixtures."""
         self.scraper = JupiterByggesakScraper('test')
     
-    @patch('scrapers.common.http_client.safe_get')
+    @patch('scrapers.jupiter_byggesak.scraper.safe_get')
     def test_export_to_dict(self, mock_safe_get):
         """Test exporting cases to dictionary format."""
         # :: Setup

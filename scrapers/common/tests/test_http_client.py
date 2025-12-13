@@ -6,8 +6,8 @@ import time
 from datetime import datetime
 import requests
 
-from ..http_client import RateLimiter, get_http_session, safe_get
-from ..exceptions import NetworkError
+from scrapers.common.http_client import RateLimiter, get_http_session, safe_get
+from scrapers.common.exceptions import NetworkError
 
 
 class TestRateLimiter(unittest.TestCase):

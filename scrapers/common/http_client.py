@@ -8,7 +8,7 @@ import requests
 from requests.adapters import HTTPAdapter
 from urllib3.util.retry import Retry
 
-from .exceptions import NetworkError
+from scrapers.common.exceptions import NetworkError
 
 
 logger = logging.getLogger(__name__)
