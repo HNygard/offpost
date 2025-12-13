@@ -2,7 +2,7 @@
 
 from dataclasses import dataclass
 from typing import Optional
-from datetime import date
+from datetime import datetime
 
 
 @dataclass
@@ -15,8 +15,8 @@ class BuildingCase:
     status: str
     address: Optional[str] = None
     property_id: Optional[str] = None  # Combined gårdsnummer, bruksnummer, etc.
-    application_date: Optional[date] = None
-    decision_date: Optional[date] = None
+    application_date: Optional[datetime] = None
+    decision_date: Optional[datetime] = None
     applicant: Optional[str] = None
     description: Optional[str] = None
     source_url: Optional[str] = None
@@ -46,7 +46,7 @@ class SearchResult:
     case_number: str
     title: str
     status: str
-    date: Optional[date] = None
+    date: Optional[datetime] = None
     
     def to_dict(self):
         """Convert to dictionary representation."""
