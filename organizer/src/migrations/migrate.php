@@ -88,19 +88,6 @@ try {
         $pdo->commit();
         echo "[migrate] All migrations completed successfully\n";
         
-        // Refresh collation version to avoid version mismatch warnings
-        // Note: ALTER DATABASE must run outside a transaction in PostgreSQL
-        try {
-            echo "[migrate] Refreshing database collation version...\n";
-            // Quote identifier for safety (escape double quotes and wrap in double quotes)
-            $quotedDbName = '"' . str_replace('"', '""', $dbname) . '"';
-            $pdo->exec("ALTER DATABASE $quotedDbName REFRESH COLLATION VERSION");
-            echo "[migrate] Collation version refreshed successfully\n";
-        } catch (PDOException $e) {
-            // Log but don't fail if collation refresh fails
-            echo "[migrate] Warning: Could not refresh collation version: " . $e->getMessage() . "\n";
-        }
-        
         // Dump schema to file
         $schemaUpdated = dumpDatabaseSchema($pdo);
         if ($schemaUpdated) {
