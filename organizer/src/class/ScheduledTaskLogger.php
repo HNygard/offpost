@@ -117,20 +117,20 @@ class ScheduledTaskLogger {
     /**
      * Format bytes into human-readable format
      * 
-     * @param int $bytes Number of bytes
+     * @param int|float $bytes Number of bytes
      * @return string Formatted string (e.g., "1.5 MB")
      */
-    private function formatBytes(int $bytes): string {
+    private function formatBytes(int|float $bytes): string {
         return self::formatBytesStatic($bytes);
     }
     
     /**
      * Format bytes into human-readable format (static version)
      * 
-     * @param int $bytes Number of bytes
+     * @param int|float $bytes Number of bytes (accepts floats for average calculations)
      * @return string Formatted string (e.g., "1.5 MB")
      */
-    public static function formatBytesStatic(int $bytes): string {
+    public static function formatBytesStatic(int|float $bytes): string {
         if ($bytes < 1024) {
             return $bytes . ' B';
         } elseif ($bytes < 1048576) {
@@ -145,10 +145,13 @@ class ScheduledTaskLogger {
     /**
      * Format duration into human-readable format
      * 
-     * @param float $seconds Duration in seconds
+     * @param int|float|null $seconds Duration in seconds
      * @return string Formatted string (e.g., "1.5 min")
      */
-    public static function formatDuration(float $seconds): string {
+    public static function formatDuration(int|float|null $seconds): string {
+        if ($seconds === null) {
+            return 'N/A';
+        }
         if ($seconds < 60) {
             return round($seconds, 1) . ' s';
         } elseif ($seconds < 3600) {
