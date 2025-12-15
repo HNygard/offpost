@@ -75,6 +75,12 @@ try {
             
             // Read and execute SQL file
             $sql = file_get_contents($file);
+            
+            // Replace placeholders with environment variables
+            // Quote identifier for safety (escape double quotes and wrap in double quotes)
+            $quotedDbName = '"' . str_replace('"', '""', $dbname) . '"';
+            $sql = str_replace('{{DB_NAME}}', $quotedDbName, $sql);
+            
             $pdo->exec($sql);
             
             // Record migration

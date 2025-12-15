@@ -3,4 +3,4 @@
 -- is updated but the database still references the old version.
 -- This is a one-time operation that updates the stored collation version.
 
-ALTER DATABASE offpost REFRESH COLLATION VERSION;
+ALTER DATABASE {{DB_NAME}} REFRESH COLLATION VERSION;
