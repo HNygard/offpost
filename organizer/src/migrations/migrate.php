@@ -53,59 +53,104 @@ try {
     }
     echo "[migrate] \n";
 
-    // Begin transaction
-    $pdo->beginTransaction();
+    // Separate migrations that must run outside transactions (like ALTER DATABASE)
+    $outOfTransactionMigrations = [];
+    $regularMigrations = [];
+    
+    foreach ($sqlFiles as $file) {
+        $filename = basename($file);
+        if ($filename === '99999-database-schema-after-migrations.sql') {
+            continue;
+        }
+        if (isset($executed[$filename])) {
+            continue;
+        }
+        
+        // Check if this migration contains commands that can't run in a transaction
+        $sql = file_get_contents($file);
+        if (preg_match('/ALTER\s+DATABASE/i', $sql)) {
+            $outOfTransactionMigrations[] = $file;
+        } else {
+            $regularMigrations[] = $file;
+        }
+    }
 
-    try {
-        foreach ($sqlFiles as $file) {
+    // Execute regular migrations in a transaction
+    if (!empty($regularMigrations)) {
+        $pdo->beginTransaction();
+
+        try {
+            foreach ($regularMigrations as $file) {
+                $filename = basename($file);
+
+                echo "[migrate] Executing $filename...\n";
+                
+                // Read and execute SQL file
+                $sql = file_get_contents($file);
+                
+                // Replace placeholders with environment variables
+                // Quote identifier for safety (escape double quotes and wrap in double quotes)
+                $quotedDbName = '"' . str_replace('"', '""', $dbname) . '"';
+                $sql = str_replace('{{DB_NAME}}', $quotedDbName, $sql);
+                
+                $pdo->exec($sql);
+                
+                // Record migration
+                $stmt = $pdo->prepare("INSERT INTO migrations (filename) VALUES (?)");
+                $stmt->execute([$filename]);
+                
+                echo "[migrate] Completed $filename\n";
+            }
+
+            // Commit transaction
+            $pdo->commit();
+            echo "[migrate] Regular migrations completed successfully\n";
+        } catch (Exception $e) {
+            // Rollback transaction on error
+            $pdo->rollBack();
+            throw $e;
+        }
+    }
+    
+    // Execute out-of-transaction migrations separately
+    if (!empty($outOfTransactionMigrations)) {
+        foreach ($outOfTransactionMigrations as $file) {
             $filename = basename($file);
 
-            if ($filename === '99999-database-schema-after-migrations.sql') {
-                // Skip schema dump file
-                continue;
+            echo "[migrate] Executing $filename (outside transaction)...\n";
+            
+            try {
+                // Read and execute SQL file
+                $sql = file_get_contents($file);
+                
+                // Replace placeholders with environment variables
+                // Quote identifier for safety (escape double quotes and wrap in double quotes)
+                $quotedDbName = '"' . str_replace('"', '""', $dbname) . '"';
+                $sql = str_replace('{{DB_NAME}}', $quotedDbName, $sql);
+                
+                $pdo->exec($sql);
+                
+                // Record migration
+                $stmt = $pdo->prepare("INSERT INTO migrations (filename) VALUES (?)");
+                $stmt->execute([$filename]);
+                
+                echo "[migrate] Completed $filename\n";
+            } catch (Exception $e) {
+                echo "[migrate] Error executing $filename: " . $e->getMessage() . "\n";
+                throw $e;
             }
-            
-            // Skip if already executed
-            if (isset($executed[$filename])) {
-                echo "[migrate] Skipping $filename (already executed)\n";
-                continue;
-            }
-
-            echo "[migrate] Executing $filename...\n";
-            
-            // Read and execute SQL file
-            $sql = file_get_contents($file);
-            
-            // Replace placeholders with environment variables
-            // Quote identifier for safety (escape double quotes and wrap in double quotes)
-            $quotedDbName = '"' . str_replace('"', '""', $dbname) . '"';
-            $sql = str_replace('{{DB_NAME}}', $quotedDbName, $sql);
-            
-            $pdo->exec($sql);
-            
-            // Record migration
-            $stmt = $pdo->prepare("INSERT INTO migrations (filename) VALUES (?)");
-            $stmt->execute([$filename]);
-            
-            echo "[migrate] Completed $filename\n";
         }
-
-        // Commit transaction
-        $pdo->commit();
-        echo "[migrate] All migrations completed successfully\n";
-        
-        // Dump schema to file
-        $schemaUpdated = dumpDatabaseSchema($pdo);
-        if ($schemaUpdated) {
-            echo "[migrate] Database schema file updated\n";
-        } else {
-            echo "[migrate] Database schema file unchanged\n";
-        }
-
-    } catch (Exception $e) {
-        // Rollback transaction on error
-        $pdo->rollBack();
-        throw $e;
+        echo "[migrate] Out-of-transaction migrations completed successfully\n";
+    }
+    
+    echo "[migrate] All migrations completed successfully\n";
+    
+    // Dump schema to file
+    $schemaUpdated = dumpDatabaseSchema($pdo);
+    if ($schemaUpdated) {
+        echo "[migrate] Database schema file updated\n";
+    } else {
+        echo "[migrate] Database schema file unchanged\n";
     }
 
 } catch (Exception $e) {
