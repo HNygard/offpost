@@ -11,6 +11,12 @@ function getPasswordFromFile($file) {
     return trim(file_get_contents($file));
 }
 
+function replacePlaceholders($sql, $dbname) {
+    // Quote identifier for safety (escape double quotes and wrap in double quotes)
+    $quotedDbName = '"' . str_replace('"', '""', $dbname) . '"';
+    return str_replace('{{DB_NAME}}', $quotedDbName, $sql);
+}
+
 // Database connection settings from environment variables
 $host = getenv('DB_HOST') ?: 'postgres';
 $port = getenv('DB_PORT') ?: '5432';
@@ -68,7 +74,8 @@ try {
         
         // Check if this migration contains commands that can't run in a transaction
         $sql = file_get_contents($file);
-        if (preg_match('/ALTER\s+DATABASE/i', $sql)) {
+        // Match ALTER DATABASE at the start of a line (with optional leading whitespace)
+        if (preg_match('/^\s*ALTER\s+DATABASE\s/im', $sql)) {
             $outOfTransactionMigrations[] = $file;
         } else {
             $regularMigrations[] = $file;
@@ -89,9 +96,7 @@ try {
                 $sql = file_get_contents($file);
                 
                 // Replace placeholders with environment variables
-                // Quote identifier for safety (escape double quotes and wrap in double quotes)
-                $quotedDbName = '"' . str_replace('"', '""', $dbname) . '"';
-                $sql = str_replace('{{DB_NAME}}', $quotedDbName, $sql);
+                $sql = replacePlaceholders($sql, $dbname);
                 
                 $pdo->exec($sql);
                 
@@ -124,9 +129,7 @@ try {
                 $sql = file_get_contents($file);
                 
                 // Replace placeholders with environment variables
-                // Quote identifier for safety (escape double quotes and wrap in double quotes)
-                $quotedDbName = '"' . str_replace('"', '""', $dbname) . '"';
-                $sql = str_replace('{{DB_NAME}}', $quotedDbName, $sql);
+                $sql = replacePlaceholders($sql, $dbname);
                 
                 $pdo->exec($sql);
                 
