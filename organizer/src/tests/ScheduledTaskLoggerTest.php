@@ -144,7 +144,8 @@ class ScheduledTaskLoggerTest extends PHPUnit\Framework\TestCase {
                 $found = true;
                 $this->assertEquals(2, $item['run_count'], "Should have 2 runs");
                 $this->assertEquals(3000, $item['total_bytes'], "Total bytes should be 3000");
-                $this->assertEquals(1500, $item['avg_bytes_per_run'], "Average should be 1500");
+                // Use delta comparison for float AVG() results
+                $this->assertEqualsWithDelta(1500, $item['avg_bytes_per_run'], 0.01, "Average should be 1500");
                 $this->assertEquals(2000, $item['max_bytes_per_run'], "Max should be 2000");
                 $this->assertEquals(15, $item['total_items'], "Total items should be 15");
             }

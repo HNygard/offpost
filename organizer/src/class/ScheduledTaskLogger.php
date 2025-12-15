@@ -84,7 +84,7 @@ class ScheduledTaskLogger {
             [$this->bytesProcessed, $this->itemsProcessed, $message, $this->logId]
         );
         
-        $bytesFormatted = $this->formatBytes($this->bytesProcessed);
+        $bytesFormatted = self::formatBytesStatic($this->bytesProcessed);
         error_log("[ScheduledTaskLogger] Completed task '{$this->taskName}' - {$bytesFormatted} processed, {$this->itemsProcessed} items");
     }
     
@@ -116,16 +116,6 @@ class ScheduledTaskLogger {
     
     /**
      * Format bytes into human-readable format
-     * 
-     * @param int|float $bytes Number of bytes
-     * @return string Formatted string (e.g., "1.5 MB")
-     */
-    private function formatBytes(int|float $bytes): string {
-        return self::formatBytesStatic($bytes);
-    }
-    
-    /**
-     * Format bytes into human-readable format (static version)
      * 
      * @param int|float $bytes Number of bytes (accepts floats for average calculations)
      * @return string Formatted string (e.g., "1.5 MB")
