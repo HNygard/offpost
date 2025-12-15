@@ -88,6 +88,16 @@ try {
         $pdo->commit();
         echo "[migrate] All migrations completed successfully\n";
         
+        // Refresh collation version to avoid version mismatch warnings
+        try {
+            echo "[migrate] Refreshing database collation version...\n";
+            $pdo->exec("ALTER DATABASE $dbname REFRESH COLLATION VERSION");
+            echo "[migrate] Collation version refreshed successfully\n";
+        } catch (Exception $e) {
+            // Log but don't fail if collation refresh fails
+            echo "[migrate] Warning: Could not refresh collation version: " . $e->getMessage() . "\n";
+        }
+        
         // Dump schema to file
         $schemaUpdated = dumpDatabaseSchema($pdo);
         if ($schemaUpdated) {
