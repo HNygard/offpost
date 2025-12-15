@@ -75,7 +75,8 @@ try {
         // Check if this migration contains commands that can't run in a transaction
         $sql = file_get_contents($file);
         // Match ALTER DATABASE at the start of a line (with optional leading whitespace)
-        if (preg_match('/^\s*ALTER\s+DATABASE\s/im', $sql)) {
+        // Requires at least one space after DATABASE to avoid false positives
+        if (preg_match('/^\s*ALTER\s+DATABASE\s+/im', $sql)) {
             $outOfTransactionMigrations[] = $file;
         } else {
             $regularMigrations[] = $file;
