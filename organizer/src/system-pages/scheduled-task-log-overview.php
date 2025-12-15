@@ -27,30 +27,6 @@ foreach ($summary as $summaryItem) {
     $taskNames[] = $summaryItem['task_name'];
 }
 
-// Helper function to format bytes
-function formatBytes($bytes) {
-    if ($bytes < 1024) {
-        return $bytes . ' B';
-    } elseif ($bytes < 1048576) {
-        return round($bytes / 1024, 2) . ' KB';
-    } elseif ($bytes < 1073741824) {
-        return round($bytes / 1048576, 2) . ' MB';
-    } else {
-        return round($bytes / 1073741824, 2) . ' GB';
-    }
-}
-
-// Helper function to format duration
-function formatDuration($seconds) {
-    if ($seconds < 60) {
-        return round($seconds, 1) . ' s';
-    } elseif ($seconds < 3600) {
-        return round($seconds / 60, 1) . ' min';
-    } else {
-        return round($seconds / 3600, 2) . ' hrs';
-    }
-}
-
 ?>
 <!DOCTYPE html>
 <html>
@@ -141,9 +117,9 @@ function formatDuration($seconds) {
                     <div class="summary-title"><?= htmlspecialchars($item['task_name']) ?></div>
                     <div class="summary-stats">
                         <span>Runs: <strong><?= number_format($item['run_count']) ?></strong></span>
-                        <span>Total: <strong class="bytes-highlight"><?= formatBytes($item['total_bytes']) ?></strong></span>
-                        <span>Avg/Run: <strong><?= formatBytes($item['avg_bytes_per_run']) ?></strong></span>
-                        <span>Max/Run: <strong><?= formatBytes($item['max_bytes_per_run']) ?></strong></span>
+                        <span>Total: <strong class="bytes-highlight"><?= ScheduledTaskLogger::formatBytesStatic($item['total_bytes']) ?></strong></span>
+                        <span>Avg/Run: <strong><?= ScheduledTaskLogger::formatBytesStatic($item['avg_bytes_per_run']) ?></strong></span>
+                        <span>Max/Run: <strong><?= ScheduledTaskLogger::formatBytesStatic($item['max_bytes_per_run']) ?></strong></span>
                         <span>Items: <strong><?= number_format($item['total_items']) ?></strong></span>
                     </div>
                 </div>
@@ -207,7 +183,7 @@ function formatDuration($seconds) {
                         <td><?= date('Y-m-d H:i:s', strtotime($log['started_at'])) ?></td>
                         <td>
                             <?php if ($log['completed_at']): ?>
-                                <?= formatDuration($log['duration_seconds']) ?>
+                                <?= ScheduledTaskLogger::formatDuration($log['duration_seconds']) ?>
                             <?php else: ?>
                                 Running...
                             <?php endif; ?>
@@ -218,7 +194,7 @@ function formatDuration($seconds) {
                             </span>
                         </td>
                         <td class="bytes-highlight">
-                            <?= formatBytes($log['bytes_processed']) ?>
+                            <?= ScheduledTaskLogger::formatBytesStatic($log['bytes_processed']) ?>
                         </td>
                         <td><?= number_format($log['items_processed']) ?></td>
                         <td>
@@ -252,11 +228,11 @@ function formatDuration($seconds) {
                                         </tr>
                                         <tr>
                                             <th>Duration:</th>
-                                            <td><?= $log['duration_seconds'] ? formatDuration($log['duration_seconds']) : 'N/A' ?></td>
+                                            <td><?= $log['duration_seconds'] ? ScheduledTaskLogger::formatDuration($log['duration_seconds']) : 'N/A' ?></td>
                                         </tr>
                                         <tr>
                                             <th>Bytes Processed:</th>
-                                            <td class="bytes-highlight"><?= formatBytes($log['bytes_processed']) ?> (<?= number_format($log['bytes_processed']) ?> bytes)</td>
+                                            <td class="bytes-highlight"><?= ScheduledTaskLogger::formatBytesStatic($log['bytes_processed']) ?> (<?= number_format($log['bytes_processed']) ?> bytes)</td>
                                         </tr>
                                         <tr>
                                             <th>Items Processed:</th>

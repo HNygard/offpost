@@ -121,6 +121,16 @@ class ScheduledTaskLogger {
      * @return string Formatted string (e.g., "1.5 MB")
      */
     private function formatBytes(int $bytes): string {
+        return self::formatBytesStatic($bytes);
+    }
+    
+    /**
+     * Format bytes into human-readable format (static version)
+     * 
+     * @param int $bytes Number of bytes
+     * @return string Formatted string (e.g., "1.5 MB")
+     */
+    public static function formatBytesStatic(int $bytes): string {
         if ($bytes < 1024) {
             return $bytes . ' B';
         } elseif ($bytes < 1048576) {
@@ -129,6 +139,22 @@ class ScheduledTaskLogger {
             return round($bytes / 1048576, 2) . ' MB';
         } else {
             return round($bytes / 1073741824, 2) . ' GB';
+        }
+    }
+    
+    /**
+     * Format duration into human-readable format
+     * 
+     * @param float $seconds Duration in seconds
+     * @return string Formatted string (e.g., "1.5 min")
+     */
+    public static function formatDuration(float $seconds): string {
+        if ($seconds < 60) {
+            return round($seconds, 1) . ' s';
+        } elseif ($seconds < 3600) {
+            return round($seconds / 60, 1) . ' min';
+        } else {
+            return round($seconds / 3600, 2) . ' hrs';
         }
     }
     
@@ -176,10 +202,10 @@ class ScheduledTaskLogger {
                 MAX(bytes_processed) as max_bytes_per_run,
                 SUM(items_processed) as total_items
              FROM scheduled_task_log 
-             WHERE started_at > CURRENT_TIMESTAMP - INTERVAL '{$days} days'
+             WHERE started_at > CURRENT_TIMESTAMP - INTERVAL '1 day' * ?
              GROUP BY task_name
              ORDER BY total_bytes DESC",
-            []
+            [$days]
         );
     }
     
