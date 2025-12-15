@@ -7,7 +7,6 @@ require_once __DIR__ . '/../class/Extraction/ThreadEmailExtractorPromptSaksnumme
 require_once __DIR__ . '/../class/Extraction/ThreadEmailExtractorPromptEmailLatestReply.php';
 require_once __DIR__ . '/../class/Extraction/ThreadEmailExtractorPromptCopyAskingFor.php';
 require_once __DIR__ . '/../class/AdminNotificationService.php';
-require_once __DIR__ . '/../class/ScheduledTaskLogger.php';
 
 // Set up error reporting
 error_reporting(E_ALL);
@@ -24,15 +23,15 @@ $extractors = array(
 // Get the extraction type from the query string, default to 'email_body'
 $extractionType = isset($_GET['type']) ? $_GET['type'] : 'email_body';
 
-// Start task logging with extraction type
-$taskLogger = new ScheduledTaskLogger('scheduled-email-extraction-' . $extractionType);
-$taskLogger->start();
+$startTime = microtime(true);
+$taskName = 'scheduled-email-extraction-' . $extractionType;
+error_log("[$taskName] Starting task");
 
 // Create the appropriate extractor based on the extraction type
 $extractor = $extractors[$extractionType] ?? null;
 if ($extractor === null) {
     // If the extraction type is not recognized, return an error
-    $taskLogger->fail('Invalid extraction type: ' . $extractionType);
+    error_log("[$taskName] Invalid extraction type: $extractionType");
     header('Content-Type: application/json');
     echo json_encode(['success' => false, 'message' => 'Invalid extraction type'], JSON_PRETTY_PRINT);
     exit;
@@ -41,14 +40,13 @@ $extractor = $extractor();
 
 try {
     $results = array();
+    $extractionsProcessed = 0;
     for($i = 0; $i < 10; $i++) {
         $result = $extractor->processNextEmailExtraction();
         $result['extraction_type'] = $extractionType;
         $results[] = $result;
-        
-        // Track items processed for each result
         if ($result['success']) {
-            $taskLogger->addItemsProcessed(1);
+            $extractionsProcessed++;
         }
 
         if (!$result['success'] && $result['message'] !== 'No emails found that need extraction') {
@@ -66,15 +64,14 @@ try {
 
     // Output the result
     header('Content-Type: application/json');
-    $output = json_encode($results, JSON_PRETTY_PRINT);
-    echo $output;
+    echo json_encode($results, JSON_PRETTY_PRINT);
     
-    // Track bytes in output (extraction results may include large email content)
-    $taskLogger->addBytesProcessed(strlen($output));
-    $taskLogger->complete('Processed ' . count($results) . ' extraction(s) of type: ' . $extractionType);
+    $duration = round(microtime(true) - $startTime, 3);
+    error_log("[$taskName] Task completed in {$duration}s - Processed $extractionsProcessed extractions");
     
 } catch (Exception $e) {
-    $taskLogger->fail($e->getMessage());
+    $duration = round(microtime(true) - $startTime, 3);
+    error_log("[$taskName] Task failed in {$duration}s - Exception: " . $e->getMessage());
     // Log the error and notify administrators
     $adminNotificationService = new AdminNotificationService();
     $adminNotificationService->notifyAdminOfError(

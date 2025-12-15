@@ -2,15 +2,14 @@
 
 require_once __DIR__ . '/../class/ThreadScheduledFollowUpSender.php';
 require_once __DIR__ . '/../class/AdminNotificationService.php';
-require_once __DIR__ . '/../class/ScheduledTaskLogger.php';
 
 // Set up error reporting
 error_reporting(E_ALL);
 ini_set('display_errors', 1);
 
-// Start task logging
-$taskLogger = new ScheduledTaskLogger('scheduled-thread-follow-up');
-$taskLogger->start();
+$startTime = microtime(true);
+$taskName = 'scheduled-thread-follow-up';
+error_log("[$taskName] Starting task");
 
 try {
     // Create the follow-up sender
@@ -19,11 +18,6 @@ try {
     // Send the next follow-up email
     // Note: We only process one at a time to avoid sending too many emails at once
     $result = $followUpSender->sendNextFollowUpEmail();
-    
-    // Track items processed
-    if ($result['success']) {
-        $taskLogger->addItemsProcessed(1);
-    }
 
     if (!$result['success'] && $result['message'] !== 'No threads ready for follow-up') {
         // Notify admin if there was an error in sending
@@ -37,15 +31,15 @@ try {
 
     // Output the result
     header('Content-Type: application/json');
-    $output = json_encode($result, JSON_PRETTY_PRINT);
-    echo $output;
+    echo json_encode($result, JSON_PRETTY_PRINT);
     
-    // Track bytes in output
-    $taskLogger->addBytesProcessed(strlen($output));
-    $taskLogger->complete($result['message'] ?? 'Task completed');
+    $duration = round(microtime(true) - $startTime, 3);
+    $status = $result['success'] ? 'completed' : 'failed';
+    error_log("[$taskName] Task $status in {$duration}s - " . ($result['message'] ?? 'no message'));
     
 } catch (Exception $e) {
-    $taskLogger->fail($e->getMessage());
+    $duration = round(microtime(true) - $startTime, 3);
+    error_log("[$taskName] Task failed in {$duration}s - Exception: " . $e->getMessage());
     // Log the error and notify administrators
     $adminNotificationService = new AdminNotificationService();
     $adminNotificationService->notifyAdminOfError(

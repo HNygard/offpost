@@ -9,7 +9,6 @@ require_once __DIR__ . '/../class/Imap/ImapFolderManager.php';
 require_once __DIR__ . '/../class/Imap/ImapEmailProcessor.php';
 require_once __DIR__ . '/../class/ThreadStorageManager.php';
 require_once __DIR__ . '/../class/AdminNotificationService.php';
-require_once __DIR__ . '/../class/ScheduledTaskLogger.php';
 
 // Set up error reporting
 error_reporting(E_ALL);
@@ -19,9 +18,9 @@ ini_set('display_errors', 1);
 set_time_limit(0);
 ini_set('memory_limit', '768M');
 
-// Start task logging
-$taskLogger = new ScheduledTaskLogger('scheduled-imap-handling');
-$taskLogger->start();
+$startTime = microtime(true);
+$taskName = 'scheduled-imap-handling';
+error_log("[$taskName] Starting task");
 
 try {
     require_once __DIR__ . '/../username-password.php';
@@ -36,6 +35,7 @@ try {
 
     // Get all threads
     $threads = ThreadStorageManager::getInstance()->getThreads();
+    $threadCount = count($threads);
 
     $folderManager = new ImapFolderManager($connection);
     $folderManager->initialize();
@@ -43,13 +43,22 @@ try {
     $emailProcessor = new ImapEmailProcessor($connection);
 
     // Same as the task https://offpost.no/update-imap?task=create-folders:
+    $createFoldersStart = microtime(true);
     createFolders($connection, $folderManager, $threads);
+    $createFoldersDuration = round(microtime(true) - $createFoldersStart, 3);
+    error_log("[$taskName] createFolders completed in {$createFoldersDuration}s");
 
     // Same as the task https://offpost.no/update-imap?task=process-sent:
+    $processSentStart = microtime(true);
     processSentFolder($connection, $folderManager, $emailProcessor, $threads, $imapSentFolder);
+    $processSentDuration = round(microtime(true) - $processSentStart, 3);
+    error_log("[$taskName] processSentFolder completed in {$processSentDuration}s");
 
     // Same as the task https://offpost.no/update-imap?task=process-inbox:
+    $processInboxStart = microtime(true);
     processInbox($connection, $folderManager, $emailProcessor, $threads);
+    $processInboxDuration = round(microtime(true) - $processInboxStart, 3);
+    error_log("[$taskName] processInbox completed in {$processInboxDuration}s");
 
     // Finally, expunge to remove any deleted emails
     $connection->closeConnection(CL_EXPUNGE);
@@ -65,15 +74,14 @@ try {
     ];
     
     header('Content-Type: application/json');
-    $output = json_encode($result, JSON_PRETTY_PRINT);
-    echo $output;
+    echo json_encode($result, JSON_PRETTY_PRINT);
     
-    // Track bytes processed (output size + debug output size as proxy for data handled)
-    $taskLogger->addBytesProcessed(strlen($output) + strlen($debugOutput));
-    $taskLogger->addItemsProcessed(count($threads));
-    $taskLogger->complete('IMAP handling completed successfully');
+    $duration = round(microtime(true) - $startTime, 3);
+    error_log("[$taskName] Task completed in {$duration}s - Processed $threadCount threads");
     
 } catch (Exception $e) {
+    $duration = round(microtime(true) - $startTime, 3);
+    error_log("[$taskName] Task failed in {$duration}s - Exception: " . $e->getMessage());
     // Clean the output buffer if it exists
     if (ob_get_level()) {
         $debugOutput = ob_get_clean();
@@ -82,8 +90,6 @@ try {
     }
     
     // Log the error and notify administrators
-    $taskLogger->fail($e->getMessage());
-    
     $adminNotificationService = new AdminNotificationService();
     $adminNotificationService->notifyAdminOfError(
         'scheduled-imap-handling',
