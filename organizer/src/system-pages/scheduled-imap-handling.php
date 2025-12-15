@@ -9,6 +9,7 @@ require_once __DIR__ . '/../class/Imap/ImapFolderManager.php';
 require_once __DIR__ . '/../class/Imap/ImapEmailProcessor.php';
 require_once __DIR__ . '/../class/ThreadStorageManager.php';
 require_once __DIR__ . '/../class/AdminNotificationService.php';
+require_once __DIR__ . '/../class/ScheduledTaskLogger.php';
 
 // Set up error reporting
 error_reporting(E_ALL);
@@ -17,6 +18,10 @@ ini_set('display_errors', 1);
 // Set up time and memory limits
 set_time_limit(0);
 ini_set('memory_limit', '768M');
+
+// Start task logging
+$taskLogger = new ScheduledTaskLogger('scheduled-imap-handling');
+$taskLogger->start();
 
 try {
     require_once __DIR__ . '/../username-password.php';
@@ -60,7 +65,13 @@ try {
     ];
     
     header('Content-Type: application/json');
-    echo json_encode($result, JSON_PRETTY_PRINT);
+    $output = json_encode($result, JSON_PRETTY_PRINT);
+    echo $output;
+    
+    // Track bytes processed (output size + debug output size as proxy for data handled)
+    $taskLogger->addBytesProcessed(strlen($output) + strlen($debugOutput));
+    $taskLogger->addItemsProcessed(count($threads));
+    $taskLogger->complete('IMAP handling completed successfully');
     
 } catch (Exception $e) {
     // Clean the output buffer if it exists
@@ -71,6 +82,8 @@ try {
     }
     
     // Log the error and notify administrators
+    $taskLogger->fail($e->getMessage());
+    
     $adminNotificationService = new AdminNotificationService();
     $adminNotificationService->notifyAdminOfError(
         'scheduled-imap-handling',
