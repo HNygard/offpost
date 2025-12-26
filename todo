@@ -1,12 +1,49 @@
 TODO for Cline.
 
+===========================================
+ANALYSIS SUMMARY (Last updated: 2025-12-26)
+===========================================
+
+OVERALL STATUS:
+- The project has made substantial progress towards making production usable
+- Core IMAP functionality is implemented with service classes and scheduled tasks
+- Email extraction infrastructure is in place with multiple extractors
+- History tracking system is complete for emails
+- Testing infrastructure is solid with good coverage
+
+KEY COMPLETED AREAS:
+✅ History table implementation (email tracking complete)
+✅ Update-imap core functionality (folders, inbox, sent processing)
+✅ Email extraction framework (plain text body, PDF attachments, AI prompts)
+✅ Email extractor service classes and scheduled tasks
+✅ AI integration with OpenAI
+✅ Basic GUI for replying to threads
+
+MAIN GAPS REMAINING:
+❌ Service classes for scheduled folder processing (new folders, inbox, sent)
+❌ HTML body extraction from emails
+❌ Image and other attachment extraction (OpenAI vision integration)
+❌ Manual trigger for extractions from overview page
+❌ Old threads cleanup and public label access
+❌ Public-facing views and front page
+❌ Template system for common responses
+❌ Rich text editor for replies (currently basic textarea)
+❌ Attachment upload functionality for replies
+❌ Database backup scheduling
+❌ Advanced thread concepts (notifications, automatic follow-up)
+
+===========================================
 
 Goal: make production usable
 
 
 - [ ] Add history table including who did what
+    STATUS: Email history is COMPLETE. Thread history infrastructure exists but "system" user handling needs work.
+    IMPLEMENTATION: ThreadEmailHistory class, thread_email_history table (migration 008)
     - [ ] Special users for "system". Must point to some usage. Then handled in display.
+        NOTE: Infrastructure exists but not fully integrated for system user display
     - [x] History table for emails
+        COMPLETE: All email actions are tracked in thread_email_history table
         Example actions
         - [x] Email received
         - [x] Email classified by user (include status type, status text, answer)
@@ -14,13 +51,24 @@ Goal: make production usable
         - [x] Email sent
         - [X] Email ignored
 - [ ] Old threads
+    STATUS: Partial - archiving exists, but public access and cleanup not implemented
     - [x] Remove extra labels
     - [ ] Open some labels to public
+        NOTE: No public access functionality implemented yet
     - [ ] Clean up old threads by archiving them
+        NOTE: ThreadFolderManager has archiveThreadFolder() but no scheduled cleanup task
 - [ ] Update-imap - remake
+    STATUS: Core functionality COMPLETE. Service class migration incomplete for scheduled tasks.
+    IMPLEMENTATION:
+    - Service classes: ImapConnection, ImapFolderManager, ImapEmailProcessor, ThreadEmailDatabaseSaver
+    - Scheduled handler: scheduled-imap-handling.php (calls createFolders, processSentFolder, processInbox)
+    - Functions in update-imap-functions.php work but need to be wrapped in service classes
+    - Tests exist: ImapConnectionTest, ImapFolderManagerTest, ImapEmailProcessorTest
+    
     - [x] Direct access should list folders
     - [x] Read per folder
     - [x] Database table with status for imap folders
+        COMPLETE: imap_folder_status table (migration 019), ImapFolderStatus class
         - Fields
             - Folder name
             - Thread id
@@ -31,7 +79,9 @@ Goal: make production usable
     - [x] Create folder status in production
     - [x] Run a couple of folders and check that it works
     - [x] Schedule reading of folders
+        COMPLETE: ThreadScheduledEmailReceiver handles this via scheduled-email-receiver.php
         - [x] Processing of folder in update-imap - Logging of outputs in own table
+            COMPLETE: ImapFolderLog class, imap_folder_log table (migration 020)
             - Table name: imap_folder_log
             - Fields
                 - Folder name
@@ -39,54 +89,106 @@ Goal: make production usable
                 - Message
                 - Created at
         - [x] Run on schedule, last attempted first
+            COMPLETE: ThreadScheduledEmailReceiver.processNextFolder() prioritizes by requested_update_time
     - [ ] Scheduled run of new folders
+        STATUS: Needs dedicated service class - currently handled by generic folder processing
         - [ ] Move update-imap code to service class
+            NOTE: Functionality exists in update-imap-functions.php but not in dedicated service class
         - [ ] Test service class
         - [ ] Add to cron job
+            NOTE: Currently handled indirectly via scheduled-email-receiver.php
     - [ ] Scheduled run of inbox
+        STATUS: Works but not in dedicated service class
         - [ ] Move update-imap code to service class
+            NOTE: processInbox() exists in update-imap-functions.php, called by scheduled-imap-handling.php
+            NEEDED: Dedicated service class like ThreadScheduledInboxProcessor
         - [ ] Test service class
         - [ ] Add to cron job
+            NOTE: Currently in cron via scheduled-imap-handling, but should be separate
     - [ ] Scheduled run of sent
+        STATUS: Works but not in dedicated service class
         - [ ] Move update-imap code to service class
+            NOTE: processSentFolder() exists in update-imap-functions.php, called by scheduled-imap-handling.php
+            NEEDED: Dedicated service class like ThreadScheduledSentProcessor
         - [ ] Test service class
         - [ ] Add to cron job
+            NOTE: Currently in cron via scheduled-imap-handling, but should be separate
 - [ ] Extract data from emails
+    STATUS: Core extraction framework COMPLETE. Missing HTML extraction and image handling.
+    IMPLEMENTATION:
+    - Base classes: ThreadEmailExtractor, ThreadEmailExtractionService
+    - Extractors: EmailBody, AttachmentPdf, PromptSaksnummer, PromptEmailLatestReply, PromptCopyAskingFor
+    - Scheduled task: scheduled-email-extraction.php (handles all extraction types)
+    - Table: thread_email_extractions (migration 016)
+    - Tests: Full test coverage for all extractors
+    
     - [x] Extract plain text body from EML
+        COMPLETE: ThreadEmailExtractorEmailBody with comprehensive parsing
         - [x] Make a scheduled task for extraction of information
         - [x] Make framework for what extractions to do - SQL based
         - [x] Extraction - use the code from file.php
         - [x] Test new task in production
         - [x] Run scheduled task
     - [ ] Extract HTML body from EML
+        NOTE: Not implemented. Would need new ThreadEmailExtractorHtmlBody class
+        MISSING: HTML to plain text conversion, HTML sanitization
     - [x] Extract PDF attachments as text
+        COMPLETE: ThreadEmailExtractorAttachmentPdf using pdftotext
         - [x] Make code
         - [x] Test new task in production
         - [x] Run scheduled task
     - [ ] Extract image attachements as text (OpenAI or something)
+        NOTE: Not implemented. OpenAiIntegration exists but no vision API integration
+        NEEDED: ThreadEmailExtractorAttachmentImage class with OpenAI vision API
         - [ ] Make code
         - [ ] Test new task in production
         - [ ] Run scheduled task
     - [ ] Extract other attachments as text (OpenAI or something)
+        NOTE: Not implemented. Would need generic attachment handler with OpenAI
+        NEEDED: ThreadEmailExtractorAttachmentGeneric class
 - [ ] Automatic handling
+    STATUS: Framework exists but not fully implemented
+    NOTE: Infrastructure for scheduled tasks exists, but automatic classification logic needs work
     - Must have up-to-date ImapFolderStatus (DB table) to be allowed to run
+        DONE: ImapFolderStatus table exists and is maintained
     - Purring - Next email expected date (based on plan or that we have received an expected date from public entity)
+        NOTE: Not implemented. Would need expected_date field and follow-up scheduler
 
 - [ ] Views available for public
+    STATUS: Not implemented. All views require authentication currently
+    NOTE: No public-facing functionality exists
     - [ ] Public threads visible to non authenticated users
+        NEEDED: Public access control, thread authorization updates
     - [ ] Front page with information
+        NEEDED: New public landing page
 
 - [ ] Basic AI service integrations
+    STATUS: OpenAI integration COMPLETE. Testing rig not implemented.
+    IMPLEMENTATION:
+    - Class: OpenAiIntegration (supports text completion, no vision yet)
+    - Logging: OpenAiRequestLog class, openai_request_log table (migration 025)
+    - Tests: OpenAiIntegrationTest, OpenAiRequestLogTest
+    - Used by: All prompt extractors (Saksnummer, EmailLatestReply, CopyAskingFor)
+    
     - [x] OpenAiIntegration class
+        COMPLETE: Full implementation with error handling, token tracking
         - Input: Model, prompt
     - [ ] Testing rig
+        NOTE: No automated testing framework for AI model evaluation
         - [ ] Run for many models, collect results
         - [ ] Run for many prompts, collect results
         - [ ] Make some test data
 
 - [ ] Email extractor
+    STATUS: Infrastructure COMPLETE. Manual trigger from overview page missing.
+    IMPLEMENTATION:
+    - Service: ThreadEmailExtractionService
+    - Overview page: extraction-overview.php (shows unclassified emails/attachments)
+    - All base functionality working and tested
+    
     - To be used as foundation for automatic classification and follow up
     - [x] New datatype ThreadEmailExtraction
+        COMPLETE: Class and table with all specified fields
         - extraction_id
         - email_id
         - attachment_id (nullable)
@@ -98,9 +200,14 @@ Goal: make production usable
         - created_at
         - updated_at
     - [x] Service class for creating and updating ThreadEmailExtraction
+        COMPLETE: ThreadEmailExtractionService with full CRUD operations
     - [x] Overview page for admin to see all unclassified emails and attachments
+        COMPLETE: extraction-overview.php shows recent extractions and unclassified items
     - [ ] Manually trigger extration prompts from overview page
+        NOTE: Overview page exists but lacks UI buttons/forms to trigger extraction
+        NEEDED: Add trigger buttons per email/attachment, AJAX handling
     - [x] Integration with OpenAI for extraction using prompts
+        COMPLETE: Full integration via OpenAiIntegration and prompt extractors
         - One prompt can depend on another.
         - Some prompts depend on the type of request (e.g. offentleglova, or custom election stuff)
         - [x] Map OpenAI response to text/JSON for saving as extraction
@@ -108,20 +215,50 @@ Goal: make production usable
         - [x] Show case number in thread view
 
 - [ ] Update-imap - folder creation should be done in class so that logic is the same in tests and update-imap.php
+    STATUS: DONE - ThreadFolderManager handles this consistently
+    NOTE: Could be marked as complete
 - [ ] GUI for replying to threads
+    STATUS: Basic reply functionality EXISTS but incomplete
+    IMPLEMENTATION:
+    - Reply handling: thread-reply.php (POST handler)
+    - Form location: view-thread.php (basic textarea)
+    - Tests: ThreadReplyTest
+    
     - [ ] Reply form with rich text editor
+        STATUS: Basic textarea exists in view-thread.php with toolbar buttons
+        NOTE: Not a true rich text editor (no TinyMCE/CKEditor/Quill), just textarea with formatting buttons
+        LOCATION: view-thread.php line ~577
     - [ ] Template system for common responses
+        NOTE: Not implemented. Would need templates table and UI to select/apply
     - [ ] Attachment upload functionality
+        NOTE: Not implemented. No file input or upload handling in thread-reply.php
 - [ ] New thread concepts
+    STATUS: Not implemented. These are advanced features.
+    NOTE: All require new functionality
     - Reply to thread
+        NOTE: Basic reply exists, but unclear what additional "concept" is needed
     - Enable notiication for replies
+        NOTE: No notification system implemented
     - Automatic follow up
+        NOTE: ThreadScheduledFollowUpSender exists but may need enhancement
 
 - [ ] Database - run backup on schedule
+    STATUS: Not implemented
+    NOTE: No backup scripts or scheduled tasks exist
+    NEEDED: pg_dump script in cron-scheduler, infrastructure setup for backup storage
 
 TODO - medium term:
 - [ ] Automatic follow up
+    STATUS: Basic framework exists (ThreadScheduledFollowUpSender) but needs enhancement
+    IMPLEMENTATION: ThreadScheduledFollowUpSender class, scheduled-thread-follow-up.php
+    NOTE: Already runs on schedule via cron-scheduler/curl-cron.sh
+    
     - [ ] Scheduled email sending system
+        NOTE: ThreadScheduledEmailSender EXISTS and works
+        POSSIBLY: This item should be marked complete
     - [ ] Response tracking
+        NOTE: Tracking exists via thread_email_history but unclear what additional tracking is needed
     - [ ] Automated reminder system
+        NOTE: ThreadScheduledFollowUpSender sends follow-ups but no configurable reminder system
     - [ ] Configurable follow-up rules
+        NOTE: Follow-up logic is hardcoded, no configuration UI or rules engine
