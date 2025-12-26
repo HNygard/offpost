@@ -1,7 +1,7 @@
 TODO for Cline.
 
 ===========================================
-ANALYSIS SUMMARY (Last updated: 2025-12-26)
+ANALYSIS SUMMARY (Last updated: December 2024)
 ===========================================
 
 OVERALL STATUS:
@@ -131,7 +131,7 @@ Goal: make production usable
         - [x] Run scheduled task
     - [ ] Extract HTML body from EML
         NOTE: Not implemented. Would need new ThreadEmailExtractorHtmlBody class
-        MISSING: HTML to plain text conversion, HTML sanitization
+        NEEDED: HTML to plain text conversion, HTML sanitization
     - [x] Extract PDF attachments as text
         COMPLETE: ThreadEmailExtractorAttachmentPdf using pdftotext
         - [x] Make code
@@ -254,8 +254,7 @@ TODO - medium term:
     NOTE: Already runs on schedule via cron-scheduler/curl-cron.sh
     
     - [ ] Scheduled email sending system
-        NOTE: ThreadScheduledEmailSender EXISTS and works
-        POSSIBLY: This item should be marked complete
+        NOTE: ThreadScheduledEmailSender exists and works. This may already be complete.
     - [ ] Response tracking
         NOTE: Tracking exists via thread_email_history but unclear what additional tracking is needed
     - [ ] Automated reminder system
