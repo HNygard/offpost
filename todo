@@ -203,7 +203,7 @@ Goal: make production usable
         COMPLETE: ThreadEmailExtractionService with full CRUD operations
     - [x] Overview page for admin to see all unclassified emails and attachments
         COMPLETE: extraction-overview.php shows recent extractions and unclassified items
-    - [ ] Manually trigger extration prompts from overview page
+    - [ ] Manually trigger extraction prompts from overview page
         NOTE: Overview page exists but lacks UI buttons/forms to trigger extraction
         NEEDED: Add trigger buttons per email/attachment, AJAX handling
     - [x] Integration with OpenAI for extraction using prompts
@@ -237,7 +237,7 @@ Goal: make production usable
     NOTE: All require new functionality
     - Reply to thread
         NOTE: Basic reply exists, but unclear what additional "concept" is needed
-    - Enable notiication for replies
+    - Enable notification for replies
         NOTE: No notification system implemented
     - Automatic follow up
         NOTE: ThreadScheduledFollowUpSender exists but may need enhancement
