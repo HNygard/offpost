@@ -9,7 +9,7 @@ ini_set('display_errors', 1);
 
 $startTime = microtime(true);
 $taskName = 'scheduled-thread-follow-up';
-error_log("[$taskName] Starting task");
+error_log(date('Y-m-d H:i:s') . " [$taskName] Starting task");
 
 try {
     // Create the follow-up sender
@@ -35,11 +35,11 @@ try {
     
     $duration = round(microtime(true) - $startTime, 3);
     $status = $result['success'] ? 'completed' : 'failed';
-    error_log("[$taskName] Task $status in {$duration}s - " . ($result['message'] ?? 'no message'));
+    error_log(date('Y-m-d H:i:s') . " [$taskName] Task $status in {$duration}s - " . ($result['message'] ?? 'no message'));
     
 } catch (Exception $e) {
     $duration = round(microtime(true) - $startTime, 3);
-    error_log("[$taskName] Task failed in {$duration}s - Exception: " . $e->getMessage());
+    error_log(date('Y-m-d H:i:s') . " [$taskName] Task failed in {$duration}s - Exception: " . $e->getMessage());
     // Log the error and notify administrators
     $adminNotificationService = new AdminNotificationService();
     $adminNotificationService->notifyAdminOfError(

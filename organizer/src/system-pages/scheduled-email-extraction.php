@@ -25,13 +25,13 @@ $extractionType = isset($_GET['type']) ? $_GET['type'] : 'email_body';
 
 $startTime = microtime(true);
 $taskName = 'scheduled-email-extraction-' . $extractionType;
-error_log("[$taskName] Starting task");
+error_log(date('Y-m-d H:i:s') . " [$taskName] Starting task");
 
 // Create the appropriate extractor based on the extraction type
 $extractor = $extractors[$extractionType] ?? null;
 if ($extractor === null) {
     // If the extraction type is not recognized, return an error
-    error_log("[$taskName] Invalid extraction type: $extractionType");
+    error_log(date('Y-m-d H:i:s') . " [$taskName] Invalid extraction type: $extractionType");
     header('Content-Type: application/json');
     echo json_encode(['success' => false, 'message' => 'Invalid extraction type'], JSON_PRETTY_PRINT);
     exit;
@@ -67,11 +67,11 @@ try {
     echo json_encode($results, JSON_PRETTY_PRINT);
     
     $duration = round(microtime(true) - $startTime, 3);
-    error_log("[$taskName] Task completed in {$duration}s - Processed $extractionsProcessed extractions");
+    error_log(date('Y-m-d H:i:s') . " [$taskName] Task completed in {$duration}s - Processed $extractionsProcessed extractions");
     
 } catch (Exception $e) {
     $duration = round(microtime(true) - $startTime, 3);
-    error_log("[$taskName] Task failed in {$duration}s - Exception: " . $e->getMessage());
+    error_log(date('Y-m-d H:i:s') . " [$taskName] Task failed in {$duration}s - Exception: " . $e->getMessage());
     // Log the error and notify administrators
     $adminNotificationService = new AdminNotificationService();
     $adminNotificationService->notifyAdminOfError(

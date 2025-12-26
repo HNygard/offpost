@@ -13,7 +13,7 @@ ini_set('memory_limit', '768M');
 
 $startTime = microtime(true);
 $taskName = 'scheduled-email-receiver';
-error_log("[$taskName] Starting task");
+error_log(date('Y-m-d H:i:s') . " [$taskName] Starting task");
 
 try {
     // Create the email receiver
@@ -49,11 +49,11 @@ try {
     echo json_encode($results, JSON_PRETTY_PRINT);
     
     $duration = round(microtime(true) - $startTime, 3);
-    error_log("[$taskName] Task completed in {$duration}s - Processed $foldersProcessed folders");
+    error_log(date('Y-m-d H:i:s') . " [$taskName] Task completed in {$duration}s - Processed $foldersProcessed folders");
     
 } catch (Exception $e) {
     $duration = round(microtime(true) - $startTime, 3);
-    error_log("[$taskName] Task failed in {$duration}s - Exception: " . $e->getMessage());
+    error_log(date('Y-m-d H:i:s') . " [$taskName] Task failed in {$duration}s - Exception: " . $e->getMessage());
     // Log the error and notify administrators
     $adminNotificationService = new AdminNotificationService();
     $adminNotificationService->notifyAdminOfError(
