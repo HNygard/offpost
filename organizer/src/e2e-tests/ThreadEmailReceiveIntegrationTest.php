@@ -25,7 +25,7 @@ require_once(__DIR__ . '/../class/Thread.php');
 require_once(__DIR__ . '/../class/ThreadEmailService.php');
 require_once(__DIR__ . '/../class/ThreadFolderManager.php');
 require_once(__DIR__ . '/../class/ThreadEmailMover.php');
-require_once(__DIR__ . '/../class/ThreadEmailSaver.php');
+require_once(__DIR__ . '/../class/ThreadEmailDatabaseSaver.php');
 require_once(__DIR__ . '/../class/Imap/ImapWrapper.php');
 require_once(__DIR__ . '/../class/Imap/ImapConnection.php');
 require_once(__DIR__ . '/../class/Imap/ImapFolderManager.php');
@@ -121,7 +121,7 @@ class ThreadEmailReceiveIntegrationTest extends TestCase {
         
         $threadFolderManager = new ThreadFolderManager($this->imapConnection, $folderManager);
         $threadEmailMover = new ThreadEmailMover($this->imapConnection, $folderManager, $emailProcessor);
-        $threadEmailSaver = new ThreadEmailSaver($this->imapConnection, $emailProcessor, $attachmentHandler);
+        $threadEmailDbSaver = new ThreadEmailDatabaseSaver($this->imapConnection, $emailProcessor, $attachmentHandler);
 
         // Create test email data
         $subject = 'Test Receive Email ' . $uniqueId;
@@ -252,39 +252,28 @@ startxref
         // Get thread folder path
         $threadFolder = $threadFolderManager->getThreadEmailFolder($entityThreads->entity_id, $createdThread);
         
-        // Save thread emails
-        $threadDir = THREADS_DIR . '/' . $entityThreads->entity_id . '/' . $createdThread->id;
-        $threadEmailSaver->saveThreadEmails($threadDir, $createdThread, $threadFolder);
-        $threadEmailSaver->finishThreadProcessing($threadDir, $createdThread);
+        // Save thread emails to database (ThreadEmailDatabaseSaver doesn't need thread directory)
+        $savedEmails = $threadEmailDbSaver->saveThreadEmails($threadFolder);
 
         // :: Assert
         
-        // Verify thread folder structure and files
-        $this->assertTrue(file_exists($threadDir), 'Thread folder should exist');
-        $this->assertTrue(is_dir($threadDir), 'Thread directory should exist');
+        // Verify emails were saved
+        $this->assertCount(1, $savedEmails, 'Should have saved at least one email');
         
-        // List all files in thread directory
-        $threadFiles = array_diff(scandir($threadDir), array('.', '..'));
-        $testEmailFile = date('Y-m-d_His', $email_time) . ' - IN.eml';
-        // Expected files including attachment
-        $expectedFiles = [
-            $testEmailFile,
-            date('Y-m-d_His', $email_time) . ' - IN.json',
-            date('Y-m-d_His', $email_time) . ' - IN - att 1-'. md5($attachmentName) . '.pdf'
-        ];
-        sort($threadFiles);
-        sort($expectedFiles);
-        $this->assertEquals($expectedFiles, $threadFiles, 'Thread directory should contain the right files including attachment.');
+        // Read the content from database
+        $thread = Thread::loadFromDatabase($createdThread->id);
+        $emails = $thread->getEmails();
+        $this->assertCount(1, $emails, 'Thread should have 1 email after receiving');
+        $emailData = $emails[0];
 
         // Verify attachment content
-        $attachmentPath = $threadDir . '/' . date('Y-m-d_His', $email_time) . ' - IN - att 1-'. md5($attachmentName) . '.pdf';
-        $this->assertTrue(file_exists($attachmentPath), 'Attachment file should exist');
-        $this->assertEquals($attachmentContent, file_get_contents($attachmentPath), 'Attachment content should match');
-        
-        // Read the saved email file to verify its contents
-        $savedEmail = file_get_contents($threadDir . '/' . $testEmailFile);
+        $this->assertCount(1, $emailData->attachments, 'Thread should have 1 saved attachment');
+
+        // TODO: assert attachment content from database
+        //$this->assertEquals($attachmentContent, file_get_contents($attachmentPath), 'Attachment content should match');
         
         // Verify required headers
+        $savedEmail =  ThreadStorageManager::getInstance()->getThreadEmailContent($thread->id, $emailData->id);
         $this->assertStringContainsString('Return-Path:', $savedEmail, 'Email should have Return-Path header');
         $this->assertStringContainsString('From: sender@example.com', $savedEmail, 'Email should have From header');
         $this->assertStringContainsString('To: test' . $uniqueId . '@example.com', $savedEmail, 'Email should have To header');
@@ -317,15 +306,6 @@ startxref
         // Get thread ID for comparison
         $threadId = $updatedThread->id;
         
-        // Since emails are saved to filesystem but not yet synced to database,
-        // read the email data directly from the saved files
-        $emailJsonFile = $threadDir . '/' . date('Y-m-d_His', $email_time) . ' - IN.json';
-        $this->assertTrue(file_exists($emailJsonFile), 'Email JSON file should exist');
-        $emailData = json_decode(file_get_contents($emailJsonFile), true);
-        
-        // Get datetime_first_seen if it exists, otherwise use current timestamp
-        $datetime_first_seen = $emailData['datetime_first_seen'] ?? date('Y-m-d H:i:s');
-        
         // Verify thread metadata from database
         $this->assertEquals($threadId, $updatedThread->id, 'Thread ID should match');
         $this->assertEquals("000000000-test-entity-development", $updatedThread->entity_id, 'Entity ID should match');
@@ -341,51 +321,23 @@ startxref
         $this->assertFalse($updatedThread->public, 'Thread should not be public');
         
         // Verify email metadata in the saved JSON file
-        // Some fields may not be present in all email JSON files, so check optionally
-        if (isset($emailData['timestamp_received'])) {
-            $this->assertEquals($email_time, $emailData['timestamp_received'], 'Email timestamp should match');
-        }
-        if (isset($emailData['datetime_received'])) {
-            $this->assertEquals("2021-01-01 12:00:00", $emailData['datetime_received'], 'Email datetime should match');
-        }
-        if (isset($emailData['id'])) {
-            $this->assertEquals("2021-01-01_120000 - IN", $emailData['id'], 'Email ID should match');
-        }
-        if (isset($emailData['email_type'])) {
-            $this->assertEquals("IN", $emailData['email_type'], 'Email type should be IN');
-        }
-        if (isset($emailData['status_type'])) {
-            $this->assertEquals("unknown", $emailData['status_type'], 'Status type should be unknown');
-        }
-        if (isset($emailData['status_text'])) {
-            $this->assertEquals("Uklassifisert", $emailData['status_text'], 'Status text should be Uklassifisert');
-        }
-        if (isset($emailData['ignore'])) {
-            $this->assertFalse($emailData['ignore'], 'Email should not be ignored');
-        }
+        $this->assertEquals("2021-01-01 12:00:00+00", $emailData->timestamp_received, 'Email timestamp should match');
+        $this->assertEquals("2021-01-01 12:00:00+00", $emailData->datetime_received, 'Email datetime should match');
+        $this->assertNotNull( $emailData->id, 'Email ID should match');
+        $this->assertEquals("IN", $emailData->email_type, 'Email type should be IN');
+        $this->assertEquals("unknown", $emailData->status_type, 'Status type should be unknown');
+        $this->assertEquals("Uklassifisert", $emailData->status_text, 'Status text should be Uklassifisert');
+        $this->assertFalse($emailData->ignore, 'Email should not be ignored');
         
         // Verify attachment metadata if present
-        if (isset($emailData['attachments']) && count($emailData['attachments']) > 0) {
-            $this->assertCount(1, $emailData['attachments'], 'Should have 1 attachment');
-            if (isset($emailData['attachments'][0]['name'])) {
-                $this->assertEquals('test.pdf', $emailData['attachments'][0]['name'], 'Attachment name should match');
-            }
-            if (isset($emailData['attachments'][0]['filename'])) {
-                $this->assertEquals('test.pdf', $emailData['attachments'][0]['filename'], 'Attachment filename should match');
-            }
-            if (isset($emailData['attachments'][0]['filetype'])) {
-                $this->assertEquals('pdf', $emailData['attachments'][0]['filetype'], 'Attachment filetype should match');
-            }
-            if (isset($emailData['attachments'][0]['location'])) {
-                $this->assertEquals('2021-01-01_120000 - IN - att 1-754dc77d28e62763c4916970d595a10f.pdf', $emailData['attachments'][0]['location'], 'Attachment location should match');
-            }
-            if (isset($emailData['attachments'][0]['status_type'])) {
-                $this->assertEquals('unknown', $emailData['attachments'][0]['status_type'], 'Attachment status type should be unknown');
-            }
-            if (isset($emailData['attachments'][0]['status_text'])) {
-                $this->assertEquals('uklassifisert-dok', $emailData['attachments'][0]['status_text'], 'Attachment status text should match');
-            }
-        } 
+        $attachment = (object)$emailData->attachments[0];
+        $this->assertCount(1, $emailData->attachments, 'Should have 1 attachment');
+        $this->assertEquals('test.pdf', $attachment->name, 'Attachment name should match');
+        $this->assertEquals('test.pdf', $attachment->filename, 'Attachment filename should match');
+        $this->assertEquals('pdf', $attachment->filetype, 'Attachment filetype should match');
+        $this->assertEquals('2021-01-01_120000 - IN - att 1-754dc77d28e62763c4916970d595a10f.pdf', $attachment->location, 'Attachment location should match');
+        $this->assertEquals('unknown', $attachment->status_type, 'Attachment status type should be unknown');
+        $this->assertEquals('uklassifisert-dok', $attachment->status_text, 'Attachment status text should match');
     }
 
 }

@@ -133,17 +133,6 @@ class ImapAttachmentHandler {
         return $content;
     }
 
-
-    /**
-     * Save attachment to file
-     */
-    public function saveAttachment(int $uid, int $partNumber, object $attachment, string $savePath): void {
-        $content = $this->getAttachmentContent($uid, $partNumber);
-        $this->connection->logDebug("Saving attachment to: $savePath");
-        file_put_contents($savePath, $content);
-        chmod($savePath, 0777);
-    }
-
     /**
      * Decode UTF-8 string from IMAP
      */

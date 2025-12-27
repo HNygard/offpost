@@ -10,7 +10,6 @@ ini_set('memory_limit', '-1');
 requireAuth();
 
 require_once __DIR__ . '/class/ThreadFolderManager.php';
-require_once __DIR__ . '/class/ThreadEmailSaver.php';
 require_once __DIR__ . '/class/ThreadEmailDatabaseSaver.php';
 require_once __DIR__ . '/class/Threads.php';
 require_once __DIR__ . '/class/ThreadStorageManager.php';
