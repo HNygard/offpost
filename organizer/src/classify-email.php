@@ -16,13 +16,12 @@ $emailHistory = new ThreadEmailHistory();
 requireAuth();
 
 // Check required parameters
-if (!isset($_GET['entityId']) || !isset($_GET['threadId']) || !isset($_GET['emailId'])) {
+if (!isset($_GET['threadId']) || !isset($_GET['emailId'])) {
     http_response_code(400);
     header('Content-Type: text/plain');
-    die("Missing required parameters: entityId, threadId, and emailId are required");
+    die("Missing required parameters: threadId and emailId are required");
 }
 
-$entityId = $_GET['entityId'];
 $threadId = $_GET['threadId'];
 $emailId = $_GET['emailId'];
 
@@ -33,7 +32,7 @@ if (!is_uuid($threadId)) {
     die("Invalid threadId parameter");
 }
 
-$threads = ThreadStorageManager::getInstance()->getThreadsForEntity($entityId);
+$threads = ThreadStorageManager::getInstance()->getThreads();
 
 $thread = null;
 foreach ($threads->threads as $thread1) {
@@ -46,7 +45,7 @@ foreach ($threads->threads as $thread1) {
 if (!$thread) {
     http_response_code(404);
     header('Content-Type: text/plain');
-    die("Thread not found: threadId={$threadId}, entityId=" . htmlescape($entityId));
+    die("Thread not found: threadId={$threadId}");
 }
 
 // Check authorization
@@ -165,7 +164,7 @@ if (isset($_POST['submit'])) {
     ThreadStorageManager::getInstance()->updateThread($thread);
 
     // Redirect back to thread view
-    header('Location: /thread-view?entityId=' . urlencode($entityId) . '&threadId=' . urlencode($threadId));
+    header('Location: /thread-view?threadId=' . urlencode($threadId));
     exit;
 }
 
@@ -345,8 +344,7 @@ function secondsToHumanReadable($seconds) {
                         <div class="form-group">
                             <input type="button"
                                    class="btn btn-open"
-                                   data-url="<?= '/file?entityId=' . urlencode($threads->entity_id)
-                                   . '&threadId=' . urlencode($thread->id)
+                                   data-url="<?= '/file?threadId=' . urlencode($thread->id)
                                    . '&body=' . urlencode($email->id) ?>"
                                    onclick="document.getElementById('viewer-iframe').src = this.getAttribute('data-url');" value="Open">
                         </div>
