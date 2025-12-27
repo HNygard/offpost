@@ -80,11 +80,6 @@ class ThreadEmailReceiveIntegrationTest extends TestCase {
     }
 
     protected function tearDown(): void {
-        // Clean up test data
-        if (file_exists(THREADS_DIR)) {
-            //$this->removeDirectory(THREADS_DIR);
-        }
-        
         // Close IMAP connection
         if ($this->imapConnection) {
             try {
@@ -97,56 +92,6 @@ class ThreadEmailReceiveIntegrationTest extends TestCase {
         parent::tearDown();
     }
     
-    private function removeDirectory($dir) {
-        if (!file_exists($dir)) {
-            return;
-        }
-        
-        $files = array_diff(scandir($dir), array('.', '..'));
-        foreach ($files as $file) {
-            $path = joinPaths($dir, $file);
-            if (is_dir($path)) {
-                $this->removeDirectory($path);
-            } else {
-                unlink($path);
-            }
-        }
-        rmdir($dir);
-    }
-
-    private function waitForEmail($subject, $maxWaitSeconds = 10): ?array {
-        $startTime = time();
-        while (time() - $startTime < $maxWaitSeconds) {
-            try {
-                $this->imapConnection->openConnection();
-                
-                // Get all messages
-                $emails = $this->imapConnection->search('ALL', SE_UID);
-                
-                if ($emails) {
-                    foreach ($emails as $uid) {
-                        $msgno = $this->imapConnection->getMsgno($uid);
-                        $header = $this->imapConnection->getHeaderInfo($msgno);
-                        if ($header && $header->subject === $subject) {
-                            // Get message structure for content type info
-                            $structure = $this->imapConnection->getFetchstructure($msgno);
-                            return [
-                                'header' => $header,
-                                'structure' => $structure
-                            ];
-                        }
-                    }
-                }
-                
-                // Wait a bit before trying again
-                sleep(1);
-            } catch (Exception $e) {
-                $this->fail('IMAP error while waiting for email: ' . $e->getMessage());
-            }
-        }
-        return null;
-    }
-
     /**
      * @group integration
      * This test checks what happens when we receive emails in our system from a public entity.
