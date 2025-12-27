@@ -32,14 +32,7 @@ if (!is_uuid($threadId)) {
     die("Invalid threadId parameter");
 }
 
-$threads = ThreadStorageManager::getInstance()->getThreads();
-
-$thread = null;
-foreach ($threads->threads as $thread1) {
-    if ($thread1->id == $threadId) {
-        $thread = $thread1;
-    }
-}
+$thread = Thread::loadFromDatabaseOrNone($threadId);
 
 // Check if thread exists
 if (!$thread) {
@@ -140,6 +133,7 @@ if (isset($_POST['submit'])) {
         $email->answer = $_POST[$emailId . '-answer'];
         if (isset($email->attachments)) {
             foreach ($email->attachments as $att) {
+                $att = (object)$att;
                 $attId = str_replace(' ', '_', str_replace('.', '_', $att->location));
                 $attNewStatusTypeString = $_POST[$emailId . '-att-' . $attId . '-status_type'];
                 $att->status_text = $_POST[$emailId . '-att-' . $attId . '-status_text'];
@@ -407,6 +401,7 @@ function secondsToHumanReadable($seconds) {
                         <?php
                         if (isset($email->attachments)) {
                             foreach ($email->attachments as $att) {
+                                $att = (object)$att;
                                 $attId = str_replace(' ', '_', str_replace('.', '_', $att->location));
                                 ?><div class="attachment-item">
                                     <div class="form-group">
@@ -415,8 +410,7 @@ function secondsToHumanReadable($seconds) {
                                         </div>
                                         <input type="button"
                                                class="btn btn-open"
-                                               data-url="<?= '/file?entityId=' . urlencode($threads->entity_id)
-                                               . '&threadId=' . urlencode($thread->id)
+                                               data-url="<?= '/file?threadId=' . urlencode($threadId)
                                                . '&attachmentId=' . urlencode($att->id) ?>"
                                                onclick="document.getElementById('viewer-iframe').src = this.getAttribute('data-url');" value="Open">
                                     </div>

@@ -46,24 +46,7 @@ if (!$sendReply && !$saveDraft) {
 }
 
 try {
-    $storageManager = ThreadStorageManager::getInstance();
-    $allThreads = $storageManager->getThreads();
-
-    $thread = null;
-    $threadEntity = null;
-
-    // Find the specific thread
-    foreach ($allThreads as $file => $threads) {
-        foreach ($threads->threads as $t) {
-            if ($t->id === $threadId) {
-                $thread = $t;
-                $threadEntity = $threads;
-                break 2;
-                }
-            }
-        }
-    }
-
+    $thread = Thread::loadFromDatabase($threadId);
     if (!$thread) {
         http_response_code(404);
         header('Content-Type: text/plain');

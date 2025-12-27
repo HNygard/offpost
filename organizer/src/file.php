@@ -29,15 +29,7 @@ if (!is_uuid($threadId)) {
     die("Invalid threadId parameter");
 }
 
-$threads = ThreadStorageManager::getInstance()->getThreads();
-
-$thread = null;
-foreach ($threads->threads as $thread1) {
-    if ($thread1->id == $threadId) {
-        $thread = $thread1;
-    }
-}
-
+$thread = Thread::loadFromDatabaseOrNone($threadId);
 if (!$thread) {
     http_response_code(404);
     header('Content-Type: text/plain');
