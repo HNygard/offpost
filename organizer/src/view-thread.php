@@ -14,8 +14,7 @@ require_once __DIR__ . '/class/SuggestedReplyGenerator.php';
 requireAuth();
 
 // Get thread ID from URL parameters (entity ID is optional for backwards compatibility)
-$threadId = isset($_GET['threadId']) ? $_GET['threadId'] : (isset($_GET['id']) ? $_GET['id'] : null);
-$entityId = isset($_GET['entityId']) ? $_GET['entityId'] : null;
+$threadId = isset($_GET['threadId']) ? $_GET['threadId'] : null;
 $userId = $_SESSION['user']['sub']; // OpenID Connect subject identifier
 
 if (!$threadId) {
@@ -33,17 +32,10 @@ $threadEntity = null;
 // Find the specific thread by ID (with optional entity filter for faster lookup)
 /* @var Threads[] $threads */
 foreach ($allThreads as $file => $threads) {
-    // If entityId is provided, filter by it for backwards compatibility
-    if ($entityId && $threads->entity_id !== $entityId) {
-        continue;
-    }
-    
     foreach ($threads->threads as $t) {
         if ($t->id === $threadId) {
             $thread = $t;
             $threadEntity = $threads;
-            // Set entityId from found thread for use in the rest of the page
-            $entityId = $threads->entity_id;
             break 2;
         }
     }
@@ -72,7 +64,7 @@ if (isset($_POST['toggle_public_to']) && isset($_POST['thread_id'])) {
     }
     
     // Redirect to remove POST data
-    header("Location: /thread-view?threadId=" . urlencode($toggleThread->id) . "&entityId=" . urlencode($entityId));
+    header("Location: /thread-view?threadId=" . urlencode($toggleThread->id));
     exit;
 }
 
@@ -108,7 +100,7 @@ if (isset($_POST['change_status_to_ready']) && isset($_POST['thread_id'])) {
     }
     
     // Redirect to remove POST data
-    header("Location: /thread-view?threadId=" . urlencode($statusThread->id) . "&entityId=" . urlencode($entityId));
+    header("Location: /thread-view?threadId=" . urlencode($statusThread->id));
     exit;
 }
 
@@ -129,7 +121,7 @@ if (isset($_POST['add_user']) && $_POST['user_id'] && $_POST['thread_id']) {
         $storageManager->updateThread($authThread, $userId);
     }
     
-    header("Location: /thread-view?threadId=" . urlencode($authThread->id) . "&entityId=" . urlencode($entityId));
+    header("Location: /thread-view?threadId=" . urlencode($authThread->id));
     exit;
 }
 
@@ -149,7 +141,7 @@ if (isset($_POST['remove_user']) && $_POST['user_id'] && $_POST['thread_id']) {
         $storageManager->updateThread($authThread, $userId);
     }
     
-    header("Location: /thread-view?threadId=" . urlencode($threadId) . "&entityId=" . urlencode($entityId));
+    header("Location: /thread-view?threadId=" . urlencode($threadId));
     exit;
 }
 
@@ -331,7 +323,7 @@ function print_extraction ($extraction) {
             <div class="action-links">
                 <form method="POST" action="/thread-bulk-actions" style="display: inline;">
                     <input type="hidden" name="action" value="<?= $thread->archived ? 'unarchive' : 'archive' ?>">
-                    <input type="hidden" name="thread_ids[]" value="<?= htmlescape($entityId) ?>:<?= htmlescape($threadId) ?>">
+                    <input type="hidden" name="thread_ids[]" value=":<?= htmlescape($threadId) ?>">
                     <button type="submit" class="button">
                         <?= $thread->archived ? 'Unarchive thread' : 'Archive thread' ?>
                     </button>
@@ -462,10 +454,10 @@ function print_extraction ($extraction) {
 
                     <?php if (isset($email->id)): ?>
                         <div class="email-links">
-                            <a href="/file?entityId=<?= htmlescape($entityId) ?>&threadId=<?= htmlescape($threadId) ?>&body=<?= htmlescape($email->id) ?>">View email</a> (text)
+                            <a href="/file?threadId=<?= htmlescape($threadId) ?>&body=<?= htmlescape($email->id) ?>">View email</a> (text)
                         </div>
                         <div class="email-links">
-                            <a href="/thread-classify?entityId=<?= htmlescape($entityId) ?>&threadId=<?= htmlescape($threadId) ?>&emailId=<?= htmlescape($email->id) ?>">Classify</a>
+                            <a href="/thread-classify?threadId=<?= htmlescape($threadId) ?>&emailId=<?= htmlescape($email->id) ?>">Classify</a>
                         </div>
                     <?php endif; ?>
 
@@ -481,7 +473,7 @@ function print_extraction ($extraction) {
                                     <span class="<?= $label_type ?>"><?= htmlescape($att->status_text) ?></span>
                                     <?= htmlescape($att->filetype) ?> - 
                                     <?php if (isset($att->location)): ?>
-                                        <a href="/file?entityId=<?= htmlescape($entityId) ?>&threadId=<?= htmlescape($threadId) ?>&attachmentId=<?= urlencode($att->id) ?>">
+                                        <a href="/file?threadId=<?= htmlescape($threadId) ?>&attachmentId=<?= urlencode($att->id) ?>">
                                             <?php if ($iconClass): ?>
                                                 <i class="<?= $iconClass ?>"></i>
                                             <?php endif; ?>
@@ -533,7 +525,6 @@ function print_extraction ($extraction) {
             <h2>Reply to Thread</h2>
             <form method="POST" action="/thread-reply" class="reply-form">
                 <input type="hidden" name="thread_id" value="<?= htmlescape($thread->id) ?>">
-                <input type="hidden" name="entity_id" value="<?= htmlescape($entityId) ?>">
                 
                 <div class="form-group">
                     <label for="reply_subject">Subject</label>
