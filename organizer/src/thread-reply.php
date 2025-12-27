@@ -19,7 +19,6 @@ if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
 
 // Get required parameters
 $threadId = isset($_POST['thread_id']) ? $_POST['thread_id'] : null;
-$entityId = isset($_POST['entity_id']) ? $_POST['entity_id'] : null;
 $replySubject = isset($_POST['reply_subject']) ? trim($_POST['reply_subject']) : null;
 $replyBody = isset($_POST['reply_body']) ? trim($_POST['reply_body']) : null;
 $recipient = isset($_POST['recipient']) ? trim($_POST['recipient']) : '';
@@ -28,7 +27,7 @@ $saveDraft = isset($_POST['save_draft']);
 
 $userId = $_SESSION['user']['sub']; // OpenID Connect subject identifier
 
-if (!$threadId || !$entityId || !$replySubject || !$replyBody) {
+if (!$threadId || !$replySubject || !$replyBody) {
     http_response_code(400);
     header('Content-Type: text/plain');
     die('Missing required parameters');
@@ -47,25 +46,7 @@ if (!$sendReply && !$saveDraft) {
 }
 
 try {
-    $storageManager = ThreadStorageManager::getInstance();
-    $allThreads = $storageManager->getThreads();
-
-    $thread = null;
-    $threadEntity = null;
-
-    // Find the specific thread
-    foreach ($allThreads as $file => $threads) {
-        if ($threads->entity_id === $entityId) {
-            foreach ($threads->threads as $t) {
-                if ($t->id === $threadId) {
-                    $thread = $t;
-                    $threadEntity = $threads;
-                    break 2;
-                }
-            }
-        }
-    }
-
+    $thread = Thread::loadFromDatabase($threadId);
     if (!$thread) {
         http_response_code(404);
         header('Content-Type: text/plain');
@@ -144,5 +125,5 @@ try {
 }
 
 // Redirect back to thread view
-header("Location: /thread-view?threadId=" . urlencode($threadId) . "&entityId=" . urlencode($entityId));
+header("Location: /thread-view?threadId=" . urlencode($threadId));
 exit;

@@ -41,26 +41,18 @@ class FilePageTest extends E2EPageTestCase {
 
     public function testFileWithoutThreadId() {
         // Should fail when no file ID provided
-        $response = $this->renderPage('/file?entityId=abc', 'dev-user-id', 'GET', '400 Bad Request');
+        $response = $this->renderPage('/file', 'dev-user-id', 'GET', '400 Bad Request');
 
         // Assert error message
-        $this->assertStringContainsString('Missing required parameters: entityId and threadId', $response->body);
-    }
-
-    public function testFileWithoutEntityId() {
-        // Should fail when no entity ID provided
-        $response = $this->renderPage('/file?threadId=00000000-0000-0000-0000-000000000000', 'dev-user-id', 'GET', '400 Bad Request');
-
-        // Assert error message
-        $this->assertStringContainsString('Missing required parameters: entityId and threadId', $response->body);
+        $this->assertStringContainsString('Missing required parameter: threadId', $response->body);
     }
 
     public function testFileInvalidId() {
         // Should fail with invalid file ID
-        $response = $this->renderPage('/file?threadId=00000000-0000-0000-0000-000000000000&entityId=ab<b>c', 'dev-user-id', 'GET', '404 Not Found');
+        $response = $this->renderPage('/file?threadId=00000000-0000-0000-0000-000000000000', 'dev-user-id', 'GET', '404 Not Found');
 
         // Assert error message
-        $this->assertStringContainsString('Thread not found: threadId=00000000-0000-0000-0000-000000000000, entityId=ab&lt;b&gt;c', $response->body);
+        $this->assertStringContainsString('Thread not found: threadId=00000000-0000-0000-0000-000000000000', $response->body);
     }
 
     public function testFileWithoutContent() {

@@ -160,26 +160,6 @@ class ThreadEmailDatabaseSaver {
                             $attachment->location = $filename . ' - att ' . $j . '-' .
                                                  md5($attachment->name) . '.' . $attachment->filetype;
                             
-                            // Save attachment file to disk
-                            $attachmentPath = joinPaths(THREADS_DIR, $thread->entity_id, $thread->id, $attachment->location);
-                            $attachmentDir = dirname($attachmentPath);
-                            
-                            if (!file_exists($attachmentDir)) {
-                                if (!@mkdir($attachmentDir, 0777, true)) {
-                                    throw new Exception('ImapConnection-errorHandler: mkdir(): Permission denied: ' . $attachmentDir);
-                                }
-                            }
-                            
-                            if (!file_exists($attachmentPath)) {
-                                $this->attachmentHandler->saveAttachment(
-                                    $email->uid,
-                                    $j + 1,
-                                    $attachment, 
-                                    $attachmentPath
-                                );
-                            }
-                            
-                            // Save attachment metadata to database
                             $this->saveAttachmentToDatabase($emailId, $attachment, $this->attachmentHandler->getAttachmentContent($email->uid, $j + 1));
                         }
                         

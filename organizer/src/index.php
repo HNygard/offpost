@@ -8,7 +8,6 @@ require_once __DIR__ . '/class/ThreadAuthorization.php';
 require_once __DIR__ . '/class/ThreadLabelFilter.php';
 require_once __DIR__ . '/class/ThreadEmailClassifier.php';
 require_once __DIR__ . '/class/Database.php';
-require_once __DIR__ . '/class/ThreadFileOperations.php';
 require_once __DIR__ . '/class/ThreadStorageManager.php';
 require_once __DIR__ . '/class/ThreadStatusRepository.php';
 
