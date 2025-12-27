@@ -13,7 +13,7 @@ require_once __DIR__ . '/class/SuggestedReplyGenerator.php';
 // Require authentication
 requireAuth();
 
-// Get thread ID from URL parameters (entity ID is optional for backwards compatibility)
+// Get thread ID from URL parameters
 $threadId = isset($_GET['threadId']) ? $_GET['threadId'] : null;
 $userId = $_SESSION['user']['sub']; // OpenID Connect subject identifier
 
@@ -29,7 +29,7 @@ $allThreads = $storageManager->getThreads();
 $thread = null;
 $threadEntity = null;
 
-// Find the specific thread by ID (with optional entity filter for faster lookup)
+// Find the specific thread by ID
 /* @var Threads[] $threads */
 foreach ($allThreads as $file => $threads) {
     foreach ($threads->threads as $t) {
