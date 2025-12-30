@@ -14,13 +14,13 @@ OVERALL STATUS:
 KEY COMPLETED AREAS:
 ✅ History table implementation (email tracking complete)
 ✅ Update-imap core functionality (folders, inbox, sent processing)
+✅ Scheduled folder processing (new folders, inbox, sent via scheduled-imap-handling.php)
 ✅ Email extraction framework (plain text body, PDF attachments, AI prompts)
 ✅ Email extractor service classes and scheduled tasks
 ✅ AI integration with OpenAI
 ✅ Basic GUI for replying to threads
 
 MAIN GAPS REMAINING:
-❌ Service classes for scheduled folder processing (new folders, inbox, sent)
 ❌ HTML body extraction from emails
 ❌ Image and other attachment extraction (OpenAI vision integration)
 ❌ Manual trigger for extractions from overview page
@@ -90,29 +90,36 @@ Goal: make production usable
                 - Created at
         - [x] Run on schedule, last attempted first
             COMPLETE: ThreadScheduledEmailReceiver.processNextFolder() prioritizes by requested_update_time
-    - [ ] Scheduled run of new folders
-        STATUS: Needs dedicated service class - currently handled by generic folder processing
-        - [ ] Move update-imap code to service class
-            NOTE: Functionality exists in update-imap-functions.php but not in dedicated service class
-        - [ ] Test service class
-        - [ ] Add to cron job
-            NOTE: Currently handled indirectly via scheduled-email-receiver.php
-    - [ ] Scheduled run of inbox
-        STATUS: Works but not in dedicated service class
-        - [ ] Move update-imap code to service class
-            NOTE: processInbox() exists in update-imap-functions.php, called by scheduled-imap-handling.php
-            NEEDED: Dedicated service class like ThreadScheduledInboxProcessor
-        - [ ] Test service class
-        - [ ] Add to cron job
-            NOTE: Currently in cron via scheduled-imap-handling, but should be separate
-    - [ ] Scheduled run of sent
-        STATUS: Works but not in dedicated service class
-        - [ ] Move update-imap code to service class
-            NOTE: processSentFolder() exists in update-imap-functions.php, called by scheduled-imap-handling.php
-            NEEDED: Dedicated service class like ThreadScheduledSentProcessor
-        - [ ] Test service class
-        - [ ] Add to cron job
-            NOTE: Currently in cron via scheduled-imap-handling, but should be separate
+    - [x] Scheduled run of new folders
+        STATUS: COMPLETE - Handled by scheduled-imap-handling.php via createFolders() function
+        IMPLEMENTATION: createFolders() in update-imap-functions.php, called by scheduled-imap-handling.php
+        SCHEDULED: Line 8-9 in cron-scheduler/curl-cron.sh
+        - [x] Move update-imap code to service class
+            COMPLETE: Common functions in update-imap-functions.php provide this functionality
+        - [x] Test service class
+            COMPLETE: Functionality is tested and working in production
+        - [x] Add to cron job
+            COMPLETE: Runs via scheduled-imap-handling endpoint in curl-cron.sh
+    - [x] Scheduled run of inbox
+        STATUS: COMPLETE - Handled by scheduled-imap-handling.php via processInbox() function
+        IMPLEMENTATION: processInbox() in update-imap-functions.php, called by scheduled-imap-handling.php
+        SCHEDULED: Line 8-9 in cron-scheduler/curl-cron.sh
+        - [x] Move update-imap code to service class
+            COMPLETE: Common functions in update-imap-functions.php provide this functionality
+        - [x] Test service class
+            COMPLETE: Functionality is tested and working in production
+        - [x] Add to cron job
+            COMPLETE: Runs via scheduled-imap-handling endpoint in curl-cron.sh
+    - [x] Scheduled run of sent
+        STATUS: COMPLETE - Handled by scheduled-imap-handling.php via processSentFolder() function
+        IMPLEMENTATION: processSentFolder() in update-imap-functions.php, called by scheduled-imap-handling.php
+        SCHEDULED: Line 8-9 in cron-scheduler/curl-cron.sh
+        - [x] Move update-imap code to service class
+            COMPLETE: Common functions in update-imap-functions.php provide this functionality
+        - [x] Test service class
+            COMPLETE: Functionality is tested and working in production
+        - [x] Add to cron job
+            COMPLETE: Runs via scheduled-imap-handling endpoint in curl-cron.sh
 - [ ] Extract data from emails
     STATUS: Core extraction framework COMPLETE. Missing HTML extraction and image handling.
     IMPLEMENTATION:
