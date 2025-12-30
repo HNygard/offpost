@@ -38,11 +38,11 @@ class ThreadViewPageTest extends E2EPageTestCase {
         // No setup needed
 
         // :: Act
-        // Should fail when no entityId provided
+        // Should fail when no threadId provided
         $response = $this->renderPage('/thread-view', 'dev-user-id', 'GET', '400 Bad Request');
 
         // :: Assert
-        $this->assertStringContainsString('Thread ID and Entity ID are required', $response->body);
+        $this->assertStringContainsString('Thread ID is required', $response->body);
     }
 
     public function testTogglePublicStatus() {

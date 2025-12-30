@@ -17,7 +17,6 @@ require_once(__DIR__ . '/../class/Thread.php');
 require_once(__DIR__ . '/../class/ThreadEmailService.php');
 require_once(__DIR__ . '/../class/ThreadFolderManager.php');
 require_once(__DIR__ . '/../class/ThreadEmailMover.php');
-require_once(__DIR__ . '/../class/ThreadEmailSaver.php');
 require_once(__DIR__ . '/../class/ThreadEmailDatabaseSaver.php');
 require_once(__DIR__ . '/../class/ThreadStorageManager.php');
 require_once(__DIR__ . '/../class/ThreadDatabaseOperations.php');
@@ -541,47 +540,6 @@ class ThreadEmailEmlIntegrationTest extends E2EPageTestCase {
             throw new Exception("Failed to send email: " . print_r($result, true));
         }
         return true;
-    }
-
-    /**
-     * Wait for an email to arrive in the IMAP server
-     * 
-     * @param string $subject Subject to search for
-     * @param int $maxWaitSeconds Maximum time to wait
-     * @return array|null Email data if found, null otherwise
-     */
-    private function waitForEmail($subject, $maxWaitSeconds = 10): ?array {
-        $startTime = time();
-        while (time() - $startTime < $maxWaitSeconds) {
-            try {
-                $this->imapConnection->openConnection();
-                
-                // Get all messages
-                $emails = $this->imapConnection->search('ALL', SE_UID);
-                
-                if ($emails) {
-                    foreach ($emails as $uid) {
-                        $msgno = $this->imapConnection->getMsgno($uid);
-                        $header = $this->imapConnection->getHeaderInfo($msgno);
-                        if ($header && stripos($header->subject, $subject) !== false) {
-                            // Get message structure for content type info
-                            $structure = $this->imapConnection->getFetchstructure($msgno);
-                            return [
-                                'uid' => $uid,
-                                'header' => $header,
-                                'structure' => $structure
-                            ];
-                        }
-                    }
-                }
-                
-                // Wait a bit before trying again
-                sleep(1);
-            } catch (Exception $e) {
-                $this->fail('IMAP error while waiting for email: ' . $e->getMessage());
-            }
-        }
-        return null;
     }
 
     /**

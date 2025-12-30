@@ -52,6 +52,8 @@ class ImapWrapperRetryTest extends TestCase
         $this->assertTrue($method->invoke($wrapper, 'IMAP error during body: [CLOSED] IMAP connection lost'));
         $this->assertTrue($method->invoke($wrapper, 'No body information available'));
         $this->assertTrue($method->invoke($wrapper, 'imap_fetchstructure(): No body information available'));
+        $this->assertTrue($method->invoke($wrapper, "imap_open(): Couldn't open stream {imap.one.com:993/imap/ssl}INBOX"));
+        $this->assertTrue($method->invoke($wrapper, "Failed to open IMAP connection: Couldn't open stream"));
         
         // Test non-retryable errors - everything else should not be retryable
         $this->assertFalse($method->invoke($wrapper, 'connection lost'));

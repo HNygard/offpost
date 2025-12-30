@@ -15,13 +15,12 @@ requireAuth();
 
 require_once __DIR__ . '/class/Threads.php';
 
-if (!isset($_GET['entityId']) || !isset($_GET['threadId'])) {
+if (!isset($_GET['threadId'])) {
     http_response_code(400);
     header('Content-Type: text/plain');
-    die("Missing required parameters: entityId and threadId");
+    die("Missing required parameter: threadId");
 }
 
-$entityId = $_GET['entityId'];
 $threadId = $_GET['threadId'];
 
 if (!is_uuid($threadId)) {
@@ -30,19 +29,11 @@ if (!is_uuid($threadId)) {
     die("Invalid threadId parameter");
 }
 
-$threads = ThreadStorageManager::getInstance()->getThreadsForEntity($entityId);
-
-$thread = null;
-foreach ($threads->threads as $thread1) {
-    if ($thread1->id == $threadId) {
-        $thread = $thread1;
-    }
-}
-
+$thread = Thread::loadFromDatabaseOrNone($threadId);
 if (!$thread) {
     http_response_code(404);
     header('Content-Type: text/plain');
-    die("Thread not found: threadId={$threadId}, entityId=" . htmlescape($entityId) ."");
+    die("Thread not found: threadId={$threadId}");
 }
 
 if (!ThreadAuthorizationManager::canUserAccessThread($threadId, $_SESSION['user']['sub'])) {
@@ -120,7 +111,7 @@ foreach ($thread->emails as $email) {
                 }
                 $att = ThreadStorageManager::getInstance()->getThreadEmailAttachment($thread, $att->location);
                 if (empty($att->content)) {
-                    throw new Exception("Attachment content empty: threadId={$threadId}, entityId={$entityId}, attachmentId={$att->attachment_id}", 404);
+                    throw new Exception("Attachment content empty: threadId={$threadId}, attachmentId={$att->attachment_id}", 404);
                 }
 
                 if ($att->filetype == 'pdf') {
@@ -150,4 +141,4 @@ foreach ($thread->emails as $email) {
 
 
 // If we got here, neither body nor attachment was found
-throw new Exception("Requested content not found in thread: threadId={$threadId}, entityId={$entityId}", 404);
+throw new Exception("Requested content not found in thread: threadId={$threadId}", 404);

@@ -145,11 +145,22 @@ class Thread implements JsonSerializable {
             "SELECT * FROM threads WHERE id_old = ? OR id = ?",
             [$id, $id]
         );
+        return self::mapFromDatabase($data);
+    }
+
+    public static function loadFromDatabaseOrNone($id) {
+        $data = Database::queryOneOrNone(
+            "SELECT * FROM threads WHERE id_old = ? OR id = ?",
+            [$id, $id]
+        );
 
         if (!$data) {
             return null;
         }
-
+    
+        return self::mapFromDatabase($data);
+    }
+    private static function mapFromDatabase($data) {
         $thread = new Thread();
         $thread->id = $data['id'];
         $thread->id_old = $data['id_old'];
@@ -198,6 +209,7 @@ class Thread implements JsonSerializable {
             );
             $email->attachments = array_map(function($att) {
                 return [
+                    'id' => $att['id'],
                     'name' => $att['name'],
                     'filename' => $att['filename'],
                     'filetype' => $att['filetype'],
