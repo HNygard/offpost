@@ -322,7 +322,9 @@ class ThreadEmailMoverTest extends TestCase {
         $this->mockFolderManager->expects($this->never())
             ->method('moveEmail');
 
-        // Test various non-INBOX mailboxes
+        // Test various non-INBOX mailboxes. All of these calls to processMailbox()
+        // are expected to trigger the early return path, so getEmails() and
+        // moveEmail() must never be called in any iteration of this loop.
         $nonInboxMailboxes = [
             'INBOX.Test - Thread 1',
             'INBOX.Sent',
