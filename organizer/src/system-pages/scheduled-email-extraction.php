@@ -30,8 +30,9 @@ error_log(date('Y-m-d H:i:s') . " [$taskName] Starting task");
 // Create the appropriate extractor based on the extraction type
 $extractor = $extractors[$extractionType] ?? null;
 if ($extractor === null) {
-    // If the extraction type is not recognized, return an error
-    error_log(date('Y-m-d H:i:s') . " [$taskName] Invalid extraction type: $extractionType");
+    // If the extraction type is not recognized, log duration and return an error
+    $duration = round(microtime(true) - $startTime, 3);
+    error_log(date('Y-m-d H:i:s') . " [$taskName] Task failed in {$duration}s - Invalid extraction type: $extractionType");
     header('Content-Type: application/json');
     echo json_encode(['success' => false, 'message' => 'Invalid extraction type'], JSON_PRETTY_PRINT);
     exit;
