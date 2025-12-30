@@ -7,6 +7,10 @@ require_once __DIR__ . '/../class/AdminNotificationService.php';
 error_reporting(E_ALL);
 ini_set('display_errors', 1);
 
+$startTime = microtime(true);
+$taskName = 'scheduled-email-sending';
+error_log(date('Y-m-d H:i:s') . " [$taskName] Starting task");
+
 try {
     // Create the email sender
     $emailSender = new ThreadScheduledEmailSender();
@@ -29,8 +33,14 @@ try {
     header('Content-Type: application/json');
     echo json_encode($result, JSON_PRETTY_PRINT);
     
+    $duration = round(microtime(true) - $startTime, 3);
+    $status = $result['success'] ? 'completed' : 'failed';
+    error_log(date('Y-m-d H:i:s') . " [$taskName] Task $status in {$duration}s - " . ($result['message'] ?? 'no message'));
+    
 }
 catch (Exception $e) {
+    $duration = round(microtime(true) - $startTime, 3);
+    error_log(date('Y-m-d H:i:s') . " [$taskName] Task failed in {$duration}s - Exception: " . $e->getMessage());
     // Log the error and notify administrators
     $adminNotificationService = new AdminNotificationService();
     $adminNotificationService->notifyAdminOfError(
