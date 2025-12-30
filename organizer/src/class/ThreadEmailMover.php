@@ -45,6 +45,7 @@ class ThreadEmailMover {
     public function processMailbox(string $mailbox, array $emailToFolder): array {
         // Only process emails from INBOX - never move emails from other folders
         if ($mailbox !== 'INBOX') {
+            $this->connection->logDebug("Skipping mailbox '$mailbox' - only INBOX is processed");
             return array(
                 'unmatched' => [],
                 'maxed_out' => false,
