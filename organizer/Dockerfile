@@ -62,12 +62,13 @@ RUN mkdir -p /opt/offpost/migrations
 RUN chmod +x /usr/local/bin/docker-entrypoint.sh
 
 # Set resource limits for the container
-# ulimit -m: limit memory (in KB) - set to 512MB
-# ulimit -v: limit virtual memory (in KB) - set to 1GB
-# ulimit -u: limit number of processes - set to 100
-RUN echo "ulimit -m 524288" >> /etc/apache2/envvars && \
-    echo "ulimit -v 1048576" >> /etc/apache2/envvars && \
-    echo "ulimit -u 100" >> /etc/apache2/envvars
+# These ulimit settings provide baseline protection, but for production
+# it's recommended to also set Docker runtime limits via --ulimit flags
+# or resource constraints in docker-compose/kubernetes manifests
+# ulimit -v: limit virtual memory (in KB) - set to 2GB to allow headroom
+# ulimit -u: limit number of processes - set to 150 for Apache workers + system processes
+RUN echo "ulimit -v 2097152" >> /etc/apache2/envvars && \
+    echo "ulimit -u 150" >> /etc/apache2/envvars
 
 # Copy SQL migrations, just to trigger recreation of container on deploy
 COPY src/migrations/sql/ /opt/offpost/migrations/
