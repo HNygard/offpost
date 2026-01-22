@@ -37,6 +37,11 @@ document.addEventListener('DOMContentLoaded', () => {
      * Higher scores indicate better matches
      */
     function calculateRelevanceScore(entityName, searchValue) {
+        // Handle empty or whitespace-only search values
+        if (!searchValue || !searchValue.trim()) {
+            return 100;
+        }
+        
         // Exact match gets highest score
         if (entityName === searchValue) {
             return 1000;
@@ -48,16 +53,18 @@ document.addEventListener('DOMContentLoaded', () => {
         }
         
         // Contains search value at word boundary gets medium score
-        const searchWords = searchValue.split(/\s+/);
-        const entityWords = entityName.split(/\s+/);
+        const searchWords = searchValue.split(/\s+/).filter(word => word.length > 0);
+        const entityWords = entityName.split(/\s+/).filter(word => word.length > 0);
         
         // Check if all search words match the start of entity words
-        let allWordsStartMatch = searchWords.every(searchWord => 
-            entityWords.some(entityWord => entityWord.startsWith(searchWord))
-        );
-        
-        if (allWordsStartMatch) {
-            return 300;
+        if (searchWords.length > 0 && entityWords.length > 0) {
+            let allWordsStartMatch = searchWords.every(searchWord => 
+                entityWords.some(entityWord => entityWord.startsWith(searchWord))
+            );
+            
+            if (allWordsStartMatch) {
+                return 300;
+            }
         }
         
         // Contains search value anywhere gets low score
