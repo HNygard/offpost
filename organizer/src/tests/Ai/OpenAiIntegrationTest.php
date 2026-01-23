@@ -70,9 +70,7 @@ class OpenAiIntegrationTest extends PHPUnit\Framework\TestCase {
             ]),
             'httpCode' => 200,
             'error' => '',
-            'errorNum' => 0,
-            'curlInfo' => [],
-            'requestSize' => 100
+            'debuggingInfo' => []
         ]);
 
         // :: Act
@@ -108,9 +106,7 @@ class OpenAiIntegrationTest extends PHPUnit\Framework\TestCase {
             ]),
             'httpCode' => 200,
             'error' => '',
-            'errorNum' => 0,
-            'curlInfo' => [],
-            'requestSize' => 150
+            'debuggingInfo' => []
         ]);
         
         // :: Act
@@ -151,9 +147,7 @@ class OpenAiIntegrationTest extends PHPUnit\Framework\TestCase {
             ]),
             'httpCode' => 200,
             'error' => '',
-            'errorNum' => 0,
-            'curlInfo' => [],
-            'requestSize' => 100
+            'debuggingInfo' => []
         ]);
         
         // :: Act
@@ -180,8 +174,7 @@ class OpenAiIntegrationTest extends PHPUnit\Framework\TestCase {
             'response' => false,
             'httpCode' => 0,
             'error' => 'getaddrinfo() thread failed to start',
-            'errorNum' => 6, // CURLE_COULDNT_RESOLVE_HOST
-            'curlInfo' => [
+            'debuggingInfo' => [
                 'url' => 'https://api.openai.com/v1/responses',
                 'content_type' => null,
                 'http_code' => 0,
@@ -194,9 +187,34 @@ class OpenAiIntegrationTest extends PHPUnit\Framework\TestCase {
                 'redirect_count' => 0,
                 'primary_ip' => '',
                 'primary_port' => 0,
-            ],
-            'requestSize' => 123
+                'error' => 'getaddrinfo() thread failed to start',
+                'error_number' => 6,
+                'request_size_bytes' => 123
+            ]
         ]);
+        
+        // Build expected error message
+        $expectedErrorMessage = 'OpenAI API error: Curl error: getaddrinfo() thread failed to start (errno: 6)
+Debug info: {
+    "endpoint": "https:\/\/api.openai.com\/v1\/responses",
+    "debugging_info": {
+        "url": "https:\/\/api.openai.com\/v1\/responses",
+        "content_type": null,
+        "http_code": 0,
+        "total_time": 0.001234,
+        "namelookup_time": 0.001,
+        "connect_time": 0,
+        "pretransfer_time": 0,
+        "starttransfer_time": 0,
+        "redirect_time": 0,
+        "redirect_count": 0,
+        "primary_ip": "",
+        "primary_port": 0,
+        "error": "getaddrinfo() thread failed to start",
+        "error_number": 6,
+        "request_size_bytes": 123
+    }
+}';
         
         // :: Act & Assert
         $errorThrown = false;
@@ -209,16 +227,11 @@ class OpenAiIntegrationTest extends PHPUnit\Framework\TestCase {
         }
         
         $this->assertTrue($errorThrown, "Should throw an exception on curl error");
-        $this->assertStringContainsString('getaddrinfo() thread failed to start', $errorMessage, "Error message should contain original error");
-        $this->assertStringContainsString('errno: 6', $errorMessage, "Error message should contain error number");
-        $this->assertStringContainsString('Debug info:', $errorMessage, "Error message should contain debug info header");
-        $this->assertStringContainsString('namelookup_time', $errorMessage, "Error message should contain timing info");
+        $this->assertEquals($expectedErrorMessage, $errorMessage, "Error message should match expected format");
         
         // Verify the error was logged with debug information
         $logs = OpenAiRequestLog::getBySource($this->testSource);
         $this->assertGreaterThanOrEqual(1, count($logs), "Should have at least one log entry");
-        $this->assertStringContainsString('getaddrinfo() thread failed to start', $logs[0]['response'], "Log should contain error message");
-        $this->assertStringContainsString('errno: 6', $logs[0]['response'], "Log should contain error number");
-        $this->assertStringContainsString('namelookup_time', $logs[0]['response'], "Log should contain debug timing info");
+        $this->assertEquals($expectedErrorMessage, 'OpenAI API error: ' . $logs[0]['response'], "Log should contain full error message");
     } 
 }

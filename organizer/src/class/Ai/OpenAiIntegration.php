@@ -46,13 +46,17 @@ class OpenAiIntegration
         
         curl_close($ch);
 
+        // Combine error info with curl info for debugging
+        $debuggingInfo = $curlInfo;
+        $debuggingInfo['error'] = $error;
+        $debuggingInfo['error_number'] = $errorNum;
+        $debuggingInfo['request_size_bytes'] = strlen($requestDataJson);
+
         return array(
             'response' => $response,
             'httpCode' => $httpCode,
             'error' => $error,
-            'errorNum' => $errorNum,
-            'curlInfo' => $curlInfo,
-            'requestSize' => strlen($requestDataJson)
+            'debuggingInfo' => $debuggingInfo
         );
     }
 
@@ -94,35 +98,15 @@ class OpenAiIntegration
         $response = $responseData['response'];
         $httpCode = $responseData['httpCode'];
         $error = $responseData['error'];
-        $errorNum = $responseData['errorNum'];
-        $curlInfo = $responseData['curlInfo'];
-        $requestSize = $responseData['requestSize'];
+        $debuggingInfo = $responseData['debuggingInfo'];
         
         if ($error) {
             // Build detailed error message with debug information
-            $debugInfo = [
-                'error_message' => $error,
-                'error_number' => $errorNum,
+            $errorMessage = 'Curl error: ' . $error . ' (errno: ' . $debuggingInfo['error_number'] . ')';
+            $errorMessage .= "\nDebug info: " . json_encode([
                 'endpoint' => $apiEndpoint,
-                'request_size_bytes' => $requestSize,
-                'curl_info' => [
-                    'url' => $curlInfo['url'] ?? null,
-                    'content_type' => $curlInfo['content_type'] ?? null,
-                    'http_code' => $curlInfo['http_code'] ?? null,
-                    'total_time' => $curlInfo['total_time'] ?? null,
-                    'namelookup_time' => $curlInfo['namelookup_time'] ?? null,
-                    'connect_time' => $curlInfo['connect_time'] ?? null,
-                    'pretransfer_time' => $curlInfo['pretransfer_time'] ?? null,
-                    'starttransfer_time' => $curlInfo['starttransfer_time'] ?? null,
-                    'redirect_time' => $curlInfo['redirect_time'] ?? null,
-                    'redirect_count' => $curlInfo['redirect_count'] ?? null,
-                    'primary_ip' => $curlInfo['primary_ip'] ?? null,
-                    'primary_port' => $curlInfo['primary_port'] ?? null,
-                ]
-            ];
-            
-            $errorMessage = 'Curl error: ' . $error . ' (errno: ' . $errorNum . ')';
-            $errorMessage .= "\nDebug info: " . json_encode($debugInfo, JSON_PRETTY_PRINT);
+                'debugging_info' => $debuggingInfo
+            ], JSON_PRETTY_PRINT);
             
             if ($response) {
                 $errorMessage .= "\nResponse: $response";
