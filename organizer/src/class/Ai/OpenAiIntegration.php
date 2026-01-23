@@ -25,9 +25,11 @@ class OpenAiIntegration
     protected function internalSendRequest($apiEndpoint, $requestData) {
         $ch = curl_init($apiEndpoint);
         
+        $requestDataJson = json_encode($requestData);
+        
         curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
         curl_setopt($ch, CURLOPT_POST, true);
-        curl_setopt($ch, CURLOPT_POSTFIELDS, json_encode($requestData));
+        curl_setopt($ch, CURLOPT_POSTFIELDS, $requestDataJson);
         curl_setopt($ch, CURLOPT_HTTPHEADER, [
             'Content-Type: application/json',
             'Authorization: Bearer ' . $this->apiKey
@@ -37,13 +39,24 @@ class OpenAiIntegration
         $response = curl_exec($ch);
         $httpCode = curl_getinfo($ch, CURLINFO_HTTP_CODE);
         $error = curl_error($ch);
+        $errorNum = curl_errno($ch);
+        
+        // Collect detailed curl info for debugging
+        $curlInfo = curl_getinfo($ch);
         
         curl_close($ch);
+
+        // Combine error info with curl info for debugging
+        $debuggingInfo = $curlInfo;
+        $debuggingInfo['error'] = $error;
+        $debuggingInfo['error_number'] = $errorNum;
+        $debuggingInfo['request_size_bytes'] = strlen($requestDataJson);
 
         return array(
             'response' => $response,
             'httpCode' => $httpCode,
-            'error' => $error
+            'error' => $error,
+            'debuggingInfo' => $debuggingInfo
         );
     }
 
@@ -85,15 +98,28 @@ class OpenAiIntegration
         $response = $responseData['response'];
         $httpCode = $responseData['httpCode'];
         $error = $responseData['error'];
+        $debuggingInfo = $responseData['debuggingInfo'];
         
         if ($error) {
-            $error = 'Curl error: ' . $error;
-            if ($response) {
-                $error .= "\nResponse: $response";
+            // Remove redundant error_message field from debug info to avoid duplication
+            if (isset($debuggingInfo['error_message'])) {
+                unset($debuggingInfo['error_message']);
             }
-            // Log the error response
-            OpenAiRequestLog::updateWithResponse($logId, $error, 0);
-            throw new Exception("OpenAI API error: $error");
+            
+            // Build detailed error message with debug information
+            $errorMessage = 'Curl error: ' . $error . ' (errno: ' . $debuggingInfo['error_number'] . ')';
+            $errorMessage .= "\nDebug info: " . json_encode([
+                'endpoint' => $apiEndpoint,
+                'debugging_info' => $debuggingInfo
+            ], JSON_PRETTY_PRINT);
+            
+            if ($response) {
+                $errorMessage .= "\nResponse: $response";
+            }
+            
+            // Log the error response with debug information
+            OpenAiRequestLog::updateWithResponse($logId, $errorMessage, 0);
+            throw new Exception("OpenAI API error: $errorMessage");
         }
         if ($httpCode >= 400) {
             // Log the error response

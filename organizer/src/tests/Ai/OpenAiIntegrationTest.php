@@ -69,7 +69,8 @@ class OpenAiIntegrationTest extends PHPUnit\Framework\TestCase {
                 ]
             ]),
             'httpCode' => 200,
-            'error' => ''
+            'error' => '',
+            'debuggingInfo' => []
         ]);
 
         // :: Act
@@ -104,7 +105,8 @@ class OpenAiIntegrationTest extends PHPUnit\Framework\TestCase {
                 ]
             ]),
             'httpCode' => 200,
-            'error' => ''
+            'error' => '',
+            'debuggingInfo' => []
         ]);
         
         // :: Act
@@ -144,7 +146,8 @@ class OpenAiIntegrationTest extends PHPUnit\Framework\TestCase {
                 ]
             ]),
             'httpCode' => 200,
-            'error' => ''
+            'error' => '',
+            'debuggingInfo' => []
         ]);
         
         // :: Act
@@ -154,5 +157,69 @@ class OpenAiIntegrationTest extends PHPUnit\Framework\TestCase {
         $logs = OpenAiRequestLog::getBySource($this->testSource);
         $this->assertEquals(15, $logs[0]['tokens_input'], "Input tokens should be extracted from response");
         $this->assertEquals(25, $logs[0]['tokens_output'], "Output tokens should be extracted from response");
+    }
+    
+    /**
+     * Test that curl errors include detailed debug information
+     */
+    public function testCurlErrorIncludesDebugInfo(): void {
+        // :: Setup
+        $input = [
+            ['role' => 'user', 'content' => 'Test message']
+        ];
+        $model = 'gpt-4';
+        
+        // Mock a curl error with debug information
+        $mockDebuggingInfo = [
+            'url' => 'https://api.openai.com/v1/responses',
+            'content_type' => null,
+            'http_code' => 0,
+            'total_time' => 0.001234,
+            'namelookup_time' => 0.001,
+            'connect_time' => 0,
+            'pretransfer_time' => 0,
+            'starttransfer_time' => 0,
+            'redirect_time' => 0,
+            'redirect_count' => 0,
+            'primary_ip' => '',
+            'primary_port' => 0,
+            'error' => 'getaddrinfo() thread failed to start',
+            'error_number' => 6,
+            'request_size_bytes' => 123
+        ];
+        
+        $this->integration->setNextResponse([
+            'response' => false,
+            'httpCode' => 0,
+            'error' => 'getaddrinfo() thread failed to start',
+            'debuggingInfo' => $mockDebuggingInfo
+        ]);
+        
+        // Build expected error message dynamically to match production code
+        $expectedErrorMessage = 'OpenAI API error: Curl error: getaddrinfo() thread failed to start (errno: 6)';
+        $expectedErrorMessage .= "\nDebug info: " . json_encode([
+            'endpoint' => 'https://api.openai.com/v1/responses',
+            'debugging_info' => $mockDebuggingInfo
+        ], JSON_PRETTY_PRINT);
+        
+        // :: Act & Assert
+        $errorThrown = false;
+        $errorMessage = '';
+        try {
+            $this->integration->sendRequest($input, null, $model, $this->testSource);
+        } catch (Exception $e) {
+            $errorThrown = true;
+            $errorMessage = $e->getMessage();
+        }
+        
+        $this->assertTrue($errorThrown, "Should throw an exception on curl error");
+        $this->assertEquals($expectedErrorMessage, $errorMessage, "Error message should match expected format");
+        
+        // Verify the error was logged with debug information
+        $logs = OpenAiRequestLog::getBySource($this->testSource);
+        $this->assertGreaterThanOrEqual(1, count($logs), "Should have at least one log entry");
+        // The log stores the error message without the "OpenAI API error: " prefix
+        $expectedLogMessage = str_replace('OpenAI API error: ', '', $expectedErrorMessage);
+        $this->assertEquals($expectedLogMessage, $logs[0]['response'], "Log should contain error message without prefix");
     } 
 }
