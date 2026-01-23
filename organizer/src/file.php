@@ -44,8 +44,30 @@ if (!ThreadAuthorizationManager::canUserAccessThread($threadId, $_SESSION['user'
 
 foreach ($thread->emails as $email) {
     if (isset($_GET['body']) && $_GET['body'] == $email->id) {
-        $eml =  ThreadStorageManager::getInstance()->getThreadEmailContent($thread->id, $email->id); 
+        $emailData = ThreadStorageManager::getInstance()->getThreadEmailContentWithTimestamp($thread->id, $email->id);
+        if (!$emailData) {
+            http_response_code(404);
+            header('Content-Type: text/plain');
+            die("Email content not found");
+        }
         
+        $eml = $emailData['content'];
+        $lastModified = strtotime($emailData['timestamp']);
+        
+        // Set Last-Modified header
+        header('Last-Modified: ' . gmdate('D, d M Y H:i:s', $lastModified) . ' GMT');
+        
+        // Set Cache-Control header
+        header('Cache-Control: private, max-age=3600');
+        
+        // Check If-Modified-Since header
+        if (isset($_SERVER['HTTP_IF_MODIFIED_SINCE'])) {
+            $ifModifiedSince = strtotime($_SERVER['HTTP_IF_MODIFIED_SINCE']);
+            if ($ifModifiedSince >= $lastModified) {
+                http_response_code(304);
+                exit;
+            }
+        }
 
         header('Content-Type: text/html; charset=UTF-8');
 
@@ -109,9 +131,27 @@ foreach ($thread->emails as $email) {
                     // New format of location
                     $filename = $att->location;
                 }
-                $att = ThreadStorageManager::getInstance()->getThreadEmailAttachment($thread, $att->location);
+                $attachmentData = ThreadStorageManager::getInstance()->getThreadEmailAttachmentWithTimestamp($thread, $att->location);
+                $att = $attachmentData['attachment'];
+                $lastModified = strtotime($attachmentData['timestamp']);
+                
                 if (empty($att->content)) {
                     throw new Exception("Attachment content empty: threadId={$threadId}, attachmentId={$att->attachment_id}", 404);
+                }
+
+                // Set Last-Modified header
+                header('Last-Modified: ' . gmdate('D, d M Y H:i:s', $lastModified) . ' GMT');
+                
+                // Set Cache-Control header
+                header('Cache-Control: private, max-age=31536000'); // 1 year for attachments
+                
+                // Check If-Modified-Since header
+                if (isset($_SERVER['HTTP_IF_MODIFIED_SINCE'])) {
+                    $ifModifiedSince = strtotime($_SERVER['HTTP_IF_MODIFIED_SINCE']);
+                    if ($ifModifiedSince >= $lastModified) {
+                        http_response_code(304);
+                        exit;
+                    }
                 }
 
                 if ($att->filetype == 'pdf') {
