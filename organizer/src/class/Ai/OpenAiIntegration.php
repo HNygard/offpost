@@ -25,9 +25,11 @@ class OpenAiIntegration
     protected function internalSendRequest($apiEndpoint, $requestData) {
         $ch = curl_init($apiEndpoint);
         
+        $requestDataJson = json_encode($requestData);
+        
         curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
         curl_setopt($ch, CURLOPT_POST, true);
-        curl_setopt($ch, CURLOPT_POSTFIELDS, json_encode($requestData));
+        curl_setopt($ch, CURLOPT_POSTFIELDS, $requestDataJson);
         curl_setopt($ch, CURLOPT_HTTPHEADER, [
             'Content-Type: application/json',
             'Authorization: Bearer ' . $this->apiKey
@@ -49,7 +51,8 @@ class OpenAiIntegration
             'httpCode' => $httpCode,
             'error' => $error,
             'errorNum' => $errorNum,
-            'curlInfo' => $curlInfo
+            'curlInfo' => $curlInfo,
+            'requestSize' => strlen($requestDataJson)
         );
     }
 
@@ -93,6 +96,7 @@ class OpenAiIntegration
         $error = $responseData['error'];
         $errorNum = $responseData['errorNum'];
         $curlInfo = $responseData['curlInfo'];
+        $requestSize = $responseData['requestSize'];
         
         if ($error) {
             // Build detailed error message with debug information
@@ -100,7 +104,7 @@ class OpenAiIntegration
                 'error_message' => $error,
                 'error_number' => $errorNum,
                 'endpoint' => $apiEndpoint,
-                'request_size_bytes' => strlen(json_encode($requestData)),
+                'request_size_bytes' => $requestSize,
                 'curl_info' => [
                     'url' => $curlInfo['url'] ?? null,
                     'content_type' => $curlInfo['content_type'] ?? null,

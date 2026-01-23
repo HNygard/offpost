@@ -71,7 +71,8 @@ class OpenAiIntegrationTest extends PHPUnit\Framework\TestCase {
             'httpCode' => 200,
             'error' => '',
             'errorNum' => 0,
-            'curlInfo' => []
+            'curlInfo' => [],
+            'requestSize' => 100
         ]);
 
         // :: Act
@@ -108,7 +109,8 @@ class OpenAiIntegrationTest extends PHPUnit\Framework\TestCase {
             'httpCode' => 200,
             'error' => '',
             'errorNum' => 0,
-            'curlInfo' => []
+            'curlInfo' => [],
+            'requestSize' => 150
         ]);
         
         // :: Act
@@ -150,7 +152,8 @@ class OpenAiIntegrationTest extends PHPUnit\Framework\TestCase {
             'httpCode' => 200,
             'error' => '',
             'errorNum' => 0,
-            'curlInfo' => []
+            'curlInfo' => [],
+            'requestSize' => 100
         ]);
         
         // :: Act
@@ -191,7 +194,8 @@ class OpenAiIntegrationTest extends PHPUnit\Framework\TestCase {
                 'redirect_count' => 0,
                 'primary_ip' => '',
                 'primary_port' => 0,
-            ]
+            ],
+            'requestSize' => 123
         ]);
         
         // :: Act & Assert
