@@ -323,7 +323,7 @@ sort($sources);
                 retryStatus.style.color = '#0066cc';
                 
                 // Send retry request
-                fetch('openai-request-log-retry.php', {
+                fetch('/openai-request-log-retry', {
                     method: 'POST',
                     headers: {
                         'Content-Type': 'application/json'
