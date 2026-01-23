@@ -403,4 +403,99 @@ This is a test email.
             $this->assertEquals($expectedMessage, $message);
         }
     }
+
+    public function testReadLaminasMessage_withUtf8InIso88591EncodedWord() {
+        // Test the exact scenario from the error log - UTF-8 bytes in ISO-8859-1 encoded word
+        // \xc3\xb8 is UTF-8 encoding of Norwegian letter 'ø'
+        $emailWithCharsetMismatch = "From: sender@example.com\r\n" .
+                                   "To: =?iso-8859-1?Q?Alfred_Sj\xc3\xb8berg?= <alfred.sjoberg@offpost.no>\r\n" .
+                                   "Subject: Test\r\n" .
+                                   "Content-Type: text/plain\r\n" .
+                                   "\r\n" .
+                                   "Test body";
+
+        $result = ThreadEmailExtractorEmailBody::readLaminasMessage_withErrorHandling($emailWithCharsetMismatch);
+        
+        // Should parse successfully
+        $this->assertInstanceOf(\Laminas\Mail\Storage\Message::class, $result);
+        
+        // Should decode the name correctly
+        $to = $result->getHeader('to')->getFieldValue();
+        $this->assertStringContainsString('Alfred Sjøberg', $to);
+        $this->assertStringContainsString('alfred.sjoberg@offpost.no', $to);
+    }
+
+    public function testReadLaminasMessage_withMultipleNorwegianCharacters() {
+        // Test various Norwegian characters: å (U+00E5), æ (U+00E6), ø (U+00F8)
+        // UTF-8 encodings: å = \xc3\xa5, æ = \xc3\xa6, ø = \xc3\xb8
+        
+        // Test å (aring)
+        $emailWithAring = "From: sender@example.com\r\n" .
+                         "To: =?iso-8859-1?Q?Hyll\xc3\xa5s?= <hyllaas@example.com>\r\n" .
+                         "Subject: Test\r\n" .
+                         "Content-Type: text/plain\r\n" .
+                         "\r\n" .
+                         "Test body";
+
+        $result = ThreadEmailExtractorEmailBody::readLaminasMessage_withErrorHandling($emailWithAring);
+        $this->assertInstanceOf(\Laminas\Mail\Storage\Message::class, $result);
+        $to = $result->getHeader('to')->getFieldValue();
+        $this->assertStringContainsString('Hyllås', $to);
+        
+        // Test æ (ae ligature)
+        $emailWithAe = "From: sender@example.com\r\n" .
+                      "To: =?iso-8859-1?Q?K\xc3\xa6re?= <kaere@example.com>\r\n" .
+                      "Subject: Test\r\n" .
+                      "Content-Type: text/plain\r\n" .
+                      "\r\n" .
+                      "Test body";
+
+        $result = ThreadEmailExtractorEmailBody::readLaminasMessage_withErrorHandling($emailWithAe);
+        $this->assertInstanceOf(\Laminas\Mail\Storage\Message::class, $result);
+        $to = $result->getHeader('to')->getFieldValue();
+        $this->assertStringContainsString('Kære', $to);
+        
+        // Test ø in subject line
+        $emailWithOInSubject = "From: sender@example.com\r\n" .
+                              "To: recipient@example.com\r\n" .
+                              "Subject: =?iso-8859-1?Q?Br\xc3\xb8nn\xc3\xb8ysund?=\r\n" .
+                              "Content-Type: text/plain\r\n" .
+                              "\r\n" .
+                              "Test body";
+
+        $result = ThreadEmailExtractorEmailBody::readLaminasMessage_withErrorHandling($emailWithOInSubject);
+        $this->assertInstanceOf(\Laminas\Mail\Storage\Message::class, $result);
+        $subject = $result->getHeader('subject')->getFieldValue();
+        $this->assertStringContainsString('Brønnøysund', $subject);
+    }
+
+    public function testReadLaminasMessage_backwardCompatibilityWithCorrectHeaders() {
+        // Ensure correctly formatted headers still work
+        
+        // Correctly formatted UTF-8 header
+        $correctUtf8 = "From: sender@example.com\r\n" .
+                      "To: =?utf-8?Q?Alfred_Sj=C3=B8berg?= <alfred.sjoberg@offpost.no>\r\n" .
+                      "Subject: Test\r\n" .
+                      "Content-Type: text/plain\r\n" .
+                      "\r\n" .
+                      "Test body";
+
+        $result = ThreadEmailExtractorEmailBody::readLaminasMessage_withErrorHandling($correctUtf8);
+        $this->assertInstanceOf(\Laminas\Mail\Storage\Message::class, $result);
+        $to = $result->getHeader('to')->getFieldValue();
+        $this->assertStringContainsString('Alfred Sjøberg', $to);
+        
+        // Correctly formatted ISO-8859-1 header (with proper ISO-8859-1 encoding of ø)
+        $correctIso = "From: sender@example.com\r\n" .
+                     "To: =?iso-8859-1?Q?Alfred_Sj=F8berg?= <alfred.sjoberg@offpost.no>\r\n" .
+                     "Subject: Test\r\n" .
+                     "Content-Type: text/plain\r\n" .
+                     "\r\n" .
+                     "Test body";
+
+        $result = ThreadEmailExtractorEmailBody::readLaminasMessage_withErrorHandling($correctIso);
+        $this->assertInstanceOf(\Laminas\Mail\Storage\Message::class, $result);
+        $to = $result->getHeader('to')->getFieldValue();
+        $this->assertStringContainsString('Alfred Sjøberg', $to);
+    }
 }

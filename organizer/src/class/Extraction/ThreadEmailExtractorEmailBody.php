@@ -336,6 +336,100 @@ class ThreadEmailExtractorEmailBody extends ThreadEmailExtractor {
     }
 
     /**
+     * Detect if a byte sequence is part of a UTF-8 multi-byte character.
+     * 
+     * @param string $str String containing the byte sequence
+     * @param int $pos Position to check
+     * @return bool True if this appears to be part of a UTF-8 sequence
+     */
+    private static function isUtf8ByteSequence($str, $pos) {
+        $len = strlen($str);
+        
+        // Check if current position has a UTF-8 continuation byte (10xxxxxx)
+        if ($pos < $len) {
+            $byte = ord($str[$pos]);
+            
+            // UTF-8 multi-byte sequence starter (110xxxxx, 1110xxxx, or 11110xxx)
+            if ($byte >= 0xC0 && $byte <= 0xF7) {
+                // Check if followed by valid continuation bytes (10xxxxxx)
+                $continuationBytes = 0;
+                if ($byte >= 0xC0 && $byte <= 0xDF) $continuationBytes = 1; // 2-byte sequence
+                elseif ($byte >= 0xE0 && $byte <= 0xEF) $continuationBytes = 2; // 3-byte sequence
+                elseif ($byte >= 0xF0 && $byte <= 0xF7) $continuationBytes = 3; // 4-byte sequence
+                
+                // Verify continuation bytes
+                for ($i = 1; $i <= $continuationBytes; $i++) {
+                    if ($pos + $i >= $len) return false;
+                    $nextByte = ord($str[$pos + $i]);
+                    if ($nextByte < 0x80 || $nextByte > 0xBF) return false;
+                }
+                return true;
+            }
+        }
+        
+        return false;
+    }
+
+    /**
+     * Fix charset mismatches in encoded-words where UTF-8 bytes appear in ISO-8859-1 declared headers.
+     * 
+     * Microsoft Outlook/Exchange sometimes produces malformed encoded-words where:
+     * - UTF-8 bytes are used instead of the declared ISO-8859-1 encoding
+     * - Raw non-ASCII bytes appear in Q-encoded sections instead of =XX format
+     * 
+     * This method detects such cases and fixes them by:
+     * 1. Detecting UTF-8 byte sequences in the encoded content
+     * 2. Properly Q-encoding raw bytes (e.g., \xc3 -> =C3)
+     * 3. Updating charset declaration to UTF-8 when UTF-8 is detected
+     * 
+     * @param string $headerLine Header line to fix
+     * @return string Fixed header line
+     */
+    private static function fixCharsetMismatchInEncodedWords($headerLine) {
+        // Pattern to match encoded-words: =?charset?encoding?content?=
+        $pattern = '/=\?([^?]+)\?([BQbq])\?([^?]*)\?=/';
+        
+        $result = preg_replace_callback($pattern, function($matches) {
+            $charset = $matches[1];
+            $encoding = strtoupper($matches[2]);
+            $content = $matches[3];
+            
+            // Only process Q-encoded words with ISO-8859-1 charset
+            if ($encoding === 'Q' && stripos($charset, 'iso-8859') !== false) {
+                // Check if content contains raw UTF-8 byte sequences
+                $hasUtf8 = false;
+                $fixedContent = '';
+                $len = strlen($content);
+                
+                for ($i = 0; $i < $len; $i++) {
+                    $byte = ord($content[$i]);
+                    
+                    // Check for UTF-8 multi-byte sequence
+                    if (self::isUtf8ByteSequence($content, $i)) {
+                        $hasUtf8 = true;
+                        // Q-encode this byte
+                        $fixedContent .= sprintf('=%02X', $byte);
+                    } else {
+                        // Keep as-is
+                        $fixedContent .= $content[$i];
+                    }
+                }
+                
+                // If UTF-8 was detected, update charset and use fixed content
+                if ($hasUtf8) {
+                    error_log("Charset mismatch detected in encoded-word: UTF-8 bytes found in $charset header. Auto-fixing to UTF-8.");
+                    return "=?utf-8?Q?{$fixedContent}?=";
+                }
+            }
+            
+            // Return unchanged if no issues found
+            return $matches[0];
+        }, $headerLine);
+        
+        return $result;
+    }
+
+    /**
      * Strip problematic headers that cause parsing issues in Laminas Mail
      * 
      * @param string $eml Raw email content
@@ -376,12 +470,14 @@ class ThreadEmailExtractorEmailBody extends ThreadEmailExtractor {
                     // Keep the header name but replace content with "REMOVED"
                     $cleanedHeaders[] = $headerName . ": REMOVED";
                 } else {
-                    // Fix malformed encoded-words in the header
+                    // Fix charset mismatches first, then fix malformed encoded-words
+                    $line = self::fixCharsetMismatchInEncodedWords($line);
                     $cleanedHeaders[] = self::fixMalformedEncodedWords($line);
                 }
             } elseif (!$skipCurrentHeader && (substr($line, 0, 1) === ' ' || substr($line, 0, 1) === "\t")) {
                 // This is a continuation line for a header we're keeping
-                // Also fix malformed encoded-words in continuation lines
+                // Also fix charset mismatches and malformed encoded-words in continuation lines
+                $line = self::fixCharsetMismatchInEncodedWords($line);
                 $cleanedHeaders[] = self::fixMalformedEncodedWords($line);
             }
             // If $skipCurrentHeader is true, we ignore continuation lines for problematic headers
