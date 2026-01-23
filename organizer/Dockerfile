@@ -65,10 +65,14 @@ RUN chmod +x /usr/local/bin/docker-entrypoint.sh
 # These ulimit settings provide baseline protection, but for production
 # it's recommended to also set Docker runtime limits via --ulimit flags
 # or resource constraints in docker-compose/kubernetes manifests
-# ulimit -v: limit virtual memory (in KB) - set to 1GB for smaller worker count
-# ulimit -u: limit number of processes - set to 50 for Apache workers + system processes
-RUN echo "ulimit -v 1048576" >> /etc/apache2/envvars && \
-    echo "ulimit -u 50" >> /etc/apache2/envvars
+# ulimit -v: limit virtual memory (in KB) - set to 2GB to allow for more workers
+# ulimit -u: limit number of processes - increased from 50 to 150 to allow:
+#   - Apache workers (20)
+#   - DNS resolution threads (getaddrinfo spawns threads for each DNS lookup)
+#   - PHP child processes
+#   - System processes
+RUN echo "ulimit -v 2097152" >> /etc/apache2/envvars && \
+    echo "ulimit -u 150" >> /etc/apache2/envvars
 
 # Copy SQL migrations, just to trigger recreation of container on deploy
 COPY src/migrations/sql/ /opt/offpost/migrations/
