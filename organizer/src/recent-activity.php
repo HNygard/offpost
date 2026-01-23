@@ -61,10 +61,16 @@ function threadStatusToString($status) {
 // Helper function to format timestamp
 function formatTimestamp($timestamp) {
     if (!$timestamp) return 'N/A';
-    // Convert datetime to local timezone (Europe/Oslo)
-    $utcDateTime = new DateTime($timestamp);
-    $utcDateTime->setTimezone(new DateTimeZone('Europe/Oslo'));
-    return $utcDateTime->format('Y-m-d H:i');
+    try {
+        // Convert datetime to local timezone (Europe/Oslo)
+        $utcDateTime = new DateTime($timestamp);
+        $utcDateTime->setTimezone(new DateTimeZone('Europe/Oslo'));
+        return $utcDateTime->format('Y-m-d H:i');
+    } catch (Throwable $e) {
+        // If timestamp parsing fails, return the original value
+        error_log("Failed to parse timestamp '$timestamp': " . $e->getMessage());
+        return $timestamp;
+    }
 }
 
 // Helper function to get thread status from thread information
