@@ -37,13 +37,19 @@ class OpenAiIntegration
         $response = curl_exec($ch);
         $httpCode = curl_getinfo($ch, CURLINFO_HTTP_CODE);
         $error = curl_error($ch);
+        $errorNum = curl_errno($ch);
+        
+        // Collect detailed curl info for debugging
+        $curlInfo = curl_getinfo($ch);
         
         curl_close($ch);
 
         return array(
             'response' => $response,
             'httpCode' => $httpCode,
-            'error' => $error
+            'error' => $error,
+            'errorNum' => $errorNum,
+            'curlInfo' => $curlInfo
         );
     }
 
@@ -85,15 +91,42 @@ class OpenAiIntegration
         $response = $responseData['response'];
         $httpCode = $responseData['httpCode'];
         $error = $responseData['error'];
+        $errorNum = $responseData['errorNum'];
+        $curlInfo = $responseData['curlInfo'];
         
         if ($error) {
-            $error = 'Curl error: ' . $error;
+            // Build detailed error message with debug information
+            $debugInfo = [
+                'error_message' => $error,
+                'error_number' => $errorNum,
+                'endpoint' => $apiEndpoint,
+                'request_size_bytes' => strlen(json_encode($requestData)),
+                'curl_info' => [
+                    'url' => $curlInfo['url'] ?? null,
+                    'content_type' => $curlInfo['content_type'] ?? null,
+                    'http_code' => $curlInfo['http_code'] ?? null,
+                    'total_time' => $curlInfo['total_time'] ?? null,
+                    'namelookup_time' => $curlInfo['namelookup_time'] ?? null,
+                    'connect_time' => $curlInfo['connect_time'] ?? null,
+                    'pretransfer_time' => $curlInfo['pretransfer_time'] ?? null,
+                    'starttransfer_time' => $curlInfo['starttransfer_time'] ?? null,
+                    'redirect_time' => $curlInfo['redirect_time'] ?? null,
+                    'redirect_count' => $curlInfo['redirect_count'] ?? null,
+                    'primary_ip' => $curlInfo['primary_ip'] ?? null,
+                    'primary_port' => $curlInfo['primary_port'] ?? null,
+                ]
+            ];
+            
+            $errorMessage = 'Curl error: ' . $error . ' (errno: ' . $errorNum . ')';
+            $errorMessage .= "\nDebug info: " . json_encode($debugInfo, JSON_PRETTY_PRINT);
+            
             if ($response) {
-                $error .= "\nResponse: $response";
+                $errorMessage .= "\nResponse: $response";
             }
-            // Log the error response
-            OpenAiRequestLog::updateWithResponse($logId, $error, 0);
-            throw new Exception("OpenAI API error: $error");
+            
+            // Log the error response with debug information
+            OpenAiRequestLog::updateWithResponse($logId, $errorMessage, 0);
+            throw new Exception("OpenAI API error: $errorMessage");
         }
         if ($httpCode >= 400) {
             // Log the error response
