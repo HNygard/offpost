@@ -73,7 +73,7 @@ class ThreadsTest extends TestCase {
         $thread = new Thread();
         $thread->title = 'Test Thread ' . uniqid(); // Make title unique to avoid conflicts
         $thread->my_name = 'Test User';
-        $thread->my_email = "test" . mt_rand(0, 100) . time() ."@example.com";
+        $thread->my_email = "test" . uniqid('', true) . "@example.com";
         $thread->labels = [];
         $thread->sent = false;
         $thread->archived = false;
@@ -110,7 +110,7 @@ class ThreadsTest extends TestCase {
         $existingThread = new Thread();
         $existingThread->title = 'Existing Thread ' . uniqid();
         $existingThread->my_name = 'Test User';
-        $existingThread->my_email = "test" . mt_rand(0, 100) . time() ."@example.com";
+        $existingThread->my_email = "test" . uniqid('', true) . "@example.com";
         $existingThread->labels = [];
         $existingThread->sent = true;
         $existingThread->archived = false;
@@ -123,7 +123,7 @@ class ThreadsTest extends TestCase {
         $newThread = new Thread();
         $newThread->title = 'New Thread ' . uniqid();
         $newThread->my_name = 'Test User';
-        $newThread->my_email = "test" . mt_rand(0, 100) . time() ."@example.com";
+        $newThread->my_email = "test" . uniqid('', true) . "@example.com";
         $newThread->labels = [];
         $newThread->sent = false;
         $newThread->archived = false;
@@ -160,7 +160,7 @@ class ThreadsTest extends TestCase {
         // Arrange
         $thread = new Thread();
         $thread->id = $this->generateUniqueId();
-        $thread->my_email = "test" . mt_rand(0, 100) . time() ."@example.com";
+        $thread->my_email = "test" . uniqid('', true) . "@example.com";
         $thread->my_name = 'Test User';
         $thread->sent = false;
         $thread->sending_status = Thread::SENDING_STATUS_READY_FOR_SENDING;
@@ -215,7 +215,7 @@ class ThreadsTest extends TestCase {
         // Arrange
         $thread = new Thread();
         $thread->id = $this->generateUniqueId();
-        $thread->my_email = "test" . mt_rand(0, 100) . time() ."@example.com";
+        $thread->my_email = "test" . uniqid('', true) . "@example.com";
         $thread->my_name = 'Test User';
         $thread->title = 'Test Thread with Initial Request';
         $thread->initial_request = 'This is the initial request text';
@@ -243,7 +243,7 @@ class ThreadsTest extends TestCase {
         // Arrange
         $thread = new Thread();
         $thread->id = $this->generateUniqueId();
-        $thread->my_email = "test" . mt_rand(0, 100) . time() ."@example.com";
+        $thread->my_email = "test" . uniqid('', true) . "@example.com";
         $thread->my_name = 'Test User';
         $thread->title = 'Test Thread with Status Transitions';
         $thread->sending_status = Thread::SENDING_STATUS_STAGING;
@@ -290,7 +290,7 @@ class ThreadsTest extends TestCase {
         $threadWithSendNow = new Thread();
         $threadWithSendNow->title = 'Thread with Send Now';
         $threadWithSendNow->my_name = 'Test User';
-        $threadWithSendNow->my_email = "test" . mt_rand(0, 100) . time() ."@example.com";
+        $threadWithSendNow->my_email = "test" . uniqid('', true) . "@example.com";
         $threadWithSendNow->labels = [];
         $threadWithSendNow->initial_request = 'This is a request to be sent immediately';
         $threadWithSendNow->sending_status = Thread::SENDING_STATUS_READY_FOR_SENDING; // Simulating send_now=true
@@ -301,7 +301,7 @@ class ThreadsTest extends TestCase {
         $threadWithoutSendNow = new Thread();
         $threadWithoutSendNow->title = 'Thread without Send Now';
         $threadWithoutSendNow->my_name = 'Test User';
-        $threadWithoutSendNow->my_email = "test" . mt_rand(0, 100) . time() ."@example.com";
+        $threadWithoutSendNow->my_email = "test" . uniqid('', true) . "@example.com";
         $threadWithoutSendNow->labels = [];
         $threadWithoutSendNow->initial_request = 'This is a request to be staged';
         $threadWithoutSendNow->sending_status = Thread::SENDING_STATUS_STAGING; // Simulating send_now=false
@@ -328,7 +328,7 @@ class ThreadsTest extends TestCase {
         // Arrange
         $thread = new Thread();
         $thread->id = $this->generateUniqueId();
-        $thread->my_email = "test" . mt_rand(0, 100) . time() ."@example.com";
+        $thread->my_email = "test" . uniqid('', true) . "@example.com";
         $thread->my_name = 'Test User';
         $thread->sent = false;
         $thread->sending_status = Thread::SENDING_STATUS_READY_FOR_SENDING;
