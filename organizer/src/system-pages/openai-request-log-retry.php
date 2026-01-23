@@ -62,19 +62,20 @@ foreach ($logs as $log) {
         // Parse the original request
         $requestData = json_decode($log['request'], true);
         
+        // Validate request data structure (expects format from OpenAiIntegration::sendRequest)
         if (!$requestData || !isset($requestData['input']) || !isset($requestData['model'])) {
             $results[] = [
                 'id' => $log['id'],
                 'success' => false,
-                'message' => 'Invalid request data in log entry'
+                'message' => 'Invalid request data in log entry - missing required fields (input, model)'
             ];
             $errorCount++;
             continue;
         }
         
-        // Extract structured output if it exists
+        // Extract structured output if it exists (safely check nested array)
         $structuredOutput = null;
-        if (isset($requestData['text']['format'])) {
+        if (isset($requestData['text']) && is_array($requestData['text']) && isset($requestData['text']['format'])) {
             $structuredOutput = $requestData['text']['format'];
         }
         
