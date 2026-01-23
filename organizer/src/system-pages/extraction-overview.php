@@ -48,6 +48,26 @@ $unclassifiedAttachmentsCountQuery = "
 ";
 $totalUnclassifiedAttachments = Database::queryValue($unclassifiedAttachmentsCountQuery, []);
 
+// Get total count for failed extractions (with error messages)
+$failedExtractionsCountQuery = "
+    SELECT COUNT(*) as total
+    FROM thread_email_extractions e
+    WHERE e.error_message IS NOT NULL
+";
+$totalFailedExtractions = Database::queryValue($failedExtractionsCountQuery, []);
+
+// Get limited failed extractions (100 items)
+$failedExtractionsQuery = "
+    SELECT e.*, te.status_type, te.status_text, te.datetime_received, t.id as thread_id, t.entity_id, t.title as thread_title
+    FROM thread_email_extractions e
+    JOIN thread_emails te ON e.email_id = te.id
+    JOIN threads t ON te.thread_id = t.id
+    WHERE e.error_message IS NOT NULL
+    ORDER BY e.created_at DESC
+    LIMIT 100
+";
+$failedExtractions = Database::query($failedExtractionsQuery, []);
+
 // Get limited extractions from the last 30 days (100 items)
 $recentExtractionsQuery = "
     SELECT e.*, te.status_type, te.status_text, te.datetime_received, t.id as thread_id, t.entity_id, t.title as thread_title
@@ -94,7 +114,8 @@ $extractionCounts = [
     'TOTAL' => $totalRecentExtractions,
     'UNCLASSIFIED_EMAILS' => $totalUnclassifiedEmails,
     'UNCLASSIFIED_ATTACHMENTS' => $totalUnclassifiedAttachments,
-    'TOTAL_UNCLASSIFIED' => $totalUnclassifiedEmails + $totalUnclassifiedAttachments
+    'TOTAL_UNCLASSIFIED' => $totalUnclassifiedEmails + $totalUnclassifiedAttachments,
+    'FAILED' => $totalFailedExtractions
 ];
 
 // Count displayed items
@@ -102,7 +123,8 @@ $displayedCounts = [
     'TOTAL' => count($recentExtractions),
     'UNCLASSIFIED_EMAILS' => count($unclassifiedEmails),
     'UNCLASSIFIED_ATTACHMENTS' => count($unclassifiedAttachments),
-    'TOTAL_UNCLASSIFIED' => count($unclassifiedEmails) + count($unclassifiedAttachments)
+    'TOTAL_UNCLASSIFIED' => count($unclassifiedEmails) + count($unclassifiedAttachments),
+    'FAILED' => count($failedExtractions)
 ];
 
 // Function to truncate text
@@ -271,6 +293,10 @@ function getExtractionType($extraction) {
                 <div class="summary-label">Total Extractions (Last 30 Days)</div>
             </div>
             <div class="summary-item">
+                <div class="summary-count"><?= $extractionCounts['FAILED'] ?></div>
+                <div class="summary-label">Failed Extractions</div>
+            </div>
+            <div class="summary-item">
                 <div class="summary-count"><?= $extractionCounts['TOTAL_UNCLASSIFIED'] ?></div>
                 <div class="summary-label">Total Unclassified</div>
             </div>
@@ -336,6 +362,52 @@ function getExtractionType($extraction) {
             </p>
         </div>
 
+        <?php if ($extractionCounts['FAILED'] > 0): ?>
+        <div style="margin-bottom: 20px; padding: 15px; background-color: #fff3cd; border: 1px solid #ffc107; border-radius: 4px;">
+            <h3 style="margin-top: 0;">Failed Extractions (<?= $extractionCounts['FAILED'] ?>)</h3>
+            <p>These extractions encountered errors and can be retried. Retrying will delete the failed extraction and allow it to be re-processed automatically.</p>
+            
+            <?php if (!empty($failedExtractions)): ?>
+                <div style="margin-bottom: 10px;">
+                    <label>
+                        <input type="checkbox" id="select-all-failed" />
+                        Select All (showing <?= count($failedExtractions) ?> of <?= $extractionCounts['FAILED'] ?>)
+                    </label>
+                    <button id="retry-selected" class="btn btn-primary" style="margin-left: 10px;">Retry Selected</button>
+                    <span id="retry-status" style="margin-left: 10px; font-weight: bold;"></span>
+                </div>
+                
+                <table style="margin-bottom: 15px;">
+                    <tr>
+                        <th style="width: 3%;"></th>
+                        <th style="width: 5%;">ID</th>
+                        <th style="width: 20%;">Thread</th>
+                        <th style="width: 15%;">Prompt</th>
+                        <th style="width: 10%;">Date</th>
+                        <th style="width: 47%;">Error</th>
+                    </tr>
+                    <?php foreach (array_slice($failedExtractions, 0, 20) as $extraction): ?>
+                        <tr>
+                            <td><input type="checkbox" class="failed-extraction-checkbox" value="<?= $extraction['extraction_id'] ?>" /></td>
+                            <td><?= $extraction['extraction_id'] ?></td>
+                            <td>
+                                <a href="/thread-view?id=<?= htmlspecialchars($extraction['thread_id']) ?>">
+                                    <?= htmlspecialchars(truncateText($extraction['thread_title'], 20)) ?>
+                                </a>
+                            </td>
+                            <td><?= htmlspecialchars(truncateText($extraction['prompt_id'] ?: $extraction['prompt_text'], 15)) ?></td>
+                            <td><?= date('Y-m-d H:i', strtotime($extraction['created_at'])) ?></td>
+                            <td style="color: #e74c3c; font-size: 0.9em;">
+                                <?= htmlspecialchars(truncateText($extraction['error_message'], 100)) ?>
+                            </td>
+                        </tr>
+                    <?php endforeach; ?>
+                </table>
+            <?php endif; ?>
+        </div>
+        <?php endif; ?>
+
+        <h3>Unclassified Extractions</h3>
         <table>
             <tr>
                 <th class="id-col">ID</th>
@@ -451,6 +523,97 @@ function getExtractionType($extraction) {
                     }
                 });
             });
+            
+            // Handle select all checkbox for failed extractions
+            const selectAllCheckbox = document.getElementById('select-all-failed');
+            if (selectAllCheckbox) {
+                selectAllCheckbox.addEventListener('change', function() {
+                    const checkboxes = document.querySelectorAll('.failed-extraction-checkbox');
+                    checkboxes.forEach(checkbox => {
+                        checkbox.checked = this.checked;
+                    });
+                });
+            }
+            
+            // Handle retry selected button
+            const retryButton = document.getElementById('retry-selected');
+            const retryStatus = document.getElementById('retry-status');
+            
+            if (retryButton) {
+                retryButton.addEventListener('click', function() {
+                    const checkboxes = document.querySelectorAll('.failed-extraction-checkbox:checked');
+                    const ids = Array.from(checkboxes).map(cb => parseInt(cb.value));
+                    
+                    if (ids.length === 0) {
+                        retryStatus.textContent = 'Please select at least one extraction to retry';
+                        retryStatus.style.color = '#dc3545';
+                        return;
+                    }
+                    
+                    if (!confirm(`Are you sure you want to retry ${ids.length} extraction(s)? This will delete the failed extractions and they will be re-processed automatically.`)) {
+                        return;
+                    }
+                    
+                    // Disable button and show loading status
+                    retryButton.disabled = true;
+                    retryStatus.textContent = 'Retrying extractions...';
+                    retryStatus.style.color = '#0066cc';
+                    
+                    // Send retry request
+                    fetch('/extraction-retry', {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json'
+                        },
+                        body: JSON.stringify({ ids: ids })
+                    })
+                    .then(response => {
+                        if (!response.ok) {
+                            let errorMessage = 'HTTP error ' + response.status;
+                            if (response.status === 400) {
+                                errorMessage = 'Bad request: Invalid retry request.';
+                            } else if (response.status === 404) {
+                                errorMessage = 'Not found: Retry endpoint not found.';
+                            } else if (response.status === 500) {
+                                errorMessage = 'Server error: An error occurred while retrying.';
+                            }
+                            throw new Error(errorMessage);
+                        }
+                        return response.json();
+                    })
+                    .then(data => {
+                        if (data.success) {
+                            retryStatus.textContent = data.message + ' - Refresh page to see updated status.';
+                            retryStatus.style.color = 'green';
+                            
+                            // Remove checked rows from the table
+                            checkboxes.forEach(checkbox => {
+                                const row = checkbox.closest('tr');
+                                if (row) row.remove();
+                            });
+                            
+                            // Uncheck select all
+                            if (selectAllCheckbox) {
+                                selectAllCheckbox.checked = false;
+                            }
+                            
+                            // Re-enable button after 3 seconds
+                            setTimeout(() => {
+                                retryButton.disabled = false;
+                            }, 3000);
+                        } else {
+                            retryStatus.textContent = 'Error: ' + data.message;
+                            retryStatus.style.color = '#dc3545';
+                            retryButton.disabled = false;
+                        }
+                    })
+                    .catch(error => {
+                        retryStatus.textContent = 'Error: ' + error.message;
+                        retryStatus.style.color = '#dc3545';
+                        retryButton.disabled = false;
+                    });
+                });
+            }
         });
     </script>
 </body>
