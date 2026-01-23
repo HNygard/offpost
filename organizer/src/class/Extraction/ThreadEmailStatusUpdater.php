@@ -24,12 +24,12 @@ class ThreadEmailStatusUpdater {
      * Update ThreadEmail status based on AI summary extraction
      * Only updates if the email has unknown status (not manually classified)
      * 
-     * @param int $emailId The email ID to update
+     * @param string $emailId The email ID to update (UUID)
      * @param string $aiSummary The AI-generated summary
      * @return bool True if update was performed, false if skipped
      * @throws Exception If update fails
      */
-    public function updateFromAISummary(int $emailId, string $aiSummary): bool {
+    public function updateFromAISummary(string $emailId, string $aiSummary): bool {
         if (empty($emailId) || empty($aiSummary)) {
             throw new Exception("Email ID and AI summary are required");
         }
@@ -73,10 +73,10 @@ class ThreadEmailStatusUpdater {
     /**
      * Check if an email has been manually classified
      * 
-     * @param int $emailId Email ID to check
+     * @param string $emailId Email ID to check (UUID)
      * @return bool True if manually classified
      */
-    private function isManuallyClassified(int $emailId): bool {
+    private function isManuallyClassified(string $emailId): bool {
         $sql = "SELECT auto_classification, status_type 
                 FROM thread_emails 
                 WHERE id = ?";

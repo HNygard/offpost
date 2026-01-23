@@ -49,7 +49,7 @@ class ThreadEmailStatusUpdaterTest extends TestCase {
         parent::tearDown();
     }
 
-    private function createTestEmail(string $statusType = 'unknown', string $autoClassification = null): int {
+    private function createTestEmail(string $statusType = 'unknown', string $autoClassification = null): string {
         $now = new DateTime();
         $emailId = Database::queryValue(
             "INSERT INTO thread_emails (thread_id, timestamp_received, datetime_received, email_type, status_type, status_text, description, content, auto_classification) 
