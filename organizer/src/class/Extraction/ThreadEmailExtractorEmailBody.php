@@ -350,8 +350,8 @@ class ThreadEmailExtractorEmailBody extends ThreadEmailExtractor {
      * - Content: UTF-8 bytes \xc3\xb8 (ø) as raw bytes instead of =C3=B8
      * - In ISO-8859-1, ø should be \xf8
      * 
-     * This method detects UTF-8 byte sequences in iso-8859-1 encoded-words and
-     * either converts the charset declaration or fixes the encoding.
+     * This method detects UTF-8 byte sequences in iso-8859-1 encoded-words and,
+     * when found, Q-encodes the raw UTF-8 bytes and updates the charset declaration to UTF-8.
      * 
      * @param string $eml Raw email content
      * @return string Fixed email content
