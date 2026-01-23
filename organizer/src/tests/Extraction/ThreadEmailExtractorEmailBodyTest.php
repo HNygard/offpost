@@ -325,7 +325,7 @@ This is a test email.
         // This is based on the actual issue reported - encoded word missing closing ?= before next header
         $emailWithMalformedSubject = "From: sender@example.com\r\n" .
                                     "To: recipient@example.com\r\n" .
-                                    "Subject: =?iso-8859-1?Q?SV:_Klage_på_målrettet?= =?iso-8859-1?Q?_utestengelse?Thread-Topic: test\r\n" .
+                                    "Subject: =?iso-8859-1?Q?SV:_Klage_p=E5_m=E5lrettet?= =?iso-8859-1?Q?_utestengelse?Thread-Topic: test\r\n" .
                                     "Content-Type: text/plain\r\n" .
                                     "\r\n" .
                                     "This is a test email body";
@@ -336,8 +336,13 @@ This is a test email.
         // Assert we got a valid Laminas Mail Message object
         $this->assertInstanceOf(\Laminas\Mail\Storage\Message::class, $result);
         
-        // The subject should be parseable now (even if the second encoded word was truncated)
+        // The subject should be parseable now
         $this->assertTrue($result->getHeaders()->has('subject'));
+        
+        // Verify that the subject content includes text from the first encoded-word
+        // This ensures we're preserving content before the malformed encoded-word
+        $subject = $result->getHeader('subject')->getFieldValue();
+        $this->assertStringContainsString('Klage', $subject, 'Subject should contain "Klage" from the first encoded-word');
     }
 
     public function testReadLaminasMessage_withErrorHandling_MalformedEncodedWordInline() {
@@ -355,5 +360,10 @@ This is a test email.
         // Assert we got a valid Laminas Mail Message object
         $this->assertInstanceOf(\Laminas\Mail\Storage\Message::class, $result);
         $this->assertTrue($result->getHeaders()->has('subject'));
+        
+        // Verify that the subject content is preserved
+        $subject = $result->getHeader('subject')->getFieldValue();
+        $this->assertStringContainsString('Test', $subject, 'Subject should contain "Test" from the encoded-word');
+        $this->assertStringContainsString('Subject', $subject, 'Subject should contain "Subject" from the encoded-word');
     }
 }

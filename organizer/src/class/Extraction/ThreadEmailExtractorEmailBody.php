@@ -319,22 +319,17 @@ class ThreadEmailExtractorEmailBody extends ThreadEmailExtractor {
         // Full pattern: match encoded word missing ?= followed by header name
         $pattern = "/({$encodedWordStart}{$encoding}\?{$encodedContent}){$missingClose}{$nextHeaderName}{$headerColon}(.*)$/";
         
-        if (preg_match($pattern, $headerLine, $matches)) {
-            // $matches[1] = the encoded word without proper closing
-            // $matches[2] = the header name that should be on next line (we drop it)
-            // $matches[3] = the rest of the line (we drop it)
+        if (preg_match($pattern, $headerLine, $matches, PREG_OFFSET_CAPTURE)) {
+            // $matches[1][0] = the encoded word without proper closing
+            // $matches[1][1] = the offset of the encoded word in the header line
+            // $matches[2] and $matches[3] = the header name and rest of the line (we drop them)
             
-            // Determine if this is a continuation line or a header line
-            if (preg_match('/^(\s+)/', $headerLine, $wsMatches)) {
-                // Continuation line: preserve leading whitespace
-                return $wsMatches[1] . $matches[1] . '?=';
-            } elseif (preg_match('/^([A-Za-z-]+:\s*)/', $headerLine, $hMatches)) {
-                // Header line: preserve header name and colon
-                return $hMatches[1] . $matches[1] . '?=';
-            }
+            $matchPos = $matches[1][1];
+            $beforeMatch = substr($headerLine, 0, $matchPos);
+            $encodedWord = $matches[1][0];
             
-            // Shouldn't happen, but return fixed encoded word as fallback
-            return $matches[1] . '?=';
+            // Preserve everything before the malformed encoded-word and just fix its closing
+            return $beforeMatch . $encodedWord . '?=';
         }
         
         return $headerLine;
