@@ -83,17 +83,6 @@ class ExtractionRetryPageTest extends E2EPageTestCase {
         $this->testExtractionIds[] = $extraction2->extraction_id;
     }
 
-    private function deleteTestExtractions() {
-        $extractionService = new ThreadEmailExtractionService();
-        foreach ($this->testExtractionIds as $id) {
-            try {
-                $extractionService->deleteExtraction($id);
-            } catch (Exception $e) {
-                // Extraction may already be deleted, ignore
-            }
-        }
-    }
-
     public function testRetryExtractionSuccess() {
         // :: Setup
         $postData = [
