@@ -106,38 +106,6 @@ abstract class ThreadEmailExtractorPrompt extends ThreadEmailExtractor {
      * @return array|null Email data or null if none found
      */
     public function findNextEmailForExtraction() {
-        // First, check for emails that have an extraction with the same prompt_service 
-        // but different prompt_id (old/outdated prompt version)
-        // We need to delete these to trigger re-extraction with the new prompt
-        $deleteOldQuery = "
-            SELECT tee_old.extraction_id
-            FROM thread_emails te
-            JOIN thread_email_extractions tee_source
-                ON te.id = tee_source.email_id
-                AND tee_source.prompt_service = 'code'
-                AND tee_source.prompt_text IN (" . implode(',', array_fill(0, count($this->inputFromPromptTextSources), '?')) . ")
-            JOIN thread_email_extractions tee_old
-                ON te.id = tee_old.email_id
-                AND tee_old.prompt_service = ?
-                AND (tee_old.prompt_id IS NULL OR tee_old.prompt_id != ?)
-            WHERE tee_source.extracted_text IS NOT NULL
-            LIMIT 1
-        ";
-        
-        $deleteParams = array_merge(
-            $this->inputFromPromptTextSources, 
-            [$this->prompt->getPromptService(), $this->prompt->getPromptId()]
-        );
-        
-        $oldExtraction = Database::queryOneOrNone($deleteOldQuery, $deleteParams);
-        
-        if ($oldExtraction) {
-            // Delete the old extraction to trigger re-processing
-            $extractionService = new ThreadEmailExtractionService();
-            $extractionService->deleteExtraction($oldExtraction['extraction_id']);
-            error_log("Deleted old extraction {$oldExtraction['extraction_id']} with outdated prompt_id to trigger re-extraction");
-        }
-        
         // Find emails that have existing extractions but don't have an extraction for this prompt yet
         $query = "
             SELECT 
