@@ -111,7 +111,7 @@ class ThreadEmailStatusUpdater {
         }
         
         // Check for rejection patterns - more specific patterns first
-        if (preg_match('/\b(avslag|avslår|avslå|kan ikke|avvise)\b/u', $summary_lower)) {
+        if (preg_match('/\b(avslag|avslår|avslå|avslås|kan ikke|avvise)\b/u', $summary_lower)) {
             return ThreadEmailStatusType::REQUEST_REJECTED;
         }
         

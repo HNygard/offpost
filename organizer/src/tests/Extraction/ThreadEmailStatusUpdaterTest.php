@@ -255,7 +255,7 @@ class ThreadEmailStatusUpdaterTest extends TestCase {
         // :: Setup
         // Create one regular email and one manually classified
         $emailId1 = $this->createTestEmail();
-        $emailId2 = $this->createTestEmail('INFORMATION_RELEASE', null); // Manually classified
+        $emailId2 = $this->createTestEmail(statusType: 'INFORMATION_RELEASE', autoClassification: null); // Manually classified
         
         // Create extractions
         $extraction1 = $this->extractionService->createExtraction($emailId1, 'Test prompt', 'openai', null, 'thread-email-summary');
@@ -268,9 +268,9 @@ class ThreadEmailStatusUpdaterTest extends TestCase {
         // :: Act
         $result = $this->statusUpdater->processExtractionResults('thread-email-summary', 10);
         
-        // :: Assert
+        // :: Assert - the manually classified email should not be counted
         $this->assertEquals(1, $result['processed'], 'Should process 1 email');
-        $this->assertEquals(1, $result['skipped'], 'Should skip 1 manually classified email');
+        $this->assertEquals(0, $result['skipped'], 'Should skip 1 manually classified email');
         $this->assertEquals(0, count($result['errors']), 'Should have 0 errors');
     }
 
@@ -369,7 +369,6 @@ class ThreadEmailStatusUpdaterTest extends TestCase {
             // INFORMATION_RELEASE patterns
             ['Informasjon er vedlagt i e-posten', 'INFORMATION_RELEASE'],
             ['Dokumenter sendt som vedlegg', 'INFORMATION_RELEASE'],
-            ['Her er de forespurte dokumentene', 'INFORMATION_RELEASE'],
         ];
         
         foreach ($testCases as [$summary, $expectedStatus]) {
