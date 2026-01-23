@@ -114,21 +114,6 @@ function getThreadStatusLabelClass($status) {
     }
 }
 
-// Helper function to format timestamp in Oslo timezone
-function formatTimestamp($timestamp) {
-    if (!$timestamp) return 'N/A';
-    try {
-        // Convert datetime to local timezone (Europe/Oslo)
-        $utcDateTime = new DateTime($timestamp);
-        $utcDateTime->setTimezone(new DateTimeZone('Europe/Oslo'));
-        return $utcDateTime->format('Y-m-d H:i');
-    } catch (Throwable $e) {
-        // If timestamp parsing fails, return the original value
-        error_log("Failed to parse timestamp '$timestamp': " . $e->getMessage());
-        return $timestamp;
-    }
-}
-
 
 
 ?>
@@ -375,7 +360,7 @@ function formatTimestamp($timestamp) {
                                 $label_type = getLabelType('email', $email->status_type);
                                 ?>
                                 <div <?= $email->ignore ? ' style="color: gray;"' : '' ?>>
-                                    <?= formatTimestamp($email->datetime_received) ?>:
+                                    <?= formatDateTimeOslo($email->datetime_received, false) ?>:
                                     <?= $email->email_type ?> -
                                     <span class="<?= $label_type ?>"><?= $email->status_text ?></span>
                                     <?php

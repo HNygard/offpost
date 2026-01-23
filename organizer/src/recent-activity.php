@@ -58,21 +58,6 @@ function threadStatusToString($status) {
     }
 }
 
-// Helper function to format timestamp
-function formatTimestamp($timestamp) {
-    if (!$timestamp) return 'N/A';
-    try {
-        // Convert datetime to local timezone (Europe/Oslo)
-        $utcDateTime = new DateTime($timestamp);
-        $utcDateTime->setTimezone(new DateTimeZone('Europe/Oslo'));
-        return $utcDateTime->format('Y-m-d H:i');
-    } catch (Throwable $e) {
-        // If timestamp parsing fails, return the original value
-        error_log("Failed to parse timestamp '$timestamp': " . $e->getMessage());
-        return $timestamp;
-    }
-}
-
 // Helper function to get thread status from thread information
 function getThreadStatusForEmail($email, $threadStatuses) {
     if (isset($threadStatuses[$email->thread_id])) {
@@ -166,7 +151,7 @@ function truncateText($text, $length = 100) {
                         </div>
                     </td>
                     <td>
-                        <small><?= formatTimestamp($email->datetime_received) ?></small>
+                        <small><?= formatDateTimeOslo($email->datetime_received, false) ?></small>
                     </td>
                     <td>
                         <div class="action-links">

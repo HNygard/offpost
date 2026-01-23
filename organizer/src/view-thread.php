@@ -177,21 +177,6 @@ function getIconClass($filetype) {
     }
 }
 
-// Function to format datetime in Oslo timezone
-function formatDateTimeOslo($timestamp) {
-    if (!$timestamp) return 'N/A';
-    try {
-        // Convert datetime to local timezone (Europe/Oslo)
-        $utcDateTime = new DateTime($timestamp);
-        $utcDateTime->setTimezone(new DateTimeZone('Europe/Oslo'));
-        return $utcDateTime->format('Y-m-d H:i:s');
-    } catch (Throwable $e) {
-        // If timestamp parsing fails, return the original value
-        error_log("Failed to parse timestamp '$timestamp': " . $e->getMessage());
-        return $timestamp;
-    }
-}
-
 function print_extraction ($extraction) {
     $text = '';
     $style = '';

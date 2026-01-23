@@ -93,6 +93,28 @@ function is_uuid($string) {
 }
 
 /**
+ * Format datetime in Oslo timezone (Europe/Oslo)
+ * 
+ * @param string|null $timestamp The timestamp to format
+ * @param bool $includeSeconds Whether to include seconds in the output (default: true)
+ * @return string Formatted timestamp in Oslo timezone or 'N/A' if timestamp is empty
+ */
+function formatDateTimeOslo($timestamp, $includeSeconds = true) {
+    if (!$timestamp) return 'N/A';
+    try {
+        // Convert datetime to local timezone (Europe/Oslo)
+        $utcDateTime = new DateTime($timestamp);
+        $utcDateTime->setTimezone(new DateTimeZone('Europe/Oslo'));
+        $format = $includeSeconds ? 'Y-m-d H:i:s' : 'Y-m-d H:i';
+        return $utcDateTime->format($format);
+    } catch (Throwable $e) {
+        // If timestamp parsing fails, return the original value
+        error_log("Failed to parse timestamp '$timestamp': " . $e->getMessage());
+        return $timestamp;
+    }
+}
+
+/**
  * 
  * jTraceEx() - provide a Java style exception trace
  * 
