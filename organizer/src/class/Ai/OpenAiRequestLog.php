@@ -186,4 +186,37 @@ class OpenAiRequestLog {
             'output_tokens' => (int)$result['output_tokens']
         ];
     }
+    
+    /**
+     * Get a single log entry by ID
+     * 
+     * @param int $id Log entry ID
+     * @return array|null Log record or null if not found
+     */
+    public static function getById(int $id): ?array {
+        return Database::queryOneOrNone(
+            "SELECT * FROM openai_request_log WHERE id = ?",
+            [$id]
+        );
+    }
+    
+    /**
+     * Get multiple log entries by IDs
+     * 
+     * @param array $ids Array of log entry IDs
+     * @return array Array of log records
+     */
+    public static function getByIds(array $ids): array {
+        if (empty($ids)) {
+            return [];
+        }
+        
+        // Create placeholders for the IN clause
+        $placeholders = implode(',', array_fill(0, count($ids), '?'));
+        
+        return Database::query(
+            "SELECT * FROM openai_request_log WHERE id IN ($placeholders) ORDER BY time DESC",
+            $ids
+        );
+    }
 }
