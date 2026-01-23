@@ -17,20 +17,6 @@ class ExtractionRetryPageTest extends E2EPageTestCase {
         // Create test extraction records
         $this->createTestExtractions();
     }
-
-    protected function tearDown(): void {
-        // Clean up test data
-        if (!empty($this->testExtractionIds)) {
-            $this->deleteTestExtractions();
-        }
-        if ($this->emailId) {
-            Database::execute("DELETE FROM thread_emails WHERE id = ?", [$this->emailId]);
-        }
-        if ($this->threadId) {
-            Database::execute("DELETE FROM threads WHERE id = ?", [$this->threadId]);
-        }
-        parent::tearDown();
-    }
     
     private function createTestExtractions() {
         // Create a new thread
