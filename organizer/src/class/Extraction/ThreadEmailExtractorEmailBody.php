@@ -399,7 +399,7 @@ class ThreadEmailExtractorEmailBody extends ThreadEmailExtractor {
      * @param string $value Header value to analyze
      * @return array Array with 'valid' boolean and 'issues' array containing problem details
      */
-    private static function analyzeHeaderValue($value) {
+    private static function debuggingAnalyzeHeaderValue($value) {
         $issues = [];
         $total = strlen($value);
         
@@ -414,7 +414,7 @@ class ThreadEmailExtractorEmailBody extends ThreadEmailExtractor {
                     'character' => '\n',
                     'ord' => $ord,
                     'reason' => 'Bare LF (line feed) without CR (carriage return)',
-                    'context' => self::getCharacterContext($value, $i)
+                    'context' => self::debuggingGetCharacterContext($value, $i)
                 ];
                 continue;
             }
@@ -426,7 +426,7 @@ class ThreadEmailExtractorEmailBody extends ThreadEmailExtractor {
                     'character' => $char,
                     'ord' => $ord,
                     'reason' => 'Non-ASCII character (ord > 127) - should use encoded-word format',
-                    'context' => self::getCharacterContext($value, $i)
+                    'context' => self::debuggingGetCharacterContext($value, $i)
                 ];
                 continue;
             }
@@ -439,7 +439,7 @@ class ThreadEmailExtractorEmailBody extends ThreadEmailExtractor {
                         'character' => '\r',
                         'ord' => $ord,
                         'reason' => 'CR (carriage return) at end of value without LF and space/tab',
-                        'context' => self::getCharacterContext($value, $i)
+                        'context' => self::debuggingGetCharacterContext($value, $i)
                     ];
                     continue;
                 }
@@ -454,7 +454,7 @@ class ThreadEmailExtractorEmailBody extends ThreadEmailExtractor {
                         'ord' => $ord,
                         'reason' => 'Invalid CRLF sequence - CR must be followed by LF and space/tab',
                         'next_chars' => sprintf('0x%02X 0x%02X', $lf, $sp),
-                        'context' => self::getCharacterContext($value, $i)
+                        'context' => self::debuggingGetCharacterContext($value, $i)
                     ];
                     continue;
                 }
@@ -478,7 +478,7 @@ class ThreadEmailExtractorEmailBody extends ThreadEmailExtractor {
      * @param int $contextLength Number of characters to show on each side
      * @return string Context string showing the character in its surroundings
      */
-    private static function getCharacterContext($value, $position, $contextLength = 20) {
+    private static function debuggingGetCharacterContext($value, $position, $contextLength = 20) {
         $start = max(0, $position - $contextLength);
         $end = min(strlen($value), $position + $contextLength + 1);
         
@@ -487,9 +487,9 @@ class ThreadEmailExtractorEmailBody extends ThreadEmailExtractor {
         $after = substr($value, $position + 1, $end - $position - 1);
         
         // Make special characters visible
-        $before = self::makeSpecialCharsVisible($before);
-        $char = self::makeSpecialCharsVisible($char);
-        $after = self::makeSpecialCharsVisible($after);
+        $before = self::debuggingMakeSpecialCharsVisible($before);
+        $char = self::debuggingMakeSpecialCharsVisible($char);
+        $after = self::debuggingMakeSpecialCharsVisible($after);
         
         return sprintf('...%s[%s]%s...', $before, $char, $after);
     }
@@ -500,7 +500,7 @@ class ThreadEmailExtractorEmailBody extends ThreadEmailExtractor {
      * @param string $str String to process
      * @return string String with special characters made visible
      */
-    private static function makeSpecialCharsVisible($str) {
+    private static function debuggingMakeSpecialCharsVisible($str) {
         $replacements = [
             "\r" => '\r',
             "\n" => '\n',
@@ -555,7 +555,7 @@ class ThreadEmailExtractorEmailBody extends ThreadEmailExtractor {
                 } catch (\Laminas\Mail\Header\Exception\InvalidArgumentException $e2) {
                     // Failed to parse at this header, analyze the header value for problematic characters
                     $headerValue = preg_replace('/^[A-Za-z-]+:\s*/', '', $line);
-                    $analysis = self::analyzeHeaderValue($headerValue);
+                    $analysis = self::debuggingAnalyzeHeaderValue($headerValue);
                     
                     $debugInfo = "Failed to parse email due to problematic header: " . $currentHeader . "\n"
                         . "Original error: " . $e->getMessage() . "\n"

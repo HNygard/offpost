@@ -384,18 +384,23 @@ This is a test email.
         } catch (Exception $e) {
             $message = $e->getMessage();
             
-            // Verify the exception message contains detailed debugging information
-            $this->assertStringContainsString('Failed to parse email due to problematic header: Subject', $message);
-            $this->assertStringContainsString('CHARACTER ANALYSIS:', $message);
-            $this->assertStringContainsString('problematic character(s) in header value', $message);
+            // Build expected message format
+            $expectedMessage = "Failed to parse email due to problematic header: Subject\n"
+                . "Original error: Invalid header value detected\n"
+                . "New error: Invalid header value detected\n\n"
+                . "CHARACTER ANALYSIS:\n"
+                . "Found 1 problematic character(s) in header value:\n\n"
+                . "Issue #1:\n"
+                . "  Position: 5\n"
+                . "  Character: " . chr(200) . " (ASCII: 200 / 0xC8)\n"
+                . "  Reason: Non-ASCII character (ord > 127) - should use encoded-word format\n"
+                . "  Context: ...Test [\\xC8] Subject...\n\n"
+                . "Partial EML up to this header:\n"
+                . "From: sender@example.com\n"
+                . "To: recipient@example.com\n"
+                . "Subject: Test " . chr(200) . " Subject";
             
-            // Check for specific reason about non-ASCII character
-            $this->assertStringContainsString('Non-ASCII character (ord > 127)', $message);
-            $this->assertStringContainsString('should use encoded-word format', $message);
-            
-            // Check for character code (200 = 0xC8)
-            $this->assertStringContainsString('200', $message);
-            $this->assertStringContainsString('0xC8', $message);
+            $this->assertEquals($expectedMessage, $message);
         }
     }
 }
