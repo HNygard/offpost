@@ -395,7 +395,7 @@ function getExtractionType($extraction) {
                             <td><input type="checkbox" class="failed-extraction-checkbox" value="<?= $extraction['extraction_id'] ?>" /></td>
                             <td><?= $extraction['extraction_id'] ?></td>
                             <td>
-                                <a href="/thread-view?id=<?= htmlspecialchars($extraction['thread_id']) ?>">
+                                <a href="/thread-view?threadId=<?= htmlspecialchars($extraction['thread_id']) ?>">
                                     <?= htmlspecialchars(truncateText($extraction['thread_title'], 20)) ?>
                                 </a>
                             </td>
@@ -426,7 +426,7 @@ function getExtractionType($extraction) {
                 <tr>
                     <td class="id-col"><?= $extraction['extraction_id'] ?></td>
                     <td class="thread-col">
-                        <a href="/thread-view?id=<?= htmlspecialchars($extraction['thread_id']) ?>">
+                        <a href="/thread-view?threadId=<?= htmlspecialchars($extraction['thread_id']) ?>">
                             <?= htmlspecialchars(truncateText($extraction['thread_title'], 20)) ?>
                         </a><br>
                         <?php if (isset($extraction['attachment_name'])): ?>
