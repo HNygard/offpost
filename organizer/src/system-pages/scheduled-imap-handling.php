@@ -18,6 +18,10 @@ ini_set('display_errors', 1);
 set_time_limit(0);
 ini_set('memory_limit', '768M');
 
+$startTime = microtime(true);
+$taskName = 'scheduled-imap-handling';
+error_log(date('Y-m-d H:i:s') . " [$taskName] Starting task");
+
 try {
     require_once __DIR__ . '/../username-password.php';
     require_once __DIR__ . '/../update-imap-functions.php';
@@ -31,6 +35,7 @@ try {
 
     // Get all threads
     $threads = ThreadStorageManager::getInstance()->getThreads();
+    $threadCount = count($threads);
 
     $folderManager = new ImapFolderManager($connection);
     $folderManager->initialize();
@@ -38,13 +43,22 @@ try {
     $emailProcessor = new ImapEmailProcessor($connection);
 
     // Same as the task https://offpost.no/update-imap?task=create-folders:
+    $createFoldersStart = microtime(true);
     createFolders($connection, $folderManager, $threads);
+    $createFoldersDuration = round(microtime(true) - $createFoldersStart, 3);
+    error_log(date('Y-m-d H:i:s') . " [$taskName] createFolders completed in {$createFoldersDuration}s");
 
     // Same as the task https://offpost.no/update-imap?task=process-sent:
+    $processSentStart = microtime(true);
     processSentFolder($connection, $folderManager, $emailProcessor, $threads, $imapSentFolder);
+    $processSentDuration = round(microtime(true) - $processSentStart, 3);
+    error_log(date('Y-m-d H:i:s') . " [$taskName] processSentFolder completed in {$processSentDuration}s");
 
     // Same as the task https://offpost.no/update-imap?task=process-inbox:
+    $processInboxStart = microtime(true);
     processInbox($connection, $folderManager, $emailProcessor, $threads);
+    $processInboxDuration = round(microtime(true) - $processInboxStart, 3);
+    error_log(date('Y-m-d H:i:s') . " [$taskName] processInbox completed in {$processInboxDuration}s");
 
     // Finally, expunge to remove any deleted emails
     $connection->closeConnection(CL_EXPUNGE);
@@ -62,7 +76,12 @@ try {
     header('Content-Type: application/json');
     echo json_encode($result, JSON_PRETTY_PRINT);
     
+    $duration = round(microtime(true) - $startTime, 3);
+    error_log(date('Y-m-d H:i:s') . " [$taskName] Task completed in {$duration}s - Processed $threadCount threads");
+    
 } catch (Exception $e) {
+    $duration = round(microtime(true) - $startTime, 3);
+    error_log(date('Y-m-d H:i:s') . " [$taskName] Task failed in {$duration}s - Exception: " . $e->getMessage());
     // Clean the output buffer if it exists
     if (ob_get_level()) {
         $debugOutput = ob_get_clean();

@@ -3,6 +3,7 @@
 require_once __DIR__ . '/ThreadAuthorization.php';
 require_once __DIR__ . '/Database.php';
 require_once __DIR__ . '/ThreadEmail.php';
+require_once __DIR__ . '/ThreadEmailAttachment.php';
 require_once __DIR__ . '/Entity.php';
 require_once __DIR__ . '/ImapFolderStatus.php';
 require_once __DIR__ . '/ThreadStatusRepository.php';
@@ -145,11 +146,22 @@ class Thread implements JsonSerializable {
             "SELECT * FROM threads WHERE id_old = ? OR id = ?",
             [$id, $id]
         );
+        return self::mapFromDatabase($data);
+    }
+
+    public static function loadFromDatabaseOrNone($id) {
+        $data = Database::queryOneOrNone(
+            "SELECT * FROM threads WHERE id_old = ? OR id = ?",
+            [$id, $id]
+        );
 
         if (!$data) {
             return null;
         }
-
+    
+        return self::mapFromDatabase($data);
+    }
+    private static function mapFromDatabase($data) {
         $thread = new Thread();
         $thread->id = $data['id'];
         $thread->id_old = $data['id_old'];
@@ -197,14 +209,15 @@ class Thread implements JsonSerializable {
                 [$emailData['id']]
             );
             $email->attachments = array_map(function($att) {
-                return [
-                    'name' => $att['name'],
-                    'filename' => $att['filename'],
-                    'filetype' => $att['filetype'],
-                    'location' => $att['location'],
-                    'status_type' => $att['status_type'],
-                    'status_text' => $att['status_text']
-                ];
+                $attObj = new ThreadEmailAttachment();
+                $attObj->id = $att['id'];
+                $attObj->name = $att['name'];
+                $attObj->filename = $att['filename'];
+                $attObj->filetype = $att['filetype'];
+                $attObj->location = $att['location'];
+                $attObj->status_type = $att['status_type'];
+                $attObj->status_text = $att['status_text'];
+                return $attObj;
             }, $attachments);
             $thread->emails[] = $email;
         }

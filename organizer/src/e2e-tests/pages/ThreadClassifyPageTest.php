@@ -14,7 +14,7 @@ class ThreadClassifyPageTest extends E2EPageTestCase {
         ];
         
         // :: Act - Need thread ID and email ID to classify
-        $response = $this->renderPage('/thread-classify?entityId=' . $threadEmail['entity_id'] . '&threadId=' . $threadEmail['thread_id'] . '&emailId=' . $threadEmail['email_id']);
+        $response = $this->renderPage('/thread-classify?threadId=' . $threadEmail['thread_id'] . '&emailId=' . $threadEmail['email_id']);
 
         // :: Assert basic page content
         $this->assertStringContainsString('<h1>Classify Email</h1>', $response->body);

@@ -46,16 +46,29 @@ COPY --chown=www-data:www-data src/ ./
 # Create vendor directory with correct permissions
 RUN mkdir -p vendor && chown -R www-data:www-data .
 
+# Create composer cache directory with correct permissions for www-data user
+RUN mkdir -p /var/www/.composer/cache && chown -R www-data:www-data /var/www/.composer
+
 # Install dependencies as www-data user
 USER www-data
 RUN composer install --no-dev --no-interaction --no-progress --optimize-autoloader
 USER root
 
 COPY localhost.conf /etc/apache2/conf-enabled/localhost.conf
+COPY apache-resource-limits.conf /etc/apache2/conf-enabled/apache-resource-limits.conf
 COPY phpdev.ini /usr/local/etc/php/conf.d/phpdev.ini
 COPY docker-entrypoint.sh /usr/local/bin/
 RUN mkdir -p /opt/offpost/migrations
 RUN chmod +x /usr/local/bin/docker-entrypoint.sh
+
+# Set resource limits for the container
+# These ulimit settings provide baseline protection, but for production
+# it's recommended to also set Docker runtime limits via --ulimit flags
+# or resource constraints in docker-compose/kubernetes manifests
+# ulimit -v: limit virtual memory (in KB) - set to 1GB for smaller worker count
+# ulimit -u: limit number of processes - set to 50 for Apache workers + system processes
+RUN echo "ulimit -v 1048576" >> /etc/apache2/envvars && \
+    echo "ulimit -u 50" >> /etc/apache2/envvars
 
 # Copy SQL migrations, just to trigger recreation of container on deploy
 COPY src/migrations/sql/ /opt/offpost/migrations/

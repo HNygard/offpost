@@ -8,7 +8,6 @@ require_once __DIR__ . '/class/ThreadAuthorization.php';
 require_once __DIR__ . '/class/ThreadLabelFilter.php';
 require_once __DIR__ . '/class/ThreadEmailClassifier.php';
 require_once __DIR__ . '/class/Database.php';
-require_once __DIR__ . '/class/ThreadFileOperations.php';
 require_once __DIR__ . '/class/ThreadStorageManager.php';
 require_once __DIR__ . '/class/ThreadStatusRepository.php';
 
@@ -57,12 +56,6 @@ function threadStatusToString($status) {
         default:
             return 'Unknown status';
     }
-}
-
-// Helper function to format timestamp
-function formatTimestamp($timestamp) {
-    if (!$timestamp) return 'N/A';
-    return date('Y-m-d H:i', strtotime($timestamp));
 }
 
 // Helper function to get thread status from thread information
@@ -158,7 +151,7 @@ function truncateText($text, $length = 100) {
                         </div>
                     </td>
                     <td>
-                        <small><?= formatTimestamp($email->datetime_received) ?></small>
+                        <small><?= formatDateTimeOslo($email->datetime_received, false) ?></small>
                     </td>
                     <td>
                         <div class="action-links">

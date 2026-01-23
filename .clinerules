@@ -153,3 +153,21 @@ Rules:
 
 // :: Assert
 ```
+- Tests must fail instead of skip:
+    - Do NOT use markTestSkipped() or similar skip methods
+    - If a test cannot run due to missing requirements, it should fail with a clear error message
+    - This ensures test failures are visible and must be addressed
+- Tests must be deterministic:
+    - Do NOT use random values (mt_rand(), rand(), etc.)
+    - Do NOT use time-based values (time(), microtime(), date(), etc.)
+    - Use fixed, predictable values for test data
+    - Tests should produce the same results every time they run
+    - If uniqueness is needed, use sequential counters or fixed unique identifiers
+- Assertions for deterministic outputs:
+    - Use assertEquals instead of assertContains/assertStringContainsString when the output is deterministic
+    - If the test has fixed inputs and produces predictable output, assert the exact expected value
+    - Only use assertContains/assertStringContainsString when:
+        - The order of elements may vary (e.g., database queries without ORDER BY)
+        - The output includes non-deterministic data (e.g., timestamps, dynamic context)
+        - Testing that specific content exists without requiring an exact match
+    - Example: If a function generates a string from fixed dates and descriptions, use assertEquals with the full expected string

@@ -25,7 +25,6 @@ require_once(__DIR__ . '/../class/Thread.php');
 require_once(__DIR__ . '/../class/ThreadEmailService.php');
 require_once(__DIR__ . '/../class/ThreadFolderManager.php');
 require_once(__DIR__ . '/../class/ThreadEmailMover.php');
-require_once(__DIR__ . '/../class/ThreadEmailSaver.php');
 require_once(__DIR__ . '/../class/Imap/ImapWrapper.php');
 require_once(__DIR__ . '/../class/Imap/ImapConnection.php');
 require_once(__DIR__ . '/../class/Imap/ImapFolderManager.php');

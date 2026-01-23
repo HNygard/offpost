@@ -319,4 +319,52 @@ This is a test email.
         
         ThreadEmailExtractorEmailBody::readLaminasMessage_withErrorHandling(['raw' => $invalidEmail]);
     }
+
+    public function testReadLaminasMessage_withErrorHandling_MalformedEncodedWord() {
+        // Test email with malformed encoded-word in Subject header (missing ?=)
+        // This is based on the actual issue reported - encoded word missing closing ?= before next header
+        $emailWithMalformedSubject = "From: sender@example.com\r\n" .
+                                    "To: recipient@example.com\r\n" .
+                                    "Subject: =?iso-8859-1?Q?SV:_Klage_p=E5_m=E5lrettet?= =?iso-8859-1?Q?_utestengelse?Thread-Topic: test\r\n" .
+                                    "Content-Type: text/plain\r\n" .
+                                    "\r\n" .
+                                    "This is a test email body";
+
+        // The method should handle the malformed encoded-word by fixing it
+        $result = ThreadEmailExtractorEmailBody::readLaminasMessage_withErrorHandling($emailWithMalformedSubject);
+        
+        // Assert we got a valid Laminas Mail Message object
+        $this->assertInstanceOf(\Laminas\Mail\Storage\Message::class, $result);
+        
+        // The subject should be parseable now
+        $this->assertTrue($result->getHeaders()->has('subject'));
+        
+        // Verify that the complete subject content is preserved
+        // =?iso-8859-1?Q?SV:_Klage_p=E5_m=E5lrettet?= decodes to "SV: Klage på målrettet"
+        // =?iso-8859-1?Q?_utestengelse?= decodes to " utestengelse"
+        $subject = $result->getHeader('subject')->getFieldValue();
+        $this->assertEquals('SV: Klage på målrettet utestengelse', $subject);
+    }
+
+    public function testReadLaminasMessage_withErrorHandling_MalformedEncodedWordInline() {
+        // Test email with malformed encoded-word on a single line
+        $emailWithMalformedSubject = "From: sender@example.com\r\n" .
+                                    "To: recipient@example.com\r\n" .
+                                    "Subject: =?iso-8859-1?Q?Test_Subject?Thread-Topic: something\r\n" .
+                                    "Content-Type: text/plain\r\n" .
+                                    "\r\n" .
+                                    "This is a test email body";
+
+        // The method should handle the malformed encoded-word by fixing it
+        $result = ThreadEmailExtractorEmailBody::readLaminasMessage_withErrorHandling($emailWithMalformedSubject);
+        
+        // Assert we got a valid Laminas Mail Message object
+        $this->assertInstanceOf(\Laminas\Mail\Storage\Message::class, $result);
+        $this->assertTrue($result->getHeaders()->has('subject'));
+        
+        // Verify that the complete subject content is preserved
+        // =?iso-8859-1?Q?Test_Subject?= decodes to "Test Subject"
+        $subject = $result->getHeader('subject')->getFieldValue();
+        $this->assertEquals('Test Subject', $subject);
+    }
 }

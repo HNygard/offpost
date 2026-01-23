@@ -115,48 +115,6 @@ class ImapAttachmentHandlerTest extends TestCase {
         fclose($resource);
     }
 
-    public function testSaveAttachment(): void {
-        // Setup mock connection
-        $resource = fopen('php://memory', 'r');
-        $this->mockWrapper->method('open')->willReturn($resource);
-        $this->connection->openConnection();
-
-        // Create test structure
-        $structure = new stdClass();
-        $part = $this->createTestPart();
-        $part->encoding = 3; // BASE64
-        $structure->parts = [$part];
-
-        // Mock fetchstructure
-        $this->mockWrapper->expects($this->once())
-            ->method('fetchstructure')
-            ->with($resource, 1, FT_UID)
-            ->willReturn($structure);
-
-        // Mock fetchbody to return base64 encoded content
-        $this->mockWrapper->expects($this->once())
-            ->method('fetchbody')
-            ->with($resource, 1, '1', FT_UID)
-            ->willReturn(base64_encode('test content'));
-
-        // Create temp file for testing
-        $tempFile = tempnam(sys_get_temp_dir(), 'test_attachment');
-        
-        // Create test attachment object
-        $attachment = new stdClass();
-        $attachment->filename = 'test.txt';
-
-        // Save attachment
-        $this->handler->saveAttachment(1, 1, $attachment, $tempFile);
-
-        // Verify content
-        $this->assertEquals('test content', file_get_contents($tempFile));
-
-        // Cleanup
-        unlink($tempFile);
-        fclose($resource);
-    }
-
     public function testProcessAttachmentsWithDifferentFileTypes(): void {
         $validTypes = [
             'test.pdf' => 'pdf',

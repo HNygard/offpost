@@ -8,7 +8,6 @@ require_once __DIR__ . '/class/ThreadAuthorization.php';
 require_once __DIR__ . '/class/ThreadLabelFilter.php';
 require_once __DIR__ . '/class/ThreadEmailClassifier.php';
 require_once __DIR__ . '/class/Database.php';
-require_once __DIR__ . '/class/ThreadFileOperations.php';
 require_once __DIR__ . '/class/ThreadStorageManager.php';
 require_once __DIR__ . '/class/ThreadStatusRepository.php';
 
@@ -361,7 +360,7 @@ function getThreadStatusLabelClass($status) {
                                 $label_type = getLabelType('email', $email->status_type);
                                 ?>
                                 <div <?= $email->ignore ? ' style="color: gray;"' : '' ?>>
-                                    <?= $email->datetime_received ?>:
+                                    <?= formatDateTimeOslo($email->datetime_received, false) ?>:
                                     <?= $email->email_type ?> -
                                     <span class="<?= $label_type ?>"><?= $email->status_text ?></span>
                                     <?php

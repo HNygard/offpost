@@ -33,6 +33,45 @@ document.addEventListener('DOMContentLoaded', () => {
     }
     
     /**
+     * Calculate relevance score for search results
+     * Higher scores indicate better matches
+     */
+    function calculateRelevanceScore(entityName, searchValue) {
+        // Handle empty or whitespace-only search values
+        if (!searchValue || !searchValue.trim()) {
+            return 100;
+        }
+        
+        // Exact match gets highest score
+        if (entityName === searchValue) {
+            return 1000;
+        }
+        
+        // Starts with search value gets high score
+        if (entityName.startsWith(searchValue)) {
+            return 500;
+        }
+        
+        // Contains search value at word boundary gets medium score
+        const searchWords = searchValue.split(/\s+/).filter(word => word.length > 0);
+        const entityWords = entityName.split(/\s+/).filter(word => word.length > 0);
+        
+        // Check if all search words match the start of entity words
+        if (searchWords.length > 0 && entityWords.length > 0) {
+            let allWordsStartMatch = searchWords.every(searchWord => 
+                entityWords.some(entityWord => entityWord.startsWith(searchWord))
+            );
+            
+            if (allWordsStartMatch) {
+                return 300;
+            }
+        }
+        
+        // Contains search value anywhere gets low score
+        return 100;
+    }
+    
+    /**
      * Render the entity list based on search input
      */
     function renderEntityList() {
@@ -57,6 +96,24 @@ document.addEventListener('DOMContentLoaded', () => {
             
             // Filter by search value
             return entity.name.toLowerCase().includes(searchValue);
+        });
+        
+        // Sort entities by relevance
+        filteredEntities.sort((a, b) => {
+            const aName = a.name.toLowerCase();
+            const bName = b.name.toLowerCase();
+            
+            // Calculate relevance scores
+            const aScore = calculateRelevanceScore(aName, searchValue);
+            const bScore = calculateRelevanceScore(bName, searchValue);
+            
+            // Sort by score (higher score first)
+            if (aScore !== bScore) {
+                return bScore - aScore;
+            }
+            
+            // If scores are equal, sort alphabetically
+            return aName.localeCompare(bName);
         });
         
         // Limit to first 10 results for performance

@@ -28,9 +28,9 @@ class SuggestedReplyGeneratorTest extends PHPUnit\Framework\TestCase {
         // :: Act
         $result = $this->generator->generateSuggestedReply($thread);
         
-        // :: Assert
-        $this->assertStringContainsString("Tidligere e-poster:", $result);
-        $this->assertStringContainsString("--\nTest User", $result);
+        // :: Assert - With deterministic input, verify exact output
+        $expectedReply = "Tidligere e-poster:\n\n--\nTest User";
+        $this->assertEquals($expectedReply, $result, 'Generated reply should match expected format exactly');
     }
     
     public function testGenerateWithEmailHistory() {
@@ -60,11 +60,14 @@ class SuggestedReplyGeneratorTest extends PHPUnit\Framework\TestCase {
         // :: Act
         $result = $this->generator->generateSuggestedReply($thread);
         
-        // :: Assert
-        $this->assertStringContainsString("1. Sendt den 2025-01-16 14:20:00", $result);
-        $this->assertStringContainsString("Sammendrag: Response to request", $result);
-        $this->assertStringContainsString("2. Mottatt den 2025-01-15 10:30:00", $result);
-        $this->assertStringContainsString("Sammendrag: Initial request", $result);
+        // :: Assert - With deterministic input, verify exact output
+        $expectedReply = "Tidligere e-poster:\n\n" .
+            "1. Sendt den 2025-01-16 14:20:00\n" .
+            "   Sammendrag: Response to request\n\n" .
+            "2. Mottatt den 2025-01-15 10:30:00\n" .
+            "   Sammendrag: Initial request\n\n" .
+            "--\nTest User";
+        $this->assertEquals($expectedReply, $result, 'Generated reply should match expected format exactly');
     }
     
     public function testGenerateWithCaseNumberInformation() {
@@ -333,13 +336,21 @@ Test User';
         // :: Act
         $result = $this->generator->generateSuggestedReply($thread);
         
-        // :: Assert
+        // :: Assert - With deterministic input, verify exact output
         // Should contain emails 3-7 (last 5 when reversed)
-        $this->assertStringContainsString("1. Mottatt den 2025-01-7 10:30:00", $result);
-        $this->assertStringContainsString("5. Mottatt den 2025-01-3 10:30:00", $result);
-        // Should NOT contain emails 1-2
-        $this->assertStringNotContainsString("2025-01-1 10:30:00", $result);
-        $this->assertStringNotContainsString("2025-01-2 10:30:00", $result);
+        $expectedReply = "Tidligere e-poster:\n\n" .
+            "1. Mottatt den 2025-01-7 10:30:00\n" .
+            "   Sammendrag: Email 7\n\n" .
+            "2. Mottatt den 2025-01-6 10:30:00\n" .
+            "   Sammendrag: Email 6\n\n" .
+            "3. Mottatt den 2025-01-5 10:30:00\n" .
+            "   Sammendrag: Email 5\n\n" .
+            "4. Mottatt den 2025-01-4 10:30:00\n" .
+            "   Sammendrag: Email 4\n\n" .
+            "5. Mottatt den 2025-01-3 10:30:00\n" .
+            "   Sammendrag: Email 3\n\n" .
+            "--\nTest User";
+        $this->assertEquals($expectedReply, $result, 'Generated reply should show exactly last 5 emails');
     }
     
     public function testNoDuplicateCaseNumbers() {
