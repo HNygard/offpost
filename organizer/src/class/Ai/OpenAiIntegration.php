@@ -13,7 +13,7 @@ class OpenAiIntegration
     // Use 3 retries for OpenAI (vs 5 for IMAP) since OpenAI failures are typically
     // transient thread exhaustion that resolves quickly, while IMAP may have longer issues
     private const MAX_RETRIES = 3;
-    private const RETRY_DELAY_MS = 100; // Base delay in milliseconds (100ms, 200ms with exponential backoff)
+    private const RETRY_DELAY_MS = 100; // Base delay: 100ms for 1st retry, 200ms for 2nd retry (exponential backoff)
     
     private string $apiKey;
 
