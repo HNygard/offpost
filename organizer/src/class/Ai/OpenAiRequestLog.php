@@ -194,7 +194,7 @@ class OpenAiRequestLog {
      * @return array|null Log record or null if not found
      */
     public static function getById(int $id): ?array {
-        return Database::queryOne(
+        return Database::queryOneOrNone(
             "SELECT * FROM openai_request_log WHERE id = ?",
             [$id]
         );
