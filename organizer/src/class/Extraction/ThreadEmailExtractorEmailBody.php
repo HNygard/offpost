@@ -359,8 +359,8 @@ class ThreadEmailExtractorEmailBody extends ThreadEmailExtractor {
     private static function fixCharsetMismatchInEncodedWords($eml) {
         // Pattern to match encoded-words with potential charset issues
         // Format: =?charset?encoding?content?=
-        // We focus on iso-8859-1 with Q encoding (quoted-printable)
-        $pattern = '/=\?(iso-8859-1)\?([QBqb])\?([^?]*)\?=/i';
+        // We focus on iso-8859-1 and closely related Western single-byte encodings with Q encoding (quoted-printable)
+        $pattern = '/=\?((?:iso-8859-1|iso-8859-15|windows-1252|iso-8859-[0-9]+))\?([QBqb])\?([^?]*)\?=/i';
         
         $eml = preg_replace_callback($pattern, function($matches) {
             $charset = $matches[1];
