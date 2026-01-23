@@ -170,51 +170,37 @@ class OpenAiIntegrationTest extends PHPUnit\Framework\TestCase {
         $model = 'gpt-4';
         
         // Mock a curl error with debug information
+        $mockDebuggingInfo = [
+            'url' => 'https://api.openai.com/v1/responses',
+            'content_type' => null,
+            'http_code' => 0,
+            'total_time' => 0.001234,
+            'namelookup_time' => 0.001,
+            'connect_time' => 0,
+            'pretransfer_time' => 0,
+            'starttransfer_time' => 0,
+            'redirect_time' => 0,
+            'redirect_count' => 0,
+            'primary_ip' => '',
+            'primary_port' => 0,
+            'error' => 'getaddrinfo() thread failed to start',
+            'error_number' => 6,
+            'request_size_bytes' => 123
+        ];
+        
         $this->integration->setNextResponse([
             'response' => false,
             'httpCode' => 0,
             'error' => 'getaddrinfo() thread failed to start',
-            'debuggingInfo' => [
-                'url' => 'https://api.openai.com/v1/responses',
-                'content_type' => null,
-                'http_code' => 0,
-                'total_time' => 0.001234,
-                'namelookup_time' => 0.001000,
-                'connect_time' => 0,
-                'pretransfer_time' => 0,
-                'starttransfer_time' => 0,
-                'redirect_time' => 0,
-                'redirect_count' => 0,
-                'primary_ip' => '',
-                'primary_port' => 0,
-                'error' => 'getaddrinfo() thread failed to start',
-                'error_number' => 6,
-                'request_size_bytes' => 123
-            ]
+            'debuggingInfo' => $mockDebuggingInfo
         ]);
         
-        // Build expected error message
-        $expectedErrorMessage = 'OpenAI API error: Curl error: getaddrinfo() thread failed to start (errno: 6)
-Debug info: {
-    "endpoint": "https:\/\/api.openai.com\/v1\/responses",
-    "debugging_info": {
-        "url": "https:\/\/api.openai.com\/v1\/responses",
-        "content_type": null,
-        "http_code": 0,
-        "total_time": 0.001234,
-        "namelookup_time": 0.001,
-        "connect_time": 0,
-        "pretransfer_time": 0,
-        "starttransfer_time": 0,
-        "redirect_time": 0,
-        "redirect_count": 0,
-        "primary_ip": "",
-        "primary_port": 0,
-        "error": "getaddrinfo() thread failed to start",
-        "error_number": 6,
-        "request_size_bytes": 123
-    }
-}';
+        // Build expected error message dynamically to match production code
+        $expectedErrorMessage = 'OpenAI API error: Curl error: getaddrinfo() thread failed to start (errno: 6)';
+        $expectedErrorMessage .= "\nDebug info: " . json_encode([
+            'endpoint' => 'https://api.openai.com/v1/responses',
+            'debugging_info' => $mockDebuggingInfo
+        ], JSON_PRETTY_PRINT);
         
         // :: Act & Assert
         $errorThrown = false;
