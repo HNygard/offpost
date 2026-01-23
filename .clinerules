@@ -163,3 +163,11 @@ Rules:
     - Use fixed, predictable values for test data
     - Tests should produce the same results every time they run
     - If uniqueness is needed, use sequential counters or fixed unique identifiers
+- Assertions for deterministic outputs:
+    - Use assertEquals instead of assertContains/assertStringContainsString when the output is deterministic
+    - If the test has fixed inputs and produces predictable output, assert the exact expected value
+    - Only use assertContains/assertStringContainsString when:
+        - The order of elements may vary (e.g., database queries without ORDER BY)
+        - The output includes non-deterministic data (e.g., timestamps, dynamic context)
+        - Testing that specific content exists without requiring an exact match
+    - Example: If a function generates a string from fixed dates and descriptions, use assertEquals with the full expected string

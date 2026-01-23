@@ -83,11 +83,15 @@ class ThreadReplyTest extends TestCase {
             $suggestedReply .= "\n";
         }
 
-        $this->assertStringContainsString('Previous emails in this thread:', $suggestedReply);
-        $this->assertStringContainsString('1. Received on 2024-01-03 09:15:00', $suggestedReply);
-        $this->assertStringContainsString('2. Received on 2024-01-02 15:30:00', $suggestedReply);
-        $this->assertStringContainsString('3. Sent on 2024-01-01 10:00:00', $suggestedReply);
-        $this->assertStringContainsString('Follow-up email received', $suggestedReply);
+        // With deterministic input, verify exact output
+        $expectedReply = "Previous emails in this thread:\n\n" .
+            "1. Received on 2024-01-03 09:15:00\n" .
+            "   Summary: Follow-up email received\n\n" .
+            "2. Received on 2024-01-02 15:30:00\n" .
+            "   Summary: Response received from entity\n\n" .
+            "3. Sent on 2024-01-01 10:00:00\n" .
+            "   Summary: Initial request sent\n\n";
+        $this->assertEquals($expectedReply, $suggestedReply, 'Generated reply should match expected format exactly');
     }
 
     public function testThreadReplyValidation() {
