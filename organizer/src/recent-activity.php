@@ -58,12 +58,6 @@ function threadStatusToString($status) {
     }
 }
 
-// Helper function to format timestamp
-function formatTimestamp($timestamp) {
-    if (!$timestamp) return 'N/A';
-    return date('Y-m-d H:i', strtotime($timestamp));
-}
-
 // Helper function to get thread status from thread information
 function getThreadStatusForEmail($email, $threadStatuses) {
     if (isset($threadStatuses[$email->thread_id])) {
@@ -157,7 +151,7 @@ function truncateText($text, $length = 100) {
                         </div>
                     </td>
                     <td>
-                        <small><?= formatTimestamp($email->datetime_received) ?></small>
+                        <small><?= formatDateTimeOslo($email->datetime_received, false) ?></small>
                     </td>
                     <td>
                         <div class="action-links">

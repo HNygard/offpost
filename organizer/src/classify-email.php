@@ -330,7 +330,7 @@ function secondsToHumanReadable($seconds) {
                     ?>
                     <div class="email-item<?= $email->ignore ? ' ignored' : '' ?>">
                         <hr>
-                        <?= $email->datetime_received ?> (<?= $since_last_text ?>):
+                        <?= formatDateTimeOslo($email->datetime_received) ?> (<?= $since_last_text ?>):
                         <?= $email->email_type ?><br>
                         [Current classification: <?= ThreadEmailClassifier::getClassificationLabel($email) ?>]<br>
 

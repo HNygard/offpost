@@ -360,7 +360,7 @@ function getThreadStatusLabelClass($status) {
                                 $label_type = getLabelType('email', $email->status_type);
                                 ?>
                                 <div <?= $email->ignore ? ' style="color: gray;"' : '' ?>>
-                                    <?= $email->datetime_received ?>:
+                                    <?= formatDateTimeOslo($email->datetime_received, false) ?>:
                                     <?= $email->email_type ?> -
                                     <span class="<?= $label_type ?>"><?= $email->status_text ?></span>
                                     <?php
