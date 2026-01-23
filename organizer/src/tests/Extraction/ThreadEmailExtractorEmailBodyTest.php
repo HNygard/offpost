@@ -367,4 +367,35 @@ This is a test email.
         $subject = $result->getHeader('subject')->getFieldValue();
         $this->assertEquals('Test Subject', $subject);
     }
+
+    public function testReadLaminasMessage_withErrorHandling_NonAsciiCharacterDebugInfo() {
+        // Test email with non-ASCII character (> 127) in the Subject header
+        // This should be encoded using encoded-word format but isn't
+        $emailWithNonAscii = "From: sender@example.com\r\n" .
+                            "To: recipient@example.com\r\n" .
+                            "Subject: Test " . chr(200) . " Subject\r\n" .  // Character with ord > 127
+                            "Content-Type: text/plain\r\n" .
+                            "\r\n" .
+                            "This is a test email body";
+
+        try {
+            ThreadEmailExtractorEmailBody::readLaminasMessage_withErrorHandling($emailWithNonAscii);
+            $this->fail('Expected Exception to be thrown for non-ASCII character in header');
+        } catch (Exception $e) {
+            $message = $e->getMessage();
+            
+            // Verify the exception message contains detailed debugging information
+            $this->assertStringContainsString('Failed to parse email due to problematic header: Subject', $message);
+            $this->assertStringContainsString('CHARACTER ANALYSIS:', $message);
+            $this->assertStringContainsString('problematic character(s) in header value', $message);
+            
+            // Check for specific reason about non-ASCII character
+            $this->assertStringContainsString('Non-ASCII character (ord > 127)', $message);
+            $this->assertStringContainsString('should use encoded-word format', $message);
+            
+            // Check for character code (200 = 0xC8)
+            $this->assertStringContainsString('200', $message);
+            $this->assertStringContainsString('0xC8', $message);
+        }
+    }
 }
