@@ -46,6 +46,7 @@ class ExtractionRetryPageTest extends E2EPageTestCase {
         $this->threadId = $thread->id;
         
         // Create a test email in the database
+        // Note: Using Thread constructor to generate a UUID (established pattern in this codebase)
         $thread = new Thread();
         $this->emailId = $thread->id; // Use the UUID generated in the Thread constructor
         Database::execute(
@@ -134,7 +135,8 @@ class ExtractionRetryPageTest extends E2EPageTestCase {
         $this->assertNull($extraction, 'Extraction should be deleted');
         
         // Remove from cleanup list since it's already deleted
-        $this->testExtractionIds = array_diff($this->testExtractionIds, [$this->testExtractionIds[0]]);
+        $deletedId = $this->testExtractionIds[0];
+        $this->testExtractionIds = array_diff($this->testExtractionIds, [$deletedId]);
     }
 
     public function testRetryMultipleExtractions() {
