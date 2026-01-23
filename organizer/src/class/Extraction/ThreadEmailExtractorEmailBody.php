@@ -307,30 +307,34 @@ class ThreadEmailExtractorEmailBody extends ThreadEmailExtractor {
      * @return string Fixed header line
      */
     private static function fixMalformedEncodedWords($headerLine) {
-        // Pattern to match malformed encoded-words where ?= is missing and followed by a header name
-        // Matches: =?charset?encoding?content?HeaderName:
-        // The pattern looks for encoded words that don't end with ?= but instead have a header name
-        $pattern = '/(=\?[^?]+\?[BQbq]\?[^?]*)\?([A-Za-z][A-Za-z0-9-]*):(.*)$/';
+        // Pattern components for readability
+        // Encoded word format: =?charset?encoding?content
+        $encodedWordStart = '=\?[^?]+\?';           // =?charset?
+        $encoding = '[BQbq]';                        // B or Q encoding (base64 or quoted-printable)
+        $encodedContent = '[^?]*';                   // The encoded content
+        $missingClose = '\?';                        // The ? that should be followed by = but isn't
+        $nextHeaderName = '([A-Za-z][A-Za-z0-9-]*)'; // The next header name that appears too early
+        $headerColon = ':';                          // The colon after header name
+        
+        // Full pattern: match encoded word missing ?= followed by header name
+        $pattern = "/({$encodedWordStart}{$encoding}\?{$encodedContent}){$missingClose}{$nextHeaderName}{$headerColon}(.*)$/";
         
         if (preg_match($pattern, $headerLine, $matches)) {
             // $matches[1] = the encoded word without proper closing
             // $matches[2] = the header name that should be on next line (we drop it)
             // $matches[3] = the rest of the line (we drop it)
             
-            // Get the leading whitespace if this is a continuation line
-            $leadingWhitespace = '';
+            // Determine if this is a continuation line or a header line
             if (preg_match('/^(\s+)/', $headerLine, $wsMatches)) {
-                $leadingWhitespace = $wsMatches[1];
+                // Continuation line: preserve leading whitespace
+                return $wsMatches[1] . $matches[1] . '?=';
+            } elseif (preg_match('/^([A-Za-z-]+:\s*)/', $headerLine, $hMatches)) {
+                // Header line: preserve header name and colon
+                return $hMatches[1] . $matches[1] . '?=';
             }
             
-            // Get the header prefix if this is the first line of a header
-            $headerPrefix = '';
-            if (preg_match('/^([A-Za-z-]+:\s*)/', $headerLine, $hMatches)) {
-                $headerPrefix = $hMatches[1];
-            }
-            
-            // Return the fixed line with proper closing
-            return $headerPrefix . $leadingWhitespace . $matches[1] . '?=';
+            // Shouldn't happen, but return fixed encoded word as fallback
+            return $matches[1] . '?=';
         }
         
         return $headerLine;
