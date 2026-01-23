@@ -336,6 +336,82 @@ class ThreadEmailExtractorEmailBody extends ThreadEmailExtractor {
     }
 
     /**
+     * Fix charset mismatches in RFC 2047 encoded-words
+     * 
+     * Some email clients (especially Microsoft Outlook/Exchange) incorrectly declare
+     * iso-8859-1 charset but include UTF-8 encoded bytes. Additionally, they may
+     * include raw UTF-8 bytes instead of Q-encoded format (=XX).
+     * 
+     * Example of problematic header:
+     * To: =?iso-8859-1?Q?Alfred_Sj\xc3\xb8berg?= <alfred.sjoberg@offpost.no>
+     * 
+     * This contains:
+     * - Declaration: iso-8859-1
+     * - Content: UTF-8 bytes \xc3\xb8 (ø) as raw bytes instead of =C3=B8
+     * - In ISO-8859-1, ø should be \xf8
+     * 
+     * This method detects UTF-8 byte sequences in iso-8859-1 encoded-words and,
+     * when found, Q-encodes the raw UTF-8 bytes and updates the charset declaration to UTF-8.
+     * 
+     * @param string $eml Raw email content
+     * @return string Fixed email content
+     */
+    private static function fixCharsetMismatchInEncodedWords($eml) {
+        // Pattern to match encoded-words with potential charset issues
+        // Format: =?charset?encoding?content?=
+        // We focus on iso-8859-1 and closely related Western single-byte encodings with Q encoding (quoted-printable)
+        $pattern = '/=\?((?:iso-8859-1|iso-8859-15|windows-1252|iso-8859-[0-9]+))\?([QBqb])\?([^?]*)\?=/i';
+        
+        $eml = preg_replace_callback($pattern, function($matches) {
+            $charset = $matches[1];
+            $encoding = strtoupper($matches[2]);
+            $content = $matches[3];
+            
+            // Only process Q encoding (quoted-printable)
+            if ($encoding !== 'Q') {
+                return $matches[0]; // Return unchanged for Base64
+            }
+            
+            // Check if content contains UTF-8 byte sequences
+            // UTF-8 2-byte sequence pattern: \xC2-\xDF followed by \x80-\xBF
+            // (Note: \xC0 and \xC1 are invalid UTF-8 start bytes, excluded to avoid overlong encodings)
+            // Common for Norwegian characters:
+            // - ø: \xC3\xB8
+            // - å: \xC3\xA5
+            // - æ: \xC3\xA6
+            $hasUtf8Bytes = preg_match('/[\xC2-\xDF][\x80-\xBF]/', $content);
+            
+            if (!$hasUtf8Bytes) {
+                return $matches[0]; // No UTF-8 bytes detected, return unchanged
+            }
+            
+            // Strategy: Change the charset declaration to UTF-8
+            // This allows the parser to correctly interpret the bytes
+            // We also need to ensure raw bytes are properly Q-encoded
+            
+            // First, ensure all non-ASCII bytes are Q-encoded (=XX format)
+            $fixedContent = '';
+            $len = strlen($content);
+            for ($i = 0; $i < $len; $i++) {
+                $byte = $content[$i];
+                $ord = ord($byte);
+                
+                // If it's a raw high-bit byte (> 127), Q-encode it
+                if ($ord > 127) {
+                    $fixedContent .= sprintf('=%02X', $ord);
+                } else {
+                    $fixedContent .= $byte;
+                }
+            }
+            
+            // Return with UTF-8 charset declaration (uppercase for better compatibility)
+            return "=?UTF-8?Q?{$fixedContent}?=";
+        }, $eml);
+        
+        return $eml;
+    }
+
+    /**
      * Strip problematic headers that cause parsing issues in Laminas Mail
      * 
      * @param string $eml Raw email content
@@ -527,6 +603,9 @@ class ThreadEmailExtractorEmailBody extends ThreadEmailExtractor {
      * @return Laminas\Mail\Storage\Message
      */
     public static function readLaminasMessage_withErrorHandling($eml) {
+        // First fix charset mismatches in encoded-words (e.g., UTF-8 bytes in iso-8859-1 headers)
+        $eml = self::fixCharsetMismatchInEncodedWords($eml);
+        // Then strip problematic headers
         $eml = self::stripProblematicHeaders($eml);
         try {
             return new \Laminas\Mail\Storage\Message(['raw' => $eml]);

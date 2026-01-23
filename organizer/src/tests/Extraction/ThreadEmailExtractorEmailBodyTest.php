@@ -403,4 +403,73 @@ This is a test email.
             $this->assertEquals($expectedMessage, $message);
         }
     }
+
+    public function testReadLaminasMessage_withCharsetMismatch_Utf8InIso88591() {
+        // Email with UTF-8 bytes (\xc3\xb8 = ø) in header declaring iso-8859-1
+        // This is a common issue with Microsoft Outlook/Exchange servers
+        $emlWithMismatch = "From: sender@example.com\r\n" .
+                          "To: =?iso-8859-1?Q?Alfred_Sj\xc3\xb8berg?= <alfred.sjoberg@offpost.no>\r\n" .
+                          "Subject: Test\r\n" .
+                          "Content-Type: text/plain\r\n" .
+                          "\r\n" .
+                          "Test body";
+
+        $result = ThreadEmailExtractorEmailBody::readLaminasMessage_withErrorHandling($emlWithMismatch);
+        
+        // Should successfully parse
+        $this->assertInstanceOf(\Laminas\Mail\Storage\Message::class, $result);
+        
+        // Should correctly decode Norwegian character
+        $to = $result->getHeader('to')->getFieldValue();
+        $this->assertStringContainsString('Alfred Sjøberg', $to);
+        $this->assertStringContainsString('alfred.sjoberg@offpost.no', $to);
+    }
+
+    public function testReadLaminasMessage_withCharsetMismatch_MultipleNorwegianChars() {
+        // Test with multiple Norwegian characters (ø, å, æ)
+        $emlWithMismatch = "From: =?iso-8859-1?Q?P\xc3\xa5l_\xc3\x86rlig?= <pal@example.com>\r\n" .
+                          "To: =?iso-8859-1?Q?Kj\xc3\xa6re_venner?= <friends@example.com>\r\n" .
+                          "Subject: =?iso-8859-1?Q?M\xc3\xb8te_i_morgen?=\r\n" .
+                          "Content-Type: text/plain\r\n" .
+                          "\r\n" .
+                          "Test body";
+
+        $result = ThreadEmailExtractorEmailBody::readLaminasMessage_withErrorHandling($emlWithMismatch);
+        
+        // Should successfully parse
+        $this->assertInstanceOf(\Laminas\Mail\Storage\Message::class, $result);
+        
+        // Check From header with å and æ
+        $from = $result->getHeader('from')->getFieldValue();
+        $this->assertStringContainsString('Pål Ærlig', $from);
+        
+        // Check To header with æ
+        $to = $result->getHeader('to')->getFieldValue();
+        $this->assertStringContainsString('Kjære venner', $to);
+        
+        // Check Subject header with ø
+        $subject = $result->getHeader('subject')->getFieldValue();
+        $this->assertStringContainsString('Møte i morgen', $subject);
+    }
+
+    public function testReadLaminasMessage_withCharsetMismatch_CorrectIso88591Unaffected() {
+        // Verify that correctly formatted ISO-8859-1 emails are not broken
+        // In ISO-8859-1, ø is encoded as \xf8 (single byte)
+        $correctIso88591 = "From: sender@example.com\r\n" .
+                          "To: =?iso-8859-1?Q?Alfred_Sj=F8berg?= <alfred.sjoberg@offpost.no>\r\n" .
+                          "Subject: Test\r\n" .
+                          "Content-Type: text/plain\r\n" .
+                          "\r\n" .
+                          "Test body";
+
+        $result = ThreadEmailExtractorEmailBody::readLaminasMessage_withErrorHandling($correctIso88591);
+        
+        // Should successfully parse
+        $this->assertInstanceOf(\Laminas\Mail\Storage\Message::class, $result);
+        
+        // Should correctly decode Norwegian character from proper ISO-8859-1
+        $to = $result->getHeader('to')->getFieldValue();
+        $this->assertStringContainsString('Alfred Sjøberg', $to);
+        $this->assertStringContainsString('alfred.sjoberg@offpost.no', $to);
+    }
 }
