@@ -337,10 +337,11 @@ class ThreadEmailExtractorEmailBody extends ThreadEmailExtractor {
 
     /**
      * Detect if a byte sequence is part of a UTF-8 multi-byte character.
+     * Returns the number of bytes in the UTF-8 sequence if valid, or 0 if not.
      * 
      * @param string $str String containing the byte sequence
      * @param int $pos Position to check
-     * @return bool True if this appears to be part of a UTF-8 sequence
+     * @return int Number of bytes in UTF-8 sequence (0 if not UTF-8)
      */
     private static function isUtf8ByteSequence($str, $pos) {
         $len = strlen($str);
@@ -359,15 +360,15 @@ class ThreadEmailExtractorEmailBody extends ThreadEmailExtractor {
                 
                 // Verify continuation bytes
                 for ($i = 1; $i <= $continuationBytes; $i++) {
-                    if ($pos + $i >= $len) return false;
+                    if ($pos + $i >= $len) return 0;
                     $nextByte = ord($str[$pos + $i]);
-                    if ($nextByte < 0x80 || $nextByte > 0xBF) return false;
+                    if ($nextByte < 0x80 || $nextByte > 0xBF) return 0;
                 }
-                return true;
+                return $continuationBytes + 1; // Total bytes in sequence
             }
         }
         
-        return false;
+        return 0;
     }
 
     /**
@@ -405,10 +406,15 @@ class ThreadEmailExtractorEmailBody extends ThreadEmailExtractor {
                     $byte = ord($content[$i]);
                     
                     // Check for UTF-8 multi-byte sequence
-                    if (self::isUtf8ByteSequence($content, $i)) {
+                    $utf8SequenceLength = self::isUtf8ByteSequence($content, $i);
+                    if ($utf8SequenceLength > 0) {
                         $hasUtf8 = true;
-                        // Q-encode this byte
-                        $fixedContent .= sprintf('=%02X', $byte);
+                        // Q-encode ALL bytes in the UTF-8 sequence
+                        for ($j = 0; $j < $utf8SequenceLength; $j++) {
+                            $fixedContent .= sprintf('=%02X', ord($content[$i + $j]));
+                        }
+                        // Skip ahead past the UTF-8 sequence
+                        $i += $utf8SequenceLength - 1;
                     } else {
                         // Keep as-is
                         $fixedContent .= $content[$i];
