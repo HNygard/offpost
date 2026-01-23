@@ -133,7 +133,6 @@ abstract class ThreadEmailExtractorPrompt extends ThreadEmailExtractor {
         
         if ($oldExtraction) {
             // Delete the old extraction to trigger re-processing
-            require_once __DIR__ . '/ThreadEmailExtractionService.php';
             $extractionService = new ThreadEmailExtractionService();
             $extractionService->deleteExtraction($oldExtraction['extraction_id']);
             error_log("Deleted old extraction {$oldExtraction['extraction_id']} with outdated prompt_id to trigger re-extraction");

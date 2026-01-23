@@ -80,7 +80,7 @@ foreach ($ids as $id) {
             $results[] = [
                 'id' => $id,
                 'success' => false,
-                'message' => 'Failed to delete extraction'
+                'message' => 'Failed to delete extraction (it may have already been deleted or does not exist)'
             ];
             $errorCount++;
             continue;
