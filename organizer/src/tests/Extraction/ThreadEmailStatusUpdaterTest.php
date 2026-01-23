@@ -20,10 +20,6 @@ class ThreadEmailStatusUpdaterTest extends TestCase {
         // Start database transaction
         Database::beginTransaction();
         
-        // Clean database tables
-        Database::execute("DELETE FROM thread_email_extractions");
-        Database::execute("DELETE FROM thread_emails");
-        
         // Create a test thread
         $this->thread = new Thread();
         $this->thread->title = "Test Thread for Status Updater";
