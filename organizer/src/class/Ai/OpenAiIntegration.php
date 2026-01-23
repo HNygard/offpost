@@ -101,6 +101,11 @@ class OpenAiIntegration
         $debuggingInfo = $responseData['debuggingInfo'];
         
         if ($error) {
+            // Remove redundant error_message field from debug info to avoid duplication
+            if (isset($debuggingInfo['error_message'])) {
+                unset($debuggingInfo['error_message']);
+            }
+            
             // Build detailed error message with debug information
             $errorMessage = 'Curl error: ' . $error . ' (errno: ' . $debuggingInfo['error_number'] . ')';
             $errorMessage .= "\nDebug info: " . json_encode([
