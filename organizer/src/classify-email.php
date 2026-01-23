@@ -198,6 +198,21 @@ function secondsToHumanReadable($seconds) {
     return $result;
 }
 
+// Helper function to format timestamp in Oslo timezone
+function formatTimestamp($timestamp) {
+    if (!$timestamp) return 'N/A';
+    try {
+        // Convert datetime to local timezone (Europe/Oslo)
+        $utcDateTime = new DateTime($timestamp);
+        $utcDateTime->setTimezone(new DateTimeZone('Europe/Oslo'));
+        return $utcDateTime->format('Y-m-d H:i:s');
+    } catch (Throwable $e) {
+        // If timestamp parsing fails, return the original value
+        error_log("Failed to parse timestamp '$timestamp': " . $e->getMessage());
+        return $timestamp;
+    }
+}
+
 ?>
 <!DOCTYPE html>
 <html>
@@ -330,7 +345,7 @@ function secondsToHumanReadable($seconds) {
                     ?>
                     <div class="email-item<?= $email->ignore ? ' ignored' : '' ?>">
                         <hr>
-                        <?= $email->datetime_received ?> (<?= $since_last_text ?>):
+                        <?= formatTimestamp($email->datetime_received) ?> (<?= $since_last_text ?>):
                         <?= $email->email_type ?><br>
                         [Current classification: <?= ThreadEmailClassifier::getClassificationLabel($email) ?>]<br>
 
