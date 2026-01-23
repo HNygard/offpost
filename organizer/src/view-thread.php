@@ -177,6 +177,15 @@ function getIconClass($filetype) {
     }
 }
 
+// Function to format datetime in Oslo timezone
+function formatDateTimeOslo($timestamp) {
+    if (!$timestamp) return 'N/A';
+    // Convert datetime to local timezone (Europe/Oslo)
+    $utcDateTime = new DateTime($timestamp);
+    $utcDateTime->setTimezone(new DateTimeZone('Europe/Oslo'));
+    return $utcDateTime->format('Y-m-d H:i:s');
+}
+
 function print_extraction ($extraction) {
     $text = '';
     $style = '';
@@ -420,7 +429,7 @@ function print_extraction ($extraction) {
             ?>
                 <div class="email-item<?= $email->ignore ? ' ignored' : '' ?>">
                     <div class="email-header">
-                        <span class="datetime"><?= htmlescape($email->datetime_received) ?></span>
+                        <span class="datetime"><?= htmlescape(formatDateTimeOslo($email->datetime_received)) ?></span>
                         <span class="email-type"><?= htmlescape($email->email_type) ?></span>
                         <span class="<?= $label_type ?>"><?= htmlescape($email->status_text) ?></span>
                         <?php

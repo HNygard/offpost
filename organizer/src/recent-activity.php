@@ -61,7 +61,10 @@ function threadStatusToString($status) {
 // Helper function to format timestamp
 function formatTimestamp($timestamp) {
     if (!$timestamp) return 'N/A';
-    return date('Y-m-d H:i', strtotime($timestamp));
+    // Convert datetime to local timezone (Europe/Oslo)
+    $utcDateTime = new DateTime($timestamp);
+    $utcDateTime->setTimezone(new DateTimeZone('Europe/Oslo'));
+    return $utcDateTime->format('Y-m-d H:i');
 }
 
 // Helper function to get thread status from thread information
