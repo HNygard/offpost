@@ -295,16 +295,22 @@ function getEmailCcAddressesFromImapHeaders($imapHeaders) {
  * @return string Sanitized UTF-8 text
  */
 function sanitizeUtf8String(string $text): string {
+    // Handle empty strings early
+    if ($text === '') {
+        return '';
+    }
+    
     // mb_convert_encoding with 'UTF-8' to 'UTF-8' replaces invalid sequences
-    // The //IGNORE flag would skip invalid sequences, but we want to use the replacement character
     $sanitized = mb_convert_encoding($text, 'UTF-8', 'UTF-8');
     
-    // If mb_convert_encoding fails, try iconv with TRANSLIT to replace problematic characters
-    if ($sanitized === false || $sanitized === '') {
-        $sanitized = iconv('UTF-8', 'UTF-8//IGNORE', $text);
+    // If mb_convert_encoding fails, try iconv with SUBSTITUTE to replace problematic characters
+    if ($sanitized === false) {
+        $sanitized = @iconv('UTF-8', 'UTF-8//IGNORE', $text);
         if ($sanitized === false) {
-            // Last resort: use regex to remove invalid UTF-8 sequences
-            $sanitized = preg_replace('/[\x00-\x08\x0B\x0C\x0E-\x1F\x80-\x9F]/u', '?', $text);
+            // Last resort: manually filter out invalid bytes
+            // Remove control characters and other problematic bytes
+            // Don't use 'u' modifier since we're dealing with potentially invalid UTF-8
+            $sanitized = preg_replace('/[\x00-\x08\x0B\x0C\x0E-\x1F\x7F]/', '', $text);
             if ($sanitized === null) {
                 // If even regex fails, return empty string
                 return '';
