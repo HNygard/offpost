@@ -330,7 +330,20 @@ sort($sources);
                     },
                     body: JSON.stringify({ ids: ids })
                 })
-                .then(response => response.json())
+                .then(response => {
+                    if (!response.ok) {
+                        let errorMessage = 'HTTP error ' + response.status;
+                        if (response.status === 400) {
+                            errorMessage = 'Bad request: Invalid retry request.';
+                        } else if (response.status === 404) {
+                            errorMessage = 'Not found: Retry endpoint not found.';
+                        } else if (response.status === 500) {
+                            errorMessage = 'Server error: An error occurred while retrying.';
+                        }
+                        throw new Error(errorMessage);
+                    }
+                    return response.json();
+                })
                 .then(data => {
                     if (data.success) {
                         retryStatus.textContent = data.message;
@@ -370,8 +383,6 @@ sort($sources);
                     retryStatus.style.color = 'red';
                     retryButton.disabled = false;
                 });
-            });
-        });
             });
         });
     </script>

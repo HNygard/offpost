@@ -169,6 +169,8 @@ class OpenAiRequestLogRetryPageTest extends E2EPageTestCase {
     public function testRetryEndpointInvalidIds() {
         // :: Setup
         // Test with empty IDs array
+        // Note: http_build_query(['ids' => []]) produces an empty string,
+        // so $_POST['ids'] won't be set, triggering the first validation error
         
         // :: Act
         $response = $this->renderPage(
@@ -180,6 +182,27 @@ class OpenAiRequestLogRetryPageTest extends E2EPageTestCase {
         );
         
         // :: Assert
+        // Empty array in form-encoded POST means the parameter isn't sent at all
+        $this->assertStringContainsString('Invalid request: ids array required', $response->body);
+    }
+
+    public function testRetryEndpointNoValidIds() {
+        // :: Setup
+        // Test with array of invalid ID values (e.g., 0, negative, etc.)
+        // array_map('intval', [0, -1, 0]) results in [0, -1, 0]
+        // After filtering out invalid IDs, we should get empty array
+        
+        // :: Act
+        $response = $this->renderPage(
+            '/openai-request-log-retry',
+            'dev-user-id',
+            'POST',
+            '400 Bad Request',
+            ['ids' => [0, -1, 0]]
+        );
+        
+        // :: Assert
+        // All IDs are invalid (0 or negative), so we should get "No valid IDs provided"
         $this->assertStringContainsString('No valid IDs provided', $response->body);
     }
 

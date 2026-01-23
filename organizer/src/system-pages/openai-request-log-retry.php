@@ -24,6 +24,13 @@ if (strpos($contentType, 'application/json') !== false) {
     // JSON request from AJAX
     $input = file_get_contents('php://input');
     $data = json_decode($input, true);
+    
+    // Check for JSON decoding errors explicitly
+    if (json_last_error() !== JSON_ERROR_NONE) {
+        http_response_code(400);
+        echo json_encode(['success' => false, 'message' => 'Invalid JSON in request body']);
+        exit;
+    }
 } else {
     // Form-encoded request (e.g., from tests or form submission)
     $data = $_POST;
@@ -36,6 +43,8 @@ if (!isset($data['ids']) || !is_array($data['ids'])) {
 }
 
 $ids = array_map('intval', $data['ids']);
+// Filter out invalid IDs (0 or negative values)
+$ids = array_filter($ids, function($id) { return $id > 0; });
 if (empty($ids)) {
     http_response_code(400);
     echo json_encode(['success' => false, 'message' => 'No valid IDs provided']);
@@ -70,6 +79,17 @@ foreach ($logs as $log) {
     try {
         // Parse the original request
         $requestData = json_decode($log['request'], true);
+        
+        // Check for JSON decoding errors explicitly to distinguish corrupted data
+        if (json_last_error() !== JSON_ERROR_NONE) {
+            $results[] = [
+                'id' => $log['id'],
+                'success' => false,
+                'message' => 'Invalid JSON in stored request data: ' . json_last_error_msg()
+            ];
+            $errorCount++;
+            continue;
+        }
         
         // Validate request data structure (expects format from OpenAiIntegration::sendRequest)
         if (!$requestData || !isset($requestData['input']) || !isset($requestData['model'])) {
