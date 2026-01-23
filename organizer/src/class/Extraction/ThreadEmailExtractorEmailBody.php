@@ -373,18 +373,19 @@ class ThreadEmailExtractorEmailBody extends ThreadEmailExtractor {
             }
             
             // Check if content contains UTF-8 byte sequences
-            // UTF-8 2-byte sequence pattern: \xC0-\xDF followed by \x80-\xBF
+            // UTF-8 2-byte sequence pattern: \xC2-\xDF followed by \x80-\xBF
+            // (Note: \xC0 and \xC1 are invalid UTF-8 start bytes, excluded to avoid overlong encodings)
             // Common for Norwegian characters:
             // - ø: \xC3\xB8
             // - å: \xC3\xA5
             // - æ: \xC3\xA6
-            $hasUtf8Bytes = preg_match('/[\xC0-\xDF][\x80-\xBF]/', $content);
+            $hasUtf8Bytes = preg_match('/[\xC2-\xDF][\x80-\xBF]/', $content);
             
             if (!$hasUtf8Bytes) {
                 return $matches[0]; // No UTF-8 bytes detected, return unchanged
             }
             
-            // Strategy: Change the charset declaration to utf-8
+            // Strategy: Change the charset declaration to UTF-8
             // This allows the parser to correctly interpret the bytes
             // We also need to ensure raw bytes are properly Q-encoded
             
@@ -403,8 +404,8 @@ class ThreadEmailExtractorEmailBody extends ThreadEmailExtractor {
                 }
             }
             
-            // Return with UTF-8 charset declaration
-            return "=?utf-8?Q?{$fixedContent}?=";
+            // Return with UTF-8 charset declaration (uppercase for better compatibility)
+            return "=?UTF-8?Q?{$fixedContent}?=";
         }, $eml);
         
         return $eml;
