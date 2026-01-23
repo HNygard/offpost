@@ -367,4 +367,40 @@ This is a test email.
         $subject = $result->getHeader('subject')->getFieldValue();
         $this->assertEquals('Test Subject', $subject);
     }
+
+    public function testReadLaminasMessage_withErrorHandling_NonAsciiCharacterDebugInfo() {
+        // Test email with non-ASCII character (> 127) in the Subject header
+        // This should be encoded using encoded-word format but isn't
+        $emailWithNonAscii = "From: sender@example.com\r\n" .
+                            "To: recipient@example.com\r\n" .
+                            "Subject: Test " . chr(200) . " Subject\r\n" .  // Character with ord > 127
+                            "Content-Type: text/plain\r\n" .
+                            "\r\n" .
+                            "This is a test email body";
+
+        try {
+            ThreadEmailExtractorEmailBody::readLaminasMessage_withErrorHandling($emailWithNonAscii);
+            $this->fail('Expected Exception to be thrown for non-ASCII character in header');
+        } catch (Exception $e) {
+            $message = $e->getMessage();
+            
+            // Build expected message format
+            $expectedMessage = "Failed to parse email due to problematic header: Subject\n"
+                . "Original error: Invalid header value detected\n"
+                . "New error: Invalid header value detected\n\n"
+                . "CHARACTER ANALYSIS:\n"
+                . "Found 1 problematic character(s) in header value:\n\n"
+                . "Issue #1:\n"
+                . "  Position: 5\n"
+                . "  Character: " . chr(200) . " (ASCII: 200 / 0xC8)\n"
+                . "  Reason: Non-ASCII character (ord > 127) - should use encoded-word format\n"
+                . "  Context: ...Test [\\xC8] Subject...\n\n"
+                . "Partial EML up to this header:\n"
+                . "From: sender@example.com\n"
+                . "To: recipient@example.com\n"
+                . "Subject: Test " . chr(200) . " Subject";
+            
+            $this->assertEquals($expectedMessage, $message);
+        }
+    }
 }

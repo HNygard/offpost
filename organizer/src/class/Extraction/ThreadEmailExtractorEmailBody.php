@@ -392,6 +392,132 @@ class ThreadEmailExtractorEmailBody extends ThreadEmailExtractor {
     }
 
     /**
+     * Analyze a header value and identify problematic characters.
+     * This replicates the validation logic from Laminas\Mail\Header\HeaderValue::isValid()
+     * but provides detailed information about which character(s) are invalid.
+     * 
+     * @param string $value Header value to analyze
+     * @return array Array with 'valid' boolean and 'issues' array containing problem details
+     */
+    private static function debuggingAnalyzeHeaderValue($value) {
+        $issues = [];
+        $total = strlen($value);
+        
+        for ($i = 0; $i < $total; $i += 1) {
+            $ord = ord($value[$i]);
+            $char = $value[$i];
+            
+            // bare LF means we aren't valid
+            if ($ord === 10) {
+                $issues[] = [
+                    'position' => $i,
+                    'character' => '\n',
+                    'ord' => $ord,
+                    'reason' => 'Bare LF (line feed) without CR (carriage return)',
+                    'context' => self::debuggingGetCharacterContext($value, $i)
+                ];
+                continue;
+            }
+            
+            // Characters > 127 are not valid in headers (must use encoded-words)
+            if ($ord > 127) {
+                $issues[] = [
+                    'position' => $i,
+                    'character' => $char,
+                    'ord' => $ord,
+                    'reason' => 'Non-ASCII character (ord > 127) - should use encoded-word format',
+                    'context' => self::debuggingGetCharacterContext($value, $i)
+                ];
+                continue;
+            }
+
+            // Check for proper CRLF sequences
+            if ($ord === 13) { // CR
+                if ($i + 2 >= $total) {
+                    $issues[] = [
+                        'position' => $i,
+                        'character' => '\r',
+                        'ord' => $ord,
+                        'reason' => 'CR (carriage return) at end of value without LF and space/tab',
+                        'context' => self::debuggingGetCharacterContext($value, $i)
+                    ];
+                    continue;
+                }
+
+                $lf = ord($value[$i + 1]);
+                $sp = ord($value[$i + 2]);
+
+                if ($lf !== 10 || ! in_array($sp, [9, 32], true)) {
+                    $issues[] = [
+                        'position' => $i,
+                        'character' => '\r',
+                        'ord' => $ord,
+                        'reason' => 'Invalid CRLF sequence - CR must be followed by LF and space/tab',
+                        'next_chars' => sprintf('0x%02X 0x%02X', $lf, $sp),
+                        'context' => self::debuggingGetCharacterContext($value, $i)
+                    ];
+                    continue;
+                }
+
+                // skip over the LF following this
+                $i += 2;
+            }
+        }
+        
+        return [
+            'valid' => empty($issues),
+            'issues' => $issues
+        ];
+    }
+    
+    /**
+     * Get context around a character position for debugging.
+     * 
+     * @param string $value The full string
+     * @param int $position Position of the character
+     * @param int $contextLength Number of characters to show on each side
+     * @return string Context string showing the character in its surroundings
+     */
+    private static function debuggingGetCharacterContext($value, $position, $contextLength = 20) {
+        $start = max(0, $position - $contextLength);
+        $end = min(strlen($value), $position + $contextLength + 1);
+        
+        $before = substr($value, $start, $position - $start);
+        $char = substr($value, $position, 1);
+        $after = substr($value, $position + 1, $end - $position - 1);
+        
+        // Make special characters visible
+        $before = self::debuggingMakeSpecialCharsVisible($before);
+        $char = self::debuggingMakeSpecialCharsVisible($char);
+        $after = self::debuggingMakeSpecialCharsVisible($after);
+        
+        return sprintf('...%s[%s]%s...', $before, $char, $after);
+    }
+    
+    /**
+     * Make special characters visible for debugging output.
+     * 
+     * @param string $str String to process
+     * @return string String with special characters made visible
+     */
+    private static function debuggingMakeSpecialCharsVisible($str) {
+        $replacements = [
+            "\r" => '\r',
+            "\n" => '\n',
+            "\t" => '\t',
+        ];
+        
+        $result = str_replace(array_keys($replacements), array_values($replacements), $str);
+        
+        // Replace other non-printable and high-ASCII characters with hex representation
+        $result = preg_replace_callback('/[\x00-\x1F\x7F-\xFF]/', function($matches) {
+            return sprintf('\x%02X', ord($matches[0]));
+        }, $result);
+        
+        return $result;
+    }
+
+    /**
      * Read Laminas Mail Message with error handling for problematic headers.
      * 
      * We will split out headers and read one by one until we find the problematic one,
@@ -427,14 +553,47 @@ class ThreadEmailExtractorEmailBody extends ThreadEmailExtractor {
                     $partialEml = implode("\n", array_slice($headers, 0, array_search($line, $headers) + 1));
                     $message = new \Laminas\Mail\Storage\Message(['raw' => self::stripProblematicHeaders($partialEml)]);
                 } catch (\Laminas\Mail\Header\Exception\InvalidArgumentException $e2) {
-                    // Failed to parse at this header, log and throw
-                    throw new Exception("Failed to parse email due to problematic header: " . $currentHeader . ".\n"
+                    // Failed to parse at this header, analyze the header value for problematic characters
+                    $headerValue = preg_replace('/^[A-Za-z-]+:\s*/', '', $line);
+                    $analysis = self::debuggingAnalyzeHeaderValue($headerValue);
+                    
+                    $debugInfo = "Failed to parse email due to problematic header: " . $currentHeader . "\n"
                         . "Original error: " . $e->getMessage() . "\n"
-                        . "New error: " . $e2->getMessage() . "\n"
-                        . "\n"
-                        . "Partial EML up to this header:\n"
-                        . $partialEml
-                    );
+                        . "New error: " . $e2->getMessage() . "\n\n";
+                    
+                    // Add character-level debugging information
+                    if (!empty($analysis['issues'])) {
+                        $debugInfo .= "CHARACTER ANALYSIS:\n";
+                        $debugInfo .= "Found " . count($analysis['issues']) . " problematic character(s) in header value:\n\n";
+                        
+                        foreach ($analysis['issues'] as $idx => $issue) {
+                            $debugInfo .= sprintf(
+                                "Issue #%d:\n"
+                                . "  Position: %d\n"
+                                . "  Character: %s (ASCII: %d / 0x%02X)\n"
+                                . "  Reason: %s\n"
+                                . "  Context: %s\n",
+                                $idx + 1,
+                                $issue['position'],
+                                $issue['character'],
+                                $issue['ord'],
+                                $issue['ord'],
+                                $issue['reason'],
+                                $issue['context']
+                            );
+                            
+                            if (isset($issue['next_chars'])) {
+                                $debugInfo .= "  Next chars: " . $issue['next_chars'] . "\n";
+                            }
+                            
+                            $debugInfo .= "\n";
+                        }
+                    }
+                    
+                    $debugInfo .= "Partial EML up to this header:\n" . $partialEml;
+                    
+                    // Log and throw with enhanced debugging information
+                    throw new Exception($debugInfo);
                 }
             }
             // If we got here, we couldn't find the problematic header
