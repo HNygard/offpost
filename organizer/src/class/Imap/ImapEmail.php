@@ -105,19 +105,33 @@ class ImapEmail {
                 }
             }
         }
-        foreach ($this->mailHeaders->from as $email) {
-            $addresses[] = $email->mailbox . '@' . $email->host;
+        if (isset($this->mailHeaders->from)) {
+            foreach ($this->mailHeaders->from as $email) {
+                if (isset($email->mailbox) && isset($email->host)) {
+                    $addresses[] = $email->mailbox . '@' . $email->host;
+                }
+            }
         }
-        foreach ($this->mailHeaders->reply_to as $email) {
-            $addresses[] = $email->mailbox . '@' . $email->host;
+        if (isset($this->mailHeaders->reply_to)) {
+            foreach ($this->mailHeaders->reply_to as $email) {
+                if (isset($email->mailbox) && isset($email->host)) {
+                    $addresses[] = $email->mailbox . '@' . $email->host;
+                }
+            }
         }
-        foreach ($this->mailHeaders->sender as $email) {
-            $addresses[] = $email->mailbox . '@' . $email->host;
+        if (isset($this->mailHeaders->sender)) {
+            foreach ($this->mailHeaders->sender as $email) {
+                if (isset($email->mailbox) && isset($email->host)) {
+                    $addresses[] = $email->mailbox . '@' . $email->host;
+                }
+            }
         }
         // Add CC addresses
         if (isset($this->mailHeaders->cc)) {
             foreach ($this->mailHeaders->cc as $email) {
-                $addresses[] = $email->mailbox . '@' . $email->host;
+                if (isset($email->mailbox) && isset($email->host)) {
+                    $addresses[] = $email->mailbox . '@' . $email->host;
+                }
             }
         }
 

@@ -180,6 +180,55 @@ class ThreadReplyTest extends TestCase {
         $this->assertEquals($addresses, $addressesFromJson, 'JSON parsing should yield same results');
     }
 
+    public function testEmailHeaderExtractionWithMissingFields() {
+        // Test that missing header fields don't cause errors
+        
+        // Test with only 'to' field
+        $headersOnlyTo = [
+            'to' => [
+                (object)['mailbox' => 'recipient', 'host' => 'example.com']
+            ]
+        ];
+        
+        $addresses = getEmailAddressesFromImapHeaders($headersOnlyTo);
+        $this->assertContains('recipient@example.com', $addresses, 'Should extract to field');
+        $this->assertCount(1, $addresses, 'Should have exactly one address');
+        
+        // Test with only 'from' field
+        $headersOnlyFrom = [
+            'from' => [
+                (object)['mailbox' => 'sender', 'host' => 'example.com']
+            ]
+        ];
+        
+        $addresses = getEmailAddressesFromImapHeaders($headersOnlyFrom);
+        $this->assertContains('sender@example.com', $addresses, 'Should extract from field');
+        $this->assertCount(1, $addresses, 'Should have exactly one address');
+        
+        // Test with empty headers
+        $emptyHeaders = [];
+        $addresses = getEmailAddressesFromImapHeaders($emptyHeaders);
+        $this->assertIsArray($addresses, 'Should return array');
+        $this->assertEmpty($addresses, 'Should return empty array for empty headers');
+        
+        // Test with CC but no from/reply_to/sender
+        $headersWithCc = [
+            'to' => [
+                (object)['mailbox' => 'recipient', 'host' => 'example.com']
+            ],
+            'cc' => [
+                (object)['mailbox' => 'cc1', 'host' => 'example.com'],
+                (object)['mailbox' => 'cc2', 'host' => 'example.org']
+            ]
+        ];
+        
+        $addresses = getEmailAddressesFromImapHeaders($headersWithCc);
+        $this->assertContains('recipient@example.com', $addresses, 'Should extract to field');
+        $this->assertContains('cc1@example.com', $addresses, 'Should extract first CC');
+        $this->assertContains('cc2@example.org', $addresses, 'Should extract second CC');
+        $this->assertCount(3, $addresses, 'Should have three addresses');
+    }
+
     public function testReplySubjectGeneration() {
         $originalTitle = 'Request for Information';
         $expectedSubject = 'Re: ' . $originalTitle;
