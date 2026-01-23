@@ -26,75 +26,6 @@ class OpenAiRequestLogRetryPageTest extends E2EPageTestCase {
         parent::tearDown();
     }
 
-    /**
-     * Helper method to send JSON POST requests
-     */
-    private function renderPageWithJson($path, $jsonData, $user = 'dev-user-id', $expectedStatus = '200 OK') {
-        $url = 'http://localhost:25081' . $path;
-        
-        // Use reflection to access the private session_cookies static property
-        $reflection = new ReflectionClass('E2EPageTestCase');
-        $sessionCookiesProp = $reflection->getProperty('session_cookies');
-        $sessionCookiesProp->setAccessible(true);
-        $sessionCookies = $sessionCookiesProp->getValue();
-        
-        // Get or create session cookie
-        $session_cookie = null;
-        if ($user !== null) {
-            if (!isset($sessionCookies[$user])) {
-                // First call renderPage to authenticate and get the cookie
-                $this->renderPage('/', $user);
-                $sessionCookies = $sessionCookiesProp->getValue();
-            }
-            $session_cookie = $sessionCookies[$user];
-        }
-        
-        // Make request with JSON
-        $ch = curl_init();
-        curl_setopt($ch, CURLOPT_URL, $url);
-        curl_setopt($ch, CURLOPT_RETURNTRANSFER, 1);
-        curl_setopt($ch, CURLOPT_CUSTOMREQUEST, 'POST');
-        curl_setopt($ch, CURLOPT_HEADER, 1);
-        curl_setopt($ch, CURLOPT_POST, 1);
-        curl_setopt($ch, CURLOPT_POSTFIELDS, json_encode($jsonData));
-        
-        $headers = ['Content-Type: application/json', 'User-Agent: Offpost E2E Test'];
-        if ($session_cookie !== null) {
-            $headers[] = 'Cookie: ' . $session_cookie;
-        }
-        curl_setopt($ch, CURLOPT_HTTPHEADER, $headers);
-        
-        $res = curl_exec($ch);
-        
-        if ($res === false) {
-            throw new Exception("Request to [$url], curl error: " . curl_error($ch));
-        }
-        
-        $header_size = curl_getinfo($ch, CURLINFO_HEADER_SIZE);
-        $header = substr($res, 0, $header_size);
-        $body = substr($res, $header_size);
-        
-        curl_close($ch);
-        
-        $response = new stdClass();
-        $response->headers = $header;
-        $response->body = $body;
-        
-        if ($expectedStatus != null) {
-            try {
-                $this->assertEquals('HTTP/1.1 ' . $expectedStatus, trim(explode("\n", $response->headers, 2)[0]));
-            } catch (Exception $e) {
-                echo "\n\nFailed asserting status code: " . $expectedStatus . "\n";
-                echo "Full response from failed request:\n";
-                echo html_entity_decode(preg_replace('/^/m', '    ', $response->body )). "\n";
-                echo "--- End of full response\n\n";
-                throw $e;
-            }
-        }
-        
-        return $response;
-    }
-
     private function createTestLogs() {
         // Create test log entries with different statuses
         $endpoint = 'https://api.openai.com/v1/responses';
@@ -204,14 +135,14 @@ class OpenAiRequestLogRetryPageTest extends E2EPageTestCase {
     public function testRetryEndpointNotLoggedIn() {
         // :: Setup
         // Test that the retry endpoint returns 302 redirect when not logged in
-        $jsonData = ['ids' => [$this->testLogIds[0]]];
         
         // :: Act
-        $response = $this->renderPageWithJson(
+        $response = $this->renderPage(
             '/openai-request-log-retry', 
-            $jsonData,
             null, 
-            '302 Found'
+            'POST', 
+            '302 Found',
+            ['ids' => [$this->testLogIds[0]]]
         );
         
         // :: Assert
@@ -238,14 +169,14 @@ class OpenAiRequestLogRetryPageTest extends E2EPageTestCase {
     public function testRetryEndpointInvalidIds() {
         // :: Setup
         // Test with empty IDs array
-        $jsonData = ['ids' => []];
         
         // :: Act
-        $response = $this->renderPageWithJson(
+        $response = $this->renderPage(
             '/openai-request-log-retry',
-            $jsonData,
             'dev-user-id',
-            '400 Bad Request'
+            'POST',
+            '400 Bad Request',
+            ['ids' => []]
         );
         
         // :: Assert
@@ -255,14 +186,14 @@ class OpenAiRequestLogRetryPageTest extends E2EPageTestCase {
     public function testRetryEndpointNonExistentIds() {
         // :: Setup
         // Test with non-existent IDs
-        $jsonData = ['ids' => [999999999, 999999998]];
         
         // :: Act
-        $response = $this->renderPageWithJson(
+        $response = $this->renderPage(
             '/openai-request-log-retry',
-            $jsonData,
             'dev-user-id',
-            '404 Not Found'
+            'POST',
+            '404 Not Found',
+            ['ids' => [999999999, 999999998]]
         );
         
         // :: Assert

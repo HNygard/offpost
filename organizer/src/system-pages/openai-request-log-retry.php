@@ -16,9 +16,18 @@ if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
     exit;
 }
 
-// Get the request body
-$input = file_get_contents('php://input');
-$data = json_decode($input, true);
+// Get the request data - support both JSON and form-encoded data
+$data = null;
+$contentType = $_SERVER['CONTENT_TYPE'] ?? '';
+
+if (strpos($contentType, 'application/json') !== false) {
+    // JSON request from AJAX
+    $input = file_get_contents('php://input');
+    $data = json_decode($input, true);
+} else {
+    // Form-encoded request (e.g., from tests or form submission)
+    $data = $_POST;
+}
 
 if (!isset($data['ids']) || !is_array($data['ids'])) {
     http_response_code(400);
