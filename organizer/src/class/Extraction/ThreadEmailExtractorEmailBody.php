@@ -293,6 +293,50 @@ class ThreadEmailExtractorEmailBody extends ThreadEmailExtractor {
     }
 
     /**
+     * Fix malformed encoded-words in email headers
+     * 
+     * Some email clients produce malformed encoded-words where the closing ?= is missing
+     * and the next header name appears immediately after. This method fixes such cases.
+     * 
+     * Example of malformed header:
+     * Subject: =?iso-8859-1?Q?text?Thread-Topic:
+     * Should be:
+     * Subject: =?iso-8859-1?Q?text?=
+     * 
+     * @param string $headerLine Header line to fix
+     * @return string Fixed header line
+     */
+    private static function fixMalformedEncodedWords($headerLine) {
+        // Pattern to match malformed encoded-words where ?= is missing and followed by a header name
+        // Matches: =?charset?encoding?content?HeaderName:
+        // The pattern looks for encoded words that don't end with ?= but instead have a header name
+        $pattern = '/(=\?[^?]+\?[BQbq]\?[^?]*)\?([A-Za-z][A-Za-z0-9-]*):(.*)$/';
+        
+        if (preg_match($pattern, $headerLine, $matches)) {
+            // $matches[1] = the encoded word without proper closing
+            // $matches[2] = the header name that should be on next line (we drop it)
+            // $matches[3] = the rest of the line (we drop it)
+            
+            // Get the leading whitespace if this is a continuation line
+            $leadingWhitespace = '';
+            if (preg_match('/^(\s+)/', $headerLine, $wsMatches)) {
+                $leadingWhitespace = $wsMatches[1];
+            }
+            
+            // Get the header prefix if this is the first line of a header
+            $headerPrefix = '';
+            if (preg_match('/^([A-Za-z-]+:\s*)/', $headerLine, $hMatches)) {
+                $headerPrefix = $hMatches[1];
+            }
+            
+            // Return the fixed line with proper closing
+            return $headerPrefix . $leadingWhitespace . $matches[1] . '?=';
+        }
+        
+        return $headerLine;
+    }
+
+    /**
      * Strip problematic headers that cause parsing issues in Laminas Mail
      * 
      * @param string $eml Raw email content
@@ -333,11 +377,13 @@ class ThreadEmailExtractorEmailBody extends ThreadEmailExtractor {
                     // Keep the header name but replace content with "REMOVED"
                     $cleanedHeaders[] = $headerName . ": REMOVED";
                 } else {
-                    $cleanedHeaders[] = $line;
+                    // Fix malformed encoded-words in the header
+                    $cleanedHeaders[] = self::fixMalformedEncodedWords($line);
                 }
             } elseif (!$skipCurrentHeader && (substr($line, 0, 1) === ' ' || substr($line, 0, 1) === "\t")) {
                 // This is a continuation line for a header we're keeping
-                $cleanedHeaders[] = $line;
+                // Also fix malformed encoded-words in continuation lines
+                $cleanedHeaders[] = self::fixMalformedEncodedWords($line);
             }
             // If $skipCurrentHeader is true, we ignore continuation lines for problematic headers
         }
