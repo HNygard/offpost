@@ -213,9 +213,6 @@ class OpenAiIntegration
             
             return $responseData;
         }
-        
-        // This should never be reached, but just in case
-        throw new Exception("OpenAI API request failed after " . self::MAX_RETRIES . " attempts");
     }
 
     /**
