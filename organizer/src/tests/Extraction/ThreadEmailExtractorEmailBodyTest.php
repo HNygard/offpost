@@ -339,10 +339,11 @@ This is a test email.
         // The subject should be parseable now
         $this->assertTrue($result->getHeaders()->has('subject'));
         
-        // Verify that the subject content includes text from the first encoded-word
-        // This ensures we're preserving content before the malformed encoded-word
+        // Verify that the complete subject content is preserved
+        // =?iso-8859-1?Q?SV:_Klage_p=E5_m=E5lrettet?= decodes to "SV: Klage på målrettet"
+        // =?iso-8859-1?Q?_utestengelse?= decodes to " utestengelse"
         $subject = $result->getHeader('subject')->getFieldValue();
-        $this->assertStringContainsString('Klage', $subject, 'Subject should contain "Klage" from the first encoded-word');
+        $this->assertEquals('SV: Klage på målrettet utestengelse', $subject);
     }
 
     public function testReadLaminasMessage_withErrorHandling_MalformedEncodedWordInline() {
@@ -361,9 +362,9 @@ This is a test email.
         $this->assertInstanceOf(\Laminas\Mail\Storage\Message::class, $result);
         $this->assertTrue($result->getHeaders()->has('subject'));
         
-        // Verify that the subject content is preserved
+        // Verify that the complete subject content is preserved
+        // =?iso-8859-1?Q?Test_Subject?= decodes to "Test Subject"
         $subject = $result->getHeader('subject')->getFieldValue();
-        $this->assertStringContainsString('Test', $subject, 'Subject should contain "Test" from the encoded-word');
-        $this->assertStringContainsString('Subject', $subject, 'Subject should contain "Subject" from the encoded-word');
+        $this->assertEquals('Test Subject', $subject);
     }
 }
