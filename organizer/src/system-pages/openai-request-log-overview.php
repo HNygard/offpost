@@ -124,9 +124,15 @@ sort($sources);
         </table>
     </form>
     
+    <div style="margin-bottom: 10px;">
+        <button id="retry-selected" class="btn btn-primary" disabled>Retry Selected Requests</button>
+        <span id="retry-status" style="margin-left: 10px;"></span>
+    </div>
+    
     <table>
         <thead>
             <tr>
+                <th><input type="checkbox" id="select-all" title="Select all"></th>
                 <th>ID</th>
                 <th>Source</th>
                 <th>Time</th>
@@ -139,11 +145,12 @@ sort($sources);
         <tbody>
             <?php if (empty($logs)): ?>
                 <tr>
-                    <td colspan="8" class="text-center">No logs found</td>
+                    <td colspan="9" class="text-center">No logs found</td>
                 </tr>
             <?php else: ?>
                 <?php foreach ($logs as $log): ?>
                     <tr>
+                        <td><input type="checkbox" class="request-checkbox" value="<?= $log['id'] ?>"></td>
                         <td><?= $log['id'] ?></td>
                         <td><?= htmlspecialchars($log['source']) ?></td>
                         <td><?= date('Y-m-d H:i:s', strtotime($log['time'])) ?></td>
@@ -255,6 +262,116 @@ sort($sources);
                         dialog.close();
                     }
                 });
+            });
+            
+            // Select all checkbox functionality
+            const selectAllCheckbox = document.getElementById('select-all');
+            const requestCheckboxes = document.querySelectorAll('.request-checkbox');
+            const retryButton = document.getElementById('retry-selected');
+            const retryStatus = document.getElementById('retry-status');
+            
+            // Update retry button state based on selected checkboxes
+            function updateRetryButtonState() {
+                const checkedCount = document.querySelectorAll('.request-checkbox:checked').length;
+                retryButton.disabled = checkedCount === 0;
+            }
+            
+            // Select all functionality
+            if (selectAllCheckbox) {
+                selectAllCheckbox.addEventListener('change', function() {
+                    requestCheckboxes.forEach(checkbox => {
+                        checkbox.checked = this.checked;
+                    });
+                    updateRetryButtonState();
+                });
+            }
+            
+            // Individual checkbox change
+            requestCheckboxes.forEach(checkbox => {
+                checkbox.addEventListener('change', function() {
+                    // Update select all checkbox state
+                    const allChecked = Array.from(requestCheckboxes).every(cb => cb.checked);
+                    const anyChecked = Array.from(requestCheckboxes).some(cb => cb.checked);
+                    
+                    if (selectAllCheckbox) {
+                        selectAllCheckbox.checked = allChecked;
+                        selectAllCheckbox.indeterminate = anyChecked && !allChecked;
+                    }
+                    
+                    updateRetryButtonState();
+                });
+            });
+            
+            // Retry selected requests
+            retryButton.addEventListener('click', function() {
+                const checkedCheckboxes = document.querySelectorAll('.request-checkbox:checked');
+                const ids = Array.from(checkedCheckboxes).map(cb => parseInt(cb.value));
+                
+                if (ids.length === 0) {
+                    alert('Please select at least one request to retry');
+                    return;
+                }
+                
+                // Confirm action
+                if (!confirm(`Are you sure you want to retry ${ids.length} request(s)?`)) {
+                    return;
+                }
+                
+                // Disable button and show loading status
+                retryButton.disabled = true;
+                retryStatus.textContent = 'Retrying requests...';
+                retryStatus.style.color = '#0066cc';
+                
+                // Send retry request
+                fetch('openai-request-log-retry.php', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({ ids: ids })
+                })
+                .then(response => response.json())
+                .then(data => {
+                    if (data.success) {
+                        retryStatus.textContent = data.message;
+                        retryStatus.style.color = 'green';
+                        
+                        // Uncheck all checkboxes
+                        checkedCheckboxes.forEach(cb => cb.checked = false);
+                        if (selectAllCheckbox) {
+                            selectAllCheckbox.checked = false;
+                            selectAllCheckbox.indeterminate = false;
+                        }
+                        updateRetryButtonState();
+                        
+                        // Show details if there were any errors
+                        if (data.errorCount > 0) {
+                            let errorDetails = '\n\nDetails:\n';
+                            data.results.forEach(result => {
+                                if (!result.success) {
+                                    errorDetails += `ID ${result.id}: ${result.message}\n`;
+                                }
+                            });
+                            console.log(errorDetails);
+                        }
+                        
+                        // Reload the page after 2 seconds to show new retry entries
+                        setTimeout(() => {
+                            window.location.reload();
+                        }, 2000);
+                    } else {
+                        retryStatus.textContent = 'Error: ' + data.message;
+                        retryStatus.style.color = 'red';
+                        retryButton.disabled = false;
+                    }
+                })
+                .catch(error => {
+                    retryStatus.textContent = 'Error: ' + error.message;
+                    retryStatus.style.color = 'red';
+                    retryButton.disabled = false;
+                });
+            });
+        });
             });
         });
     </script>
