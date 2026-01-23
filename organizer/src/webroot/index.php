@@ -24,9 +24,9 @@ try {
         '/update-identities' => '/../update-identities.php',
         '/email-sending-overview' => '/../system-pages/email-sending-overview.php',
         '/extraction-overview' => '/../system-pages/extraction-overview.php',
+        '/extraction-retry' => '/../system-pages/extraction-retry.php',
         '/thread-status-overview' => '/../system-pages/thread-status-overview.php',
         '/openai-request-log-overview' => '/../system-pages/openai-request-log-overview.php',
-        '/openai-request-log-retry' => '/../system-pages/openai-request-log-retry.php',
         '/update-imap' => '/../update-imap.php', // Temporary while we wait for new imap integration
         '/email-content-debug' => '/../system-pages/email-content-debug.php',
     ];
