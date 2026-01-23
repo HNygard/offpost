@@ -110,15 +110,18 @@ class ThreadEmailStatusUpdater {
             return ThreadEmailStatusType::ASKING_FOR_MORE_TIME;
         }
         
-        if (preg_match('/\b(kopi|kopi av|kan vi få|send|videresend)\b/u', $summary_lower)) {
-            return ThreadEmailStatusType::ASKING_FOR_COPY;
-        }
-        
-        if (preg_match('/\b(avslag|avslår|kan ikke|avvise)\b/u', $summary_lower)) {
+        // Check for rejection patterns - more specific patterns first
+        if (preg_match('/\b(avslag|avslår|avslå|kan ikke|avvise)\b/u', $summary_lower)) {
             return ThreadEmailStatusType::REQUEST_REJECTED;
         }
         
-        if (preg_match('/\b(sendt|vedlagt|informasjon|dokumenter|vedlegg)\b/u', $summary_lower)) {
+        // Check for copy requests - include "ber om" and "videresend" patterns
+        if (preg_match('/\b(kopi|kopi av|kan vi få|send|videresend|ber om.*dokumenter)\b/u', $summary_lower)) {
+            return ThreadEmailStatusType::ASKING_FOR_COPY;
+        }
+        
+        // Check for information release - only if not already matched above
+        if (preg_match('/\b(sendt|vedlagt|informasjon|vedlegg)\b/u', $summary_lower)) {
             return ThreadEmailStatusType::INFORMATION_RELEASE;
         }
 
