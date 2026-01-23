@@ -197,6 +197,7 @@ class OpenAiIntegrationTest extends PHPUnit\Framework\TestCase {
         
         // Build expected error message dynamically to match production code
         $expectedErrorMessage = 'OpenAI API error: Curl error: getaddrinfo() thread failed to start (errno: 6)';
+        $expectedErrorMessage .= " [Failed after 3 attempts]"; // After retries
         $expectedErrorMessage .= "\nDebug info: " . json_encode([
             'endpoint' => 'https://api.openai.com/v1/responses',
             'debugging_info' => $mockDebuggingInfo
@@ -221,5 +222,129 @@ class OpenAiIntegrationTest extends PHPUnit\Framework\TestCase {
         // The log stores the error message without the "OpenAI API error: " prefix
         $expectedLogMessage = str_replace('OpenAI API error: ', '', $expectedErrorMessage);
         $this->assertEquals($expectedLogMessage, $logs[0]['response'], "Log should contain error message without prefix");
+    }
+    
+    /**
+     * Test that retryable errors (errno 6 with thread failure) are retried
+     */
+    public function testRetryableErrorIsRetried(): void {
+        // :: Setup
+        $input = [
+            ['role' => 'user', 'content' => 'Test message']
+        ];
+        $model = 'gpt-4';
+        
+        // Create a mock integration that tracks calls
+        $callCount = 0;
+        $testSource = 'test-retry-' . mt_rand(0, 100000);
+        
+        // Mock the curl execution to fail twice then succeed
+        $integration = new class('test-api-key') extends OpenAiIntegrationMock {
+            public $callCount = 0;
+            private $testSuccessResponse;
+            
+            public function setSuccessResponse($response) {
+                $this->testSuccessResponse = $response;
+            }
+            
+            protected function internalSendRequest($apiEndpoint, $requestData) {
+                $this->callCount++;
+                
+                // Fail first 2 times with retryable error
+                if ($this->callCount <= 2) {
+                    return [
+                        'response' => false,
+                        'httpCode' => 0,
+                        'error' => 'getaddrinfo() thread failed to start',
+                        'debuggingInfo' => [
+                            'error' => 'getaddrinfo() thread failed to start',
+                            'error_number' => 6,
+                            'http_code' => 0
+                        ]
+                    ];
+                }
+                
+                // Succeed on 3rd attempt
+                return $this->testSuccessResponse;
+            }
+        };
+        
+        $successResponse = [
+            'response' => json_encode([
+                'choices' => [
+                    [
+                        'message' => [
+                            'content' => 'Success after retry'
+                        ]
+                    ]
+                ],
+                'usage' => [
+                    'input_tokens' => 10,
+                    'output_tokens' => 20
+                ]
+            ]),
+            'httpCode' => 200,
+            'error' => '',
+            'debuggingInfo' => ['error_number' => 0]
+        ];
+        
+        $integration->setSuccessResponse($successResponse);
+        
+        // :: Act
+        $result = $integration->sendRequest($input, null, $model, $testSource);
+        
+        // :: Assert
+        $this->assertEquals(3, $integration->callCount, "Should have made 3 attempts (2 failures + 1 success)");
+        $this->assertNotNull($result, "Should return result after successful retry");
+        
+        // Verify the successful response was logged
+        $logs = OpenAiRequestLog::getBySource($testSource);
+        $this->assertGreaterThanOrEqual(1, count($logs), "Should have at least one log entry");
+        $this->assertEquals(200, $logs[0]['response_code'], "Should log success response code");
+    }
+    
+    /**
+     * Test that non-retryable errors are not retried
+     */
+    public function testNonRetryableErrorIsNotRetried(): void {
+        // :: Setup
+        $input = [
+            ['role' => 'user', 'content' => 'Test message']
+        ];
+        $model = 'gpt-4';
+        
+        // Create a mock integration that tracks calls
+        $testSource = 'test-no-retry-' . mt_rand(0, 100000);
+        
+        $integration = new class('test-api-key') extends OpenAiIntegrationMock {
+            public $callCount = 0;
+            
+            protected function internalSendRequest($apiEndpoint, $requestData) {
+                $this->callCount++;
+                
+                // Return a non-retryable error (different errno or message)
+                return [
+                    'response' => false,
+                    'httpCode' => 0,
+                    'error' => 'Connection timeout',
+                    'debuggingInfo' => [
+                        'error' => 'Connection timeout',
+                        'error_number' => 28, // CURLE_OPERATION_TIMEDOUT
+                        'http_code' => 0
+                    ]
+                ];
+            }
+        };
+        
+        // :: Act & Assert
+        $errorThrown = false;
+        try {
+            $integration->sendRequest($input, null, $model, $testSource);
+        } catch (Exception $e) {
+            $errorThrown = true;
+        }
+        
+        $this->assertTrue($errorThrown, "Should throw an exception");
+        $this->assertEquals(1, $integration->callCount, "Should only make 1 attempt for non-retryable error");
     } 
 }
