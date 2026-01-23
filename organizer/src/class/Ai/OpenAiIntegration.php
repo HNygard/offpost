@@ -10,8 +10,10 @@ require_once __DIR__ . '/OpenAiRequestLog.php';
  */
 class OpenAiIntegration
 {
+    // Use 3 retries for OpenAI (vs 5 for IMAP) since OpenAI failures are typically
+    // transient thread exhaustion that resolves quickly, while IMAP may have longer issues
     private const MAX_RETRIES = 3;
-    private const RETRY_DELAY_MS = 100; // Base delay in milliseconds
+    private const RETRY_DELAY_MS = 100; // Base delay in milliseconds (100ms, 200ms with exponential backoff)
     
     private string $apiKey;
 
@@ -127,10 +129,6 @@ class OpenAiIntegration
         );
         
         // Send the request with retry logic
-        $lastError = null;
-        $lastErrorNum = null;
-        $lastDebuggingInfo = null;
-        
         for ($attempt = 1; $attempt <= self::MAX_RETRIES; $attempt++) {
             // Send the request
             $responseData = $this->internalSendRequest($apiEndpoint, $requestData);
@@ -144,10 +142,6 @@ class OpenAiIntegration
                 
                 // Check if this is a retryable error and we haven't exhausted retries
                 if ($this->isRetryableError($errorNum, $error) && $attempt < self::MAX_RETRIES) {
-                    $lastError = $error;
-                    $lastErrorNum = $errorNum;
-                    $lastDebuggingInfo = $debuggingInfo;
-                    
                     error_log("OpenAI retry attempt $attempt/" . self::MAX_RETRIES . " for $source: $error (errno: $errorNum)");
                     $this->waitBeforeRetry($attempt);
                     continue;

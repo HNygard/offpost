@@ -234,8 +234,6 @@ class OpenAiIntegrationTest extends PHPUnit\Framework\TestCase {
         ];
         $model = 'gpt-4';
         
-        // Create a mock integration that tracks calls
-        $callCount = 0;
         $testSource = 'test-retry-' . mt_rand(0, 100000);
         
         // Mock the curl execution to fail twice then succeed
