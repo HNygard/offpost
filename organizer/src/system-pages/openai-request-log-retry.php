@@ -61,7 +61,11 @@ if (empty($logs)) {
 }
 
 // Initialize OpenAI integration
+// Check multiple sources for the API key (same logic as ThreadEmailExtractorPrompt)
 $openAiApiKey = getenv('OPENAI_API_KEY');
+if (!$openAiApiKey && file_exists('/run/secrets/openai_api_key')) {
+    $openAiApiKey = trim(explode("\n", file_get_contents('/run/secrets/openai_api_key'))[1]);
+}
 if (!$openAiApiKey) {
     http_response_code(500);
     echo json_encode(['success' => false, 'message' => 'OpenAI API key not configured']);
