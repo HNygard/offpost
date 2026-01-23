@@ -89,7 +89,7 @@ foreach ($thread->emails as $email) {
         echo '-------------------' . chr(10);
         echo "EMAIL HEADERS (RAW):\n";
         $message = ThreadEmailExtractorEmailBody::readLaminasMessage_withErrorHandling($eml);
-        echo $message->getHeaders()->toString();
+        echo htmlescape($message->getHeaders()->toString());
         echo '</pre>';
         exit;
     }
