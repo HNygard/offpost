@@ -232,6 +232,8 @@ Debug info: {
         // Verify the error was logged with debug information
         $logs = OpenAiRequestLog::getBySource($this->testSource);
         $this->assertGreaterThanOrEqual(1, count($logs), "Should have at least one log entry");
-        $this->assertEquals($expectedErrorMessage, 'OpenAI API error: ' . $logs[0]['response'], "Log should contain full error message");
+        // The log stores the error message without the "OpenAI API error: " prefix
+        $expectedLogMessage = str_replace('OpenAI API error: ', '', $expectedErrorMessage);
+        $this->assertEquals($expectedLogMessage, $logs[0]['response'], "Log should contain error message without prefix");
     } 
 }
