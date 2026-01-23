@@ -346,19 +346,22 @@ class ThreadEmailExtractorEmailBody extends ThreadEmailExtractor {
     private static function isUtf8ByteSequence($str, $pos) {
         $len = strlen($str);
         
-        // Check if current position has a UTF-8 continuation byte (10xxxxxx)
+        // Check if current position has a UTF-8 multi-byte sequence starter
         if ($pos < $len) {
             $byte = ord($str[$pos]);
             
-            // UTF-8 multi-byte sequence starter (110xxxxx, 1110xxxx, or 11110xxx)
-            if ($byte >= 0xC0 && $byte <= 0xF7) {
-                // Check if followed by valid continuation bytes (10xxxxxx)
+            // UTF-8 multi-byte sequence starters:
+            // 2-byte: 110xxxxx (0xC0-0xDF)
+            // 3-byte: 1110xxxx (0xE0-0xEF)
+            // 4-byte: 11110xxx (0xF0-0xF4, limited to valid Unicode range U+0000 to U+10FFFF)
+            if ($byte >= 0xC0 && $byte <= 0xF4) {
+                // Determine number of continuation bytes expected
                 $continuationBytes = 0;
                 if ($byte >= 0xC0 && $byte <= 0xDF) $continuationBytes = 1; // 2-byte sequence
                 elseif ($byte >= 0xE0 && $byte <= 0xEF) $continuationBytes = 2; // 3-byte sequence
-                elseif ($byte >= 0xF0 && $byte <= 0xF7) $continuationBytes = 3; // 4-byte sequence
+                elseif ($byte >= 0xF0 && $byte <= 0xF4) $continuationBytes = 3; // 4-byte sequence
                 
-                // Verify continuation bytes
+                // Verify continuation bytes (must be 10xxxxxx pattern: 0x80-0xBF)
                 for ($i = 1; $i <= $continuationBytes; $i++) {
                     if ($pos + $i >= $len) return 0;
                     $nextByte = ord($str[$pos + $i]);
