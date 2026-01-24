@@ -71,8 +71,8 @@ RUN chmod +x /usr/local/bin/docker-entrypoint.sh
 #   - DNS resolution threads (getaddrinfo spawns threads for each DNS lookup)
 #   - PHP child processes
 #   - System processes
-RUN echo "ulimit -v 2097152" >> /etc/apache2/envvars && \
-    echo "ulimit -u 150" >> /etc/apache2/envvars
+#RUN echo "ulimit -v 2097152" >> /etc/apache2/envvars && \
+#    echo "ulimit -u 150" >> /etc/apache2/envvars
 
 # Copy SQL migrations, just to trigger recreation of container on deploy
 COPY src/migrations/sql/ /opt/offpost/migrations/
