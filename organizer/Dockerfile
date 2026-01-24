@@ -73,6 +73,7 @@ RUN chmod +x /usr/local/bin/docker-entrypoint.sh
 #   - System processes
 #RUN echo "ulimit -v 2097152" >> /etc/apache2/envvars && \
 #    echo "ulimit -u 150" >> /etc/apache2/envvars
+# => DISABLED as it stops curl to openai from working
 
 # Copy SQL migrations, just to trigger recreation of container on deploy
 COPY src/migrations/sql/ /opt/offpost/migrations/
