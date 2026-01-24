@@ -17,7 +17,6 @@ require_once __DIR__ . '/../class/Database.php';
 requireAuth();
 
 // Define display limits
-define('FAILED_EXTRACTIONS_DISPLAY_LIMIT', 20); // Show limited number in the UI
 define('FAILED_EXTRACTIONS_QUERY_LIMIT', 100);  // Fetch more for counting purposes
 
 // Get total counts for all extractions from the last 30 days
@@ -390,7 +389,7 @@ function getExtractionType($extraction) {
                         <th style="width: 10%;">Date</th>
                         <th style="width: 47%;">Error</th>
                     </tr>
-                    <?php foreach (array_slice($failedExtractions, 0, FAILED_EXTRACTIONS_DISPLAY_LIMIT) as $extraction): ?>
+                    <?php foreach ($failedExtractions as $extraction): ?>
                         <tr>
                             <td><input type="checkbox" class="failed-extraction-checkbox" value="<?= $extraction['extraction_id'] ?>" /></td>
                             <td><?= $extraction['extraction_id'] ?></td>
