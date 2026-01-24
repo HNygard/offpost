@@ -102,7 +102,7 @@ class ThreadStorageManager {
     
     public function getThreadEmailAttachmentWithTimestamp(Thread $thread, $attachment_location) {
         // Get attachment from database with timestamp
-        $rows = Database::queryOne(
+        $rows = Database::queryOneOrNone(
             "SELECT tea.name, tea.filename, tea.filetype, tea.location, tea.status_type, tea.status_text, 
                     tea.content, tea.created_at
              FROM thread_email_attachments tea
