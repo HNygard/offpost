@@ -49,7 +49,7 @@ class ThreadStorageManager {
     
     public function getThreadEmailContentWithTimestamp($thread_id, $email_id) {
         // Get email content and timestamp from database
-        $row = Database::queryOne(
+        $row = Database::queryOneOrNone(
             "SELECT content, timestamp_received FROM thread_emails WHERE thread_id = ? AND id = ?",
             [$thread_id, $email_id]
         );

@@ -65,6 +65,53 @@ class FilePageTest extends E2EPageTestCase {
         // Body should be empty for 304 response
         $this->assertEmpty($response2->body, '304 response should have empty body');
     }
+    
+    public function testFileAttachmentIfModifiedSince() {
+        $testData = E2ETestSetup::createTestThread();
+        $file = [
+            'attachment_id' => $testData['attachment_id'],
+            'thread_id' => $testData['thread']->id,
+            'entity_id' => $testData['entity_id']
+        ];
+
+        // First request - get the Last-Modified header
+        $response = $this->renderPage('/file?entityId=' . $file['entity_id'] . '&threadId=' . $file['thread_id'] . '&attachmentId=' . $file['attachment_id']);
+        
+        // :: Assert content type header for attachment download
+        $this->assertStringContainsString('Content-Type: application/pdf', $response->headers);
+        
+        // :: Assert Last-Modified header is present
+        $this->assertStringContainsString('Last-Modified:', $response->headers);
+        
+        // :: Assert Cache-Control header with immutable directive
+        $this->assertStringContainsString('Cache-Control:', $response->headers);
+        $this->assertStringContainsString('immutable', $response->headers);
+        
+        // Extract Last-Modified header from response
+        $lastModified = null;
+        $lines = explode("\n", $response->headers);
+        foreach($lines as $line) {
+            if (stripos($line, 'Last-Modified:') !== false) {
+                $lastModified = trim(substr($line, strlen('Last-Modified:')));
+                break;
+            }
+        }
+        
+        $this->assertNotNull($lastModified, 'Last-Modified header should be present');
+        
+        // Second request - with If-Modified-Since header set to the same time
+        $response2 = $this->renderPage(
+            '/file?entityId=' . $file['entity_id'] . '&threadId=' . $file['thread_id'] . '&attachmentId=' . $file['attachment_id'],
+            'dev-user-id',
+            'GET',
+            '304 Not Modified',
+            null,
+            ['If-Modified-Since: ' . $lastModified]
+        );
+        
+        // Body should be empty for 304 response
+        $this->assertEmpty($response2->body, '304 response should have empty body');
+    }
     /*
     public function testFilePdfHappy() {
         // TODO: 
