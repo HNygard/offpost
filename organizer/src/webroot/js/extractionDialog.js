@@ -6,6 +6,9 @@
 (function() {
     'use strict';
 
+    // Track if escape key listener is registered
+    let escapeListenerRegistered = false;
+
     // Create and inject modal HTML when DOM is ready
     function createModal() {
         const modalHTML = `
@@ -69,12 +72,15 @@
         closeBtn.addEventListener('click', closeModal);
         overlay.addEventListener('click', closeModal);
         
-        // Close on Escape key
-        document.addEventListener('keydown', function(e) {
-            if (e.key === 'Escape' && modal.style.display === 'block') {
-                closeModal();
-            }
-        });
+        // Close on Escape key (only register once)
+        if (!escapeListenerRegistered) {
+            document.addEventListener('keydown', function(e) {
+                if (e.key === 'Escape' && modal.style.display === 'block') {
+                    closeModal();
+                }
+            });
+            escapeListenerRegistered = true;
+        }
     }
 
     function openModal() {
@@ -162,7 +168,9 @@
         openModal();
         
         try {
-            const response = await fetch('/api/extraction.php?extraction_id=' + encodeURIComponent(extractionId));
+            // Use URLSearchParams for safer URL construction
+            const params = new URLSearchParams({ extraction_id: extractionId });
+            const response = await fetch('/api/extraction.php?' + params.toString());
             
             if (!response.ok) {
                 const errorData = await response.json().catch(() => ({ error: 'Unknown error' }));
