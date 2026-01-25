@@ -234,7 +234,7 @@ function print_extraction ($extraction) {
         if (empty($extraction->extracted_text)) {
             return;
         }
-        $text = 'Summarized: ' . htmlescape($extraction->extracted_text);
+        $text = 'Summarized';
         $style = 'background-color: #fff3cd; color: #856404;';
     }
     else {
@@ -446,6 +446,24 @@ function print_extraction ($extraction) {
                     <?php if (isset($email->description) && $email->description): ?>
                         <div class="email-description">
                             <?= htmlescape($email->description) ?>
+                        </div>
+                    <?php endif; ?>
+
+                    <?php
+                    // Display summary if available
+                    $summary_extraction = null;
+                    foreach ($extractions as $extraction) {
+                        if ($extraction->prompt_service == 'openai' 
+                            && $extraction->prompt_id == 'thread-email-summary' 
+                            && !empty($extraction->extracted_text)
+                            && empty($extraction->attachment_id)) {
+                            $summary_extraction = $extraction;
+                            break;
+                        }
+                    }
+                    if ($summary_extraction): ?>
+                        <div class="email-summary" style="margin: 10px 0; padding: 10px; background-color: #fffbf0; border-left: 3px solid #856404; border-radius: 3px;">
+                            <strong>Summary:</strong> <?= htmlescape($summary_extraction->extracted_text) ?>
                         </div>
                     <?php endif; ?>
 
