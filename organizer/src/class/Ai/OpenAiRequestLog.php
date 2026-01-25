@@ -12,6 +12,11 @@ use Exception;
  */
 class OpenAiRequestLog {
     /**
+     * Time window in seconds for matching OpenAI requests with extractions
+     */
+    private const TIME_PROXIMITY_SECONDS = 10;
+    
+    /**
      * Log an OpenAI API request
      * 
      * @param string $source Source of the request (e.g., 'extraction', 'classification')
@@ -282,10 +287,12 @@ class OpenAiRequestLog {
             FROM openai_request_log orl
             LEFT JOIN thread_email_extractions tee ON (
                 -- Match based on prompt_id from source (e.g., 'prompt_saksnummer' -> 'saksnummer')
-                tee.prompt_id = SUBSTRING(orl.source FROM 'prompt_(.+)$')
+                -- Only attempt to extract if source starts with 'prompt_'
+                orl.source LIKE 'prompt_%'
+                AND tee.prompt_id = SUBSTRING(orl.source FROM 'prompt_(.+)$')
                 AND tee.prompt_service = 'openai'
-                -- Match based on time proximity (within 10 seconds)
-                AND tee.created_at BETWEEN orl.time - INTERVAL '10 seconds' AND orl.time + INTERVAL '10 seconds'
+                -- Match based on time proximity
+                AND tee.created_at BETWEEN orl.time - INTERVAL '" . self::TIME_PROXIMITY_SECONDS . " seconds' AND orl.time + INTERVAL '" . self::TIME_PROXIMITY_SECONDS . " seconds'
             )
             LEFT JOIN thread_emails te ON tee.email_id = te.id
             LEFT JOIN threads t ON te.thread_id = t.id

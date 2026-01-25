@@ -7,6 +7,9 @@ requireAuth();
 
 use Offpost\Ai\OpenAiRequestLog;
 
+// Define constants
+define('THREAD_TITLE_MAX_LENGTH', 30);
+
 // Get filter parameters
 $source = $_GET['source'] ?? null;
 $startDate = $_GET['start_date'] ?? date('Y-m-d', strtotime('-7 days'));
@@ -157,7 +160,7 @@ sort($sources);
                         <td>
                             <?php if (!empty($log['thread_id'])): ?>
                                 <a href="/thread-view?threadId=<?= urlencode($log['thread_id']) ?>&entityId=<?= urlencode($log['thread_entity_id']) ?>" title="<?= htmlspecialchars($log['thread_title']) ?>">
-                                    <?= htmlspecialchars(mb_substr($log['thread_title'], 0, 30)) ?><?= mb_strlen($log['thread_title']) > 30 ? '...' : '' ?>
+                                    <?= htmlspecialchars(mb_substr($log['thread_title'], 0, THREAD_TITLE_MAX_LENGTH)) ?><?= mb_strlen($log['thread_title']) > THREAD_TITLE_MAX_LENGTH ? '...' : '' ?>
                                 </a>
                             <?php else: ?>
                                 <span style="color: #999;">N/A</span>
