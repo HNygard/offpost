@@ -38,7 +38,7 @@ class PromptService {
         return $this->available_prompts;
     }
 
-    public function run(OpenAiPrompt $prompt, String $emailInput) {
+    public function run(OpenAiPrompt $prompt, String $emailInput, ?int $extractionId = null) {
         $openai = new OpenAiIntegration($this->openai_api_key);
 
         // Filter out any base64 looking strings as they might trigger content filters at OpenAI
@@ -48,7 +48,8 @@ class PromptService {
             $prompt->getInput($emailInput),
             $prompt->getStructuredOutput(),
             $prompt->getModel($emailInput),
-            'prompt_' . $prompt->getPromptId()
+            'prompt_' . $prompt->getPromptId(),
+            $extractionId
         );
 
         $return = null;

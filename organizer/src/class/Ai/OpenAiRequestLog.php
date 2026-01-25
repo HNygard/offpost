@@ -12,11 +12,6 @@ use Exception;
  */
 class OpenAiRequestLog {
     /**
-     * Time window in seconds for matching OpenAI requests with extractions
-     */
-    private const TIME_PROXIMITY_SECONDS = 10;
-    
-    /**
      * Log an OpenAI API request
      * 
      * @param string $source Source of the request (e.g., 'extraction', 'classification')
@@ -28,6 +23,7 @@ class OpenAiRequestLog {
      * @param int|null $tokensOutput Number of output tokens
      * @param string|null $model Model used for the request
      * @param string|null $status Status of the request
+     * @param int|null $extractionId Extraction ID that triggered this request
      * @return int ID of the created log entry
      */
     public static function log(
@@ -39,7 +35,8 @@ class OpenAiRequestLog {
         ?int $tokensInput = null,
         ?int $tokensOutput = null,
         ?string $model = null,
-        ?string $status = null
+        ?string $status = null,
+        ?int $extractionId = null
     ): int {
         // Convert request/response to JSON if they are arrays
         $requestJson = is_array($request) ? json_encode($request, JSON_PRETTY_PRINT) : $request;
@@ -48,8 +45,8 @@ class OpenAiRequestLog {
         $result = Database::queryOne(
             "INSERT INTO openai_request_log (
                 source, endpoint, request, response, response_code, tokens_input, tokens_output,
-                model, status
-            ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?) RETURNING id",
+                model, status, extraction_id
+            ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?) RETURNING id",
             [
                 $source,
                 $endpoint,
@@ -59,7 +56,8 @@ class OpenAiRequestLog {
                 $tokensInput,
                 $tokensOutput,
                 $model,
-                $status
+                $status,
+                $extractionId
             ]
         );
         
@@ -232,6 +230,7 @@ class OpenAiRequestLog {
         $limit = array_pop($params);
         
         // Build the query with LEFT JOINs to get thread information
+        // Uses the extraction_id foreign key for reliable matching
         $query = "
             SELECT 
                 orl.*,
@@ -241,15 +240,7 @@ class OpenAiRequestLog {
                 t.entity_id as thread_entity_id,
                 t.title as thread_title
             FROM openai_request_log orl
-            LEFT JOIN thread_email_extractions tee ON (
-                -- Match based on prompt_id from source (e.g., 'prompt_saksnummer' -> 'saksnummer')
-                -- Only attempt to extract if source starts with 'prompt_'
-                orl.source LIKE 'prompt_%'
-                AND tee.prompt_id = SUBSTRING(orl.source FROM 'prompt_(.+)$')
-                AND tee.prompt_service = 'openai'
-                -- Match based on time proximity
-                AND tee.created_at BETWEEN orl.time - INTERVAL '" . self::TIME_PROXIMITY_SECONDS . " seconds' AND orl.time + INTERVAL '" . self::TIME_PROXIMITY_SECONDS . " seconds'
-            )
+            LEFT JOIN thread_email_extractions tee ON orl.extraction_id = tee.extraction_id
             LEFT JOIN thread_emails te ON tee.email_id = te.id
             LEFT JOIN threads t ON te.thread_id = t.id
             $whereClause

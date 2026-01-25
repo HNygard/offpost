@@ -102,9 +102,10 @@ class OpenAiIntegration
      * @param $structured_output Structured output object
      * @param string $model Model to use (defaults to gpt-4o)
      * @param string $source Source of the request (for logging)
+     * @param int|null $extractionId Extraction ID that triggered this request
      * @return array|null Response from OpenAI or null on error
      */
-    public function sendRequest(array $input, $structured_output, string $model, string $source = null): ?array
+    public function sendRequest(array $input, $structured_output, string $model, string $source = null, ?int $extractionId = null): ?array
     {
         if ($source == null) {
             $source = 'unknown';
@@ -125,7 +126,14 @@ class OpenAiIntegration
         $logId = OpenAiRequestLog::log(
             $source,
             $apiEndpoint,
-            $requestData
+            $requestData,
+            null,
+            null,
+            null,
+            null,
+            null,
+            null,
+            $extractionId
         );
         
         // Send the request with retry logic
