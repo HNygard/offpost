@@ -63,21 +63,12 @@ class ThreadStorageManager {
             'timestamp' => $row['timestamp_received']
         ];
     }
-    public function getThreadEmailAttachment(Thread $thread, $attachment_location) {
-        // Get attachment from database
-        $rows = Database::queryOne(
-            "SELECT tea.name, tea.filename, tea.filetype, tea.location, tea.status_type, tea.status_text, 
-                    tea.content
-             FROM thread_email_attachments tea
-             JOIN thread_emails te ON tea.email_id = te.id
-             WHERE te.thread_id = ? AND tea.location = ?",
-            [$thread->id, $attachment_location]
-        );
-        
-        if (empty($rows)) {
-            throw new Exception("Thread Email Attachment not found [thread_id=$thread->id, attachment_id=$attachment_location]");
-        }
-        
+    /**
+     * Maps database row to ThreadEmailAttachment object
+     * @param array $rows Database row with attachment data
+     * @return ThreadEmailAttachment
+     */
+    private function mapRowToAttachment(array $rows) {
         $attachment = new ThreadEmailAttachment();
         $attachment->name = $rows['name'];
         $attachment->filename = $rows['filename'];
@@ -100,6 +91,24 @@ class ThreadStorageManager {
         return $attachment;
     }
     
+    public function getThreadEmailAttachment(Thread $thread, $attachment_location) {
+        // Get attachment from database
+        $rows = Database::queryOne(
+            "SELECT tea.name, tea.filename, tea.filetype, tea.location, tea.status_type, tea.status_text, 
+                    tea.content
+             FROM thread_email_attachments tea
+             JOIN thread_emails te ON tea.email_id = te.id
+             WHERE te.thread_id = ? AND tea.location = ?",
+            [$thread->id, $attachment_location]
+        );
+        
+        if (empty($rows)) {
+            throw new Exception("Thread Email Attachment not found [thread_id=$thread->id, attachment_id=$attachment_location]");
+        }
+        
+        return $this->mapRowToAttachment($rows);
+    }
+    
     public function getThreadEmailAttachmentWithTimestamp(Thread $thread, $attachment_location) {
         // Get attachment from database with timestamp
         $rows = Database::queryOneOrNone(
@@ -115,27 +124,8 @@ class ThreadStorageManager {
             throw new Exception("Thread Email Attachment not found [thread_id=$thread->id, attachment_id=$attachment_location]");
         }
         
-        $attachment = new ThreadEmailAttachment();
-        $attachment->name = $rows['name'];
-        $attachment->filename = $rows['filename'];
-        $attachment->filetype = $rows['filetype'];
-        $attachment->location = $rows['location'];
-        $attachment->status_type = $rows['status_type'];
-        $attachment->status_text = $rows['status_text'];
-        
-        // Handle the encoded bytea data
-        $content = $rows['content'];
-        if (is_resource($content)) {
-            $content = stream_get_contents($content);
-        }
-        if (substr($content, 0, 2) === '\\x') {
-            // Convert hex format to binary
-            $content = hex2bin(substr($content, 2));
-        }
-        $attachment->content = $content;
-        
         return [
-            'attachment' => $attachment,
+            'attachment' => $this->mapRowToAttachment($rows),
             'timestamp' => $rows['created_at']
         ];
     }
