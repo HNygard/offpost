@@ -1,0 +1,177 @@
+/* Extraction Dialog Modal Styles */
+
+.extraction-modal {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    z-index: 1000;
+}
+
+.extraction-modal-overlay {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background-color: rgba(0, 0, 0, 0.5);
+}
+
+.extraction-modal-content {
+    position: relative;
+    width: 90%;
+    max-width: 800px;
+    max-height: 90vh;
+    margin: 2rem auto;
+    background-color: white;
+    border-radius: 8px;
+    box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+}
+
+.extraction-modal-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 1.5rem;
+    border-bottom: 1px solid #e0e0e0;
+    background-color: #f8f9fa;
+}
+
+.extraction-modal-header h2 {
+    margin: 0;
+    font-size: 1.5rem;
+    color: #333;
+}
+
+.extraction-modal-close {
+    background: none;
+    border: none;
+    font-size: 2rem;
+    line-height: 1;
+    color: #666;
+    cursor: pointer;
+    padding: 0;
+    width: 2rem;
+    height: 2rem;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border-radius: 4px;
+    transition: background-color 0.2s, color 0.2s;
+}
+
+.extraction-modal-close:hover {
+    background-color: #e0e0e0;
+    color: #333;
+}
+
+.extraction-modal-body {
+    padding: 1.5rem;
+    overflow-y: auto;
+    flex: 1;
+}
+
+.extraction-loading {
+    text-align: center;
+    padding: 2rem;
+    color: #666;
+    font-size: 1.1rem;
+}
+
+.extraction-error {
+    padding: 1rem;
+    background-color: #f8d7da;
+    color: #721c24;
+    border: 1px solid #f5c6cb;
+    border-radius: 4px;
+    margin-bottom: 1rem;
+}
+
+.extraction-metadata,
+.extraction-result,
+.extraction-prompt {
+    margin-bottom: 2rem;
+}
+
+.extraction-metadata h3,
+.extraction-result h3,
+.extraction-prompt h3 {
+    margin-top: 0;
+    margin-bottom: 1rem;
+    font-size: 1.2rem;
+    color: #333;
+    border-bottom: 2px solid #e0e0e0;
+    padding-bottom: 0.5rem;
+}
+
+.extraction-metadata-table {
+    width: 100%;
+    border-collapse: collapse;
+}
+
+.extraction-metadata-table th {
+    text-align: left;
+    padding: 0.5rem;
+    font-weight: 600;
+    color: #555;
+    width: 150px;
+    vertical-align: top;
+}
+
+.extraction-metadata-table td {
+    padding: 0.5rem;
+    color: #333;
+}
+
+.extraction-metadata-table tr:nth-child(even) {
+    background-color: #f8f9fa;
+}
+
+.extraction-text-content,
+.extraction-prompt-content {
+    line-height: 1.6;
+}
+
+.extraction-text-content pre,
+.extraction-prompt-content pre {
+    margin: 0;
+    font-family: 'Courier New', Courier, monospace;
+    font-size: 0.9rem;
+}
+
+/* Make extraction badges clickable */
+.email-extraction {
+    cursor: pointer;
+    transition: opacity 0.2s, transform 0.1s;
+}
+
+.email-extraction:hover {
+    opacity: 0.8;
+    transform: translateY(-1px);
+}
+
+.email-extraction:active {
+    transform: translateY(0);
+}
+
+/* Responsive design */
+@media (max-width: 768px) {
+    .extraction-modal-content {
+        width: 95%;
+        margin: 1rem auto;
+        max-height: 95vh;
+    }
+    
+    .extraction-modal-header,
+    .extraction-modal-body {
+        padding: 1rem;
+    }
+    
+    .extraction-metadata-table th {
+        width: 120px;
+    }
+}
