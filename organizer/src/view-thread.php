@@ -187,7 +187,7 @@ function print_extraction ($extraction) {
     }
     elseif ($extraction->prompt_service == 'code' && $extraction->prompt_text == 'email_body') {
         $text = 'Email body extracted.';
-        $style = 'background-color: #d1ecf1; color: #0c5460;';
+        $style = 'background-color: #d1ecf1;color: #5dd0e5;border: 1px solid #d9d8d8;';
     }
     elseif ($extraction->prompt_service == 'code' && $extraction->prompt_text == 'attachment_pdf') {
         $text = 'PDF attachment text extracted.';
@@ -216,7 +216,7 @@ function print_extraction ($extraction) {
             return;
         }
         $text = 'Latest reply extracted.';
-        $style = 'background-color: #86cff1; color: rgb(11, 96, 111);';
+        $style = 'background-color: #d1ecf1; color: #0c5460;';
     }
     elseif ($extraction->prompt_service == 'openai' && $extraction->prompt_id == 'copy-asking-for') {
         if (empty($extraction->extracted_text)) {
