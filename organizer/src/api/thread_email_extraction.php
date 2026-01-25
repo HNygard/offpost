@@ -1,6 +1,10 @@
 <?php
 
+require_once __DIR__ . '/../auth.php';
 require_once __DIR__ . '/../class/Extraction/ThreadEmailExtractionService.php';
+
+// Require authentication
+requireAuth();
 
 // Set JSON header
 header('Content-Type: application/json');

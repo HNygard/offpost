@@ -58,6 +58,7 @@ try {
             '/thread-classify' => '/../classify-email.php',
             '/thread-reply' => '/../thread-reply.php',
             '/api/threads' => '/../api.php',
+            '/api/thread_email_extraction' => '/../api/thread_email_extraction.php',
             '/callback' => '/../callback.php',
             '/logout' => '/../logout.php',
             '/file' => '/../file.php',

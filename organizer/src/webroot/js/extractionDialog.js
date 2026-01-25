@@ -170,7 +170,7 @@
         try {
             // Use URLSearchParams for safer URL construction
             const params = new URLSearchParams({ extraction_id: extractionId });
-            const response = await fetch('/api/extraction.php?' + params.toString());
+            const response = await fetch('/api/thread_email_extraction?' + params.toString());
             
             if (!response.ok) {
                 const errorData = await response.json().catch(() => ({ error: 'Unknown error' }));
