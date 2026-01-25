@@ -238,7 +238,7 @@ function print_extraction ($extraction) {
         }
         throw new Exception($text);
     }
-    echo '<span class="email-extraction" style="border: 1px solid gray; padding: 5px; border-radius: 4px; margin-right: 6px; ' . $style . '">' . trim($text) . '</span>';
+    echo '<span class="email-extraction" style="border: 1px solid gray; padding: 5px; border-radius: 4px; margin-right: 6px; ' . $style . '" data-extraction-id="' . htmlescape($extraction->extraction_id) . '" onclick="ExtractionDialog.show(' . htmlescape($extraction->extraction_id) . ')">' . trim($text) . '</span>';
 }
 
 ?>
@@ -249,6 +249,8 @@ function print_extraction ($extraction) {
     $pageTitle = 'View Thread - ' . htmlescape($thread->title);
     include 'head.php';
     ?>
+    <link href="/css/extractionDialog.css" rel="stylesheet">
+    <script src="/js/extractionDialog.js"></script>
 </head>
 <body>
     <div class="container">
