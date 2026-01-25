@@ -1,6 +1,6 @@
 -- ******************************************************************
 -- AUTOMATICALLY GENERATED FILE - DO NOT MODIFY
--- Generated on: 2025-09-25 18:33:43
+-- Generated on: 2026-01-25 10:43:12
 -- 
 -- This file contains the current database schema after all migrations.
 -- It is NOT meant to be executed as a migration script.
@@ -51,11 +51,14 @@ CREATE TABLE openai_request_log (
     tokens_input integer,
     tokens_output integer,
     model character varying(255),
-    status character varying(50)
+    status character varying(50),
+    extraction_id integer
 );
 
 ALTER TABLE openai_request_log ADD CONSTRAINT openai_request_log_pkey PRIMARY KEY (id);
+ALTER TABLE openai_request_log ADD CONSTRAINT openai_request_log_extraction_id_fkey FOREIGN KEY (extraction_id) REFERENCES thread_email_extractions (extraction_id);
 CREATE INDEX openai_request_log_endpoint_idx ON openai_request_log USING btree (endpoint);
+CREATE INDEX openai_request_log_extraction_id_idx ON openai_request_log USING btree (extraction_id);
 CREATE INDEX openai_request_log_source_idx ON openai_request_log USING btree (source);
 CREATE INDEX openai_request_log_time_idx ON openai_request_log USING btree ("time");
 
@@ -207,6 +210,7 @@ CREATE TABLE thread_emails (
 
 ALTER TABLE thread_emails ADD CONSTRAINT thread_emails_pkey PRIMARY KEY (id);
 ALTER TABLE thread_emails ADD CONSTRAINT thread_emails_thread_id_fkey FOREIGN KEY (thread_id) REFERENCES threads (id);
+CREATE INDEX thread_emails_auto_classification_idx ON thread_emails USING btree (auto_classification);
 CREATE INDEX thread_emails_email_type_idx ON thread_emails USING btree (email_type);
 CREATE INDEX thread_emails_id_old_idx ON thread_emails USING btree (id_old);
 CREATE INDEX thread_emails_ignore_idx ON thread_emails USING btree (ignore);
@@ -214,7 +218,6 @@ CREATE INDEX thread_emails_status_type_idx ON thread_emails USING btree (status_
 CREATE INDEX thread_emails_thread_datetime_idx ON thread_emails USING btree (thread_id, datetime_received);
 CREATE INDEX thread_emails_thread_id_idx ON thread_emails USING btree (thread_id);
 CREATE INDEX thread_emails_timestamp_received_idx ON thread_emails USING btree (timestamp_received);
-CREATE INDEX thread_emails_auto_classification_idx ON thread_emails USING btree (auto_classification);
 
 CREATE TABLE thread_history (
     id integer NOT NULL DEFAULT nextval('thread_history_id_seq'::regclass),
