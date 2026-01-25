@@ -13,14 +13,14 @@ $startDate = $_GET['start_date'] ?? date('Y-m-d', strtotime('-7 days'));
 $endDate = $_GET['end_date'] ?? date('Y-m-d');
 $limit = (int)($_GET['limit'] ?? 100);
 
-// Get logs based on filters
+// Get logs based on filters with thread information
 $logs = [];
 if ($source) {
-    $logs = OpenAiRequestLog::getBySource($source, $limit);
+    $logs = OpenAiRequestLog::getBySourceWithThreadInfo($source, $limit);
 } else if ($startDate && $endDate) {
-    $logs = OpenAiRequestLog::getByDateRange($startDate . ' 00:00:00', $endDate . ' 23:59:59', $limit);
+    $logs = OpenAiRequestLog::getByDateRangeWithThreadInfo($startDate . ' 00:00:00', $endDate . ' 23:59:59', $limit);
 } else {
-    $logs = OpenAiRequestLog::getAll($limit);
+    $logs = OpenAiRequestLog::getAllWithThreadInfo($limit);
 }
 
 // Get token usage statistics
@@ -135,6 +135,7 @@ sort($sources);
                 <th><input type="checkbox" id="select-all" title="Select all"></th>
                 <th>ID</th>
                 <th>Source</th>
+                <th>Thread</th>
                 <th>Time</th>
                 <th>Endpoint</th>
                 <th>Status</th>
@@ -153,6 +154,15 @@ sort($sources);
                         <td><input type="checkbox" class="request-checkbox" value="<?= $log['id'] ?>"></td>
                         <td><?= $log['id'] ?></td>
                         <td><?= htmlspecialchars($log['source']) ?></td>
+                        <td>
+                            <?php if (!empty($log['thread_id'])): ?>
+                                <a href="/thread-view?threadId=<?= urlencode($log['thread_id']) ?>&entityId=<?= urlencode($log['thread_entity_id']) ?>" title="<?= htmlspecialchars($log['thread_title']) ?>">
+                                    <?= htmlspecialchars(mb_substr($log['thread_title'], 0, 30)) ?><?= mb_strlen($log['thread_title']) > 30 ? '...' : '' ?>
+                                </a>
+                            <?php else: ?>
+                                <span style="color: #999;">N/A</span>
+                            <?php endif; ?>
+                        </td>
                         <td><?= date('Y-m-d H:i:s', strtotime($log['time'])) ?></td>
                         <td><?= htmlspecialchars($log['endpoint']) ?></td>
                         <td>
@@ -176,6 +186,14 @@ sort($sources);
                                     <button class="close-button" onclick="document.getElementById('response-<?= $log['id'] ?>').close()">&times;</button>
                                 </div>
                                 <div class="dialog-content">
+                                    <?php if (!empty($log['thread_id'])): ?>
+                                        <strong>Thread:</strong>
+                                        <a href="/thread-view?threadId=<?= urlencode($log['thread_id']) ?>&entityId=<?= urlencode($log['thread_entity_id']) ?>">
+                                            <?= htmlspecialchars($log['thread_title']) ?>
+                                        </a>
+                                        <br><br>
+                                    <?php endif; ?>
+                                    
                                     <strong>Content:</strong>
                                     <pre><?php
                                     $request = json_decode($log['request']);
