@@ -412,6 +412,134 @@ class ThreadEmailExtractorEmailBody extends ThreadEmailExtractor {
     }
 
     /**
+     * Sanitize raw non-ASCII bytes in header value.
+     * 
+     * Email headers should only contain ASCII characters (0-127). Non-ASCII characters
+     * must be encoded using RFC 2047 encoded-words (=?charset?encoding?content?=).
+     * However, some mail servers (especially misconfigured ones) include raw UTF-8 bytes.
+     * 
+     * To be lenient, this method handles non-ASCII bytes differently based on header type:
+     * 1. For headers that support encoded-words (Subject, From, To, etc.): Convert to RFC 2047 encoded-words
+     * 2. For structural headers (Received, Message-ID, etc.): Replace with '?' to maintain parsability
+     * 
+     * Example for encoded-word support:
+     *   Input:  "Alfred Sj\xc3\xb8berg"
+     *   Output: "Alfred =?UTF-8?Q?Sj=C3=B8berg?="
+     * 
+     * Example for structural headers:
+     *   Input:  "by lo-spam with L\xc3\xb8dingen Kommune SMTP"
+     *   Output: "by lo-spam with L?dingen Kommune SMTP"
+     * 
+     * @param string $headerValue The header value to sanitize
+     * @param string $headerName The name of the header (used to determine handling strategy)
+     * @return string Sanitized header value
+     */
+    private static function sanitizeNonAsciiInHeaderValue($headerValue, $headerName = '') {
+        // Headers that have strict structural requirements and don't support encoded-words
+        // For these, we simply replace non-ASCII bytes with '?'
+        $structuralHeaders = [
+            'received',
+            'message-id',
+            'in-reply-to',
+            'references',
+            'return-path',
+            'delivered-to',
+            'content-type',
+            'content-transfer-encoding',
+            'mime-version',
+        ];
+        
+        $useSimpleReplacement = in_array(strtolower($headerName), $structuralHeaders);
+        
+        if ($useSimpleReplacement) {
+            // For structural headers, simply replace non-ASCII bytes with '?'
+            $result = '';
+            for ($i = 0; $i < strlen($headerValue); $i++) {
+                $ord = ord($headerValue[$i]);
+                if ($ord > 127) {
+                    $result .= '?';
+                } else {
+                    $result .= $headerValue[$i];
+                }
+            }
+            return $result;
+        }
+        
+        // For other headers, use encoded-words
+        $result = '';
+        $i = 0;
+        $len = strlen($headerValue);
+        
+        while ($i < $len) {
+            $byte = $headerValue[$i];
+            $ord = ord($byte);
+            
+            // If this is a regular ASCII character, add it directly
+            if ($ord <= 127) {
+                $result .= $byte;
+                $i++;
+                continue;
+            }
+            
+            // We found a non-ASCII byte. Collect all consecutive non-ASCII bytes
+            // (they likely form a UTF-8 multi-byte character)
+            $nonAsciiSequence = '';
+            while ($i < $len && ord($headerValue[$i]) > 127) {
+                $nonAsciiSequence .= $headerValue[$i];
+                $i++;
+            }
+            
+            // Also collect any immediately following ASCII alphanumerics that are likely
+            // part of the same word (e.g., "L\xc3\xb8dingen" should encode "Lødingen" as a whole)
+            $followingAscii = '';
+            while ($i < $len && preg_match('/[a-zA-Z0-9]/', $headerValue[$i])) {
+                $followingAscii .= $headerValue[$i];
+                $i++;
+            }
+            
+            // We need to also look backwards to include any ASCII prefix that's part of the word
+            // Find the start of the current word (the ASCII characters before non-ASCII sequence)
+            $prefixLength = 0;
+            $tempResult = $result;
+            while (strlen($tempResult) > 0 && preg_match('/[a-zA-Z0-9]$/', $tempResult)) {
+                $tempResult = substr($tempResult, 0, -1);
+                $prefixLength++;
+            }
+            
+            // Extract the prefix from result
+            $prefix = '';
+            if ($prefixLength > 0) {
+                $prefix = substr($result, -$prefixLength);
+                $result = substr($result, 0, -$prefixLength);
+            }
+            
+            // Combine prefix, non-ASCII sequence, and following ASCII into one encoded-word
+            $completeWord = $prefix . $nonAsciiSequence . $followingAscii;
+            
+            // Q-encode the complete word for RFC 2047
+            $encoded = '';
+            for ($j = 0; $j < strlen($completeWord); $j++) {
+                $c = $completeWord[$j];
+                $cOrd = ord($c);
+                
+                // Q-encoding: spaces become underscores, other special/non-ASCII chars become =XX
+                if ($c === ' ') {
+                    $encoded .= '_';
+                } elseif ($cOrd > 127 || $cOrd < 33 || $c === '=' || $c === '?' || $c === '_') {
+                    $encoded .= sprintf('=%02X', $cOrd);
+                } else {
+                    $encoded .= $c;
+                }
+            }
+            
+            // Create the encoded-word: =?UTF-8?Q?encoded_content?=
+            $result .= '=?UTF-8?Q?' . $encoded . '?=';
+        }
+        
+        return $result;
+    }
+
+    /**
      * Strip problematic headers that cause parsing issues in Laminas Mail
      * 
      * @param string $eml Raw email content
@@ -453,18 +581,60 @@ class ThreadEmailExtractorEmailBody extends ThreadEmailExtractor {
                     $cleanedHeaders[] = $headerName . ": REMOVED";
                 } else {
                     // Fix malformed encoded-words in the header
-                    $cleanedHeaders[] = self::fixMalformedEncodedWords($line);
+                    $line = self::fixMalformedEncodedWords($line);
+                    // Sanitize any raw non-ASCII bytes in the header value
+                    $line = self::sanitizeNonAsciiHeaderLine($line);
+                    $cleanedHeaders[] = $line;
                 }
             } elseif (!$skipCurrentHeader && (substr($line, 0, 1) === ' ' || substr($line, 0, 1) === "\t")) {
                 // This is a continuation line for a header we're keeping
                 // Also fix malformed encoded-words in continuation lines
-                $cleanedHeaders[] = self::fixMalformedEncodedWords($line);
+                $line = self::fixMalformedEncodedWords($line);
+                // Sanitize any raw non-ASCII bytes in continuation lines
+                $line = self::sanitizeNonAsciiHeaderLine($line);
+                $cleanedHeaders[] = $line;
             }
             // If $skipCurrentHeader is true, we ignore continuation lines for problematic headers
         }
 
         // Rebuild the email
         return implode("\n", $cleanedHeaders) . "\n\n" . $bodyPart;
+    }
+
+    /**
+     * Sanitize a complete header line (including header name and value).
+     * 
+     * @param string $headerLine Complete header line (e.g., "Received: from [...] by server...")
+     * @return string Sanitized header line
+     */
+    private static function sanitizeNonAsciiHeaderLine($headerLine) {
+        // For header lines that start with a header name (e.g., "Received: value")
+        if (preg_match('/^([A-Za-z-]+):\s*(.*)$/', $headerLine, $matches)) {
+            $headerName = $matches[1];
+            $headerValue = $matches[2];
+            return $headerName . ': ' . self::sanitizeNonAsciiInHeaderValue($headerValue, $headerName);
+        }
+        
+        // For continuation lines (start with space or tab), sanitize the whole line
+        // We don't have the header name context, so we'll use simple replacement for safety
+        if (substr($headerLine, 0, 1) === ' ' || substr($headerLine, 0, 1) === "\t") {
+            $leadingWhitespace = preg_match('/^(\s+)/', $headerLine, $matches) ? $matches[1] : '';
+            $content = ltrim($headerLine);
+            // Use simple replacement for continuation lines since we don't know the header context
+            $sanitized = '';
+            for ($i = 0; $i < strlen($content); $i++) {
+                $ord = ord($content[$i]);
+                if ($ord > 127) {
+                    $sanitized .= '?';
+                } else {
+                    $sanitized .= $content[$i];
+                }
+            }
+            return $leadingWhitespace . $sanitized;
+        }
+        
+        // For other lines, return as-is
+        return $headerLine;
     }
 
     /**
