@@ -67,7 +67,7 @@ class ThreadEmailExtractorEmailBody extends ThreadEmailExtractor {
         return $this->processNextEmailExtractionInternal(
             'email_body',
             'code',
-            function($email, $prompt_text, $prompt_service) {
+            function($email, $prompt_text, $prompt_service, $extraction_id) {
                 // Extract text from email body
                 $extractedTexts = $this->extractTextFromEmailBody($email['thread_id'], $email['email_id']);
 

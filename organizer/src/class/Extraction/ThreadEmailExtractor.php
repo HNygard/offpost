@@ -85,7 +85,7 @@ abstract class ThreadEmailExtractor {
                 $prompt_id
             );
 
-            $extractedText = $extract_text_function($email, $prompt_text, $prompt_service);
+            $extractedText = $extract_text_function($email, $prompt_text, $prompt_service, $extraction->extraction_id);
             
             // Update extraction with results
             $updatedExtraction = $this->extractionService->updateExtractionResults(

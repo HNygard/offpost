@@ -23,6 +23,7 @@ class OpenAiRequestLog {
      * @param int|null $tokensOutput Number of output tokens
      * @param string|null $model Model used for the request
      * @param string|null $status Status of the request
+     * @param int|null $extractionId Extraction ID that triggered this request
      * @return int ID of the created log entry
      */
     public static function log(
@@ -34,7 +35,8 @@ class OpenAiRequestLog {
         ?int $tokensInput = null,
         ?int $tokensOutput = null,
         ?string $model = null,
-        ?string $status = null
+        ?string $status = null,
+        ?int $extractionId = null
     ): int {
         // Convert request/response to JSON if they are arrays
         $requestJson = is_array($request) ? json_encode($request, JSON_PRETTY_PRINT) : $request;
@@ -43,8 +45,8 @@ class OpenAiRequestLog {
         $result = Database::queryOne(
             "INSERT INTO openai_request_log (
                 source, endpoint, request, response, response_code, tokens_input, tokens_output,
-                model, status
-            ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?) RETURNING id",
+                model, status, extraction_id
+            ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?) RETURNING id",
             [
                 $source,
                 $endpoint,
@@ -54,7 +56,8 @@ class OpenAiRequestLog {
                 $tokensInput,
                 $tokensOutput,
                 $model,
-                $status
+                $status,
+                $extractionId
             ]
         );
         
@@ -104,11 +107,11 @@ class OpenAiRequestLog {
      * 
      * @param string $source Source to filter by
      * @param int $limit Maximum number of logs to return (default: 100)
-     * @return array Array of log records
+     * @return array Array of log records with thread information
      */
     public static function getBySource(string $source, int $limit = 100): array {
-        return Database::query(
-            "SELECT * FROM openai_request_log WHERE source = ? ORDER BY time DESC LIMIT ?",
+        return self::getLogsWithThreadInfo(
+            "WHERE orl.source = ?",
             [$source, $limit]
         );
     }
@@ -117,13 +120,10 @@ class OpenAiRequestLog {
      * Get all logs
      * 
      * @param int $limit Maximum number of logs to return (default: 100)
-     * @return array Array of log records
+     * @return array Array of log records with thread information
      */
     public static function getAll(int $limit = 100): array {
-        return Database::query(
-            "SELECT * FROM openai_request_log ORDER BY time DESC LIMIT ?",
-            [$limit]
-        );
+        return self::getLogsWithThreadInfo("", [$limit]);
     }
     
     /**
@@ -132,13 +132,11 @@ class OpenAiRequestLog {
      * @param string $startDate Start date (YYYY-MM-DD)
      * @param string $endDate End date (YYYY-MM-DD)
      * @param int $limit Maximum number of logs to return (default: 100)
-     * @return array Array of log records
+     * @return array Array of log records with thread information
      */
     public static function getByDateRange(string $startDate, string $endDate, int $limit = 100): array {
-        return Database::query(
-            "SELECT * FROM openai_request_log 
-            WHERE time >= ? AND time <= ? 
-            ORDER BY time DESC LIMIT ?",
+        return self::getLogsWithThreadInfo(
+            "WHERE orl.time >= ? AND orl.time <= ?",
             [$startDate, $endDate, $limit]
         );
     }
@@ -218,5 +216,41 @@ class OpenAiRequestLog {
             "SELECT * FROM openai_request_log WHERE id IN ($placeholders) ORDER BY time DESC",
             $ids
         );
+    }
+    
+    /**
+     * Get logs with thread information by joining with extractions and threads
+     * 
+     * @param string $whereClause WHERE clause for filtering (without the WHERE keyword)
+     * @param array $params Query parameters (must include limit as the last parameter)
+     * @return array Array of log records with thread information
+     */
+    private static function getLogsWithThreadInfo(string $whereClause, array $params): array {
+        // Extract limit from params (it's always the last parameter)
+        $limit = array_pop($params);
+        
+        // Build the query with LEFT JOINs to get thread information
+        // Uses the extraction_id foreign key for reliable matching
+        $query = "
+            SELECT 
+                orl.*,
+                tee.extraction_id,
+                tee.email_id,
+                t.id as thread_id,
+                t.entity_id as thread_entity_id,
+                t.title as thread_title
+            FROM openai_request_log orl
+            LEFT JOIN thread_email_extractions tee ON orl.extraction_id = tee.extraction_id
+            LEFT JOIN thread_emails te ON tee.email_id = te.id
+            LEFT JOIN threads t ON te.thread_id = t.id
+            $whereClause
+            ORDER BY orl.time DESC
+            LIMIT ?
+        ";
+        
+        // Add limit back to params
+        $params[] = $limit;
+        
+        return Database::query($query, $params);
     }
 }
