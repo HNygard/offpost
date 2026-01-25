@@ -19,11 +19,11 @@ $limit = (int)($_GET['limit'] ?? 100);
 // Get logs based on filters with thread information
 $logs = [];
 if ($source) {
-    $logs = OpenAiRequestLog::getBySourceWithThreadInfo($source, $limit);
+    $logs = OpenAiRequestLog::getBySource($source, $limit);
 } else if ($startDate && $endDate) {
-    $logs = OpenAiRequestLog::getByDateRangeWithThreadInfo($startDate . ' 00:00:00', $endDate . ' 23:59:59', $limit);
+    $logs = OpenAiRequestLog::getByDateRange($startDate . ' 00:00:00', $endDate . ' 23:59:59', $limit);
 } else {
-    $logs = OpenAiRequestLog::getAllWithThreadInfo($limit);
+    $logs = OpenAiRequestLog::getAll($limit);
 }
 
 // Get token usage statistics

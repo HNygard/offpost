@@ -105,13 +105,13 @@ class OpenAiRequestLog {
     }
     
     /**
-     * Get logs for a specific source with thread information
+     * Get logs for a specific source
      * 
      * @param string $source Source to filter by
      * @param int $limit Maximum number of logs to return (default: 100)
      * @return array Array of log records with thread information
      */
-    public static function getBySourceWithThreadInfo(string $source, int $limit = 100): array {
+    public static function getBySource(string $source, int $limit = 100): array {
         return self::getLogsWithThreadInfo(
             "WHERE orl.source = ?",
             [$source, $limit]
@@ -119,55 +119,13 @@ class OpenAiRequestLog {
     }
     
     /**
-     * Get logs for a specific source
-     * 
-     * @param string $source Source to filter by
-     * @param int $limit Maximum number of logs to return (default: 100)
-     * @return array Array of log records
-     */
-    public static function getBySource(string $source, int $limit = 100): array {
-        return Database::query(
-            "SELECT * FROM openai_request_log WHERE source = ? ORDER BY time DESC LIMIT ?",
-            [$source, $limit]
-        );
-    }
-    
-    /**
-     * Get all logs with thread information
-     * 
-     * @param int $limit Maximum number of logs to return (default: 100)
-     * @return array Array of log records with thread information
-     */
-    public static function getAllWithThreadInfo(int $limit = 100): array {
-        return self::getLogsWithThreadInfo("", [$limit]);
-    }
-    
-    /**
      * Get all logs
      * 
      * @param int $limit Maximum number of logs to return (default: 100)
-     * @return array Array of log records
-     */
-    public static function getAll(int $limit = 100): array {
-        return Database::query(
-            "SELECT * FROM openai_request_log ORDER BY time DESC LIMIT ?",
-            [$limit]
-        );
-    }
-    
-    /**
-     * Get logs within a date range with thread information
-     * 
-     * @param string $startDate Start date (YYYY-MM-DD)
-     * @param string $endDate End date (YYYY-MM-DD)
-     * @param int $limit Maximum number of logs to return (default: 100)
      * @return array Array of log records with thread information
      */
-    public static function getByDateRangeWithThreadInfo(string $startDate, string $endDate, int $limit = 100): array {
-        return self::getLogsWithThreadInfo(
-            "WHERE orl.time >= ? AND orl.time <= ?",
-            [$startDate, $endDate, $limit]
-        );
+    public static function getAll(int $limit = 100): array {
+        return self::getLogsWithThreadInfo("", [$limit]);
     }
     
     /**
@@ -176,13 +134,11 @@ class OpenAiRequestLog {
      * @param string $startDate Start date (YYYY-MM-DD)
      * @param string $endDate End date (YYYY-MM-DD)
      * @param int $limit Maximum number of logs to return (default: 100)
-     * @return array Array of log records
+     * @return array Array of log records with thread information
      */
     public static function getByDateRange(string $startDate, string $endDate, int $limit = 100): array {
-        return Database::query(
-            "SELECT * FROM openai_request_log 
-            WHERE time >= ? AND time <= ? 
-            ORDER BY time DESC LIMIT ?",
+        return self::getLogsWithThreadInfo(
+            "WHERE orl.time >= ? AND orl.time <= ?",
             [$startDate, $endDate, $limit]
         );
     }
