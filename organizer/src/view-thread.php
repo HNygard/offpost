@@ -230,6 +230,13 @@ function print_extraction ($extraction) {
         $text = 'Sender is requesting a copy of the email.';
         $style = 'background-color: #d4edda; color:rgb(21, 33, 87);';
     }
+    elseif ($extraction->prompt_service == 'openai' && $extraction->prompt_id == 'thread-email-summary') {
+        if (empty($extraction->extracted_text)) {
+            return;
+        }
+        $text = 'Summarized: ' . htmlescape($extraction->extracted_text);
+        $style = 'background-color: #fff3cd; color: #856404;';
+    }
     else {
         global $admins;
         $text = 'Unknown extraction.';
