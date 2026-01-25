@@ -368,7 +368,7 @@ This is a test email.
         $this->assertEquals('Test Subject', $subject);
     }
 
-    public function testReadLaminasMessage_withErrorHandling_NonAsciiCharacterDebugInfo() {
+    public function testReadLaminasMessage_withRawNonAsciiInSubjectHeader() {
         // Test email with non-ASCII character (> 127) in the Subject header
         // With our sanitization, this should now successfully parse instead of throwing an exception
         $emailWithNonAscii = "From: sender@example.com\r\n" .
