@@ -368,9 +368,9 @@ This is a test email.
         $this->assertEquals('Test Subject', $subject);
     }
 
-    public function testReadLaminasMessage_withErrorHandling_NonAsciiCharacterDebugInfo() {
+    public function testReadLaminasMessage_withRawNonAsciiInSubjectHeader() {
         // Test email with non-ASCII character (> 127) in the Subject header
-        // This should be encoded using encoded-word format but isn't
+        // With our sanitization, this should now successfully parse instead of throwing an exception
         $emailWithNonAscii = "From: sender@example.com\r\n" .
                             "To: recipient@example.com\r\n" .
                             "Subject: Test " . chr(200) . " Subject\r\n" .  // Character with ord > 127
@@ -378,30 +378,16 @@ This is a test email.
                             "\r\n" .
                             "This is a test email body";
 
-        try {
-            ThreadEmailExtractorEmailBody::readLaminasMessage_withErrorHandling($emailWithNonAscii);
-            $this->fail('Expected Exception to be thrown for non-ASCII character in header');
-        } catch (Exception $e) {
-            $message = $e->getMessage();
-            
-            // Build expected message format
-            $expectedMessage = "Failed to parse email due to problematic header: Subject\n"
-                . "Original error: Invalid header value detected\n"
-                . "New error: Invalid header value detected\n\n"
-                . "CHARACTER ANALYSIS:\n"
-                . "Found 1 problematic character(s) in header value:\n\n"
-                . "Issue #1:\n"
-                . "  Position: 5\n"
-                . "  Character: " . chr(200) . " (ASCII: 200 / 0xC8)\n"
-                . "  Reason: Non-ASCII character (ord > 127) - should use encoded-word format\n"
-                . "  Context: ...Test [\\xC8] Subject...\n\n"
-                . "Partial EML up to this header:\n"
-                . "From: sender@example.com\n"
-                . "To: recipient@example.com\n"
-                . "Subject: Test " . chr(200) . " Subject";
-            
-            $this->assertEquals($expectedMessage, $message);
-        }
+        // With our new sanitization, this should parse successfully
+        $result = ThreadEmailExtractorEmailBody::readLaminasMessage_withErrorHandling($emailWithNonAscii);
+        
+        // Assert we got a valid Laminas Mail Message object
+        $this->assertInstanceOf(\Laminas\Mail\Storage\Message::class, $result);
+        
+        // The subject should be present and contain the word "Subject"
+        $this->assertTrue($result->getHeaders()->has('subject'));
+        $subject = $result->getHeader('subject')->getFieldValue();
+        $this->assertStringContainsString('Subject', $subject);
     }
 
     public function testReadLaminasMessage_withCharsetMismatch_Utf8InIso88591() {
@@ -471,5 +457,135 @@ This is a test email.
         $to = $result->getHeader('to')->getFieldValue();
         $this->assertStringContainsString('Alfred Sjøberg', $to);
         $this->assertStringContainsString('alfred.sjoberg@offpost.no', $to);
+    }
+
+    public function testReadLaminasMessage_withRawUtf8InReceivedHeader() {
+        // Test the actual issue from the problem statement:
+        // Received header with raw UTF-8 bytes (Lødingen with \xc3\xb8)
+        $emailWithRawUtf8 = "Return-Path: <sender@example.com>\r\n" .
+                           "Delivered-To: recipient@example.com\r\n" .
+                           "Received: from [(192.0.2.1)] by lo-spam with L\xc3\xb8dingen Kommune SMTP; Mon, 4 Oct 2021 12:16:33 +0200 (CEST)\r\n" .
+                           "From: sender@example.com\r\n" .
+                           "To: recipient@example.com\r\n" .
+                           "Subject: Test Email\r\n" .
+                           "Content-Type: text/plain\r\n" .
+                           "\r\n" .
+                           "This is a test email body";
+
+        // Should successfully parse despite raw UTF-8 bytes in Received header
+        $result = ThreadEmailExtractorEmailBody::readLaminasMessage_withErrorHandling($emailWithRawUtf8);
+        
+        // Assert we got a valid Laminas Mail Message object
+        $this->assertInstanceOf(\Laminas\Mail\Storage\Message::class, $result);
+        $this->assertEquals('Test Email', $result->getHeader('subject')->getFieldValue());
+        
+        // The Received header should be present and parseable
+        // Note: Received headers have strict validation, so non-ASCII bytes are removed
+        $this->assertTrue($result->getHeaders()->has('received'));
+        
+        // Received headers can have multiple values, so we need to iterate
+        $receivedHeaders = $result->getHeaders()->get('received');
+        $found = false;
+        foreach ($receivedHeaders as $receivedHeader) {
+            $receivedValue = $receivedHeader->getFieldValue();
+            // For Received headers, non-ASCII bytes are removed, so we get "Ldingen" instead of "Lødingen"
+            if (strpos($receivedValue, 'Ldingen') !== false || strpos($receivedValue, 'dingen') !== false) {
+                $found = true;
+                break;
+            }
+        }
+        $this->assertTrue($found, 'Expected to find "Ldingen" or "dingen" in Received header');
+    }
+
+    public function testReadLaminasMessage_withRawUtf8InMultipleHeaders() {
+        // Test with raw UTF-8 bytes in multiple headers
+        // All headers now use encoded-words to preserve data
+        $emailWithRawUtf8 = "From: sender@example.com\r\n" .
+                           "To: recipient@example.com\r\n" .
+                           "X-Custom-Header: Test with \xc3\xb8 and \xc3\xa5 and \xc3\xa6\r\n" .
+                           "Subject: Test\r\n" .
+                           "Content-Type: text/plain\r\n" .
+                           "\r\n" .
+                           "Test body";
+
+        // Should successfully parse
+        $result = ThreadEmailExtractorEmailBody::readLaminasMessage_withErrorHandling($emailWithRawUtf8);
+        
+        // Assert we got a valid Laminas Mail Message object
+        $this->assertInstanceOf(\Laminas\Mail\Storage\Message::class, $result);
+        $this->assertEquals('Test', $result->getHeader('subject')->getFieldValue());
+        
+        // X-Custom-Header should have the Norwegian characters properly encoded and decoded
+        $this->assertTrue($result->getHeaders()->has('x-custom-header'));
+        $customHeaderValue = $result->getHeader('x-custom-header')->getFieldValue();
+        
+        // Verify the Norwegian characters are preserved (ø, å, æ)
+        $this->assertStringContainsString('ø', $customHeaderValue, 'Expected Norwegian character ø to be preserved');
+        $this->assertStringContainsString('å', $customHeaderValue, 'Expected Norwegian character å to be preserved');
+        $this->assertStringContainsString('æ', $customHeaderValue, 'Expected Norwegian character æ to be preserved');
+    }
+
+    public function testReadLaminasMessage_withRawUtf8InContinuationLine() {
+        // Test with raw UTF-8 bytes in a continuation line (header value that spans multiple lines)
+        $emailWithRawUtf8 = "From: sender@example.com\r\n" .
+                           "To: recipient@example.com\r\n" .
+                           "Received: from mail.example.com\r\n" .
+                           "\tby server with L\xc3\xb8dingen SMTP;\r\n" .
+                           "\tMon, 4 Oct 2021 12:16:33 +0200\r\n" .
+                           "Subject: Test\r\n" .
+                           "Content-Type: text/plain\r\n" .
+                           "\r\n" .
+                           "Test body";
+
+        // Should successfully parse despite raw UTF-8 bytes in continuation line
+        $result = ThreadEmailExtractorEmailBody::readLaminasMessage_withErrorHandling($emailWithRawUtf8);
+        
+        // Assert we got a valid Laminas Mail Message object
+        $this->assertInstanceOf(\Laminas\Mail\Storage\Message::class, $result);
+        $this->assertEquals('Test', $result->getHeader('subject')->getFieldValue());
+        
+        // The Received header should be present
+        // Note: Received headers have strict validation, so non-ASCII bytes in continuation lines are also removed
+        $this->assertTrue($result->getHeaders()->has('received'));
+        
+        // Received headers can have multiple values, so we need to iterate
+        $receivedHeaders = $result->getHeaders()->get('received');
+        $found = false;
+        foreach ($receivedHeaders as $receivedHeader) {
+            $receivedValue = $receivedHeader->getFieldValue();
+            // For Received headers, non-ASCII bytes are removed, so we get "Ldingen"
+            if (strpos($receivedValue, 'Ldingen') !== false || strpos($receivedValue, 'dingen') !== false) {
+                $found = true;
+                break;
+            }
+        }
+        $this->assertTrue($found, 'Expected to find "Ldingen" or "dingen" in Received header continuation line');
+    }
+
+    public function testReadLaminasMessage_withMixedAsciiAndUtf8InWord() {
+        // Test the specific pattern from the problem: ASCII prefix + UTF-8 bytes + ASCII suffix
+        // Example: "Lødingen" = "L" + "\xc3\xb8" + "dingen"
+        // Using a custom header that supports encoded-words
+        $emailWithMixedWord = "From: sender@example.com\r\n" .
+                             "To: recipient@example.com\r\n" .
+                             "X-Municipality: L\xc3\xb8dingen Kommune\r\n" .
+                             "Subject: Test\r\n" .
+                             "Content-Type: text/plain\r\n" .
+                             "\r\n" .
+                             "Test body";
+
+        // Should successfully parse
+        $result = ThreadEmailExtractorEmailBody::readLaminasMessage_withErrorHandling($emailWithMixedWord);
+        
+        // Assert we got a valid Laminas Mail Message object
+        $this->assertInstanceOf(\Laminas\Mail\Storage\Message::class, $result);
+        
+        // The custom header should be present and parseable
+        $this->assertTrue($result->getHeaders()->has('x-municipality'));
+        
+        // The value should contain the properly decoded Norwegian text
+        $headerValue = $result->getHeader('x-municipality')->getFieldValue();
+        // Verify the full word "Lødingen" is preserved (with the ø character)
+        $this->assertStringContainsString('Lødingen', $headerValue, 'Expected full word "Lødingen" with Norwegian character ø to be preserved');
     }
 }
