@@ -492,25 +492,17 @@ class ThreadEmailExtractorEmailBody extends ThreadEmailExtractor {
             // Also collect any immediately following ASCII alphanumerics that are likely
             // part of the same word (e.g., "L\xc3\xb8dingen" should encode "Lødingen" as a whole)
             $followingAscii = '';
-            while ($i < $len && preg_match('/[a-zA-Z0-9]/', $headerValue[$i])) {
-                $followingAscii .= $headerValue[$i];
-                $i++;
+            if ($i < $len && preg_match('/^[a-zA-Z0-9]+/', substr($headerValue, $i), $matches)) {
+                $followingAscii = $matches[0];
+                $i += strlen($followingAscii);
             }
             
             // We need to also look backwards to include any ASCII prefix that's part of the word
             // Find the start of the current word (the ASCII characters before non-ASCII sequence)
-            $prefixLength = 0;
-            $tempResult = $result;
-            while (strlen($tempResult) > 0 && preg_match('/[a-zA-Z0-9]$/', $tempResult)) {
-                $tempResult = substr($tempResult, 0, -1);
-                $prefixLength++;
-            }
-            
-            // Extract the prefix from result
             $prefix = '';
-            if ($prefixLength > 0) {
-                $prefix = substr($result, -$prefixLength);
-                $result = substr($result, 0, -$prefixLength);
+            if (preg_match('/[a-zA-Z0-9]+$/', $result, $matches)) {
+                $prefix = $matches[0];
+                $result = substr($result, 0, -strlen($prefix));
             }
             
             // Combine prefix, non-ASCII sequence, and following ASCII into one encoded-word
@@ -618,7 +610,10 @@ class ThreadEmailExtractorEmailBody extends ThreadEmailExtractor {
         // For continuation lines (start with space or tab), sanitize the whole line
         // We don't have the header name context, so we'll use simple replacement for safety
         if (substr($headerLine, 0, 1) === ' ' || substr($headerLine, 0, 1) === "\t") {
-            $leadingWhitespace = preg_match('/^(\s+)/', $headerLine, $matches) ? $matches[1] : '';
+            $leadingWhitespace = '';
+            if (preg_match('/^(\s+)/', $headerLine, $matches)) {
+                $leadingWhitespace = $matches[1];
+            }
             $content = ltrim($headerLine);
             // Use simple replacement for continuation lines since we don't know the header context
             $sanitized = '';
