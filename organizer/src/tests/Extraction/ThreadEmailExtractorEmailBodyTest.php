@@ -480,7 +480,7 @@ This is a test email.
         $this->assertEquals('Test Email', $result->getHeader('subject')->getFieldValue());
         
         // The Received header should be present and parseable
-        // Note: non-ASCII characters in Received headers are replaced with '?' for parseability
+        // Note: Received headers have strict validation, so non-ASCII bytes are removed
         $this->assertTrue($result->getHeaders()->has('received'));
         
         // Received headers can have multiple values, so we need to iterate
@@ -488,19 +488,18 @@ This is a test email.
         $found = false;
         foreach ($receivedHeaders as $receivedHeader) {
             $receivedValue = $receivedHeader->getFieldValue();
-            // The UTF-8 sequence \xc3\xb8 (2 bytes for ø) gets replaced with ?? (2 question marks)
-            // We just need to verify it parses successfully and contains "dingen"
-            if (strpos($receivedValue, 'dingen') !== false) {
+            // For Received headers, non-ASCII bytes are removed, so we get "Ldingen" instead of "Lødingen"
+            if (strpos($receivedValue, 'Ldingen') !== false || strpos($receivedValue, 'dingen') !== false) {
                 $found = true;
                 break;
             }
         }
-        $this->assertTrue($found, 'Expected to find "dingen" in Received header (part of Lødingen)');
+        $this->assertTrue($found, 'Expected to find "Ldingen" or "dingen" in Received header');
     }
 
     public function testReadLaminasMessage_withRawUtf8InMultipleHeaders() {
         // Test with raw UTF-8 bytes in multiple headers
-        // Note: For From header, encoded-words will be used; for structural headers, simple replacement
+        // All headers now use encoded-words to preserve data
         $emailWithRawUtf8 = "From: sender@example.com\r\n" .
                            "To: recipient@example.com\r\n" .
                            "X-Custom-Header: Test with \xc3\xb8 and \xc3\xa5 and \xc3\xa6\r\n" .
@@ -516,8 +515,14 @@ This is a test email.
         $this->assertInstanceOf(\Laminas\Mail\Storage\Message::class, $result);
         $this->assertEquals('Test', $result->getHeader('subject')->getFieldValue());
         
-        // X-Custom-Header should have the Norwegian characters properly encoded
+        // X-Custom-Header should have the Norwegian characters properly encoded and decoded
         $this->assertTrue($result->getHeaders()->has('x-custom-header'));
+        $customHeaderValue = $result->getHeader('x-custom-header')->getFieldValue();
+        
+        // Verify the Norwegian characters are preserved (ø, å, æ)
+        $this->assertStringContainsString('ø', $customHeaderValue, 'Expected Norwegian character ø to be preserved');
+        $this->assertStringContainsString('å', $customHeaderValue, 'Expected Norwegian character å to be preserved');
+        $this->assertStringContainsString('æ', $customHeaderValue, 'Expected Norwegian character æ to be preserved');
     }
 
     public function testReadLaminasMessage_withRawUtf8InContinuationLine() {
@@ -540,7 +545,7 @@ This is a test email.
         $this->assertEquals('Test', $result->getHeader('subject')->getFieldValue());
         
         // The Received header should be present
-        // Note: non-ASCII in continuation lines are replaced with '?'
+        // Note: Received headers have strict validation, so non-ASCII bytes in continuation lines are also removed
         $this->assertTrue($result->getHeaders()->has('received'));
         
         // Received headers can have multiple values, so we need to iterate
@@ -548,14 +553,13 @@ This is a test email.
         $found = false;
         foreach ($receivedHeaders as $receivedHeader) {
             $receivedValue = $receivedHeader->getFieldValue();
-            // The UTF-8 sequence \xc3\xb8 (2 bytes) gets replaced with ?? (2 question marks)
-            // We just need to verify it parses successfully and contains "dingen"
-            if (strpos($receivedValue, 'dingen') !== false) {
+            // For Received headers, non-ASCII bytes are removed, so we get "Ldingen"
+            if (strpos($receivedValue, 'Ldingen') !== false || strpos($receivedValue, 'dingen') !== false) {
                 $found = true;
                 break;
             }
         }
-        $this->assertTrue($found, 'Expected to find "dingen" in Received header continuation line (part of Lødingen)');
+        $this->assertTrue($found, 'Expected to find "Ldingen" or "dingen" in Received header continuation line');
     }
 
     public function testReadLaminasMessage_withMixedAsciiAndUtf8InWord() {
@@ -581,8 +585,7 @@ This is a test email.
         
         // The value should contain the properly decoded Norwegian text
         $headerValue = $result->getHeader('x-municipality')->getFieldValue();
-        // Since X-Municipality is not a structural header, it should be encoded-word encoded
-        // and should decode to the proper Norwegian text
-        $this->assertStringContainsString('dingen', $headerValue);
+        // Verify the full word "Lødingen" is preserved (with the ø character)
+        $this->assertStringContainsString('Lødingen', $headerValue, 'Expected full word "Lødingen" with Norwegian character ø to be preserved');
     }
 }
