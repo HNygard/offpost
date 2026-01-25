@@ -46,7 +46,7 @@ try {
     
     if (!$threadId) {
         http_response_code(404);
-        echo json_encode(['error' => 'Thread not found for this extraction']);
+        echo json_encode(['error' => 'Extraction not found or inaccessible']);
         exit;
     }
     
