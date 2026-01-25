@@ -51,6 +51,9 @@ try {
     echo json_encode($response, JSON_PRETTY_PRINT | JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES);
     
 } catch (Exception $e) {
+    // Log the full error details server-side
+    error_log('Error fetching extraction: ' . $e->getMessage());
+    
     http_response_code(500);
-    echo json_encode(['error' => 'Server error: ' . $e->getMessage()]);
+    echo json_encode(['error' => 'Failed to retrieve extraction data']);
 }
