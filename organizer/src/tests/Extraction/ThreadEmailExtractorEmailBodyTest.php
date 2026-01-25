@@ -464,7 +464,7 @@ This is a test email.
         // Received header with raw UTF-8 bytes (Lødingen with \xc3\xb8)
         $emailWithRawUtf8 = "Return-Path: <sender@example.com>\r\n" .
                            "Delivered-To: recipient@example.com\r\n" .
-                           "Received: from [(150.100.100.14)] by lo-spam with L\xc3\xb8dingen Kommune SMTP; Mon, 4 Oct 2021 12:16:33 +0200 (CEST)\r\n" .
+                           "Received: from [(192.0.2.1)] by lo-spam with L\xc3\xb8dingen Kommune SMTP; Mon, 4 Oct 2021 12:16:33 +0200 (CEST)\r\n" .
                            "From: sender@example.com\r\n" .
                            "To: recipient@example.com\r\n" .
                            "Subject: Test Email\r\n" .
