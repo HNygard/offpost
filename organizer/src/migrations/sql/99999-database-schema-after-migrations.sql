@@ -201,7 +201,8 @@ CREATE TABLE thread_emails (
     id_old character varying(255),
     imap_headers jsonb,
     content bytea NOT NULL,
-    content_read_status character varying(10) DEFAULT NULL::character varying
+    content_read_status character varying(10) DEFAULT NULL::character varying,
+    auto_classification character varying(50) DEFAULT NULL::character varying
 );
 
 ALTER TABLE thread_emails ADD CONSTRAINT thread_emails_pkey PRIMARY KEY (id);
@@ -213,6 +214,7 @@ CREATE INDEX thread_emails_status_type_idx ON thread_emails USING btree (status_
 CREATE INDEX thread_emails_thread_datetime_idx ON thread_emails USING btree (thread_id, datetime_received);
 CREATE INDEX thread_emails_thread_id_idx ON thread_emails USING btree (thread_id);
 CREATE INDEX thread_emails_timestamp_received_idx ON thread_emails USING btree (timestamp_received);
+CREATE INDEX thread_emails_auto_classification_idx ON thread_emails USING btree (auto_classification);
 
 CREATE TABLE thread_history (
     id integer NOT NULL DEFAULT nextval('thread_history_id_seq'::regclass),
