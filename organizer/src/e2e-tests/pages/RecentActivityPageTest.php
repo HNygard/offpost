@@ -132,4 +132,45 @@ class RecentActivityPageTest extends E2EPageTestCase {
         // Should be redirected (authentication required)
         $this->assertStringContainsString('Location: http://localhost:25083/oidc/auth?client_id=organizer&response_type=code&scope=openid+email+profile&redirect_uri=http%3A%2F%2Flocalhost%3A25081%2Fcallback&state=', $response->headers);
     }
+    
+    public function testTimezoneConversionToOslo() {
+        // :: Setup
+        $testData = E2ETestSetup::createTestThread();
+        $threadId = $testData['thread']->id;
+        $this->createdThreadIds[] = $threadId;
+        
+        // Create a test email with a known UTC timestamp
+        // Using 2026-01-23 08:58:02+00 (UTC) which should display as 2026-01-23 09:58 in Oslo time (UTC+1 in winter)
+        $uniqueId = uniqid();
+        $imapHeaders = json_encode([
+            'from' => [
+                ['personal' => 'Test Sender ' . $uniqueId, 'mailbox' => 'test' . $uniqueId, 'host' => 'example.com']
+            ],
+            'subject' => 'Timezone Test Email ' . $uniqueId
+        ]);
+        
+        $emailId = Database::queryValue(
+            "INSERT INTO thread_emails (thread_id, email_type, description, datetime_received, timestamp_received, status_type, status_text, content, imap_headers) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?) RETURNING id",
+            [
+                $threadId,
+                'IN',
+                'Test email for timezone verification',
+                '2026-01-23 08:58:02+00', // UTC time
+                '2026-01-23 08:58:02+00',
+                'unknown',
+                'Pending Classification',
+                'Test email content',
+                $imapHeaders
+            ]
+        );
+        
+        $this->createdEmailIds[] = $emailId;
+
+        // :: Act
+        $response = $this->renderPage('/recent-activity');
+
+        // :: Assert - should display Oslo time (UTC+1 in winter), so 09:58 instead of 08:58
+        $this->assertStringContainsString('2026-01-23 09:58', $response->body, 'Timestamp should be converted to Oslo timezone');
+        $this->assertStringNotContainsString('2026-01-23 08:58', $response->body, 'UTC timestamp should not be displayed');
+    }
 }

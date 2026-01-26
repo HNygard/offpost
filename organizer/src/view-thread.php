@@ -187,7 +187,7 @@ function print_extraction ($extraction) {
     }
     elseif ($extraction->prompt_service == 'code' && $extraction->prompt_text == 'email_body') {
         $text = 'Email body extracted.';
-        $style = 'background-color: #d1ecf1; color: #0c5460;';
+        $style = 'background-color: #d1ecf1;color: #5dd0e5;border: 1px solid #d9d8d8;';
     }
     elseif ($extraction->prompt_service == 'code' && $extraction->prompt_text == 'attachment_pdf') {
         $text = 'PDF attachment text extracted.';
@@ -216,7 +216,7 @@ function print_extraction ($extraction) {
             return;
         }
         $text = 'Latest reply extracted.';
-        $style = 'background-color: #86cff1; color: rgb(11, 96, 111);';
+        $style = 'background-color: #d1ecf1; color: #0c5460;';
     }
     elseif ($extraction->prompt_service == 'openai' && $extraction->prompt_id == 'copy-asking-for') {
         if (empty($extraction->extracted_text)) {
@@ -230,6 +230,13 @@ function print_extraction ($extraction) {
         $text = 'Sender is requesting a copy of the email.';
         $style = 'background-color: #d4edda; color:rgb(21, 33, 87);';
     }
+    elseif ($extraction->prompt_service == 'openai' && $extraction->prompt_id == 'thread-email-summary') {
+        if (empty($extraction->extracted_text)) {
+            return;
+        }
+        $text = 'Summarized';
+        $style = 'background-color: #fff3cd; color: #856404;';
+    }
     else {
         global $admins;
         $text = 'Unknown extraction.';
@@ -238,7 +245,7 @@ function print_extraction ($extraction) {
         }
         throw new Exception($text);
     }
-    echo '<span class="email-extraction" style="border: 1px solid gray; padding: 5px; border-radius: 4px; margin-right: 6px; ' . $style . '">' . trim($text) . '</span>';
+    echo '<span class="email-extraction" style="border: 1px solid gray; padding: 5px; border-radius: 4px; margin-right: 6px; ' . $style . '" data-extraction-id="' . htmlescape($extraction->extraction_id) . '" onclick="ExtractionDialog.show(' . json_encode($extraction->extraction_id) . ')">' . trim($text) . '</span>';
 }
 
 ?>
@@ -249,6 +256,8 @@ function print_extraction ($extraction) {
     $pageTitle = 'View Thread - ' . htmlescape($thread->title);
     include 'head.php';
     ?>
+    <link href="/css/extractionDialog.css" rel="stylesheet">
+    <script src="/js/extractionDialog.js"></script>
 </head>
 <body>
     <div class="container">
@@ -420,7 +429,7 @@ function print_extraction ($extraction) {
             ?>
                 <div class="email-item<?= $email->ignore ? ' ignored' : '' ?>">
                     <div class="email-header">
-                        <span class="datetime"><?= htmlescape($email->datetime_received) ?></span>
+                        <span class="datetime"><?= htmlescape(formatDateTimeOslo($email->datetime_received)) ?></span>
                         <span class="email-type"><?= htmlescape($email->email_type) ?></span>
                         <span class="<?= $label_type ?>"><?= htmlescape($email->status_text) ?></span>
                         <?php
@@ -437,6 +446,24 @@ function print_extraction ($extraction) {
                     <?php if (isset($email->description) && $email->description): ?>
                         <div class="email-description">
                             <?= htmlescape($email->description) ?>
+                        </div>
+                    <?php endif; ?>
+
+                    <?php
+                    // Display summary if available
+                    $summary_extraction = null;
+                    foreach ($extractions as $extraction) {
+                        if ($extraction->prompt_service == 'openai' 
+                            && $extraction->prompt_id == 'thread-email-summary' 
+                            && !empty($extraction->extracted_text)
+                            && empty($extraction->attachment_id)) {
+                            $summary_extraction = $extraction;
+                            break;
+                        }
+                    }
+                    if ($summary_extraction): ?>
+                        <div class="email-summary" style="margin: 10px 0; padding: 10px; background-color: #fffbf0; border-left: 3px solid #856404; border-radius: 3px;">
+                            <strong>Summary:</strong> <?= htmlescape($summary_extraction->extracted_text) ?>
                         </div>
                     <?php endif; ?>
 
@@ -505,21 +532,13 @@ function print_extraction ($extraction) {
         </div>
 
         <?php 
-        // Check if thread has incoming emails that might need a reply
-        $hasIncomingEmails = false;
-        if (isset($thread->emails)) {
-            foreach ($thread->emails as $email) {
-                if ($email->email_type === 'IN') {
-                    $hasIncomingEmails = true;
-                    break;
-                }
-            }
-        }
-        
-        // Only show reply form if there are incoming emails and user has permission
-        if ($hasIncomingEmails && $thread->canUserAccess($userId)): 
+        // Show reply form if user has permission and there are valid reply recipients
+        if ($thread->canUserAccess($userId)): 
             // Get valid reply recipients
             $replyRecipients = getThreadReplyRecipients($thread);
+            
+            // Only show the form if there are valid recipients
+            if (!empty($replyRecipients)):
         ?>
         <div id="reply-section">
             <h2>Reply to Thread</h2>
@@ -731,7 +750,8 @@ echo htmlescape($suggestedReply);
             textarea.focus();
         }
         </script>
-        <?php endif; ?>
+        <?php endif; // End valid recipients check ?>
+        <?php endif; // End user access check ?>
     </div>
 </body>
 </html>

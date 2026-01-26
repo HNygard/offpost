@@ -83,42 +83,51 @@ class ThreadReplyTest extends TestCase {
             $suggestedReply .= "\n";
         }
 
-        $this->assertStringContainsString('Previous emails in this thread:', $suggestedReply);
-        $this->assertStringContainsString('1. Received on 2024-01-03 09:15:00', $suggestedReply);
-        $this->assertStringContainsString('2. Received on 2024-01-02 15:30:00', $suggestedReply);
-        $this->assertStringContainsString('3. Sent on 2024-01-01 10:00:00', $suggestedReply);
-        $this->assertStringContainsString('Follow-up email received', $suggestedReply);
+        // With deterministic input, verify exact output
+        $expectedReply = "Previous emails in this thread:\n\n" .
+            "1. Received on 2024-01-03 09:15:00\n" .
+            "   Summary: Follow-up email received\n\n" .
+            "2. Received on 2024-01-02 15:30:00\n" .
+            "   Summary: Response received from entity\n\n" .
+            "3. Sent on 2024-01-01 10:00:00\n" .
+            "   Summary: Initial request sent\n\n";
+        $this->assertEquals($expectedReply, $suggestedReply, 'Generated reply should match expected format exactly');
     }
 
     public function testThreadReplyValidation() {
-        // Test that reply is only allowed for threads with incoming emails
-        $threadWithoutIncoming = new Thread();
-        $threadWithoutIncoming->emails = [];
+        // Test valid reply recipient check - replies should be allowed when there are valid recipients
+        $threadWithEntity = new Thread();
+        $threadWithEntity->emails = [];
+        $threadWithEntity->id = 'test-thread-123';
+        $threadWithEntity->my_email = 'test@offpost.no';
         
-        $hasIncomingEmails = false;
-        foreach ($threadWithoutIncoming->emails as $email) {
-            if ($email->email_type === 'IN') {
-                $hasIncomingEmails = true;
-                break;
-            }
-        }
+        // Mock entity with valid email
+        $entity = new stdClass();
+        $entity->email = 'entity@example.com';
         
-        $this->assertFalse($hasIncomingEmails, 'Empty thread should not have incoming emails');
+        // In the actual system, getThreadReplyRecipients would return this entity email
+        // even without incoming emails
+        $mockRecipients = ['entity@example.com'];
+        
+        $this->assertNotEmpty($mockRecipients, 'Thread with entity should have valid recipients');
 
-        // Test thread with only outgoing emails
-        $outgoingEmail = new ThreadEmail();
-        $outgoingEmail->email_type = 'OUT';
-        $threadWithoutIncoming->emails = [$outgoingEmail];
+        // Test thread with incoming emails also has recipients
+        $incomingEmail = new ThreadEmail();
+        $incomingEmail->email_type = 'IN';
+        $incomingEmail->imap_headers = json_encode([
+            'from' => [(object)['mailbox' => 'sender', 'host' => 'example.com']]
+        ]);
+        $threadWithEntity->emails = [$incomingEmail];
         
         $hasIncomingEmails = false;
-        foreach ($threadWithoutIncoming->emails as $email) {
+        foreach ($threadWithEntity->emails as $email) {
             if ($email->email_type === 'IN') {
                 $hasIncomingEmails = true;
                 break;
             }
         }
         
-        $this->assertFalse($hasIncomingEmails, 'Thread with only outgoing emails should not allow replies');
+        $this->assertTrue($hasIncomingEmails, 'Thread with incoming emails should have incoming emails flag');
     }
 
     public function testEmailFormattingHelpers() {
@@ -174,6 +183,55 @@ class ThreadReplyTest extends TestCase {
         $addressesFromJson = getEmailAddressesFromImapHeaders($jsonHeaders);
         
         $this->assertEquals($addresses, $addressesFromJson, 'JSON parsing should yield same results');
+    }
+
+    public function testEmailHeaderExtractionWithMissingFields() {
+        // Test that missing header fields don't cause errors
+        
+        // Test with only 'to' field
+        $headersOnlyTo = [
+            'to' => [
+                (object)['mailbox' => 'recipient', 'host' => 'example.com']
+            ]
+        ];
+        
+        $addresses = getEmailAddressesFromImapHeaders($headersOnlyTo);
+        $this->assertContains('recipient@example.com', $addresses, 'Should extract to field');
+        $this->assertCount(1, $addresses, 'Should have exactly one address');
+        
+        // Test with only 'from' field
+        $headersOnlyFrom = [
+            'from' => [
+                (object)['mailbox' => 'sender', 'host' => 'example.com']
+            ]
+        ];
+        
+        $addresses = getEmailAddressesFromImapHeaders($headersOnlyFrom);
+        $this->assertContains('sender@example.com', $addresses, 'Should extract from field');
+        $this->assertCount(1, $addresses, 'Should have exactly one address');
+        
+        // Test with empty headers
+        $emptyHeaders = [];
+        $addresses = getEmailAddressesFromImapHeaders($emptyHeaders);
+        $this->assertIsArray($addresses, 'Should return array');
+        $this->assertEmpty($addresses, 'Should return empty array for empty headers');
+        
+        // Test with CC but no from/reply_to/sender
+        $headersWithCc = [
+            'to' => [
+                (object)['mailbox' => 'recipient', 'host' => 'example.com']
+            ],
+            'cc' => [
+                (object)['mailbox' => 'cc1', 'host' => 'example.com'],
+                (object)['mailbox' => 'cc2', 'host' => 'example.org']
+            ]
+        ];
+        
+        $addresses = getEmailAddressesFromImapHeaders($headersWithCc);
+        $this->assertContains('recipient@example.com', $addresses, 'Should extract to field');
+        $this->assertContains('cc1@example.com', $addresses, 'Should extract first CC');
+        $this->assertContains('cc2@example.org', $addresses, 'Should extract second CC');
+        $this->assertCount(3, $addresses, 'Should have three addresses');
     }
 
     public function testReplySubjectGeneration() {

@@ -1,9 +1,10 @@
 <?php
-require_once __DIR__ . '/../../../class/Ai/OpenAiIntegration.php';
-require_once __DIR__ . '/../../../class/Extraction/Prompts/OpenAiPrompt.php';
-require_once __DIR__ . '/../../../class/Extraction/Prompts/SaksnummerPrompt.php';
-require_once __DIR__ . '/../../../class/Extraction/Prompts/EmailLatestReplyPrompt.php';
-require_once __DIR__ . '/../../../class/Extraction/Prompts/CopyAskingForPrompt.php';
+require_once __DIR__ . '/../../Ai/OpenAiIntegration.php';
+require_once __DIR__ . '/OpenAiPrompt.php';
+require_once __DIR__ . '/SaksnummerPrompt.php';
+require_once __DIR__ . '/EmailLatestReplyPrompt.php';
+require_once __DIR__ . '/CopyAskingForPrompt.php';
+require_once __DIR__ . '/ThreadEmailSummaryPrompt.php';
 
 use Offpost\Ai\OpenAiIntegration;
 
@@ -28,13 +29,16 @@ class PromptService {
 
         $copy_asking_for = new CopyAskingForPrompt();
         $this->available_prompts[$copy_asking_for->getPromptId()] = $copy_asking_for;
+
+        $thread_email_summary = new ThreadEmailSummaryPrompt();
+        $this->available_prompts[$thread_email_summary->getPromptId()] = $thread_email_summary;
     }
 
     public function getAvailablePrompts(): array {
         return $this->available_prompts;
     }
 
-    public function run(OpenAiPrompt $prompt, String $emailInput) {
+    public function run(OpenAiPrompt $prompt, String $emailInput, ?int $extractionId = null) {
         $openai = new OpenAiIntegration($this->openai_api_key);
 
         // Filter out any base64 looking strings as they might trigger content filters at OpenAI
@@ -44,7 +48,8 @@ class PromptService {
             $prompt->getInput($emailInput),
             $prompt->getStructuredOutput(),
             $prompt->getModel($emailInput),
-            'prompt_' . $prompt->getPromptId()
+            'prompt_' . $prompt->getPromptId(),
+            $extractionId
         );
 
         $return = null;

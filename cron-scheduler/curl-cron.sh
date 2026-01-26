@@ -33,6 +33,10 @@ echo "$(date) Scheduled extraction from email PROMPT ASKING FOR COPY"
 curl "http://organizer/scheduled-email-extraction?type=prompt_copy_asking_for" -s 2>&1
 echo ""
 
+echo "$(date) Scheduled extraction from email PROMPT SUMMARY"
+curl "http://organizer/scheduled-email-extraction?type=prompt_summary" -s 2>&1
+echo ""
+
 echo "$(date) Scheduled thread FOLLOW-UP"
 curl "http://organizer/scheduled-thread-follow-up" -s 2>&1
 echo ""

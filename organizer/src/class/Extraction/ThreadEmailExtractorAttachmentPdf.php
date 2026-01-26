@@ -94,7 +94,7 @@ class ThreadEmailExtractorAttachmentPdf extends ThreadEmailExtractor {
         return $this->processNextEmailExtractionInternal(
             'attachment_pdf',
             'code',
-            function($attachment, $prompt_text, $prompt_service) {
+            function($attachment, $prompt_text, $prompt_service, $extraction_id) {
                 // Extract text from PDF attachment
                 return $this->extractTextFromPdf($attachment);
             }

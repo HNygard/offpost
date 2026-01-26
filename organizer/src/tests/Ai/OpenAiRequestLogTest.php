@@ -154,4 +154,62 @@ class OpenAiRequestLogTest extends PHPUnit\Framework\TestCase {
         $this->expectExceptionMessage("Invalid log ID: 0");
         OpenAiRequestLog::updateWithResponse(0, $response, 200);
     }
+    
+    public function testGetById(): void {
+        // :: Setup
+        $endpoint = 'https://api.openai.com/v1/test';
+        $request = ['model' => 'gpt-4', 'messages' => [['role' => 'user', 'content' => 'Test']]];
+        $logId = OpenAiRequestLog::log($this->testSource, $endpoint, $request);
+        
+        // :: Act
+        $log = OpenAiRequestLog::getById($logId);
+        
+        // :: Assert
+        $this->assertNotNull($log, "Should return a log entry");
+        $this->assertEquals($logId, $log['id'], "Log ID should match");
+        $this->assertEquals($endpoint, $log['endpoint'], "Endpoint should match");
+        $this->assertEquals($this->testSource, $log['source'], "Source should match");
+    }
+    
+    public function testGetByIdNotFound(): void {
+        // :: Act
+        $log = OpenAiRequestLog::getById(999999999);
+        
+        // :: Assert
+        $this->assertNull($log, "Should return null for non-existent ID");
+    }
+    
+    public function testGetByIds(): void {
+        // :: Setup
+        $endpoint = 'https://api.openai.com/v1/test';
+        $logId1 = OpenAiRequestLog::log($this->testSource, $endpoint, ['test' => 1]);
+        $logId2 = OpenAiRequestLog::log($this->testSource, $endpoint, ['test' => 2]);
+        $logId3 = OpenAiRequestLog::log($this->testSource, $endpoint, ['test' => 3]);
+        
+        // :: Act
+        $logs = OpenAiRequestLog::getByIds([$logId1, $logId2, $logId3]);
+        
+        // :: Assert
+        $this->assertCount(3, $logs, "Should return three log entries");
+        $logIds = array_column($logs, 'id');
+        $this->assertContains($logId1, $logIds, "Should contain first log ID");
+        $this->assertContains($logId2, $logIds, "Should contain second log ID");
+        $this->assertContains($logId3, $logIds, "Should contain third log ID");
+    }
+    
+    public function testGetByIdsEmpty(): void {
+        // :: Act
+        $logs = OpenAiRequestLog::getByIds([]);
+        
+        // :: Assert
+        $this->assertEmpty($logs, "Should return empty array for empty IDs");
+    }
+    
+    public function testGetByIdsNonExistent(): void {
+        // :: Act
+        $logs = OpenAiRequestLog::getByIds([999999999, 999999998]);
+        
+        // :: Assert
+        $this->assertEmpty($logs, "Should return empty array for non-existent IDs");
+    }
 }

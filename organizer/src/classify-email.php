@@ -133,7 +133,6 @@ if (isset($_POST['submit'])) {
         $email->answer = $_POST[$emailId . '-answer'];
         if (isset($email->attachments)) {
             foreach ($email->attachments as $att) {
-                $att = (object)$att;
                 $attId = str_replace(' ', '_', str_replace('.', '_', $att->location));
                 $attNewStatusTypeString = $_POST[$emailId . '-att-' . $attId . '-status_type'];
                 $att->status_text = $_POST[$emailId . '-att-' . $attId . '-status_text'];
@@ -331,7 +330,7 @@ function secondsToHumanReadable($seconds) {
                     ?>
                     <div class="email-item<?= $email->ignore ? ' ignored' : '' ?>">
                         <hr>
-                        <?= $email->datetime_received ?> (<?= $since_last_text ?>):
+                        <?= formatDateTimeOslo($email->datetime_received) ?> (<?= $since_last_text ?>):
                         <?= $email->email_type ?><br>
                         [Current classification: <?= ThreadEmailClassifier::getClassificationLabel($email) ?>]<br>
 
@@ -401,7 +400,6 @@ function secondsToHumanReadable($seconds) {
                         <?php
                         if (isset($email->attachments)) {
                             foreach ($email->attachments as $att) {
-                                $att = (object)$att;
                                 $attId = str_replace(' ', '_', str_replace('.', '_', $att->location));
                                 ?><div class="attachment-item">
                                     <div class="form-group">

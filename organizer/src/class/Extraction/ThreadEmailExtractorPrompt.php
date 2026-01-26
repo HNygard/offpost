@@ -167,12 +167,12 @@ abstract class ThreadEmailExtractorPrompt extends ThreadEmailExtractor {
         return $this->processNextEmailExtractionInternal(
             $this->prompt->getPromptText(),
             $this->prompt->getPromptService(),
-            function($row, $prompt_text, $prompt_service) {
+            function($row, $prompt_text, $prompt_service, $extraction_id) {
                 // Prepare input for the prompt
                 $promptInput = $this->preparePromptInput($row);
                 
-                // Run the prompt against the prepared input
-                $response = $this->promptService->run($this->prompt, $promptInput);
+                // Run the prompt against the prepared input with extraction_id
+                $response = $this->promptService->run($this->prompt, $promptInput, $extraction_id);
                 
                 // Return the extracted text (AI response)
                 return $response;

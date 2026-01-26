@@ -75,4 +75,44 @@ class FilePageTest extends E2EPageTestCase {
         $this->assertStringContainsString("Empty email content provided for extraction", $response->body);
     }
 
+    public function testFileEmailHeadersAreEscaped() {
+        // Create a test thread with email containing HTML-like patterns in headers
+        $testData = E2ETestSetup::createTestThread();
+        $file = [
+            'email_id' => $testData['email_id'],
+            'thread_id' => $testData['thread']->id,
+            'entity_id' => $testData['entity_id']
+        ];
+
+        // Update email content to include email address with angle brackets that could be interpreted as HTML
+        $email_time = mktime(12, 0, 0, 1, 1, 2021);
+        $content = "From: John Doe <john.doe@example.com>\r\n" .
+                "To: Jane Smith <jane.smith@example.com>\r\n" .
+                "Cc: Bob Johnson <bob@example.com>\r\n" .
+                "Subject: Test Email with <brackets>\r\n" .
+                "Date: " . date('r', $email_time) . "\r\n" .
+                "\r\n" .
+                "This is a test email";
+        
+        Database::query("UPDATE thread_emails SET content = ? WHERE id = ?", [$content, $file['email_id']]);
+
+        // Render the file page
+        $response = $this->renderPage('/file?entityId=' . $file['entity_id'] . '&threadId=' . $file['thread_id'] . '&body=' . $file['email_id']);
+
+        // Verify that angle brackets are escaped (not interpreted as HTML tags)
+        // The escaped form should be &lt; and &gt;
+        $this->assertStringContainsString('&lt;john.doe@example.com&gt;', $response->body, 
+            'Email addresses in headers should be HTML-escaped');
+        $this->assertStringContainsString('&lt;jane.smith@example.com&gt;', $response->body,
+            'Email addresses in headers should be HTML-escaped');
+        $this->assertStringContainsString('&lt;bob@example.com&gt;', $response->body,
+            'Email addresses in headers should be HTML-escaped');
+        $this->assertStringContainsString('&lt;brackets&gt;', $response->body,
+            'Angle brackets in subject should be HTML-escaped');
+        
+        // Verify that the raw angle brackets are NOT present (which would indicate they're being rendered as HTML)
+        $this->assertStringNotContainsString('<john.doe@example.com>', $response->body,
+            'Raw angle brackets should not be present - they should be escaped');
+    }
+
 }
