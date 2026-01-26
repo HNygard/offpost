@@ -844,6 +844,7 @@ class ThreadEmailExtractorEmailBody extends ThreadEmailExtractor {
 
             $headers = preg_split('/\r?\n/', $eml);
             $currentHeader = '';
+            $partialEmlLines = [];
             foreach ($headers as $lineIndex => $line) {
                 if (preg_match('/^([A-Za-z-]+):\s*/', $line, $matches)) {
                     // New header
@@ -854,10 +855,12 @@ class ThreadEmailExtractorEmailBody extends ThreadEmailExtractor {
                 } else {
                     // Not a header line, skip
                     continue;
-                }   
+                }
+                // Build partial EML incrementally for better performance (O(n) instead of O(n²))
+                $partialEmlLines[] = $line;
                 try {
                     // Try to parse the email up to the current header
-                    $partialEml = implode("\n", array_slice($headers, 0, $lineIndex + 1));
+                    $partialEml = implode("\n", $partialEmlLines);
                     $message = new \Laminas\Mail\Storage\Message(['raw' => self::stripProblematicHeaders($partialEml)]);
                 } catch (\Laminas\Mail\Header\Exception\InvalidArgumentException | \Laminas\Mail\Exception\RuntimeException $e2) {
                     // Failed to parse at this header, analyze the header value for problematic characters
