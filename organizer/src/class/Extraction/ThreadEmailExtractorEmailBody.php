@@ -777,10 +777,9 @@ class ThreadEmailExtractorEmailBody extends ThreadEmailExtractor {
             // Extract problematic line from error message if available
             $problematicLinePreview = '';
             if (preg_match('/Line "(.*?)"/', $e->getMessage(), $matches)) {
-                $problematicLinePreview = substr($matches[1], 0, 200);
-                if (strlen($matches[1]) > 200) {
-                    $problematicLinePreview .= '... (truncated)';
-                }
+                $problematicLinePreview = strlen($matches[1]) > 200 
+                    ? substr($matches[1], 0, 200) . '... (truncated)' 
+                    : $matches[1];
             }
             
             $contextInfo = sprintf(
@@ -807,7 +806,7 @@ class ThreadEmailExtractorEmailBody extends ThreadEmailExtractor {
             // First 500 chars of EML for debugging (headers usually)
             $emlPreview = substr($eml, 0, 500);
             if (strlen($eml) > 500) {
-                $emlPreview .= "\n... (truncated, total " . $emlLength . " bytes)";
+                $emlPreview .= sprintf("\n... (truncated, total %d bytes)", $emlLength);
             }
             $contextInfo .= sprintf("  EML preview:\n%s\n", $emlPreview);
             
