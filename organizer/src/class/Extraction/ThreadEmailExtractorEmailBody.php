@@ -27,6 +27,12 @@ class ThreadEmailExtractorEmailBody extends ThreadEmailExtractor {
     private const ERROR_LOG_EML_PREVIEW_LENGTH = 500;
     
     /**
+     * Maximum length for stack trace in error logs.
+     * Stack traces longer than this will be truncated to avoid log bloat.
+     */
+    private const ERROR_LOG_STACK_TRACE_LENGTH = 1000;
+    
+    /**
      * Regex pattern to extract problematic line content from RuntimeException messages.
      * RuntimeException from Laminas Mail typically formats error messages as: Line "..." does not match header format!
      */
@@ -812,6 +818,12 @@ class ThreadEmailExtractorEmailBody extends ThreadEmailExtractor {
                 $problematicLinePreview = self::truncateLineForLog($matches[1]);
             }
             
+            // Truncate stack trace to avoid log bloat
+            $stackTrace = $e->getTraceAsString();
+            if (strlen($stackTrace) > self::ERROR_LOG_STACK_TRACE_LENGTH) {
+                $stackTrace = substr($stackTrace, 0, self::ERROR_LOG_STACK_TRACE_LENGTH) . "\n... (truncated)";
+            }
+            
             $contextInfo = sprintf(
                 "Email parsing error:\n" .
                 "  Exception: %s\n" .
@@ -826,25 +838,27 @@ class ThreadEmailExtractorEmailBody extends ThreadEmailExtractor {
                 $emlLineCount,
                 $e->getFile(),
                 $e->getLine(),
-                $e->getTraceAsString()
+                $stackTrace
             );
             
             if (!empty($problematicLinePreview)) {
                 $contextInfo .= sprintf("  Problematic line preview: %s\n", $problematicLinePreview);
             }
             
-            // First N chars of EML for debugging (headers usually)
+            // Redact potential PII from EML preview (email addresses, names)
             $emlPreview = substr($eml, 0, self::ERROR_LOG_EML_PREVIEW_LENGTH);
+            // Redact email addresses
+            $emlPreview = preg_replace('/[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}/', '[EMAIL_REDACTED]', $emlPreview);
             if (strlen($eml) > self::ERROR_LOG_EML_PREVIEW_LENGTH) {
                 $emlPreview .= sprintf("\n... (truncated, total %d bytes)", $emlLength);
             }
-            $contextInfo .= sprintf("  EML preview:\n%s\n", $emlPreview);
+            $contextInfo .= sprintf("  EML preview (emails redacted):\n%s\n", $emlPreview);
             
             error_log($contextInfo);
 
             $headers = preg_split('/\r?\n/', $eml);
             $currentHeader = '';
-            $partialEmlLines = [];
+            $partialEml = '';
             foreach ($headers as $lineIndex => $line) {
                 if (preg_match('/^([A-Za-z-]+):\s*/', $line, $matches)) {
                     // New header
@@ -856,11 +870,13 @@ class ThreadEmailExtractorEmailBody extends ThreadEmailExtractor {
                     // Not a header line, skip
                     continue;
                 }
-                // Build partial EML incrementally for better performance (O(n) instead of O(n²))
-                $partialEmlLines[] = $line;
+                // Build partial EML incrementally for O(n) performance
+                if ($lineIndex > 0) {
+                    $partialEml .= "\n";
+                }
+                $partialEml .= $line;
                 try {
                     // Try to parse the email up to the current header
-                    $partialEml = implode("\n", $partialEmlLines);
                     $message = new \Laminas\Mail\Storage\Message(['raw' => self::stripProblematicHeaders($partialEml)]);
                 } catch (\Laminas\Mail\Header\Exception\InvalidArgumentException | \Laminas\Mail\Exception\RuntimeException $e2) {
                     // Failed to parse at this header, analyze the header value for problematic characters

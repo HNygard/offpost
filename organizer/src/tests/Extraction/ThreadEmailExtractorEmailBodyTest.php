@@ -593,24 +593,18 @@ This is a test email.
         // Test with email that has malformed header/body separation
         // This mimics the issue where binary data from the body is incorrectly parsed as headers
         // causing "Line does not match header format" RuntimeException
+        // Omit the blank line separator so the body content is parsed as headers
         $emailWithMalformedSeparation = "From: sender@example.com\r\n" .
                                        "To: recipient@example.com\r\n" .
                                        "Subject: Test Email\r\n" .
                                        "Content-Type: text/plain\r\n" .
-                                       "\r\n" .
-                                       "This is a test email body with some special characters: Eën®sÚ¶h²Ù¨¶Ö¤·)ìzÙ(k§zzzX¯z·N";
+                                       "Eën®sÚ¶h²Ù¨¶Ö¤·)ìzÙ(k§zzzX¯z·N";
 
         // The method should handle the RuntimeException gracefully
-        // Even though we can't fully fix the malformed email, we should not let it crash
-        try {
-            $result = ThreadEmailExtractorEmailBody::readLaminasMessage_withErrorHandling($emailWithMalformedSeparation);
-            
-            // If we get here, parsing succeeded
-            $this->assertInstanceOf(\Laminas\Mail\Storage\Message::class, $result);
-        } catch (\Exception $e) {
-            // If parsing fails, we should at least have detailed debugging info
-            // The important thing is that RuntimeException is caught and handled
-            $this->assertStringContainsString('Failed to parse email', $e->getMessage());
-        }
+        // Expect an exception since the malformed email cannot be parsed
+        $this->expectException(\Exception::class);
+        $this->expectExceptionMessage('Failed to parse email');
+        
+        ThreadEmailExtractorEmailBody::readLaminasMessage_withErrorHandling($emailWithMalformedSeparation);
     }
 }
