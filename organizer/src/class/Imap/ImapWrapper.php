@@ -277,12 +277,13 @@ class ImapWrapper {
         
         $result = \imap_utf8($text);
         
-        // Check if there was an error (e.g., invalid quoted-printable sequence)
-        $error = \imap_last_error();
-        if ($error !== false) {
+        // Check if there were any new errors (e.g., invalid quoted-printable sequence)
+        $errors = \imap_errors();
+        if ($errors !== false && count($errors) > 0) {
             // Log the error but don't throw an exception - return the original text
             // This handles cases where MIME-encoded headers are malformed
-            error_log("IMAP utf8 conversion warning for text '$textPreview': $error");
+            $errorMsg = implode(', ', $errors);
+            error_log("IMAP utf8 conversion warning for text '$textPreview': $errorMsg");
             // If imap_utf8 failed, try mb_decode_mimeheader as a fallback
             if (strpos($text, '=?') !== false) {
                 return mb_decode_mimeheader($text);
