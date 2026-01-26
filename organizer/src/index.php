@@ -127,6 +127,7 @@ function getThreadStatusLabelClass($status) {
     <script src="/js/threadMultiSelect.js?3"></script>
     <script src="/js/threadLabels.js?3"></script>
     <script src="/js/tableSearch.js?3"></script>
+    <script src="/js/tableSorting.js?1"></script>
 </head>
 <body>
     <div class="container">
@@ -234,7 +235,7 @@ function getThreadStatusLabelClass($status) {
         <div id="current-filter"></div>
 
         <table>
-            <tr>
+            <tr id="thread-list-header">
                 <th>
                     <div class="thread-checkbox-container">
                         <input type="checkbox" id="select-all-threads" title="Select all threads">
@@ -252,13 +253,28 @@ function getThreadStatusLabelClass($status) {
                 <td>Labels<br>
                     <input type="text" id="label-search" placeholder="Filter by label...">
                 </td>
+                <td id="last-email-header" style="cursor: pointer;" title="Click to sort by last email">
+                    Last email <span id="sort-indicator"></span>
+                </td>
             </tr>
             <?php
             foreach ($allThreads as $file => $threads) {
 
                 foreach ($threads->threads as $thread) {
+                    // Get the last (most recent) email timestamp for sorting
+                    // Find the maximum timestamp to be robust against any sorting order
+                    $lastEmailTimestamp = 0;
+                    if (isset($thread->emails) && !empty($thread->emails)) {
+                        foreach ($thread->emails as $email) {
+                            $timestampStr = $email->timestamp_received ?? '';
+                            $parsedTimestamp = strtotime($timestampStr);
+                            if ($parsedTimestamp !== false && $parsedTimestamp > $lastEmailTimestamp) {
+                                $lastEmailTimestamp = $parsedTimestamp;
+                            }
+                        }
+                    }
                     ?>
-                    <tr id="thread-<?= $thread->id ?>">
+                    <tr id="thread-<?= $thread->id ?>" data-last-email-timestamp="<?= $lastEmailTimestamp ?>">
                         <td>
                             <div class="thread-checkbox-container">
                                 <input type="checkbox" class="thread-checkbox" name="thread_ids[]" value="<?= htmlescape($threads->entity_id) ?>:<?= htmlescape($thread->id) ?>" form="bulk-actions-form">
