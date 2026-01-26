@@ -23,7 +23,7 @@ class ImapWrapperUtf8Test extends TestCase
         $text = '=?UTF-8?B?VGVzdCBUaXRsZQ==?=';
         $result = $wrapper->utf8($text);
         
-        // imap_utf8 should decode this properly
+        // imap_utf8() should decode this properly
         $this->assertEquals('Test Title', $result);
     }
     
