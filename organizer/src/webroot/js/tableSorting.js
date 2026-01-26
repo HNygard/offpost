@@ -28,13 +28,16 @@ document.addEventListener('DOMContentLoaded', () => {
         const table = lastEmailHeader.closest('table');
         if (!table) return;
         
-        // Get all data rows (skip the header row)
+        // Get the table body or fall back to the table element itself
+        // Note: Some HTML tables don't have an explicit <tbody> element,
+        // in which case rows are direct children of <table>
         const tbody = table.querySelector('tbody') || table;
         const allRows = Array.from(tbody.querySelectorAll('tr'));
         
         // Separate header row from data rows
+        // Priority: Check for explicit ID first, then fall back to heuristics
+        // (input fields or th elements) for compatibility with different table structures
         const headerRow = allRows.find(row => {
-            // Check if this is the header row by ID or by presence of input/th elements
             return row.id === 'thread-list-header' || 
                    row.querySelector('input[type="text"]') || 
                    row.querySelector('th');

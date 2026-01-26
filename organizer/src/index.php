@@ -261,20 +261,17 @@ function getThreadStatusLabelClass($status) {
             foreach ($allThreads as $file => $threads) {
 
                 foreach ($threads->threads as $thread) {
-                    // Get the last email timestamp for sorting
-                    // NOTE: Emails in $thread->emails are sorted by id_old, timestamp_received ASC
-                    // from the database query in Thread.php (line 189), so the last email is the most recent
+                    // Get the last (most recent) email timestamp for sorting
+                    // Find the maximum timestamp to be robust against any sorting order
                     $lastEmailTimestamp = 0;
                     if (isset($thread->emails) && !empty($thread->emails)) {
-                        // The last email in the array is the most recent
-                        $lastEmail = end($thread->emails);
-                        $timestampStr = $lastEmail->timestamp_received ?? '';
-                        $parsedTimestamp = strtotime($timestampStr);
-                        if ($parsedTimestamp !== false) {
-                            $lastEmailTimestamp = $parsedTimestamp;
+                        foreach ($thread->emails as $email) {
+                            $timestampStr = $email->timestamp_received ?? '';
+                            $parsedTimestamp = strtotime($timestampStr);
+                            if ($parsedTimestamp !== false && $parsedTimestamp > $lastEmailTimestamp) {
+                                $lastEmailTimestamp = $parsedTimestamp;
+                            }
                         }
-                        // Reset array pointer
-                        reset($thread->emails);
                     }
                     ?>
                     <tr id="thread-<?= $thread->id ?>" data-last-email-timestamp="<?= $lastEmailTimestamp ?>">
