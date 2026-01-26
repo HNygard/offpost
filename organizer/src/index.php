@@ -235,7 +235,7 @@ function getThreadStatusLabelClass($status) {
         <div id="current-filter"></div>
 
         <table>
-            <tr>
+            <tr id="thread-list-header">
                 <th>
                     <div class="thread-checkbox-container">
                         <input type="checkbox" id="select-all-threads" title="Select all threads">
@@ -265,7 +265,11 @@ function getThreadStatusLabelClass($status) {
                     $lastEmailTimestamp = 0;
                     if (isset($thread->emails) && !empty($thread->emails)) {
                         // Emails are already sorted by timestamp_received DESC, so the first one is the most recent
-                        $lastEmailTimestamp = strtotime($thread->emails[0]->timestamp_received ?? 0);
+                        $timestampStr = $thread->emails[0]->timestamp_received ?? '';
+                        $parsedTimestamp = strtotime($timestampStr);
+                        if ($parsedTimestamp !== false) {
+                            $lastEmailTimestamp = $parsedTimestamp;
+                        }
                     }
                     ?>
                     <tr id="thread-<?= $thread->id ?>" data-last-email-timestamp="<?= $lastEmailTimestamp ?>">

@@ -34,8 +34,10 @@ document.addEventListener('DOMContentLoaded', () => {
         
         // Separate header row from data rows
         const headerRow = allRows.find(row => {
-            // Check if this is a header row (has input fields or is the first row with th elements)
-            return row.querySelector('input[type="text"]') || row.querySelector('th');
+            // Check if this is the header row by ID or by presence of input/th elements
+            return row.id === 'thread-list-header' || 
+                   row.querySelector('input[type="text"]') || 
+                   row.querySelector('th');
         });
         
         // Get only data rows (excluding header)
@@ -46,8 +48,8 @@ document.addEventListener('DOMContentLoaded', () => {
         
         // Sort rows by the data-last-email-timestamp attribute
         rows.sort((a, b) => {
-            const aTimestamp = parseInt(a.getAttribute('data-last-email-timestamp') || '0');
-            const bTimestamp = parseInt(b.getAttribute('data-last-email-timestamp') || '0');
+            const aTimestamp = parseInt(a.getAttribute('data-last-email-timestamp') || '0', 10);
+            const bTimestamp = parseInt(b.getAttribute('data-last-email-timestamp') || '0', 10);
             
             if (sortDirection === 'asc') {
                 return aTimestamp - bTimestamp;
