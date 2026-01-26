@@ -263,4 +263,44 @@ class ThreadFolderManagerTest extends TestCase {
 
         $this->threadFolderManager->createRequiredFolders($threads);
     }
+
+    public function testGetThreadEmailFolderWithMimeEncodedTitle() {
+        $entityThreads = (object)[
+            'entity_id' => 'Test',
+            'threads' => []
+        ];
+        
+        // Test with a malformed MIME-encoded string (from the error report)
+        $thread = (object)[
+            'title' => '=?iso-8859-1?Q?axz5ZAFym5luZoxqfgeds8xO/E+PtRicCu3CXJTfFFl7/aub8+5SDA59PR? =?iso-',
+            'archived' => false
+        ];
+
+        $folder = $this->threadFolderManager->getThreadEmailFolder($entityThreads->entity_id, $thread);
+        
+        // Verify MIME-encoded strings are decoded and sanitized
+        // The malformed MIME header should be decoded as much as possible
+        $this->assertStringStartsWith('INBOX.Test - ', $folder);
+        // Should not contain MIME encoding markers
+        $this->assertStringNotContainsString('=?', $folder);
+        $this->assertStringNotContainsString('?=', $folder);
+    }
+
+    public function testGetThreadEmailFolderWithValidMimeEncodedTitle() {
+        $entityThreads = (object)[
+            'entity_id' => 'Test',
+            'threads' => []
+        ];
+        
+        // Test with a valid MIME-encoded string
+        $thread = (object)[
+            'title' => '=?UTF-8?B?VGVzdCBUaXRsZQ==?=', // "Test Title" in base64
+            'archived' => false
+        ];
+
+        $folder = $this->threadFolderManager->getThreadEmailFolder($entityThreads->entity_id, $thread);
+        
+        // Verify MIME-encoded strings are decoded properly
+        $this->assertEquals('INBOX.Test - Test Title', $folder);
+    }
 }
