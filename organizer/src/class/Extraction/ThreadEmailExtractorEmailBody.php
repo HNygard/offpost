@@ -847,8 +847,13 @@ class ThreadEmailExtractorEmailBody extends ThreadEmailExtractor {
             
             // Redact potential PII from EML preview (email addresses, names)
             $emlPreview = substr($eml, 0, self::ERROR_LOG_EML_PREVIEW_LENGTH);
-            // Redact email addresses
-            $emlPreview = preg_replace('/[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}/', '[EMAIL_REDACTED]', $emlPreview);
+            // Redact email addresses - using a more comprehensive pattern
+            // Handles standard format, quoted strings, and most common patterns
+            $emlPreview = preg_replace(
+                '/(?:[a-zA-Z0-9._%+-]+|"[^"]+")@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}/',
+                '[EMAIL_REDACTED]',
+                $emlPreview
+            );
             if (strlen($eml) > self::ERROR_LOG_EML_PREVIEW_LENGTH) {
                 $emlPreview .= sprintf("\n... (truncated, total %d bytes)", $emlLength);
             }
@@ -859,6 +864,7 @@ class ThreadEmailExtractorEmailBody extends ThreadEmailExtractor {
             $headers = preg_split('/\r?\n/', $eml);
             $currentHeader = '';
             $partialEml = '';
+            $firstLine = true;
             foreach ($headers as $lineIndex => $line) {
                 if (preg_match('/^([A-Za-z-]+):\s*/', $line, $matches)) {
                     // New header
@@ -871,10 +877,11 @@ class ThreadEmailExtractorEmailBody extends ThreadEmailExtractor {
                     continue;
                 }
                 // Build partial EML incrementally for O(n) performance
-                if ($lineIndex > 0) {
+                if (!$firstLine) {
                     $partialEml .= "\n";
                 }
                 $partialEml .= $line;
+                $firstLine = false;
                 try {
                     // Try to parse the email up to the current header
                     $message = new \Laminas\Mail\Storage\Message(['raw' => self::stripProblematicHeaders($partialEml)]);
