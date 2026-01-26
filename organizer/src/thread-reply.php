@@ -62,17 +62,18 @@ try {
 
     // Validate selected recipient against valid thread recipients
     $validRecipients = getThreadReplyRecipients($thread);
-    $selectedRecipient = strtolower(trim($recipient));
-    
-    if (!in_array($selectedRecipient, array_map('strtolower', $validRecipients))) {
-        throw new Exception('Invalid recipient selected');
-    }
     
     // Check if there are valid recipients available
     if (empty($validRecipients)) {
         http_response_code(400);
         header('Content-Type: text/plain');
         die('No valid recipients found for this thread');
+    }
+    
+    $selectedRecipient = strtolower(trim($recipient));
+    
+    if (!in_array($selectedRecipient, array_map('strtolower', $validRecipients))) {
+        throw new Exception('Invalid recipient selected');
     }
 
     // Set status based on action
