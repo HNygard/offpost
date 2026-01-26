@@ -815,7 +815,7 @@ class ThreadEmailExtractorEmailBody extends ThreadEmailExtractor {
 
             $headers = preg_split('/\r?\n/', $eml);
             $currentHeader = '';
-            foreach ($headers as $line) {
+            foreach ($headers as $lineIndex => $line) {
                 if (preg_match('/^([A-Za-z-]+):\s*/', $line, $matches)) {
                     // New header
                     $currentHeader = $matches[1];
@@ -828,14 +828,14 @@ class ThreadEmailExtractorEmailBody extends ThreadEmailExtractor {
                 }   
                 try {
                     // Try to parse the email up to the current header
-                    $partialEml = implode("\n", array_slice($headers, 0, array_search($line, $headers) + 1));
+                    $partialEml = implode("\n", array_slice($headers, 0, $lineIndex + 1));
                     $message = new \Laminas\Mail\Storage\Message(['raw' => self::stripProblematicHeaders($partialEml)]);
                 } catch (\Laminas\Mail\Header\Exception\InvalidArgumentException | \Laminas\Mail\Exception\RuntimeException $e2) {
                     // Failed to parse at this header, analyze the header value for problematic characters
                     $headerValue = preg_replace('/^[A-Za-z-]+:\s*/', '', $line);
                     $analysis = self::debuggingAnalyzeHeaderValue($headerValue);
                     
-                    $lineNumber = array_search($line, $headers) + 1;
+                    $lineNumber = $lineIndex + 1;
                     $debugInfo = "Failed to parse email due to problematic header on line " . $lineNumber . "\n"
                         . "Header name: " . $currentHeader . "\n"
                         . "Exception type: " . get_class($e2) . "\n"
