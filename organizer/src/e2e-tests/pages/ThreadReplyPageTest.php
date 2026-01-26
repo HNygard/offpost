@@ -242,7 +242,12 @@ class ThreadReplyPageTest extends E2EPageTestCase {
         $threadId = $testData['thread']->id;
         $entityId = $testData['entity_id'];
         
-        // Don't add any incoming emails, but entity email should be valid recipient
+        // Ensure the thread has no incoming emails (convert any to outgoing),
+        // but entity email should still be a valid reply recipient
+        Database::execute(
+            "UPDATE thread_emails SET email_type = 'OUT' WHERE thread_id = ?",
+            [$threadId]
+        );
 
         // :: Act
         $response = $this->renderPage(
