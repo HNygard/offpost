@@ -768,7 +768,50 @@ class ThreadEmailExtractorEmailBody extends ThreadEmailExtractor {
             // We hit some invalid header.
             // Laminas\Mail\Header\Exception\InvalidArgumentException: Invalid header value detected
             // Laminas\Mail\Exception\RuntimeException: Line does not match header format
-            error_log("Error parsing email content: " . $e->getMessage() . " . EML: " . $eml);
+            
+            // Enhanced logging with context
+            $exceptionType = get_class($e);
+            $emlLength = strlen($eml);
+            $emlLineCount = substr_count($eml, "\n") + 1;
+            
+            // Extract problematic line from error message if available
+            $problematicLinePreview = '';
+            if (preg_match('/Line "(.*?)"/', $e->getMessage(), $matches)) {
+                $problematicLinePreview = substr($matches[1], 0, 200);
+                if (strlen($matches[1]) > 200) {
+                    $problematicLinePreview .= '... (truncated)';
+                }
+            }
+            
+            $contextInfo = sprintf(
+                "Email parsing error:\n" .
+                "  Exception: %s\n" .
+                "  Message: %s\n" .
+                "  EML size: %d bytes\n" .
+                "  EML lines: %d\n" .
+                "  File: %s:%d\n" .
+                "  Trace: %s\n",
+                $exceptionType,
+                $e->getMessage(),
+                $emlLength,
+                $emlLineCount,
+                $e->getFile(),
+                $e->getLine(),
+                $e->getTraceAsString()
+            );
+            
+            if (!empty($problematicLinePreview)) {
+                $contextInfo .= sprintf("  Problematic line preview: %s\n", $problematicLinePreview);
+            }
+            
+            // First 500 chars of EML for debugging (headers usually)
+            $emlPreview = substr($eml, 0, 500);
+            if (strlen($eml) > 500) {
+                $emlPreview .= "\n... (truncated, total " . $emlLength . " bytes)";
+            }
+            $contextInfo .= sprintf("  EML preview:\n%s\n", $emlPreview);
+            
+            error_log($contextInfo);
 
             $headers = preg_split('/\r?\n/', $eml);
             $currentHeader = '';
@@ -792,9 +835,13 @@ class ThreadEmailExtractorEmailBody extends ThreadEmailExtractor {
                     $headerValue = preg_replace('/^[A-Za-z-]+:\s*/', '', $line);
                     $analysis = self::debuggingAnalyzeHeaderValue($headerValue);
                     
-                    $debugInfo = "Failed to parse email due to problematic header: " . $currentHeader . "\n"
+                    $lineNumber = array_search($line, $headers) + 1;
+                    $debugInfo = "Failed to parse email due to problematic header on line " . $lineNumber . "\n"
+                        . "Header name: " . $currentHeader . "\n"
+                        . "Exception type: " . get_class($e2) . "\n"
                         . "Original error: " . $e->getMessage() . "\n"
-                        . "New error: " . $e2->getMessage() . "\n\n";
+                        . "New error: " . $e2->getMessage() . "\n"
+                        . "Problematic line: " . substr($line, 0, 200) . (strlen($line) > 200 ? '... (truncated)' : '') . "\n\n";
                     
                     // Add character-level debugging information
                     if (!empty($analysis['issues'])) {
@@ -832,7 +879,18 @@ class ThreadEmailExtractorEmailBody extends ThreadEmailExtractor {
                 }
             }
             // If we got here, we couldn't find the problematic header
-            throw new Exception("Failed to parse email, but couldn't isolate problematic header.", 0, $e);
+            $finalErrorContext = sprintf(
+                "Failed to parse email, but couldn't isolate problematic header.\n" .
+                "Exception type: %s\n" .
+                "Original error: %s\n" .
+                "Total lines in email: %d\n" .
+                "Email size: %d bytes",
+                get_class($e),
+                $e->getMessage(),
+                count($headers),
+                strlen($eml)
+            );
+            throw new Exception($finalErrorContext, 0, $e);
         }
     }
 }
