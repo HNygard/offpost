@@ -105,7 +105,11 @@ class ThreadEmailMover {
             }
 
             // Move the email to the target folder
-            $this->folderManager->moveEmail($email->uid, $targetFolder);
+            try {
+                $this->folderManager->moveEmail($email->uid, $targetFolder);
+            } catch (Exception $e) {
+                throw new Exception("Failed to move email UID {$email->uid} to folder {$targetFolder}: " . $e->getMessage(), $e->getCode(), $e);
+            }
             
             // Request an update for the target folder
             ImapFolderStatus::createOrUpdate($targetFolder, requestUpdate: true);
