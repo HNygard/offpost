@@ -588,4 +588,23 @@ This is a test email.
         // Verify the full word "Lødingen" is preserved (with the ø character)
         $this->assertStringContainsString('Lødingen', $headerValue, 'Expected full word "Lødingen" with Norwegian character ø to be preserved');
     }
+
+    public function testReadLaminasMessage_withRuntimeException_MalformedHeaderBodySeparation() {
+        // Test with email that has malformed header/body separation
+        // This mimics the issue where binary data from the body is incorrectly parsed as headers
+        // causing "Line does not match header format" RuntimeException
+        // Omit the blank line separator so the body content is parsed as headers
+        $emailWithMalformedSeparation = "From: sender@example.com\r\n" .
+                                       "To: recipient@example.com\r\n" .
+                                       "Subject: Test Email\r\n" .
+                                       "Content-Type: text/plain\r\n" .
+                                       "Eën®sÚ¶h²Ù¨¶Ö¤·)ìzÙ(k§zzzX¯z·N";
+
+        // The method should handle the RuntimeException gracefully
+        // Expect an exception since the malformed email cannot be parsed
+        $this->expectException(\Exception::class);
+        $this->expectExceptionMessage('Failed to parse email');
+        
+        ThreadEmailExtractorEmailBody::readLaminasMessage_withErrorHandling($emailWithMalformedSeparation);
+    }
 }
