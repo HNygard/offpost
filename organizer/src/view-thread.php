@@ -532,21 +532,13 @@ function print_extraction ($extraction) {
         </div>
 
         <?php 
-        // Check if thread has incoming emails that might need a reply
-        $hasIncomingEmails = false;
-        if (isset($thread->emails)) {
-            foreach ($thread->emails as $email) {
-                if ($email->email_type === 'IN') {
-                    $hasIncomingEmails = true;
-                    break;
-                }
-            }
-        }
-        
-        // Only show reply form if there are incoming emails and user has permission
-        if ($hasIncomingEmails && $thread->canUserAccess($userId)): 
+        // Show reply form if user has permission and there are valid reply recipients
+        if ($thread->canUserAccess($userId)): 
             // Get valid reply recipients
             $replyRecipients = getThreadReplyRecipients($thread);
+            
+            // Only show the form if there are valid recipients
+            if (!empty($replyRecipients)):
         ?>
         <div id="reply-section">
             <h2>Reply to Thread</h2>
@@ -758,7 +750,8 @@ echo htmlescape($suggestedReply);
             textarea.focus();
         }
         </script>
-        <?php endif; ?>
+        <?php endif; // End valid recipients check ?>
+        <?php endif; // End user access check ?>
     </div>
 </body>
 </html>

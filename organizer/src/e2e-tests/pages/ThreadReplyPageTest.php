@@ -38,7 +38,7 @@ class ThreadReplyPageTest extends E2EPageTestCase {
         }
     }
 
-    public function testThreadViewShowsReplyFormWhenIncomingEmailsExist() {
+    public function testThreadViewShowsReplyFormWhenValidRecipientsExist() {
         // :: Setup
         $testData = E2ETestSetup::createTestThread();
         $threadId = $testData['thread']->id;
@@ -55,7 +55,7 @@ class ThreadReplyPageTest extends E2EPageTestCase {
         $response = $this->renderPage('/thread-view?entityId=' . $entityId . '&threadId=' . $threadId);
 
         // :: Assert
-        $this->assertStringContainsString('class="button">Send reply', $response->body, 'Should show reply form when incoming emails exist');
+        $this->assertStringContainsString('class="button">Send reply', $response->body, 'Should show reply form when valid recipients exist');
         $this->assertStringContainsString('id="reply-section"', $response->body, 'Should have reply section');
         $this->assertStringContainsString('name="reply_subject"', $response->body, 'Should have reply subject field');
         $this->assertStringContainsString('name="reply_body"', $response->body, 'Should have reply body field');
@@ -71,13 +71,13 @@ class ThreadReplyPageTest extends E2EPageTestCase {
         $this->assertStringContainsString('Tidligere e-poster:', $response->body, 'Should have suggested reply content');
     }
 
-    public function testThreadViewHidesReplyFormWhenNoIncomingEmails() {
+    public function testThreadViewShowsReplyFormWithOnlyOutgoingEmails() {
         // :: Setup
         $testData = E2ETestSetup::createTestThread();
         $threadId = $testData['thread']->id;
         $entityId = $testData['entity_id'];
         
-        // Don't add any incoming emails - only outgoing should exist
+        // Ensure only outgoing emails exist (entity email is still available as recipient)
         Database::execute(
             "UPDATE thread_emails SET email_type = 'OUT' WHERE thread_id = ?",
             [$threadId]
@@ -86,9 +86,9 @@ class ThreadReplyPageTest extends E2EPageTestCase {
         // :: Act
         $response = $this->renderPage('/thread-view?entityId=' . $entityId . '&threadId=' . $threadId);
 
-        // :: Assert
-        $this->assertStringNotContainsString('class="button">Send reply', $response->body, 'Should not show reply form when no incoming emails exist');
-        $this->assertStringNotContainsString('id="reply-section"', $response->body, 'Should not have reply section');
+        // :: Assert - Should now SHOW reply form because entity email is a valid recipient
+        $this->assertStringContainsString('class="button">Send reply', $response->body, 'Should show reply form when entity has valid email even without incoming emails');
+        $this->assertStringContainsString('id="reply-section"', $response->body, 'Should have reply section');
     }
 
     public function testReplyFormSubmissionSaveDraft() {
@@ -236,31 +236,32 @@ class ThreadReplyPageTest extends E2EPageTestCase {
         );
     }
 
-    public function testReplyFormRejectsThreadWithoutIncomingEmails() {
+    public function testReplyFormAcceptsThreadWithoutIncomingEmailsButValidRecipient() {
         // :: Setup
         $testData = E2ETestSetup::createTestThread();
         $threadId = $testData['thread']->id;
         $entityId = $testData['entity_id'];
         
-        // Don't add any incoming emails
+        // Don't add any incoming emails, but entity email should be valid recipient
 
         // :: Act
         $response = $this->renderPage(
             '/thread-reply',
             'dev-user-id',
             'POST',
-            '400 Bad Request',
+            '302 Found', // Should now succeed with redirect
             [
                 'thread_id' => $threadId,
                 'entity_id' => $entityId,
                 'reply_subject' => 'Test Subject',
                 'reply_body' => 'Test Body',
+                'recipient' => 'public-entity@dev.offpost.no', // Valid entity email
                 'send_reply' => '1'
             ]
         );
 
-        // :: Assert
-        $this->assertStringContainsString('No recipient selected', $response->body);
+        // :: Assert - Should succeed and redirect
+        $this->assertStringContainsString('Location: /thread-view?threadId=' . urlencode($threadId), $response->headers, 'Should redirect to thread view on success');
     }
 
     public function testSuccessAndErrorMessages() {

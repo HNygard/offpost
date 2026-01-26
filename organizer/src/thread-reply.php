@@ -60,29 +60,19 @@ try {
         die('You do not have permission to reply to this thread');
     }
 
-    // Verify thread has incoming emails (should have at least one to justify a reply)
-    $hasIncomingEmails = false;
-    if (isset($thread->emails)) {
-        foreach ($thread->emails as $email) {
-            if ($email->email_type === 'IN') {
-                $hasIncomingEmails = true;
-                break;
-            }
-        }
-    }
-
-    if (!$hasIncomingEmails) {
-        http_response_code(400);
-        header('Content-Type: text/plain');
-        die('No incoming emails found in thread - reply not allowed');
-    }
-
     // Validate selected recipient against valid thread recipients
     $validRecipients = getThreadReplyRecipients($thread);
     $selectedRecipient = strtolower(trim($recipient));
     
     if (!in_array($selectedRecipient, array_map('strtolower', $validRecipients))) {
         throw new Exception('Invalid recipient selected');
+    }
+    
+    // Check if there are valid recipients available
+    if (empty($validRecipients)) {
+        http_response_code(400);
+        header('Content-Type: text/plain');
+        die('No valid recipients found for this thread');
     }
 
     // Set status based on action

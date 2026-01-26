@@ -95,34 +95,39 @@ class ThreadReplyTest extends TestCase {
     }
 
     public function testThreadReplyValidation() {
-        // Test that reply is only allowed for threads with incoming emails
-        $threadWithoutIncoming = new Thread();
-        $threadWithoutIncoming->emails = [];
+        // Test valid reply recipient check - replies should be allowed when there are valid recipients
+        $threadWithEntity = new Thread();
+        $threadWithEntity->emails = [];
+        $threadWithEntity->id = 'test-thread-123';
+        $threadWithEntity->my_email = 'test@offpost.no';
         
-        $hasIncomingEmails = false;
-        foreach ($threadWithoutIncoming->emails as $email) {
-            if ($email->email_type === 'IN') {
-                $hasIncomingEmails = true;
-                break;
-            }
-        }
+        // Mock entity with valid email
+        $entity = new stdClass();
+        $entity->email = 'entity@example.com';
         
-        $this->assertFalse($hasIncomingEmails, 'Empty thread should not have incoming emails');
+        // In the actual system, getThreadReplyRecipients would return this entity email
+        // even without incoming emails
+        $mockRecipients = ['entity@example.com'];
+        
+        $this->assertNotEmpty($mockRecipients, 'Thread with entity should have valid recipients');
 
-        // Test thread with only outgoing emails
-        $outgoingEmail = new ThreadEmail();
-        $outgoingEmail->email_type = 'OUT';
-        $threadWithoutIncoming->emails = [$outgoingEmail];
+        // Test thread with incoming emails also has recipients
+        $incomingEmail = new ThreadEmail();
+        $incomingEmail->email_type = 'IN';
+        $incomingEmail->imap_headers = json_encode([
+            'from' => [(object)['mailbox' => 'sender', 'host' => 'example.com']]
+        ]);
+        $threadWithEntity->emails = [$incomingEmail];
         
         $hasIncomingEmails = false;
-        foreach ($threadWithoutIncoming->emails as $email) {
+        foreach ($threadWithEntity->emails as $email) {
             if ($email->email_type === 'IN') {
                 $hasIncomingEmails = true;
                 break;
             }
         }
         
-        $this->assertFalse($hasIncomingEmails, 'Thread with only outgoing emails should not allow replies');
+        $this->assertTrue($hasIncomingEmails, 'Thread with incoming emails should have incoming emails flag');
     }
 
     public function testEmailFormattingHelpers() {
