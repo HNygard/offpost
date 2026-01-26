@@ -14,6 +14,10 @@ require_once __DIR__ . '/../../error.php';
  */
 class ThreadEmailExtractorEmailBody extends ThreadEmailExtractor {
 
+    // Constants for error logging truncation lengths
+    private const ERROR_LOG_LINE_PREVIEW_LENGTH = 200;
+    private const ERROR_LOG_EML_PREVIEW_LENGTH = 500;
+
     /**
      * Get the number of emails that need extraction
      * 
@@ -775,10 +779,11 @@ class ThreadEmailExtractorEmailBody extends ThreadEmailExtractor {
             $emlLineCount = substr_count($eml, "\n") + 1;
             
             // Extract problematic line from error message if available
+            // RuntimeException messages typically include 'Line "..."' format
             $problematicLinePreview = '';
             if (preg_match('/Line "(.*?)"/', $e->getMessage(), $matches)) {
-                $problematicLinePreview = strlen($matches[1]) > 200 
-                    ? substr($matches[1], 0, 200) . '... (truncated)' 
+                $problematicLinePreview = strlen($matches[1]) > self::ERROR_LOG_LINE_PREVIEW_LENGTH 
+                    ? substr($matches[1], 0, self::ERROR_LOG_LINE_PREVIEW_LENGTH) . '... (truncated)' 
                     : $matches[1];
             }
             
@@ -803,9 +808,9 @@ class ThreadEmailExtractorEmailBody extends ThreadEmailExtractor {
                 $contextInfo .= sprintf("  Problematic line preview: %s\n", $problematicLinePreview);
             }
             
-            // First 500 chars of EML for debugging (headers usually)
-            $emlPreview = substr($eml, 0, 500);
-            if (strlen($eml) > 500) {
+            // First N chars of EML for debugging (headers usually)
+            $emlPreview = substr($eml, 0, self::ERROR_LOG_EML_PREVIEW_LENGTH);
+            if (strlen($eml) > self::ERROR_LOG_EML_PREVIEW_LENGTH) {
                 $emlPreview .= sprintf("\n... (truncated, total %d bytes)", $emlLength);
             }
             $contextInfo .= sprintf("  EML preview:\n%s\n", $emlPreview);
@@ -840,7 +845,7 @@ class ThreadEmailExtractorEmailBody extends ThreadEmailExtractor {
                         . "Exception type: " . get_class($e2) . "\n"
                         . "Original error: " . $e->getMessage() . "\n"
                         . "New error: " . $e2->getMessage() . "\n"
-                        . "Problematic line: " . substr($line, 0, 200) . (strlen($line) > 200 ? '... (truncated)' : '') . "\n\n";
+                        . "Problematic line: " . substr($line, 0, self::ERROR_LOG_LINE_PREVIEW_LENGTH) . (strlen($line) > self::ERROR_LOG_LINE_PREVIEW_LENGTH ? '... (truncated)' : '') . "\n\n";
                     
                     // Add character-level debugging information
                     if (!empty($analysis['issues'])) {
