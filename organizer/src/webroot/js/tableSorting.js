@@ -30,10 +30,16 @@ document.addEventListener('DOMContentLoaded', () => {
         
         // Get all data rows (skip the header row)
         const tbody = table.querySelector('tbody') || table;
-        const rows = Array.from(tbody.querySelectorAll('tr')).filter(row => {
-            // Skip the header row (it has input fields)
-            return !row.querySelector('input[type="text"]');
+        const allRows = Array.from(tbody.querySelectorAll('tr'));
+        
+        // Separate header row from data rows
+        const headerRow = allRows.find(row => {
+            // Check if this is a header row (has input fields or is the first row with th elements)
+            return row.querySelector('input[type="text"]') || row.querySelector('th');
         });
+        
+        // Get only data rows (excluding header)
+        const rows = allRows.filter(row => row !== headerRow);
         
         // Toggle sort direction
         sortDirection = sortDirection === 'asc' ? 'desc' : 'asc';
@@ -50,14 +56,11 @@ document.addEventListener('DOMContentLoaded', () => {
             }
         });
         
-        // Find the header row
-        const headerRow = Array.from(tbody.querySelectorAll('tr')).find(row => {
-            return row.querySelector('input[type="text"]');
-        });
+        // Remove all rows from the table
+        allRows.forEach(row => row.remove());
         
-        // Re-append rows in sorted order
+        // Re-append header row first, then data rows
         if (headerRow) {
-            // Keep the header row at the top
             tbody.appendChild(headerRow);
         }
         
