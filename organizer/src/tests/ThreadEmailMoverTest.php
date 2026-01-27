@@ -717,11 +717,11 @@ class ThreadEmailMoverTest extends TestCase {
             $emailToFolder["test{$i}@example.com"] = "INBOX.Test - Thread {$i}";
         }
         
-        $result = $this->threadEmailMover->processMailbox('INBOX', $emailToFolder);
+        // Expect exception to be thrown after reaching max errors
+        $this->expectException(Exception::class);
+        $this->expectExceptionMessage('Maximum error count (5) reached, stopping email processing');
         
-        // Should complete but stop after 5 errors
-        $this->assertIsArray($result);
-        $this->assertArrayHasKey('unmatched', $result);
+        $this->threadEmailMover->processMailbox('INBOX', $emailToFolder);
     }
 
     public function testProcessMailboxMixedErrorsAndSuccesses() {
