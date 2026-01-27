@@ -19,6 +19,7 @@ class ThreadEmailMover {
     private \Imap\ImapConnection $connection;
     private \Imap\ImapFolderManager $folderManager;
     private \Imap\ImapEmailProcessor $emailProcessor;
+    private ?AdminNotificationService $adminNotificationService;
     
     /**
      * Flag to skip database operations for unit tests
@@ -35,11 +36,13 @@ class ThreadEmailMover {
     public function __construct(
         \Imap\ImapConnection $connection,
         \Imap\ImapFolderManager $folderManager,
-        \Imap\ImapEmailProcessor $emailProcessor
+        \Imap\ImapEmailProcessor $emailProcessor,
+        ?AdminNotificationService $adminNotificationService = null
     ) {
         $this->connection = $connection;
         $this->folderManager = $folderManager;
         $this->emailProcessor = $emailProcessor;
+        $this->adminNotificationService = $adminNotificationService;
     }
 
     /**
@@ -127,8 +130,12 @@ class ThreadEmailMover {
                 
                 // Send admin notification
                 try {
-                    $adminNotificationService = new AdminNotificationService();
-                    $adminNotificationService->notifyAdminOfError(
+                    // Lazily initialize the admin notification service if not injected
+                    if ($this->adminNotificationService === null) {
+                        $this->adminNotificationService = new AdminNotificationService();
+                    }
+                    
+                    $this->adminNotificationService->notifyAdminOfError(
                         'email-move-error',
                         $errorMessage,
                         [
