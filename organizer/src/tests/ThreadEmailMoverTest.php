@@ -203,15 +203,22 @@ class ThreadEmailMoverTest extends TestCase {
             ->method('getEmails')
             ->willReturn([$mockEmail]);
 
+        $this->mockConnection->expects($this->once())
+            ->method('getRawEmail')
+            ->with($mockEmail->uid)
+            ->willReturn('Raw email content');
+
         $this->mockFolderManager->expects($this->once())
             ->method('moveEmail')
             ->willThrowException(new Exception('Move failed'));
 
-        $this->expectException(Exception::class);
-        $this->expectExceptionMessage('Move failed');
-
+        // The error should be caught and processing should continue
         $emailToFolder = ['test@example.com' => 'INBOX.Test - Thread 1'];
-        $this->threadEmailMover->processMailbox('INBOX', $emailToFolder);
+        $result = $this->threadEmailMover->processMailbox('INBOX', $emailToFolder);
+        
+        // Should return successfully despite the error
+        $this->assertIsArray($result);
+        $this->assertArrayHasKey('unmatched', $result);
     }
 
     public function testProcessMailboxWithUnmatchedEmail() {
@@ -626,5 +633,137 @@ class ThreadEmailMoverTest extends TestCase {
             // Clean up: rollback the transaction
             Database::rollBack();
         }
+    }
+
+    public function testProcessMailboxContinuesAfterSingleError() {
+        // Create two mock emails - first one fails, second should succeed
+        $mockEmail1 = $this->createMock(\Imap\ImapEmail::class);
+        $mockEmail1->uid = 1;
+        
+        $mockEmail2 = $this->createMock(\Imap\ImapEmail::class);
+        $mockEmail2->uid = 2;
+        
+        $mockEmail1->expects($this->once())
+            ->method('getEmailAddresses')
+            ->willReturn(['test1@example.com']);
+        
+        $mockEmail2->expects($this->once())
+            ->method('getEmailAddresses')
+            ->willReturn(['test2@example.com']);
+            
+        $this->mockEmailProcessor->expects($this->once())
+            ->method('getEmails')
+            ->with('INBOX')
+            ->willReturn([$mockEmail1, $mockEmail2]);
+
+        $this->mockConnection->expects($this->exactly(2))
+            ->method('getRawEmail')
+            ->willReturn('Raw email content');
+
+        // First move fails, second succeeds
+        $this->mockFolderManager->expects($this->exactly(2))
+            ->method('moveEmail')
+            ->willReturnCallback(function($uid, $folder) {
+                if ($uid === 1) {
+                    throw new Exception('Move failed for email 1');
+                }
+                // Second call succeeds (no exception)
+            });
+
+        $emailToFolder = [
+            'test1@example.com' => 'INBOX.Test - Thread 1',
+            'test2@example.com' => 'INBOX.Test - Thread 2'
+        ];
+        
+        $result = $this->threadEmailMover->processMailbox('INBOX', $emailToFolder);
+        
+        // Should complete successfully
+        $this->assertIsArray($result);
+        $this->assertArrayHasKey('unmatched', $result);
+    }
+
+    public function testProcessMailboxStopsAfterMaxErrors() {
+        // Create 7 mock emails, all will fail to move
+        $mockEmails = [];
+        for ($i = 1; $i <= 7; $i++) {
+            $mockEmail = $this->createMock(\Imap\ImapEmail::class);
+            $mockEmail->uid = $i;
+            // Only first 5 emails will have their methods called
+            if ($i <= 5) {
+                $mockEmail->expects($this->once())
+                    ->method('getEmailAddresses')
+                    ->willReturn(["test{$i}@example.com"]);
+            }
+            $mockEmails[] = $mockEmail;
+        }
+        
+        $this->mockEmailProcessor->expects($this->once())
+            ->method('getEmails')
+            ->with('INBOX')
+            ->willReturn($mockEmails);
+
+        // Only 5 emails will be processed before stopping
+        $this->mockConnection->expects($this->exactly(5))
+            ->method('getRawEmail')
+            ->willReturn('Raw email content');
+
+        // All move attempts will fail, but only 5 will be attempted
+        $this->mockFolderManager->expects($this->exactly(5))
+            ->method('moveEmail')
+            ->willThrowException(new Exception('Move failed'));
+
+        $emailToFolder = [];
+        for ($i = 1; $i <= 7; $i++) {
+            $emailToFolder["test{$i}@example.com"] = "INBOX.Test - Thread {$i}";
+        }
+        
+        // Expect exception to be thrown after reaching max errors
+        $this->expectException(Exception::class);
+        $this->expectExceptionMessage('Maximum error count (5) reached, stopping email processing');
+        
+        $this->threadEmailMover->processMailbox('INBOX', $emailToFolder);
+    }
+
+    public function testProcessMailboxMixedErrorsAndSuccesses() {
+        // Create 8 emails: errors on 1,3,5,7 (4 errors total), successes on 2,4,6,8
+        $mockEmails = [];
+        for ($i = 1; $i <= 8; $i++) {
+            $mockEmail = $this->createMock(\Imap\ImapEmail::class);
+            $mockEmail->uid = $i;
+            $mockEmail->expects($this->once())
+                ->method('getEmailAddresses')
+                ->willReturn(["test{$i}@example.com"]);
+            $mockEmails[] = $mockEmail;
+        }
+        
+        $this->mockEmailProcessor->expects($this->once())
+            ->method('getEmails')
+            ->with('INBOX')
+            ->willReturn($mockEmails);
+
+        $this->mockConnection->expects($this->exactly(8))
+            ->method('getRawEmail')
+            ->willReturn('Raw email content');
+
+        // Fail on odd UIDs, succeed on even UIDs
+        $this->mockFolderManager->expects($this->exactly(8))
+            ->method('moveEmail')
+            ->willReturnCallback(function($uid, $folder) {
+                if ($uid % 2 === 1) {
+                    throw new Exception("Move failed for email {$uid}");
+                }
+                // Even UIDs succeed
+            });
+
+        $emailToFolder = [];
+        for ($i = 1; $i <= 8; $i++) {
+            $emailToFolder["test{$i}@example.com"] = "INBOX.Test - Thread {$i}";
+        }
+        
+        $result = $this->threadEmailMover->processMailbox('INBOX', $emailToFolder);
+        
+        // Should complete successfully with 4 errors and 4 successes
+        $this->assertIsArray($result);
+        $this->assertArrayHasKey('unmatched', $result);
     }
 }

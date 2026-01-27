@@ -7,6 +7,7 @@ require_once __DIR__ . '/Imap/ImapEmailProcessor.php';
 require_once __DIR__ . '/ImapFolderStatus.php';
 require_once __DIR__ . '/ThreadFolderManager.php';
 require_once __DIR__ . '/ThreadEmailProcessingErrorManager.php';
+require_once __DIR__ . '/AdminNotificationService.php';
 require_once __DIR__ . '/Database.php';
 require_once __DIR__ . '/../vendor/autoload.php';
 
@@ -18,21 +19,30 @@ class ThreadEmailMover {
     private \Imap\ImapConnection $connection;
     private \Imap\ImapFolderManager $folderManager;
     private \Imap\ImapEmailProcessor $emailProcessor;
+    private ?AdminNotificationService $adminNotificationService;
     
     /**
      * Flag to skip database operations for unit tests
      * @var bool
      */
     public static $skipDatabaseOperations = false;
+    
+    /**
+     * Maximum number of errors allowed before stopping email processing
+     * @var int
+     */
+    private const MAX_ERRORS = 5;
 
     public function __construct(
         \Imap\ImapConnection $connection,
         \Imap\ImapFolderManager $folderManager,
-        \Imap\ImapEmailProcessor $emailProcessor
+        \Imap\ImapEmailProcessor $emailProcessor,
+        ?AdminNotificationService $adminNotificationService = null
     ) {
         $this->connection = $connection;
         $this->folderManager = $folderManager;
         $this->emailProcessor = $emailProcessor;
+        $this->adminNotificationService = $adminNotificationService;
     }
 
     /**
@@ -47,6 +57,7 @@ class ThreadEmailMover {
         $emails = $this->emailProcessor->getEmails($mailbox);
         
         $maxed_out = false;
+        $errorCount = 0;
         $i = 0;
         foreach ($emails as $email) {
             try {
@@ -107,12 +118,45 @@ class ThreadEmailMover {
             // Move the email to the target folder
             try {
                 $this->folderManager->moveEmail($email->uid, $targetFolder);
+                
+                // Request an update for the target folder on successful move
+                ImapFolderStatus::createOrUpdate($targetFolder, requestUpdate: true);
             } catch (Exception $e) {
-                throw new Exception("Failed to move email UID {$email->uid} to folder {$targetFolder}: " . $e->getMessage(), $e->getCode(), $e);
+                $errorCount++;
+                $errorMessage = "Failed to move email UID {$email->uid} to folder {$targetFolder}: " . $e->getMessage();
+                
+                // Log the error
+                error_log("ThreadEmailMover error: {$errorMessage}");
+                
+                // Send admin notification
+                // Lazily initialize the admin notification service if not injected
+                if ($this->adminNotificationService === null) {
+                    $this->adminNotificationService = new AdminNotificationService();
+                }
+                
+                $this->adminNotificationService->notifyAdminOfError(
+                    'email-move-error',
+                    $errorMessage,
+                    [
+                        'mailbox' => $mailbox,
+                        'email_uid' => $email->uid,
+                        'target_folder' => $targetFolder,
+                        'error' => $e->getMessage(),
+                        'error_code' => $e->getCode()
+                    ]
+                );
+                
+                // Check if we've reached the maximum error count
+                if ($errorCount >= self::MAX_ERRORS) {
+                    $message = "ThreadEmailMover: Maximum error count (" . self::MAX_ERRORS . ") reached, stopping email processing";
+                    error_log($message);
+                    throw new Exception($message);
+                }
+                
+                // Continue to next email
+                $i++;
+                continue;
             }
-            
-            // Request an update for the target folder
-            ImapFolderStatus::createOrUpdate($targetFolder, requestUpdate: true);
 
             $i++;
             if ($i == 100) {
