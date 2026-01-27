@@ -148,8 +148,9 @@ class ThreadEmailMover {
                 
                 // Check if we've reached the maximum error count
                 if ($errorCount >= self::MAX_ERRORS) {
-                    error_log("ThreadEmailMover: Maximum error count (" . self::MAX_ERRORS . ") reached, stopping email processing");
-                    break;
+                    $message = "ThreadEmailMover: Maximum error count (" . self::MAX_ERRORS . ") reached, stopping email processing";
+                    error_log($message);
+                    throw new Exception($message);
                 }
                 
                 // Continue to next email
