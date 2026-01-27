@@ -129,27 +129,22 @@ class ThreadEmailMover {
                 error_log("ThreadEmailMover error: {$errorMessage}");
                 
                 // Send admin notification
-                try {
-                    // Lazily initialize the admin notification service if not injected
-                    if ($this->adminNotificationService === null) {
-                        $this->adminNotificationService = new AdminNotificationService();
-                    }
-                    
-                    $this->adminNotificationService->notifyAdminOfError(
-                        'email-move-error',
-                        $errorMessage,
-                        [
-                            'mailbox' => $mailbox,
-                            'email_uid' => $email->uid,
-                            'target_folder' => $targetFolder,
-                            'error' => $e->getMessage(),
-                            'error_code' => $e->getCode()
-                        ]
-                    );
-                } catch (Exception $notifyException) {
-                    // If notification fails, log it but continue processing
-                    error_log("Failed to send admin notification: " . $notifyException->getMessage());
+                // Lazily initialize the admin notification service if not injected
+                if ($this->adminNotificationService === null) {
+                    $this->adminNotificationService = new AdminNotificationService();
                 }
+                
+                $this->adminNotificationService->notifyAdminOfError(
+                    'email-move-error',
+                    $errorMessage,
+                    [
+                        'mailbox' => $mailbox,
+                        'email_uid' => $email->uid,
+                        'target_folder' => $targetFolder,
+                        'error' => $e->getMessage(),
+                        'error_code' => $e->getCode()
+                    ]
+                );
                 
                 // Check if we've reached the maximum error count
                 if ($errorCount >= self::MAX_ERRORS) {
