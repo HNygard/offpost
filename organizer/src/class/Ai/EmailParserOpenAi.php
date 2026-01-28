@@ -127,40 +127,38 @@ Important:
     private function getStructuredOutput(): array
     {
         return [
+            'name' => 'parsed_email',
             'type' => 'json_schema',
-            'json_schema' => [
-                'name' => 'parsed_email',
-                'strict' => true,
-                'schema' => [
-                    'type' => 'object',
-                    'properties' => [
-                        'headers' => [
-                            'type' => 'object',
-                            'properties' => [
-                                'from' => ['type' => 'string', 'description' => 'Sender email and name'],
-                                'to' => ['type' => 'string', 'description' => 'Recipient(s) email and name'],
-                                'subject' => ['type' => 'string', 'description' => 'Email subject'],
-                                'date' => ['type' => 'string', 'description' => 'Email date'],
-                                'cc' => ['type' => ['string', 'null'], 'description' => 'CC recipients'],
-                                'reply_to' => ['type' => ['string', 'null'], 'description' => 'Reply-to address']
-                            ],
-                            'required' => ['from', 'to', 'subject', 'date', 'cc', 'reply_to'],
-                            'additionalProperties' => false
+            'schema' => [
+                'type' => 'object',
+                'properties' => [
+                    'headers' => [
+                        'type' => 'object',
+                        'properties' => [
+                            'from' => ['type' => 'string', 'description' => 'Sender email and name'],
+                            'to' => ['type' => 'string', 'description' => 'Recipient(s) email and name'],
+                            'subject' => ['type' => 'string', 'description' => 'Email subject'],
+                            'date' => ['type' => 'string', 'description' => 'Email date'],
+                            'cc' => ['type' => ['string', 'null'], 'description' => 'CC recipients'],
+                            'reply_to' => ['type' => ['string', 'null'], 'description' => 'Reply-to address']
                         ],
-                        'body' => [
-                            'type' => 'object',
-                            'properties' => [
-                                'plain_text' => ['type' => ['string', 'null'], 'description' => 'Plain text body'],
-                                'html_as_text' => ['type' => ['string', 'null'], 'description' => 'HTML body converted to text']
-                            ],
-                            'required' => ['plain_text', 'html_as_text'],
-                            'additionalProperties' => false
-                        ]
+                        'required' => ['from', 'to', 'subject', 'date', 'cc', 'reply_to'],
+                        'additionalProperties' => false
                     ],
-                    'required' => ['headers', 'body'],
-                    'additionalProperties' => false
-                ]
-            ]
+                    'body' => [
+                        'type' => 'object',
+                        'properties' => [
+                            'plain_text' => ['type' => ['string', 'null'], 'description' => 'Plain text body'],
+                            'html_as_text' => ['type' => ['string', 'null'], 'description' => 'HTML body converted to text']
+                        ],
+                        'required' => ['plain_text', 'html_as_text'],
+                        'additionalProperties' => false
+                    ]
+                ],
+                'required' => ['headers', 'body'],
+                'additionalProperties' => false
+            ],
+            'strict' => true
         ];
     }
 
