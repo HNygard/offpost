@@ -45,15 +45,23 @@ class EmailParserOpenAi
         }
 
         // Truncate very long emails to avoid token limits
-        $maxLength = 100000; // ~25k tokens
+        // 100KB is an approximate limit - actual token count varies by encoding and language
+        $maxLength = 100000;
         $truncated = false;
         if (strlen($eml) > $maxLength) {
-            $eml = substr($eml, 0, $maxLength);
+            // Try to truncate at a newline to avoid cutting mid-header or mid-content
+            $lastNewline = strrpos(substr($eml, 0, $maxLength), "\n");
+            if ($lastNewline !== false && $lastNewline > $maxLength * 0.9) {
+                $eml = substr($eml, 0, $lastNewline + 1);
+            } else {
+                $eml = substr($eml, 0, $maxLength);
+            }
             $truncated = true;
         }
 
-        // Filter out any base64 looking strings as they might trigger content filters at OpenAI
-        $cleanedEml = preg_replace('/(?:[A-Za-z0-9+\/=]{100,})/', '[Base64 content removed]', $eml);
+        // Filter out base64 encoded content blocks (typically found in MIME attachments)
+        // Match sequences of base64 characters that span multiple lines (MIME-style encoding)
+        $cleanedEml = preg_replace('/(?:[A-Za-z0-9+\/]{60,76}\r?\n)+[A-Za-z0-9+\/]+=*/', '[Base64 content removed]', $eml);
 
         $prompt = $this->buildPrompt($truncated);
         
@@ -183,14 +191,14 @@ Important:
 
         $parsed = new ParsedEmail();
         
-        // Extract headers
+        // Extract headers (cc and replyTo can be null as per schema)
         $headers = $parsedContent['headers'] ?? [];
         $parsed->from = $headers['from'] ?? '';
         $parsed->to = $headers['to'] ?? '';
         $parsed->subject = $headers['subject'] ?? '';
         $parsed->date = $headers['date'] ?? '';
-        $parsed->cc = $headers['cc'];
-        $parsed->replyTo = $headers['reply_to'];
+        $parsed->cc = $headers['cc'] ?? null;
+        $parsed->replyTo = $headers['reply_to'] ?? null;
 
         // Extract body
         $body = $parsedContent['body'] ?? [];
@@ -221,7 +229,7 @@ class ParsedEmail
     /** @var string|null CC recipients */
     public ?string $cc = null;
     
-    /** @var string|null Reply-to address */
+    /** @var string|null Reply-to address (maps from 'reply_to' in API schema) */
     public ?string $replyTo = null;
     
     /** @var string Plain text body */
@@ -240,7 +248,7 @@ class ParsedEmail
         if (!empty($this->plainText)) {
             return $this->plainText;
         }
-        return $this->htmlAsText ?? '';
+        return $this->htmlAsText;
     }
 
     /**
