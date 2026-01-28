@@ -46,6 +46,9 @@ abstract class ThreadEmailExtractorPrompt extends ThreadEmailExtractor {
         if ($promptService === null) {
             $openai_api_key = getenv('OPENAI_API_KEY');
             if (file_exists('/run/secrets/openai_api_key')) {
+                if (is_dir('/run/secrets/openai_api_key')) {
+                    throw new Exception('OpenAPI API key is a directory. Delete ./secrets/openai_api_key and make a file there.');
+                }
                 $openai_api_key = trim(explode("\n", file_get_contents('/run/secrets/openai_api_key'))[1]);
             }
             if (!$openai_api_key) {
