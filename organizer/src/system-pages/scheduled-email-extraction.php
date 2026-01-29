@@ -2,6 +2,7 @@
 
 require_once __DIR__ . '/../vendor/autoload.php';
 require_once __DIR__ . '/../class/Extraction/ThreadEmailExtractorEmailBody.php';
+require_once __DIR__ . '/../class/Extraction/ThreadEmailExtractorEmailBodyOpenAi.php';
 require_once __DIR__ . '/../class/Extraction/ThreadEmailExtractorAttachmentPdf.php';
 require_once __DIR__ . '/../class/Extraction/ThreadEmailExtractorPromptSaksnummer.php';
 require_once __DIR__ . '/../class/Extraction/ThreadEmailExtractorPromptEmailLatestReply.php';
@@ -15,6 +16,7 @@ ini_set('display_errors', 1);
 
 $extractors = array(
     'email_body' => function() { return new ThreadEmailExtractorEmailBody(); },
+    'email_body_openai' => function() { return new ThreadEmailExtractorEmailBodyOpenAi(); },
     'attachment_pdf' => function() { return new ThreadEmailExtractorAttachmentPdf(); },
     'prompt_saksnummer' => function() { return new ThreadEmailExtractorPromptSaksnummer(); },
     'prompt_email_latest_reply' => function() { return new ThreadEmailExtractorPromptEmailLatestReply(); },

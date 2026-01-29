@@ -5,6 +5,7 @@ require_once __DIR__ . '/SaksnummerPrompt.php';
 require_once __DIR__ . '/EmailLatestReplyPrompt.php';
 require_once __DIR__ . '/CopyAskingForPrompt.php';
 require_once __DIR__ . '/ThreadEmailSummaryPrompt.php';
+require_once __DIR__ . '/EmailBodyExtractionPrompt.php';
 
 use Offpost\Ai\OpenAiIntegration;
 
@@ -32,6 +33,9 @@ class PromptService {
 
         $thread_email_summary = new ThreadEmailSummaryPrompt();
         $this->available_prompts[$thread_email_summary->getPromptId()] = $thread_email_summary;
+
+        $email_body_extraction = new EmailBodyExtractionPrompt();
+        $this->available_prompts[$email_body_extraction->getPromptId()] = $email_body_extraction;
     }
 
     public function getAvailablePrompts(): array {
