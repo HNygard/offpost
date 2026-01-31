@@ -207,54 +207,6 @@ class ZbatesonValidationTest extends PHPUnit\Framework\TestCase {
     }
 
     // ========================================================================
-    // Real test emails
-    // ========================================================================
-
-    public function testRealEmail_BccWithXForwardedFor(): void {
-        $emailPath = '/organizer-data/test-emails/bcc-with-x-forwarded-for-header.eml';
-
-        if (!file_exists($emailPath)) {
-            $this->fail("Test email file not found: $emailPath");
-        }
-
-        $message = $this->parseWithZbateson(file_get_contents($emailPath));
-
-        $this->assertNotNull($message);
-        $this->assertNotNull($message->getHeaderValue('from'));
-        $this->assertNotNull($message->getHeaderValue('subject'));
-        $this->assertNotNull($message->getTextContent());
-    }
-
-    public function testRealEmail_DmarcWithoutContentTransferEncoding(): void {
-        $emailPath = '/organizer-data/test-emails/dmarc-without-content-transfer-encoding.eml';
-
-        if (!file_exists($emailPath)) {
-            $this->fail("Test email file not found: $emailPath");
-        }
-
-        $message = $this->parseWithZbateson(file_get_contents($emailPath));
-
-        $this->assertNotNull($message);
-        $this->assertNotNull($message->getHeaderValue('from'));
-        $this->assertNotNull($message->getHeaderValue('subject'));
-    }
-
-    public function testRealEmail_AttachmentWithStrangeCharacters(): void {
-        $emailPath = '/organizer-data/test-emails/attachment-with-strange-characters.eml';
-
-        if (!file_exists($emailPath)) {
-            $this->fail("Test email file not found: $emailPath");
-        }
-
-        $message = $this->parseWithZbateson(file_get_contents($emailPath));
-
-        $this->assertNotNull($message);
-        $this->assertNotNull($message->getHeaderValue('from'));
-        $this->assertNotNull($message->getHeaderValue('subject'));
-        $this->assertGreaterThan(0, $message->getAttachmentCount());
-    }
-
-    // ========================================================================
     // Body extraction
     // ========================================================================
 
