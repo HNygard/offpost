@@ -138,9 +138,13 @@ class ImapEmail {
         if ($rawEmail !== null) {
             try {
                 $message = ThreadEmailExtractorEmailBody::parseEmail($rawEmail);
-                $x_forwarded_for = $message->getHeaderValue('x-forwarded-for');
-                if ($x_forwarded_for !== null) {
-                    $addresses[] = $x_forwarded_for;
+                // Get all X-Forwarded-For headers (there can be multiple)
+                $xForwardedForHeaders = $message->getAllHeadersByName('x-forwarded-for');
+                foreach ($xForwardedForHeaders as $header) {
+                    $value = $header->getValue();
+                    if ($value !== null && $value !== '') {
+                        $addresses[] = $value;
+                    }
                 }
             }
             catch(\Throwable $e) {

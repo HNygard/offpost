@@ -173,9 +173,86 @@ class ImapEmailTest extends TestCase {
 
         // :: Act
         $subject = ImapEmail::getEmailSubject($emlWithUtf8Header);
-        
+
         // :: Assert
-        $this->assertEquals('Re: Innsyn valggjennomføring, Nord-Odal kommune', $subject, 
+        $this->assertEquals('Re: Innsyn valggjennomføring, Nord-Odal kommune', $subject,
                            'Should handle UTF-8 encoded subject header correctly');
+    }
+
+    public function testGetEmailAddressesWithMultipleXForwardedFor() {
+        // :: Setup
+        $rawEmail = "From: sender@example.com\r\n" .
+                   "To: recipient@example.com\r\n" .
+                   "X-Forwarded-For: first@example.com\r\n" .
+                   "X-Forwarded-For: second@example.com\r\n" .
+                   "X-Forwarded-For: third@example.com\r\n" .
+                   "Subject: Test\r\n" .
+                   "Content-Type: text/plain\r\n" .
+                   "\r\n" .
+                   "Body";
+
+        // Create ImapEmail with minimal headers
+        $email = new ImapEmail();
+        $email->mailHeaders = (object)[
+            'from' => [(object)['mailbox' => 'sender', 'host' => 'example.com']],
+            'to' => [(object)['mailbox' => 'recipient', 'host' => 'example.com']]
+        ];
+
+        // :: Act
+        $addresses = $email->getEmailAddresses($rawEmail);
+
+        // :: Assert
+        $this->assertContains('first@example.com', $addresses, 'Should capture first X-Forwarded-For header');
+        $this->assertContains('second@example.com', $addresses, 'Should capture second X-Forwarded-For header');
+        $this->assertContains('third@example.com', $addresses, 'Should capture third X-Forwarded-For header');
+        $this->assertContains('sender@example.com', $addresses, 'Should include From address');
+        $this->assertContains('recipient@example.com', $addresses, 'Should include To address');
+    }
+
+    public function testGetEmailAddressesWithSingleXForwardedFor() {
+        // :: Setup
+        $rawEmail = "From: sender@example.com\r\n" .
+                   "To: recipient@example.com\r\n" .
+                   "X-Forwarded-For: forwarded@example.com\r\n" .
+                   "Subject: Test\r\n" .
+                   "Content-Type: text/plain\r\n" .
+                   "\r\n" .
+                   "Body";
+
+        $email = new ImapEmail();
+        $email->mailHeaders = (object)[
+            'from' => [(object)['mailbox' => 'sender', 'host' => 'example.com']],
+            'to' => [(object)['mailbox' => 'recipient', 'host' => 'example.com']]
+        ];
+
+        // :: Act
+        $addresses = $email->getEmailAddresses($rawEmail);
+
+        // :: Assert
+        $this->assertContains('forwarded@example.com', $addresses, 'Should capture single X-Forwarded-For header');
+    }
+
+    public function testGetEmailAddressesWithNoXForwardedFor() {
+        // :: Setup
+        $rawEmail = "From: sender@example.com\r\n" .
+                   "To: recipient@example.com\r\n" .
+                   "Subject: Test\r\n" .
+                   "Content-Type: text/plain\r\n" .
+                   "\r\n" .
+                   "Body";
+
+        $email = new ImapEmail();
+        $email->mailHeaders = (object)[
+            'from' => [(object)['mailbox' => 'sender', 'host' => 'example.com']],
+            'to' => [(object)['mailbox' => 'recipient', 'host' => 'example.com']]
+        ];
+
+        // :: Act
+        $addresses = $email->getEmailAddresses($rawEmail);
+
+        // :: Assert
+        $this->assertCount(2, $addresses, 'Should only have From and To addresses');
+        $this->assertContains('sender@example.com', $addresses);
+        $this->assertContains('recipient@example.com', $addresses);
     }
 }
