@@ -20,6 +20,20 @@ if (getenv('ENVIRONMENT') !== 'development') {
     exit(0);
 }
 
+// Source entity for development data
+$sourceEntityId = "964950768-nord-odal-kommune";
+
+// Check if development data already exists
+$existingThreadsCount = Database::queryValue(
+    "SELECT COUNT(*) FROM threads WHERE entity_id = ?",
+    [$sourceEntityId]
+);
+
+if ($existingThreadsCount > 0) {
+    echo "Development data already exists ({$existingThreadsCount} threads found). Skipping.\n";
+    exit(0);
+}
+
 // Flag to track if any errors occurred
 $hasErrors = false;
 
@@ -35,7 +49,6 @@ function generateUuid(): string {
 echo "Creating development data...\n";
 
 // Source and destination paths
-$sourceEntityId = "964950768-nord-odal-kommune";
 $sourceThreadsFile = "/organizer-data/threads/threads-{$sourceEntityId}.json";
 $sourceThreadsDir = "/organizer-data/threads/{$sourceEntityId}";
 

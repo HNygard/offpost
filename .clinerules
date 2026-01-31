@@ -92,11 +92,7 @@ I pledge to follow the custom instructions.
     See "restart" command below
 
 - Complete reset of database (including recreating test data):
-    docker-compose -f docker-compose.dev.yaml rm -s -f -v postgres organizer
-    docker volume rm offpost_postgres_data_development
-    docker-compose -f docker-compose.dev.yaml up -d
-    sleep 5  # Wait for migrations to complete
-    docker-compose  -f docker-compose.dev.yaml logs organizer | grep "\\[migrate\\]"
+    ./reset-dev-database.sh
 
 - Rebuild docker images:
     docker-compose -f docker-compose.dev.yaml down && docker-compose -f docker-compose.dev.yaml up --build -d
