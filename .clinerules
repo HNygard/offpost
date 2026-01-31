@@ -136,11 +136,16 @@ organizer/src/
 ### Key Classes
 - `Thread` - Core thread entity with status management (STAGING → READY → SENDING → SENT)
 - `Database` - PDO singleton for database access
+- `ThreadStorageManager` - Singleton for thread storage operations
+- `ThreadDatabaseOperations` - Core database CRUD for threads
 - `ImapWrapper` - IMAP operations with retry logic and exponential backoff
 - `ThreadStatusRepository` - Email/thread status queries
 - `ThreadEmailMover` - Moves emails between IMAP folders with error handling
 - `ThreadScheduledEmailReceiver` - Polls IMAP for new emails
+- `ThreadScheduledEmailSender` - Sends queued emails
+- `ThreadScheduledFollowUpSender` - Automatic follow-up email management
 - `ThreadEmailDatabaseSaver` - Parses EML files and saves to database
+- `AdminNotificationService` - Sends admin alerts for critical issues
 
 ### Scheduled Tasks
 Located in `system-pages/`, triggered by cron:
@@ -148,6 +153,7 @@ Located in `system-pages/`, triggered by cron:
 - `scheduled-email-receiver` - Poll IMAP for new emails
 - `scheduled-imap-handling` - Manage IMAP folder structure
 - `scheduled-email-extraction` - Extract content using AI
+- `scheduled-thread-follow-up` - Automatic follow-up handling
 
 ## Database
 
