@@ -1,3 +1,7 @@
+# CLAUDE.md
+
+This file provides guidance to Claude Code (claude.ai/code) when working with code in this repository.
+
 # Offpost - Application to interact with public entities using email
 
 ## Norwegian description of service
@@ -111,6 +115,39 @@ I pledge to follow the custom instructions.
 
 - Reset Greenmail (clears emails and folders in mail server)
     docker-compose -f docker-compose.dev.yaml restart greenmail
+
+## Code Structure
+
+### Key Directories
+```
+organizer/src/
+├── class/           # Core business logic
+│   ├── Imap/        # IMAP handling with retry logic (ImapWrapper, ImapFolderManager)
+│   ├── Ai/          # OpenAI integration
+│   ├── Extraction/  # Email content extraction services
+│   └── Enums/       # Status enums
+├── tests/           # PHPUnit unit tests
+├── e2e-tests/       # Integration tests (require Docker services)
+├── migrations/sql/  # Database migrations (SQL scripts)
+├── system-pages/    # Scheduled task endpoints (cron-triggered)
+└── api/             # API endpoints
+```
+
+### Key Classes
+- `Thread` - Core thread entity with status management (STAGING → READY → SENDING → SENT)
+- `Database` - PDO singleton for database access
+- `ImapWrapper` - IMAP operations with retry logic and exponential backoff
+- `ThreadStatusRepository` - Email/thread status queries
+- `ThreadEmailMover` - Moves emails between IMAP folders with error handling
+- `ThreadScheduledEmailReceiver` - Polls IMAP for new emails
+- `ThreadEmailDatabaseSaver` - Parses EML files and saves to database
+
+### Scheduled Tasks
+Located in `system-pages/`, triggered by cron:
+- `scheduled-email-sending` - Send queued emails
+- `scheduled-email-receiver` - Poll IMAP for new emails
+- `scheduled-imap-handling` - Manage IMAP folder structure
+- `scheduled-email-extraction` - Extract content using AI
 
 ## Database
 
