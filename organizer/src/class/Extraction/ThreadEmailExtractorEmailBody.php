@@ -138,49 +138,20 @@ class ThreadEmailExtractorEmailBody extends ThreadEmailExtractor {
         $html = $message->getHtmlContent();
 
         // Clean up extracted content
+        // Zbateson handles charset conversion and always returns valid UTF-8
         if ($plainText !== null) {
-            $email_content->plain_text = self::cleanText(self::fixEncoding($plainText));
+            $email_content->plain_text = self::cleanText($plainText);
         } else {
             $email_content->plain_text = '';
         }
 
         if ($html !== null) {
-            $email_content->html = self::convertHtmlToText(self::fixEncoding($html));
+            $email_content->html = self::convertHtmlToText($html);
         } else {
             $email_content->html = '';
         }
 
         return $email_content;
-    }
-
-    /**
-     * Fix encoding issues - ensure content is valid UTF-8
-     *
-     * @param string $content Content to fix
-     * @return string UTF-8 encoded content
-     */
-    private static function fixEncoding($content) {
-        if (empty($content)) {
-            return $content;
-        }
-
-        // If already valid UTF-8, return as is
-        if (mb_check_encoding($content, 'UTF-8')) {
-            return $content;
-        }
-
-        // Try multiple encodings, prioritizing those common in Norwegian content
-        $encodings = ['ISO-8859-1', 'Windows-1252', 'ISO-8859-15', 'UTF-8'];
-
-        foreach ($encodings as $encoding) {
-            $converted = @mb_convert_encoding($content, 'UTF-8', $encoding);
-            if (mb_check_encoding($converted, 'UTF-8') && strpos($converted, '?') === false) {
-                return $converted;
-            }
-        }
-
-        // Force ISO-8859-1 as a last resort
-        return mb_convert_encoding($content, 'UTF-8', 'ISO-8859-1');
     }
 
     /**
