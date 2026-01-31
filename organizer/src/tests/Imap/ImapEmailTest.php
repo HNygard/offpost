@@ -62,8 +62,9 @@ class ImapEmailTest extends TestCase {
         $subject = ImapEmail::getEmailSubject($emlWithoutSubject);
 
         // :: Assert
-        $this->assertStringStartsWith('Error getting subject - ', $subject, 
-                                     'Should return error message when subject header is missing');
+        // Zbateson returns null for missing headers, which is converted to empty string
+        $this->assertEquals('', $subject,
+                           'Should return empty string when subject header is missing');
     }
 
     public function testGetEmailSubjectWithEmptySubject() {
@@ -93,10 +94,9 @@ class ImapEmailTest extends TestCase {
         $subject = ImapEmail::getEmailSubject($malformedEml);
 
         // :: Assert
-        $this->assertStringStartsWith('Error getting subject - ', $subject, 
-                                     'Should return error message for malformed EML');
-        $this->assertStringContainsString('subject not found', $subject, 
-                                         'Error message should indicate subject header not found');
+        // Zbateson parses malformed emails gracefully, returning empty subject if no Subject header
+        $this->assertEquals('', $subject,
+                           'Should return empty string for malformed EML without subject');
     }
 
     public function testGetEmailSubjectWithPartialEml() {
@@ -149,10 +149,9 @@ class ImapEmailTest extends TestCase {
         $subject = ImapEmail::getEmailSubject($emlWithSpecialChars);
 
         // :: Assert
-        $this->assertStringStartsWith('Error getting subject - ', $subject, 
-                                     'Should return error message for invalid header value with raw special characters');
-        $this->assertStringContainsString('Invalid header value', $subject, 
-                                         'Error message should indicate invalid header value');
+        // Zbateson handles raw UTF-8 characters in headers natively
+        $this->assertEquals('Test with special chars: åæø ÄÖÜ €£$', $subject,
+                           'Should preserve special characters in subject header');
     }
 
     public function testGetEmailSubjectWithEmptyString() {
@@ -163,8 +162,9 @@ class ImapEmailTest extends TestCase {
         $subject = ImapEmail::getEmailSubject($emptyEml);
 
         // :: Assert
-        $this->assertStringStartsWith('Error getting subject - ', $subject, 
-                                     'Should return error message for empty EML string');
+        // Zbateson parses empty strings gracefully, returning empty subject
+        $this->assertEquals('', $subject,
+                           'Should return empty string for empty EML string');
     }
 
     public function testGetEmailSubjectWithUtf8ImapHeader() {
