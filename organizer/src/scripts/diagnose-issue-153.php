@@ -69,8 +69,10 @@ foreach ($targetThreads as $threadId) {
         }
 
         // Create temporary file for IMAP parsing
+        // imap_open requires mbox format, so we add the mbox separator
         $tempFile = tempnam(sys_get_temp_dir(), 'eml_');
-        file_put_contents($tempFile, $rawContent);
+        $mboxContent = "From MAILER-DAEMON " . date('D M d H:i:s Y') . "\n" . $rawContent;
+        file_put_contents($tempFile, $mboxContent);
 
         try {
             // Open as mbox format
