@@ -63,7 +63,6 @@ foreach ($targetThreads as $threadId) {
             id,
             id_old as imap_uid,
             email_type,
-            subject,
             timestamp_received
         FROM thread_emails
         WHERE thread_id = ?
@@ -81,8 +80,8 @@ foreach ($targetThreads as $threadId) {
     // Show what UIDs we're looking for
     echo "\nDatabase UIDs:\n";
     foreach ($emails as $email) {
-        echo "  - UID {$email['imap_uid']}: {$email['email_type']} - " .
-             substr($email['subject'], 0, 50) . "...\n";
+        echo "  - UID {$email['imap_uid']}: {$email['email_type']} (" .
+             date('Y-m-d H:i', strtotime($email['timestamp_received'])) . ")\n";
     }
     echo "\n";
 
