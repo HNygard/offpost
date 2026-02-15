@@ -61,27 +61,31 @@ foreach ($targetThreads as $threadId) {
     $emails = Database::query("
         SELECT
             id,
-            id_old as imap_uid,
+            id_old as filename,
             email_type,
-            timestamp_received
+            timestamp_received,
+            imap_headers->>'message-id' as message_id,
+            imap_headers->>'subject' as subject,
+            imap_headers->>'date' as email_date
         FROM thread_emails
         WHERE thread_id = ?
-        AND id_old IS NOT NULL
+        AND imap_headers IS NOT NULL
         ORDER BY timestamp_received
     ", [$threadId]);
 
     echo "Emails in database: " . count($emails) . "\n";
 
     if (empty($emails)) {
-        echo "⚠️  No emails with UIDs found in database\n\n";
+        echo "⚠️  No emails with headers found in database\n\n";
         continue;
     }
 
-    // Show what UIDs we're looking for
-    echo "\nDatabase UIDs:\n";
+    // Show what emails we're looking for
+    echo "\nDatabase emails:\n";
     foreach ($emails as $email) {
-        echo "  - UID {$email['imap_uid']}: {$email['email_type']} (" .
-             date('Y-m-d H:i', strtotime($email['timestamp_received'])) . ")\n";
+        echo "  - {$email['filename']}: {$email['email_type']}\n";
+        echo "    Subject: {$email['subject']}\n";
+        echo "    Message-ID: " . ($email['message_id'] ?: 'NONE') . "\n";
     }
     echo "\n";
 
@@ -101,19 +105,90 @@ foreach ($targetThreads as $threadId) {
                 echo "  UIDs in folder: " . count($search) . " messages\n";
                 echo "  UID range: " . min($search) . " - " . max($search) . "\n";
 
-                // Check which of our UIDs exist
-                $ourUids = array_column($emails, 'imap_uid');
-                $found = array_intersect($ourUids, $search);
-                $missing = array_diff($ourUids, $search);
+                // Match emails by Message-ID
+                $matched = [];
+                $unmatched = [];
 
-                echo "  Found " . count($found) . " of our " . count($ourUids) . " UIDs\n";
+                foreach ($search as $uid) {
+                    // Get headers for this IMAP message
+                    $msgno = imap_msgno($connection->getConnection(), $uid);
+                    $headers = imap_headerinfo($connection->getConnection(), $msgno);
 
-                if (!empty($found)) {
-                    echo "  ✓ Found UIDs: " . implode(', ', $found) . "\n";
+                    // Try to find matching database email
+                    $found = false;
+                    foreach ($emails as $dbEmail) {
+                        // Primary: Match by Message-ID
+                        if ($dbEmail['message_id'] &&
+                            isset($headers->message_id) &&
+                            trim($dbEmail['message_id']) === trim($headers->message_id)) {
+                            $matched[] = [
+                                'uid' => $uid,
+                                'filename' => $dbEmail['filename'],
+                                'method' => 'Message-ID',
+                                'subject' => $dbEmail['subject']
+                            ];
+                            $found = true;
+                            break;
+                        }
+
+                        // Secondary: Match by Subject + Date
+                        if ($dbEmail['subject'] &&
+                            isset($headers->subject) &&
+                            trim($dbEmail['subject']) === trim($headers->subject) &&
+                            isset($headers->date) &&
+                            strtotime($dbEmail['email_date']) === strtotime($headers->date)) {
+                            $matched[] = [
+                                'uid' => $uid,
+                                'filename' => $dbEmail['filename'],
+                                'method' => 'Subject+Date',
+                                'subject' => $dbEmail['subject']
+                            ];
+                            $found = true;
+                            break;
+                        }
+                    }
+
+                    if (!$found) {
+                        $unmatched[] = [
+                            'uid' => $uid,
+                            'subject' => $headers->subject ?? 'UNKNOWN'
+                        ];
+                    }
                 }
 
-                if (!empty($missing)) {
-                    echo "  ✗ Missing UIDs: " . implode(', ', $missing) . "\n";
+                // Display results
+                echo "  Matched " . count($matched) . " of " . count($emails) . " database emails\n\n";
+
+                if (!empty($matched)) {
+                    echo "  ✓ Matched emails:\n";
+                    foreach ($matched as $m) {
+                        echo "    - UID {$m['uid']} → {$m['filename']} via {$m['method']}\n";
+                        echo "      Subject: {$m['subject']}\n";
+                    }
+                    echo "\n";
+                }
+
+                if (!empty($unmatched)) {
+                    echo "  ✗ Unmatched IMAP messages:\n";
+                    foreach ($unmatched as $u) {
+                        echo "    - UID {$u['uid']}: {$u['subject']}\n";
+                    }
+                    echo "\n";
+                }
+
+                // Check for database emails not found in IMAP
+                $matchedFilenames = array_column($matched, 'filename');
+                $dbFilenames = array_column($emails, 'filename');
+                $missingFromImap = array_diff($dbFilenames, $matchedFilenames);
+
+                if (!empty($missingFromImap)) {
+                    echo "  ⚠️  Database emails not found in IMAP:\n";
+                    foreach ($missingFromImap as $filename) {
+                        $dbEmail = array_filter($emails, fn($e) => $e['filename'] === $filename);
+                        $dbEmail = reset($dbEmail);
+                        echo "    - {$filename}\n";
+                        echo "      Subject: {$dbEmail['subject']}\n";
+                    }
                 }
             } else {
                 echo "  ⚠️  No messages found in folder\n";
