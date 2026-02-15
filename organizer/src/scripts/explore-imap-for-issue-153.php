@@ -95,7 +95,7 @@ foreach ($targetThreads as $threadId) {
             $connection->openConnection($expectedFolder);
 
             // Get all UIDs in this folder
-            $search = imap_search($connection->getStream(), 'ALL', SE_UID);
+            $search = $connection->search('ALL', SE_UID);
 
             if ($search) {
                 echo "  UIDs in folder: " . count($search) . " messages\n";
@@ -129,14 +129,12 @@ foreach ($targetThreads as $threadId) {
         // List all folders to see what else exists
         echo "All IMAP folders:\n";
         $connection->openConnection('INBOX');
-        $folders = imap_list($connection->getStream(), '{' . $imapServer . '}', '*');
+        $folders = $connection->listFolders();
 
         if ($folders) {
             // Filter to show only folders related to this entity
             $entityId = $thread['entity_id'];
-            foreach ($folders as $folder) {
-                $folderName = str_replace('{' . $imapServer . '}', '', $folder);
-
+            foreach ($folders as $folderName) {
                 // Show all folders that might be related
                 if (stripos($folderName, $entityId) !== false ||
                     stripos($folderName, 'eidskog') !== false ||
