@@ -15,6 +15,7 @@ require_once __DIR__ . '/ImapFolderStatus.php';
 require_once __DIR__ . '/ThreadFolderManager.php';
 require_once __DIR__ . '/ThreadStorageManager.php';
 require_once __DIR__ . '/ThreadEmailProcessingErrorManager.php';
+require_once __DIR__ . '/ThreadUtils.php';
 
 use Imap\ImapConnection;
 use Imap\ImapEmailProcessor;
@@ -66,6 +67,9 @@ class ThreadEmailDatabaseSaver {
 
                 # Figure out which thread this email is part of
                 $all_emails = $email->getEmailAddresses($rawEmail);
+                
+                // Sanitize email addresses to prevent UTF-8 encoding issues
+                $all_emails = array_map('sanitizeUtf8String', $all_emails);
 
                 $email_identifier = date('Y-m-d__His', $email->timestamp) . '__' . md5($email->subject);
                 
@@ -254,6 +258,9 @@ class ThreadEmailDatabaseSaver {
      * @return string UUID of the saved email
      */
     private function saveEmailToDatabase(string $threadId, object $email, string $direction, string $filename, string $rawEmail, stdClass $imap_headers): string {
+        // Sanitize IMAP headers to ensure all text fields have valid UTF-8
+        $sanitized_headers = sanitizeUtf8Recursive($imap_headers);
+        
         $query = "
             INSERT INTO thread_emails (
                 thread_id, 
@@ -278,8 +285,8 @@ class ThreadEmailDatabaseSaver {
             ':email_type' => $direction,
             ':status_type' => ThreadEmailStatusType::UNKNOWN->value,
             ':status_text' => 'Uklassifisert',
-            ':imap_headers' => json_encode($imap_headers, JSON_UNESCAPED_UNICODE ^ JSON_UNESCAPED_SLASHES),
-            ':id_old' => $filename
+            ':imap_headers' => json_encode($sanitized_headers, JSON_UNESCAPED_UNICODE ^ JSON_UNESCAPED_SLASHES),
+            ':id_old' => sanitizeUtf8String($filename)
         ];
         
         // Handle binary content separately
@@ -321,10 +328,10 @@ class ThreadEmailDatabaseSaver {
         
         $params = [
             ':email_id' => $emailId,
-            ':name' => $attachment->name,
-            ':filename' => $attachment->filename,
-            ':filetype' => $attachment->filetype,
-            ':location' => $attachment->location,
+            ':name' => sanitizeUtf8String($attachment->name),
+            ':filename' => sanitizeUtf8String($attachment->filename),
+            ':filetype' => sanitizeUtf8String($attachment->filetype),
+            ':location' => sanitizeUtf8String($attachment->location),
             ':status_type' => ThreadEmailStatusType::UNKNOWN->value,
             ':status_text' => 'uklassifisert-dok'
         ];
@@ -377,13 +384,13 @@ class ThreadEmailDatabaseSaver {
         string $folderName
     ): void {
         ThreadEmailProcessingErrorManager::saveEmailProcessingError(
-            $emailIdentifier,
-            $emailSubject,
-            $emailAddresses,
-            $errorType,
-            $errorMessage,
+            sanitizeUtf8String($emailIdentifier),
+            sanitizeUtf8String($emailSubject),
+            sanitizeUtf8String($emailAddresses),
+            sanitizeUtf8String($errorType),
+            sanitizeUtf8String($errorMessage),
             $suggestedThreadId,
-            $folderName
+            sanitizeUtf8String($folderName)
         );
     }
 }

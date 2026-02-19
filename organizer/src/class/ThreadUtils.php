@@ -286,3 +286,61 @@ function getEmailCcAddressesFromImapHeaders($imapHeaders) {
     
     return extractAddressesFromEmailObjects($ccObjects);
 }
+
+/**
+ * Sanitize UTF-8 string by replacing invalid byte sequences with replacement character
+ * This prevents PostgreSQL UTF-8 encoding errors when inserting data from IMAP
+ * 
+ * @param string $text Text to sanitize
+ * @return string Sanitized UTF-8 text
+ */
+function sanitizeUtf8String(string $text): string {
+    // Handle empty strings early
+    if ($text === '') {
+        return '';
+    }
+    
+    // mb_convert_encoding with 'UTF-8' to 'UTF-8' replaces invalid sequences
+    $sanitized = mb_convert_encoding($text, 'UTF-8', 'UTF-8');
+    
+    // If mb_convert_encoding fails, try iconv with SUBSTITUTE to replace problematic characters
+    if ($sanitized === false) {
+        $sanitized = @iconv('UTF-8', 'UTF-8//IGNORE', $text);
+        if ($sanitized === false) {
+            // Last resort: manually filter out invalid bytes
+            // Remove control characters and other problematic bytes
+            // Don't use 'u' modifier since we're dealing with potentially invalid UTF-8
+            $sanitized = preg_replace('/[\x00-\x08\x0B\x0C\x0E-\x1F\x7F]/', '', $text);
+            if ($sanitized === null) {
+                // If even regex fails, return empty string
+                return '';
+            }
+        }
+    }
+    
+    return $sanitized;
+}
+
+/**
+ * Recursively sanitize UTF-8 strings in an object or array
+ * This ensures all text data is safe for PostgreSQL UTF-8 encoding
+ * 
+ * @param mixed $data Data to sanitize (object, array, or string)
+ * @return mixed Sanitized data
+ */
+function sanitizeUtf8Recursive($data) {
+    if (is_string($data)) {
+        return sanitizeUtf8String($data);
+    } elseif (is_array($data)) {
+        foreach ($data as $key => $value) {
+            $data[$key] = sanitizeUtf8Recursive($value);
+        }
+        return $data;
+    } elseif (is_object($data)) {
+        foreach ($data as $key => $value) {
+            $data->$key = sanitizeUtf8Recursive($value);
+        }
+        return $data;
+    }
+    return $data;
+}
