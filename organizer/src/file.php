@@ -88,8 +88,11 @@ foreach ($thread->emails as $email) {
         echo '<pre>';
         echo '-------------------' . chr(10);
         echo "EMAIL HEADERS (RAW):\n";
-        $message = ThreadEmailExtractorEmailBody::readLaminasMessage_withErrorHandling($eml);
-        echo htmlescape($message->getHeaders()->toString());
+        $message = ThreadEmailExtractorEmailBody::parseEmail($eml);
+        foreach ($message->getAllHeaders() as $header) {
+            // Use getRawValue() to preserve original header format including angle brackets
+            echo htmlescape($header->getName() . ": " . $header->getRawValue()) . "\n";
+        }
         echo '</pre>';
         exit;
     }
