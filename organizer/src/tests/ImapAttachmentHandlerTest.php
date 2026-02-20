@@ -228,6 +228,72 @@ class ImapAttachmentHandlerTest extends TestCase {
         fclose($resource);
     }
 
+    private function invokeDecodeUtf8String(string $input): string {
+        $method = new \ReflectionMethod($this->handler, 'decodeUtf8String2');
+        $method->setAccessible(true);
+        return $method->invoke($this->handler, $input);
+    }
+
+    public function testDecodeIso88591QuotedPrintableFilename(): void {
+        // :: Setup
+        // Multi-part encoded filename from production (Issue #153)
+        $encoded = '=?iso-8859-1?Q?Klage_p=E5_m=E5lrettet_utestengelse_av_journalister_fra_po?= =?iso-8859-1?Q?stjournal.pdf?=';
+
+        // :: Act
+        $decoded = $this->invokeDecodeUtf8String($encoded);
+
+        // :: Assert
+        $this->assertStringContainsString('Klage på målrettet', $decoded,
+            "Norwegian characters not decoded. Got: $decoded");
+        $this->assertStringContainsString('.pdf', $decoded,
+            "File extension not preserved. Got: $decoded");
+        $this->assertStringNotContainsString('=?', $decoded,
+            "MIME encoded-word markers still present. Got: $decoded");
+        $extension = pathinfo($decoded, PATHINFO_EXTENSION);
+        $this->assertEquals('pdf', $extension,
+            "pathinfo() could not extract extension from decoded filename. Got: $decoded");
+    }
+
+    public function testDecodeUtf8Base64Filename(): void {
+        // :: Setup
+        $encoded = '=?UTF-8?B?' . base64_encode('Dokumentår.pdf') . '?=';
+
+        // :: Act
+        $decoded = $this->invokeDecodeUtf8String($encoded);
+
+        // :: Assert
+        $this->assertEquals('Dokumentår.pdf', $decoded,
+            "UTF-8 Base64 filename not decoded correctly. Got: $decoded");
+    }
+
+    public function testDecodeRfc2231ParameterEncoding(): void {
+        // :: Setup
+        $encoded = "iso-8859-1''Dokument%20med%20%E6%F8%E5.pdf";
+
+        // :: Act
+        $decoded = $this->invokeDecodeUtf8String($encoded);
+
+        // :: Assert
+        $this->assertStringContainsString('Dokument med', $decoded,
+            "RFC 2231 parameter not decoded. Got: $decoded");
+        $this->assertStringContainsString('.pdf', $decoded,
+            "File extension not preserved. Got: $decoded");
+        $this->assertStringNotContainsString('%E6', $decoded,
+            "Percent-encoded characters still present. Got: $decoded");
+    }
+
+    public function testDecodePlainFilename(): void {
+        // :: Setup
+        $plain = 'simple-document.pdf';
+
+        // :: Act
+        $decoded = $this->invokeDecodeUtf8String($plain);
+
+        // :: Assert
+        $this->assertEquals('simple-document.pdf', $decoded,
+            "Plain filename should pass through unchanged. Got: $decoded");
+    }
+
     public function testProcessAttachmentsWithSpecialEncodings(): void {
         $testCases = [
             // Test ISO-8859-1 encoded string

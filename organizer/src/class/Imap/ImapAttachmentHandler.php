@@ -176,8 +176,12 @@ class ImapAttachmentHandler {
      */
     private function handleSpecialCases(object $att): object {
         $specialCases = [
-            '=?UTF-8?Q?Stortingsvalg_=2D_Valgstyrets=5Fm=C3=B8tebok=5F1806=5F2021=2D09=2D29=2Epdf?=' 
+            // Stortingsvalg: encoded form (legacy) and decoded form (after RFC 2047 fix)
+            '=?UTF-8?Q?Stortingsvalg_=2D_Valgstyrets=5Fm=C3=B8tebok=5F1806=5F2021=2D09=2D29=2Epdf?='
                 => 'Stortingsvalg - Valgstyrets-møtebok-1806-2021.pdf',
+            'Stortingsvalg - Valgstyrets_møtebok_1806_2021-09-29.pdf'
+                => 'Stortingsvalg - Valgstyrets-møtebok-1806-2021.pdf',
+            // Samtingsvalg: malformed encoded-word with split .pdf extension
             '=?UTF-8?Q?Samtingsvalg_=2D_Samevalgstyrets_m=C3=B8tebok=5F1806=5F2021=2D09=2D29=2Epd?=	f'
                 => 'Samtingsvalg.pdf'
         ];
@@ -188,6 +192,44 @@ class ImapAttachmentHandler {
         }
 
         return $att;
+    }
+
+    /**
+     * Decode UTF-8 string from IMAP
+     */
+    private function decodeUtf8String2(string $string): string {
+        // Handle RFC 2047 MIME encoded-words: =?charset?encoding?text?=
+        // Examples: =?utf-8?B?...?=, =?iso-8859-1?Q?...?=, =?windows-1252?Q?...?=
+        if (preg_match('/=\?[^?]+\?[BQbq]\?[^?]*\?=/i', $string)) {
+            $decoded = mb_decode_mimeheader($string);
+
+            // Ensure result is valid UTF-8
+            if (!mb_check_encoding($decoded, 'UTF-8')) {
+                $detected = mb_detect_encoding($decoded, ['UTF-8', 'ISO-8859-1', 'Windows-1252'], true);
+                $decoded = mb_convert_encoding($decoded, 'UTF-8', $detected ?: 'ISO-8859-1');
+            }
+
+            return $decoded;
+        }
+
+        // Handle RFC 2231 parameter encoding: charset''encoded%20text
+        if (str_starts_with($string, "iso-8859-1''") ||
+            str_starts_with($string, "ISO-8859-1''")) {
+            $string = str_replace(["iso-8859-1''", "ISO-8859-1''"], '', $string);
+
+            if (str_contains($string, '%20') ||
+                str_contains($string, '%E6') ||
+                str_contains($string, '%F8')) {
+
+                $replacements = $this->getIso88591Replacements();
+                foreach ($replacements as $from => $to) {
+                    $string = str_replace($from, $to, $string);
+                }
+                $string = urldecode($string);
+            }
+        }
+
+        return $string;
     }
 
     /**

@@ -24,12 +24,24 @@ require_once __DIR__ . '/../class/ThreadFolderManager.php';
 require_once __DIR__ . '/../class/Imap/ImapConnection.php';
 require_once __DIR__ . '/../class/Imap/ImapWrapper.php';
 require_once __DIR__ . '/../class/Imap/ImapFolderManager.php';
+require_once __DIR__ . '/../class/Imap/ImapAttachmentHandler.php';
 
 use Imap\ImapConnection;
 use Imap\ImapFolderManager;
 
 // Get IMAP credentials
 require __DIR__ . '/../username-password.php';
+
+/**
+ * Decode attachment filename using the same logic as ImapAttachmentHandler
+ */
+function decodeAttachmentFilename(ImapConnection $connection, string $filename): string {
+    $handler = new Imap\ImapAttachmentHandler($connection);
+    $reflection = new \ReflectionClass($handler);
+    $method = $reflection->getMethod('decodeUtf8String2');
+    $method->setAccessible(true);
+    return $method->invoke($handler, $filename);
+}
 
 /**
  * Detect attachments from IMAP structure
@@ -75,7 +87,8 @@ function detectImapAttachments($connection, int $uid): array {
         if ($isAttachment) {
             $attachments[] = [
                 'partNumber' => $partNumber,
-                'filename' => $filename,
+                'filename_raw' => $filename,  // Raw encoded filename
+                'filename' => $filename,       // Will be decoded later
                 'type' => $part->type,
                 'subtype' => $part->subtype ?? ''
             ];
@@ -238,6 +251,13 @@ foreach ($targetThreads as $threadId) {
                 // Detect IMAP attachments for matched emails
                 foreach ($matched as &$match) {
                     $match['imap_attachments'] = detectImapAttachments($connection->getConnection(), $match['uid']);
+
+                    // Decode filenames using the new logic
+                    foreach ($match['imap_attachments'] as &$att) {
+                        $att['filename'] = decodeAttachmentFilename($connection, $att['filename_raw']);
+                    }
+                    unset($att);
+
                     $match['structure'] = imap_fetchstructure($connection->getConnection(), $match['uid'], FT_UID);
                 }
                 unset($match);
@@ -271,7 +291,9 @@ foreach ($targetThreads as $threadId) {
                         if (count($m['imap_attachments']) > 0) {
                             echo "\n        IMAP Attachment Parts:\n";
                             foreach ($m['imap_attachments'] as $att) {
-                                echo "          - Part {$att['partNumber']}: {$att['filename']}\n";
+                                echo "          - Part {$att['partNumber']}:\n";
+                                echo "            Raw:     {$att['filename_raw']}\n";
+                                echo "            Decoded: {$att['filename']}\n";
                             }
 
                             // Simulate old method ($i + 2)
