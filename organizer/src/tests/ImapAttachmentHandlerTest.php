@@ -229,7 +229,7 @@ class ImapAttachmentHandlerTest extends TestCase {
     }
 
     private function invokeDecodeUtf8String(string $input): string {
-        $method = new \ReflectionMethod($this->handler, 'decodeUtf8String2');
+        $method = new \ReflectionMethod($this->handler, 'decodeUtf8String');
         $method->setAccessible(true);
         return $method->invoke($this->handler, $input);
     }

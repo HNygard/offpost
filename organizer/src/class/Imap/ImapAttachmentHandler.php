@@ -137,67 +137,6 @@ class ImapAttachmentHandler {
      * Decode UTF-8 string from IMAP
      */
     private function decodeUtf8String(string $string): string {
-        // If it's a plain string without any encoding markers, return as is
-        if (!str_starts_with($string, "iso-8859-1''") && 
-            !str_starts_with($string, "ISO-8859-1''") &&
-            !preg_match('/(\=\?utf\-8\?B\?[A-Za-z0-9=]*\?=)/', $string)) {
-            return $string;
-        }
-
-        if (str_starts_with($string, "iso-8859-1''") || 
-            str_starts_with($string, "ISO-8859-1''")) {
-            $string = str_replace(["iso-8859-1''", "ISO-8859-1''"], '', $string);
-
-            if (str_contains($string, '%20') || 
-                str_contains($string, '%E6') || 
-                str_contains($string, '%F8')) {
-                
-                $replacements = $this->getIso88591Replacements();
-                foreach ($replacements as $from => $to) {
-                    $string = str_replace($from, $to, $string);
-                }
-                $string = urldecode($string);
-            }
-        }
-
-        // Handle Base64 encoded UTF-8 strings
-        if (preg_match_all('/(\=\?utf\-8\?B\?[A-Za-z0-9=]*\?=)/', $string, $matches)) {
-            foreach ($matches[0] as $match) {
-                $string = str_replace($match, $this->connection->utf8($match), $string);
-            }
-            return $this->connection->utf8($string);
-        }
-
-        return $string;
-    }
-
-    /**
-     * Handle special cases for attachment names
-     */
-    private function handleSpecialCases(object $att): object {
-        $specialCases = [
-            // Stortingsvalg: encoded form (legacy) and decoded form (after RFC 2047 fix)
-            '=?UTF-8?Q?Stortingsvalg_=2D_Valgstyrets=5Fm=C3=B8tebok=5F1806=5F2021=2D09=2D29=2Epdf?='
-                => 'Stortingsvalg - Valgstyrets-møtebok-1806-2021.pdf',
-            'Stortingsvalg - Valgstyrets_møtebok_1806_2021-09-29.pdf'
-                => 'Stortingsvalg - Valgstyrets-møtebok-1806-2021.pdf',
-            // Samtingsvalg: malformed encoded-word with split .pdf extension
-            '=?UTF-8?Q?Samtingsvalg_=2D_Samevalgstyrets_m=C3=B8tebok=5F1806=5F2021=2D09=2D29=2Epd?=	f'
-                => 'Samtingsvalg.pdf'
-        ];
-
-        foreach ($specialCases as $from => $to) {
-            $att->name = str_replace($from, $to, $att->name);
-            $att->filename = str_replace($from, $to, $att->filename);
-        }
-
-        return $att;
-    }
-
-    /**
-     * Decode UTF-8 string from IMAP
-     */
-    private function decodeUtf8String2(string $string): string {
         // Handle RFC 2047 MIME encoded-words: =?charset?encoding?text?=
         // Examples: =?utf-8?B?...?=, =?iso-8859-1?Q?...?=, =?windows-1252?Q?...?=
         if (preg_match('/=\?[^?]+\?[BQbq]\?[^?]*\?=/i', $string)) {
@@ -230,6 +169,29 @@ class ImapAttachmentHandler {
         }
 
         return $string;
+    }
+
+    /**
+     * Handle special cases for attachment names
+     */
+    private function handleSpecialCases(object $att): object {
+        $specialCases = [
+            // Stortingsvalg: encoded form (legacy) and decoded form (after RFC 2047 fix)
+            '=?UTF-8?Q?Stortingsvalg_=2D_Valgstyrets=5Fm=C3=B8tebok=5F1806=5F2021=2D09=2D29=2Epdf?='
+                => 'Stortingsvalg - Valgstyrets-møtebok-1806-2021.pdf',
+            'Stortingsvalg - Valgstyrets_møtebok_1806_2021-09-29.pdf'
+                => 'Stortingsvalg - Valgstyrets-møtebok-1806-2021.pdf',
+            // Samtingsvalg: malformed encoded-word with split .pdf extension
+            '=?UTF-8?Q?Samtingsvalg_=2D_Samevalgstyrets_m=C3=B8tebok=5F1806=5F2021=2D09=2D29=2Epd?=	f'
+                => 'Samtingsvalg.pdf'
+        ];
+
+        foreach ($specialCases as $from => $to) {
+            $att->name = str_replace($from, $to, $att->name);
+            $att->filename = str_replace($from, $to, $att->filename);
+        }
+
+        return $att;
     }
 
     /**
