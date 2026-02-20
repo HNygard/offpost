@@ -12,13 +12,14 @@
  * 4. Tracks progress in attachment_migration_state table
  *
  * Usage:
- *   php scripts/migrate-fix-rfc2047-attachments.php [--dry-run] [--include-archived] [--resume] [--retry-failed]
+ *   php scripts/migrate-fix-rfc2047-attachments.php [--dry-run] [--include-archived] [--resume] [--retry-failed] [--limit=N]
  *
  * Options:
  *   --dry-run            Preview changes without making them
  *   --include-archived   Process archived threads (default: only active threads)
  *   --resume             Resume from previous run (skip already processed emails)
  *   --retry-failed       Retry only failed emails from previous run
+ *   --limit=N            Process only first N threads (for testing)
  */
 
 require_once __DIR__ . '/../class/Database.php';
@@ -41,6 +42,7 @@ class AttachmentMigration {
     private bool $includeArchived = false;
     private bool $resume = false;
     private bool $retryFailed = false;
+    private ?int $limit = null;
 
     // Statistics
     private int $threadsProcessed = 0;
@@ -57,7 +59,8 @@ class AttachmentMigration {
         bool $dryRun = false,
         bool $includeArchived = false,
         bool $resume = false,
-        bool $retryFailed = false
+        bool $retryFailed = false,
+        ?int $limit = null
     ) {
         $this->connection = $connection;
         $this->attachmentHandler = new ImapAttachmentHandler($connection);
@@ -71,6 +74,7 @@ class AttachmentMigration {
         $this->includeArchived = $includeArchived;
         $this->resume = $resume;
         $this->retryFailed = $retryFailed;
+        $this->limit = $limit;
         $this->startTime = time();
     }
 
@@ -86,17 +90,31 @@ class AttachmentMigration {
         if ($this->retryFailed) {
             echo "Retrying failed emails only\n";
         }
+        if ($this->limit !== null) {
+            echo "Limit: Processing first {$this->limit} thread(s) only\n";
+        }
         echo "\n";
 
         $this->createMigrationTable();
 
         // Get all threads with IMAP folders
         $threads = $this->getAllThreadsWithFolders();
-        echo "Found " . count($threads) . " threads with IMAP folders\n\n";
+        echo "Found " . count($threads) . " threads with IMAP folders\n";
+
+        if ($this->limit !== null) {
+            echo "Will process first {$this->limit} thread(s)\n";
+        }
+        echo "\n";
 
         foreach ($threads as $thread) {
             $this->processThread($thread);
             $this->threadsProcessed++;
+
+            // Stop if we've reached the limit
+            if ($this->limit !== null && $this->threadsProcessed >= $this->limit) {
+                echo "\n⚠️  Reached limit of {$this->limit} thread(s), stopping.\n\n";
+                break;
+            }
         }
 
         // Close IMAP connection if open
@@ -543,6 +561,15 @@ $includeArchived = in_array('--include-archived', $argv);
 $resume = in_array('--resume', $argv);
 $retryFailed = in_array('--retry-failed', $argv);
 
+// Parse --limit=N argument
+$limit = null;
+foreach ($argv as $arg) {
+    if (strpos($arg, '--limit=') === 0) {
+        $limit = (int)substr($arg, 8);
+        break;
+    }
+}
+
 // Suppress IMAP errors during shutdown
 set_error_handler(function($errno, $errstr, $errfile, $errline) {
     // Ignore IMAP shutdown errors
@@ -560,7 +587,7 @@ require __DIR__ . '/../username-password.php';
 $connection = new ImapConnection($imapServer, $imap_username, $imap_password, false);
 
 // Run migration
-$migration = new AttachmentMigration($connection, $dryRun, $includeArchived, $resume, $retryFailed);
+$migration = new AttachmentMigration($connection, $dryRun, $includeArchived, $resume, $retryFailed, $limit);
 $migration->run();
 
 // Restore error handler
