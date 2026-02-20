@@ -38,7 +38,7 @@ require __DIR__ . '/../username-password.php';
 function decodeAttachmentFilename(ImapConnection $connection, string $filename): string {
     $handler = new Imap\ImapAttachmentHandler($connection);
     $reflection = new \ReflectionClass($handler);
-    $method = $reflection->getMethod('decodeUtf8String2');
+    $method = $reflection->getMethod('decodeUtf8String');
     $method->setAccessible(true);
     return $method->invoke($handler, $filename);
 }
