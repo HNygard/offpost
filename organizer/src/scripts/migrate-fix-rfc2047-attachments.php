@@ -12,7 +12,7 @@
  * 4. Tracks progress in attachment_migration_state table
  *
  * Usage:
- *   php scripts/migrate-fix-rfc2047-attachments.php [--dry-run] [--include-archived] [--resume] [--retry-failed] [--limit=N] [--offset=N]
+ *   php scripts/migrate-fix-rfc2047-attachments.php [--dry-run] [--include-archived] [--resume] [--retry-failed] [--limit=N] [--offset=N] [--quiet]
  *
  * Options:
  *   --dry-run            Preview changes without making them
@@ -21,6 +21,7 @@
  *   --retry-failed       Retry only failed emails from previous run
  *   --limit=N            Process only first N threads (for testing)
  *   --offset=N           Skip first N threads (use with --limit for pagination)
+ *   --quiet              Only output errors and summary (suppress normal progress output)
  */
 
 require_once __DIR__ . '/../class/Database.php';
@@ -45,6 +46,7 @@ class AttachmentMigration {
     private bool $retryFailed = false;
     private ?int $limit = null;
     private int $offset = 0;
+    private bool $quiet = false;
 
     // Statistics
     private int $threadsProcessed = 0;
@@ -63,7 +65,8 @@ class AttachmentMigration {
         bool $resume = false,
         bool $retryFailed = false,
         ?int $limit = null,
-        int $offset = 0
+        int $offset = 0,
+        bool $quiet = false
     ) {
         $this->connection = $connection;
         $this->attachmentHandler = new ImapAttachmentHandler($connection);
@@ -79,43 +82,49 @@ class AttachmentMigration {
         $this->retryFailed = $retryFailed;
         $this->limit = $limit;
         $this->offset = $offset;
+        $this->quiet = $quiet;
         $this->startTime = time();
     }
 
     public function run(): void {
-        echo "=== RFC 2047 Attachment Migration ===\n";
-        echo "Mode: " . ($this->dryRun ? "DRY RUN" : "LIVE") . "\n";
-        if ($this->includeArchived) {
-            echo "Including archived threads\n";
+        if (!$this->quiet) {
+            echo "=== RFC 2047 Attachment Migration ===\n";
+            echo "Mode: " . ($this->dryRun ? "DRY RUN" : "LIVE") . "\n";
+            if ($this->includeArchived) {
+                echo "Including archived threads\n";
+            }
+            if ($this->resume) {
+                echo "Resuming from previous run\n";
+            }
+            if ($this->retryFailed) {
+                echo "Retrying failed emails only\n";
+            }
+            if ($this->offset > 0) {
+                echo "Offset: Skipping first {$this->offset} thread(s)\n";
+            }
+            if ($this->limit !== null) {
+                echo "Limit: Processing {$this->limit} thread(s)\n";
+            }
+            echo "\n";
         }
-        if ($this->resume) {
-            echo "Resuming from previous run\n";
-        }
-        if ($this->retryFailed) {
-            echo "Retrying failed emails only\n";
-        }
-        if ($this->offset > 0) {
-            echo "Offset: Skipping first {$this->offset} thread(s)\n";
-        }
-        if ($this->limit !== null) {
-            echo "Limit: Processing {$this->limit} thread(s)\n";
-        }
-        echo "\n";
 
         $this->createMigrationTable();
 
         // Get all threads with IMAP folders
         $threads = $this->getAllThreadsWithFolders();
-        echo "Found " . count($threads) . " threads with IMAP folders\n";
 
-        if ($this->offset > 0) {
-            echo "Skipping first {$this->offset} thread(s)\n";
+        if (!$this->quiet) {
+            echo "Found " . count($threads) . " threads with IMAP folders\n";
+
+            if ($this->offset > 0) {
+                echo "Skipping first {$this->offset} thread(s)\n";
+            }
+            if ($this->limit !== null) {
+                $end = $this->offset + $this->limit;
+                echo "Will process threads " . ($this->offset + 1) . " to {$end}\n";
+            }
+            echo "\n";
         }
-        if ($this->limit !== null) {
-            $end = $this->offset + $this->limit;
-            echo "Will process threads " . ($this->offset + 1) . " to {$end}\n";
-        }
-        echo "\n";
 
         $threadIndex = 0;
         foreach ($threads as $thread) {
@@ -131,7 +140,9 @@ class AttachmentMigration {
 
             // Stop if we've reached the limit
             if ($this->limit !== null && $this->threadsProcessed >= $this->limit) {
-                echo "\n⚠️  Reached limit of {$this->limit} thread(s), stopping.\n\n";
+                if (!$this->quiet) {
+                    echo "\n⚠️  Reached limit of {$this->limit} thread(s), stopping.\n\n";
+                }
                 break;
             }
         }
@@ -204,8 +215,10 @@ class AttachmentMigration {
     private function processThread(array $thread): void {
         $folder = $this->buildFolderName($thread);
 
-        echo "Thread: {$thread['title']}\n";
-        echo "Folder: {$folder}\n";
+        if (!$this->quiet) {
+            echo "Thread: {$thread['title']}\n";
+            echo "Folder: {$folder}\n";
+        }
 
         try {
             // Open IMAP connection to folder
@@ -214,11 +227,15 @@ class AttachmentMigration {
             // Get all email UIDs from IMAP
             $uids = $this->connection->search('ALL', SE_UID);
             if (empty($uids)) {
-                echo "  (no emails in IMAP folder)\n\n";
+                if (!$this->quiet) {
+                    echo "  (no emails in IMAP folder)\n\n";
+                }
                 return;
             }
 
-            echo "  Processing " . count($uids) . " emails...\n";
+            if (!$this->quiet) {
+                echo "  Processing " . count($uids) . " emails...\n";
+            }
 
             foreach ($uids as $i => $uid) {
                 $this->processImapEmail($uid, $thread, $i + 1, count($uids));
@@ -230,11 +247,16 @@ class AttachmentMigration {
             $this->connection->closeConnection();
 
         } catch (Exception $e) {
-            echo "  ✗ Error accessing folder: {$e->getMessage()}\n";
+            // Always show errors, even in quiet mode
+            echo "✗ Error accessing folder: {$thread['title']}\n";
+            echo "  Folder: {$folder}\n";
+            echo "  Error: {$e->getMessage()}\n\n";
             $this->errors++;
         }
 
-        echo "\n";
+        if (!$this->quiet) {
+            echo "\n";
+        }
     }
 
     private function processImapEmail(
@@ -290,7 +312,9 @@ class AttachmentMigration {
                 }
             }
 
-            echo "  [{$current}/{$total}] {$filename}\n";
+            if (!$this->quiet) {
+                echo "  [{$current}/{$total}] {$filename}\n";
+            }
 
             if (!$this->dryRun) {
                 Database::beginTransaction();
@@ -303,7 +327,9 @@ class AttachmentMigration {
             $imapAttachments = $this->attachmentHandler->processAttachments($uid);
             $dbCount = $this->getDbAttachmentCount($dbEmail['id']);
 
-            echo "    IMAP: " . count($imapAttachments) . " | DB: {$dbCount}\n";
+            if (!$this->quiet) {
+                echo "    IMAP: " . count($imapAttachments) . " | DB: {$dbCount}\n";
+            }
 
             if (count($imapAttachments) > $dbCount) {
                 // Insert missing attachments
@@ -313,7 +339,9 @@ class AttachmentMigration {
                     $imapAttachments,
                     $filename
                 );
-                echo "    ✓ Inserted {$inserted} attachment(s)\n";
+                if (!$this->quiet) {
+                    echo "    ✓ Inserted {$inserted} attachment(s)\n";
+                }
 
                 $this->updateState($dbEmail['id'], 'completed', $filename, [
                     'attachments_before' => $dbCount,
@@ -339,7 +367,10 @@ class AttachmentMigration {
             if (!$this->dryRun && Database::getInstance()->inTransaction()) {
                 Database::rollBack();
             }
-            echo "    ✗ Error: {$e->getMessage()}\n";
+            // Always show errors, even in quiet mode
+            echo "✗ Error processing email: {$filename}\n";
+            echo "  Thread: {$thread['title']}\n";
+            echo "  Error: {$e->getMessage()}\n\n";
             if (isset($dbEmail)) {
                 $this->updateState($dbEmail['id'], 'failed', $filename ?? 'unknown', [
                     'error_message' => $e->getMessage()
@@ -431,12 +462,16 @@ class AttachmentMigration {
         foreach ($imapAttachments as $i => $attachment) {
             // Check if attachment already exists (by filename)
             if ($this->attachmentExists($emailId, $attachment->filename)) {
-                echo "      - Skip duplicate: {$attachment->filename}\n";
+                if (!$this->quiet) {
+                    echo "      - Skip duplicate: {$attachment->filename}\n";
+                }
                 continue;
             }
 
             if ($this->dryRun) {
-                echo "      + Would insert: {$attachment->filename}\n";
+                if (!$this->quiet) {
+                    echo "      + Would insert: {$attachment->filename}\n";
+                }
                 $inserted++;
                 continue;
             }
@@ -445,7 +480,9 @@ class AttachmentMigration {
             // Since both arrays are built by iterating through parts in order,
             // they should align by index
             if (!isset($attachmentsWithParts[$i])) {
-                echo "      ! Could not find partNumber for attachment {$i}: {$attachment->filename}\n";
+                // Always show warnings, even in quiet mode
+                echo "⚠️  Could not find partNumber for attachment {$i}: {$attachment->filename}\n";
+                echo "   Email: {$emailFilename}\n\n";
                 continue;
             }
 
@@ -454,7 +491,11 @@ class AttachmentMigration {
             try {
                 $content = $this->attachmentHandler->getAttachmentContent($uid, $partNumber);
             } catch (Exception $e) {
-                echo "      ! Error fetching attachment {$attachment->filename} (part {$partNumber}): {$e->getMessage()}\n";
+                // Always show errors, even in quiet mode
+                echo "✗ Error fetching attachment: {$attachment->filename}\n";
+                echo "  Email: {$emailFilename}\n";
+                echo "  Part: {$partNumber}\n";
+                echo "  Error: {$e->getMessage()}\n\n";
                 continue;
             }
 
@@ -470,7 +511,9 @@ class AttachmentMigration {
                 $content
             );
 
-            echo "      + Inserted: {$attachment->filename} (part {$partNumber}, {$attachmentId})\n";
+            if (!$this->quiet) {
+                echo "      + Inserted: {$attachment->filename} (part {$partNumber}, {$attachmentId})\n";
+            }
             $inserted++;
         }
 
@@ -579,6 +622,7 @@ $dryRun = in_array('--dry-run', $argv);
 $includeArchived = in_array('--include-archived', $argv);
 $resume = in_array('--resume', $argv);
 $retryFailed = in_array('--retry-failed', $argv);
+$quiet = in_array('--quiet', $argv);
 
 // Parse --limit=N and --offset=N arguments
 $limit = null;
@@ -609,7 +653,7 @@ require __DIR__ . '/../username-password.php';
 $connection = new ImapConnection($imapServer, $imap_username, $imap_password, false);
 
 // Run migration
-$migration = new AttachmentMigration($connection, $dryRun, $includeArchived, $resume, $retryFailed, $limit, $offset);
+$migration = new AttachmentMigration($connection, $dryRun, $includeArchived, $resume, $retryFailed, $limit, $offset, $quiet);
 $migration->run();
 
 // Restore error handler
