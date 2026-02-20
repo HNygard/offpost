@@ -12,7 +12,7 @@
  * 4. Tracks progress in attachment_migration_state table
  *
  * Usage:
- *   php scripts/migrate-fix-rfc2047-attachments.php [--dry-run] [--include-archived] [--resume] [--retry-failed] [--limit=N]
+ *   php scripts/migrate-fix-rfc2047-attachments.php [--dry-run] [--include-archived] [--resume] [--retry-failed] [--limit=N] [--offset=N]
  *
  * Options:
  *   --dry-run            Preview changes without making them
@@ -20,6 +20,7 @@
  *   --resume             Resume from previous run (skip already processed emails)
  *   --retry-failed       Retry only failed emails from previous run
  *   --limit=N            Process only first N threads (for testing)
+ *   --offset=N           Skip first N threads (use with --limit for pagination)
  */
 
 require_once __DIR__ . '/../class/Database.php';
@@ -43,6 +44,7 @@ class AttachmentMigration {
     private bool $resume = false;
     private bool $retryFailed = false;
     private ?int $limit = null;
+    private int $offset = 0;
 
     // Statistics
     private int $threadsProcessed = 0;
@@ -60,7 +62,8 @@ class AttachmentMigration {
         bool $includeArchived = false,
         bool $resume = false,
         bool $retryFailed = false,
-        ?int $limit = null
+        ?int $limit = null,
+        int $offset = 0
     ) {
         $this->connection = $connection;
         $this->attachmentHandler = new ImapAttachmentHandler($connection);
@@ -75,6 +78,7 @@ class AttachmentMigration {
         $this->resume = $resume;
         $this->retryFailed = $retryFailed;
         $this->limit = $limit;
+        $this->offset = $offset;
         $this->startTime = time();
     }
 
@@ -90,8 +94,11 @@ class AttachmentMigration {
         if ($this->retryFailed) {
             echo "Retrying failed emails only\n";
         }
+        if ($this->offset > 0) {
+            echo "Offset: Skipping first {$this->offset} thread(s)\n";
+        }
         if ($this->limit !== null) {
-            echo "Limit: Processing first {$this->limit} thread(s) only\n";
+            echo "Limit: Processing {$this->limit} thread(s)\n";
         }
         echo "\n";
 
@@ -101,14 +108,26 @@ class AttachmentMigration {
         $threads = $this->getAllThreadsWithFolders();
         echo "Found " . count($threads) . " threads with IMAP folders\n";
 
+        if ($this->offset > 0) {
+            echo "Skipping first {$this->offset} thread(s)\n";
+        }
         if ($this->limit !== null) {
-            echo "Will process first {$this->limit} thread(s)\n";
+            $end = $this->offset + $this->limit;
+            echo "Will process threads " . ($this->offset + 1) . " to {$end}\n";
         }
         echo "\n";
 
+        $threadIndex = 0;
         foreach ($threads as $thread) {
+            // Skip threads before offset
+            if ($threadIndex < $this->offset) {
+                $threadIndex++;
+                continue;
+            }
+
             $this->processThread($thread);
             $this->threadsProcessed++;
+            $threadIndex++;
 
             // Stop if we've reached the limit
             if ($this->limit !== null && $this->threadsProcessed >= $this->limit) {
@@ -561,12 +580,15 @@ $includeArchived = in_array('--include-archived', $argv);
 $resume = in_array('--resume', $argv);
 $retryFailed = in_array('--retry-failed', $argv);
 
-// Parse --limit=N argument
+// Parse --limit=N and --offset=N arguments
 $limit = null;
+$offset = 0;
 foreach ($argv as $arg) {
     if (strpos($arg, '--limit=') === 0) {
         $limit = (int)substr($arg, 8);
-        break;
+    }
+    if (strpos($arg, '--offset=') === 0) {
+        $offset = (int)substr($arg, 9);
     }
 }
 
@@ -587,7 +609,7 @@ require __DIR__ . '/../username-password.php';
 $connection = new ImapConnection($imapServer, $imap_username, $imap_password, false);
 
 // Run migration
-$migration = new AttachmentMigration($connection, $dryRun, $includeArchived, $resume, $retryFailed, $limit);
+$migration = new AttachmentMigration($connection, $dryRun, $includeArchived, $resume, $retryFailed, $limit, $offset);
 $migration->run();
 
 // Restore error handler
