@@ -1,6 +1,6 @@
 -- ******************************************************************
 -- AUTOMATICALLY GENERATED FILE - DO NOT MODIFY
--- Generated on: 2026-01-25 10:43:12
+-- Generated on: 2026-02-20 20:40:56
 -- 
 -- This file contains the current database schema after all migrations.
 -- It is NOT meant to be executed as a migration script.
@@ -9,6 +9,25 @@
 -- ==========================================
 -- TABLES
 -- ==========================================
+
+CREATE TABLE attachment_migration_state (
+    id integer NOT NULL DEFAULT nextval('attachment_migration_state_id_seq'::regclass),
+    email_id uuid NOT NULL,
+    folder_name character varying(255) NOT NULL,
+    message_id text,
+    status character varying(20) NOT NULL,
+    attachments_before integer DEFAULT 0,
+    attachments_after integer DEFAULT 0,
+    error_message text,
+    processed_at timestamp with time zone,
+    created_at timestamp with time zone DEFAULT CURRENT_TIMESTAMP
+);
+
+ALTER TABLE attachment_migration_state ADD CONSTRAINT attachment_migration_state_pkey PRIMARY KEY (id);
+ALTER TABLE attachment_migration_state ADD CONSTRAINT attachment_migration_state_email_id_fkey FOREIGN KEY (email_id) REFERENCES thread_emails (id);
+CREATE INDEX attachment_migration_state_email_id_key ON attachment_migration_state USING btree (email_id);
+CREATE INDEX idx_migration_email ON attachment_migration_state USING btree (email_id);
+CREATE INDEX idx_migration_status ON attachment_migration_state USING btree (status);
 
 CREATE TABLE imap_folder_log (
     id integer NOT NULL DEFAULT nextval('imap_folder_log_id_seq'::regclass),
