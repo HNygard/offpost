@@ -171,59 +171,122 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.UUID;
 
+/**
+ * Core entity representing an email thread with a public entity.
+ *
+ * <p>A Thread represents a conversation between the system and a public entity,
+ * with a unique profile (name and email) that is automatically generated for each thread.
+ * The thread manages email lifecycle through status transitions: STAGING → READY_FOR_SENDING → SENDING → SENT.
+ *
+ * @author Offpost Team
+ * @see ThreadEmail
+ * @see SendingStatus
+ */
 @Entity
 @Table(name = "threads")
 @Data
 public class Thread {
 
+    /**
+     * Unique identifier for the thread (UUID).
+     */
     @Id
     private String id;
 
+    /**
+     * ID of the public entity this thread communicates with.
+     */
     @Column(name = "entity_id")
     private Integer entityId;
 
+    /**
+     * Title or subject of the thread.
+     */
     private String title;
 
+    /**
+     * Randomly generated name used as sender identity for this thread.
+     */
     @Column(name = "my_name")
     private String myName;
 
+    /**
+     * Unique email address generated for this thread.
+     */
     @Column(name = "my_email")
     private String myEmail;
 
+    /**
+     * Comma-separated labels for categorizing the thread.
+     */
     private String labels;
 
+    /**
+     * Current sending status of the thread.
+     */
     @Column(name = "sending_status")
     @Enumerated(EnumType.STRING)
     private SendingStatus sendingStatus;
 
+    /**
+     * Initial request text sent to the public entity.
+     */
     @Column(name = "initial_request", columnDefinition = "TEXT")
     private String initialRequest;
 
+    /**
+     * Whether the thread has been archived.
+     */
     private Boolean archived = false;
 
+    /**
+     * Whether the thread is publicly accessible.
+     */
     @Column(name = "public")
     private Boolean publicThread = false;
 
+    /**
+     * Comment added when the email was sent.
+     */
     @Column(name = "sent_comment")
     private String sentComment;
 
+    /**
+     * Legal basis for the request (e.g., Norwegian Freedom of Information Act).
+     */
     @Column(name = "request_law_basis")
     @Enumerated(EnumType.STRING)
     private RequestLawBasis requestLawBasis;
 
+    /**
+     * Follow-up plan determining how aggressively to follow up (speedy or slow).
+     */
     @Column(name = "request_follow_up_plan")
     @Enumerated(EnumType.STRING)
     private RequestFollowUpPlan requestFollowUpPlan;
 
+    /**
+     * Timestamp when the thread was created.
+     */
     @Column(name = "created_at")
     private Instant createdAt;
 
+    /**
+     * Timestamp when the thread was last updated.
+     */
     @Column(name = "updated_at")
     private Instant updatedAt;
 
+    /**
+     * All emails associated with this thread.
+     */
     @OneToMany(mappedBy = "thread", cascade = CascadeType.ALL)
     private List<ThreadEmail> emails = new ArrayList<>();
 
+    /**
+     * JPA lifecycle callback executed before persisting a new thread.
+     * Initializes ID, timestamps, and default sending status.
+     */
     @PrePersist
     protected void onCreate() {
         if (id == null) {
@@ -236,25 +299,46 @@ public class Thread {
         }
     }
 
+    /**
+     * JPA lifecycle callback executed before updating a thread.
+     * Updates the updatedAt timestamp.
+     */
     @PreUpdate
     protected void onUpdate() {
         updatedAt = Instant.now();
     }
 
+    /**
+     * Email sending status indicating the thread's lifecycle stage.
+     */
     public enum SendingStatus {
+        /** Thread is being prepared, not ready to send */
         STAGING,
+        /** Thread is ready to be sent */
         READY_FOR_SENDING,
+        /** Thread is currently being sent */
         SENDING,
+        /** Thread has been successfully sent */
         SENT
     }
 
+    /**
+     * Legal basis for the information request.
+     */
     public enum RequestLawBasis {
+        /** Norwegian Freedom of Information Act (Offentleglova) */
         OFFENTLEGLOVA,
+        /** Other legal basis */
         OTHER
     }
 
+    /**
+     * Follow-up strategy for the thread.
+     */
     public enum RequestFollowUpPlan {
+        /** Aggressive follow-up with shorter intervals */
         SPEEDY,
+        /** Relaxed follow-up with longer intervals */
         SLOW
     }
 }
@@ -271,13 +355,42 @@ import org.springframework.data.jpa.repository.Query;
 import org.springframework.stereotype.Repository;
 import java.util.List;
 
+/**
+ * Repository interface for managing Thread entities.
+ *
+ * <p>Provides data access operations for email threads, including custom queries
+ * for retrieving threads by various criteria such as archived status, entity association,
+ * and sending status.
+ *
+ * @author Offpost Team
+ * @see Thread
+ */
 @Repository
 public interface ThreadRepository extends JpaRepository<Thread, String> {
 
+    /**
+     * Finds all non-archived threads ordered by last update time (most recent first).
+     *
+     * @return list of threads that are not archived, ordered by updatedAt descending
+     */
     List<Thread> findByArchivedFalseOrderByUpdatedAtDesc();
 
+    /**
+     * Finds all non-archived threads for a specific entity.
+     *
+     * @param entityId the ID of the public entity
+     * @return list of non-archived threads associated with the specified entity
+     */
     List<Thread> findByEntityIdAndArchivedFalse(Integer entityId);
 
+    /**
+     * Finds all threads that are ready to be sent, ordered by creation time (oldest first).
+     *
+     * <p>This method is used by the scheduled email sender to retrieve threads
+     * awaiting delivery to public entities.
+     *
+     * @return list of threads with READY_FOR_SENDING status, ordered by creation time ascending
+     */
     @Query("SELECT t FROM Thread t WHERE t.sendingStatus = 'READY_FOR_SENDING' ORDER BY t.createdAt ASC")
     List<Thread> findReadyForSending();
 }
@@ -295,6 +408,16 @@ import org.springframework.web.bind.annotation.*;
 import lombok.RequiredArgsConstructor;
 import java.util.List;
 
+/**
+ * REST controller for managing email threads.
+ *
+ * <p>Provides HTTP endpoints for CRUD operations on Thread entities.
+ * All endpoints are prefixed with {@code /api/threads}.
+ *
+ * @author Offpost Team
+ * @see Thread
+ * @see ThreadRepository
+ */
 @RestController
 @RequestMapping("/api/threads")
 @RequiredArgsConstructor
@@ -302,11 +425,24 @@ public class ThreadController {
 
     private final ThreadRepository threadRepository;
 
+    /**
+     * Retrieves all non-archived threads.
+     *
+     * <p>Returns threads ordered by last update time, with most recently updated threads first.
+     *
+     * @return list of all non-archived threads
+     */
     @GetMapping
     public List<Thread> getAllThreads() {
         return threadRepository.findByArchivedFalseOrderByUpdatedAtDesc();
     }
 
+    /**
+     * Retrieves a specific thread by its ID.
+     *
+     * @param id the unique identifier of the thread
+     * @return HTTP 200 with the thread if found, HTTP 404 if not found
+     */
     @GetMapping("/{id}")
     public ResponseEntity<Thread> getThread(@PathVariable String id) {
         return threadRepository.findById(id)
@@ -314,11 +450,30 @@ public class ThreadController {
             .orElse(ResponseEntity.notFound().build());
     }
 
+    /**
+     * Creates a new thread.
+     *
+     * <p>The thread will be automatically assigned a UUID and timestamps.
+     * Initial status will be set to STAGING if not specified.
+     *
+     * @param thread the thread to create
+     * @return the created thread with generated ID and timestamps
+     */
     @PostMapping
     public Thread createThread(@RequestBody Thread thread) {
         return threadRepository.save(thread);
     }
 
+    /**
+     * Updates an existing thread.
+     *
+     * <p>Replaces the thread with the given ID with the provided thread data.
+     * The updatedAt timestamp will be automatically updated.
+     *
+     * @param id the unique identifier of the thread to update
+     * @param thread the updated thread data
+     * @return HTTP 200 with the updated thread if found, HTTP 404 if not found
+     */
     @PutMapping("/{id}")
     public ResponseEntity<Thread> updateThread(
             @PathVariable String id,
