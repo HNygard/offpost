@@ -7,7 +7,7 @@ class E2EPageTestCase extends TestCase {
 
     private static $session_cookies = array();
 
-    protected function renderPage($path, $user = 'dev-user-id', $method = 'GET', $expected_status = '200 OK', $post_data = null) {
+    protected function renderPage($path, $user = 'dev-user-id', $method = 'GET', $expected_status = '200 OK', $post_data = null, $extra_headers = array()) {
         $url = 'http://localhost:25081' . $path;
         if ($user !== null) {
             if (!isset(self::$session_cookies[$user])) {
@@ -15,9 +15,9 @@ class E2EPageTestCase extends TestCase {
                 self::$session_cookies[$user] = $session_cookie;
             }
             $session_cookie = self::$session_cookies[$user];
-            $response = $this->curl($url, $method, $session_cookie, post_data: $post_data);
+            $response = $this->curl($url, $method, $session_cookie, post_data: $post_data, extra_headers: $extra_headers);
         } else {
-            $response = $this->curl($url, $method, post_data: $post_data);
+            $response = $this->curl($url, $method, post_data: $post_data, extra_headers: $extra_headers);
         }
 
         if ($expected_status != null) {
@@ -55,7 +55,7 @@ class E2EPageTestCase extends TestCase {
         return $response->cookies[0];
     }
 
-    private function curl($url, $method = 'GET', $session_cookie = null, $headers = array(), $post_data = null) {
+    private function curl($url, $method = 'GET', $session_cookie = null, $headers = array(), $post_data = null, $extra_headers = array()) {
         //echo date('Y-m-d H:i:s') . " - $method $url      $session_cookie\n";
 
         $ch = curl_init();
@@ -68,6 +68,11 @@ class E2EPageTestCase extends TestCase {
             $headers[] = 'Cookie: ' . $session_cookie;
         }
         $headers[] = 'User-Agent: Offpost E2E Test';
+        
+        // Add any extra headers
+        foreach ($extra_headers as $header) {
+            $headers[] = $header;
+        }
 
         if (!empty($headers)) {
             curl_setopt($ch, CURLOPT_HTTPHEADER, $headers);

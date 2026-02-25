@@ -44,8 +44,27 @@ if (!ThreadAuthorizationManager::canUserAccessThread($threadId, $_SESSION['user'
 
 foreach ($thread->emails as $email) {
     if (isset($_GET['body']) && $_GET['body'] == $email->id) {
-        $eml =  ThreadStorageManager::getInstance()->getThreadEmailContent($thread->id, $email->id); 
+        $emailData = ThreadStorageManager::getInstance()->getThreadEmailContentWithTimestamp($thread->id, $email->id);
+        if (!$emailData) {
+            http_response_code(404);
+            header('Content-Type: text/plain');
+            die("Email content not found");
+        }
         
+        $eml = $emailData['content'];
+        $lastModified = strtotime($emailData['timestamp']);
+        
+        // Check If-Modified-Since header early for 304 response
+        if (isset($_SERVER['HTTP_IF_MODIFIED_SINCE'])) {
+            $ifModifiedSince = strtotime($_SERVER['HTTP_IF_MODIFIED_SINCE']);
+            if ($ifModifiedSince >= $lastModified) {
+                // Set headers before 304 response
+                header('Last-Modified: ' . gmdate('D, d M Y H:i:s', $lastModified) . ' GMT');
+                header('Cache-Control: private, max-age=3600');
+                http_response_code(304);
+                exit;
+            }
+        }
 
         header('Content-Type: text/html; charset=UTF-8');
 
@@ -53,6 +72,10 @@ foreach ($thread->emails as $email) {
         header("Content-Security-Policy: default-src 'none';   script-src 'self';   style-src 'self';   img-src 'self' data:;   frame-src 'none';   object-src 'none';   base-uri 'none';   form-action 'none';");
 
         $email_content = ThreadEmailExtractorEmailBody::extractContentFromEmail($eml);
+        
+        // Set caching headers after successful extraction
+        header('Last-Modified: ' . gmdate('D, d M Y H:i:s', $lastModified) . ' GMT');
+        header('Cache-Control: private, max-age=3600');
 
         $subject = Imap\ImapEmail::getEmailSubject($eml);
         echo '<h1 id="email-subject">Subject: ' . htmlescape($subject) . '</h1>' . chr(10);
@@ -109,9 +132,27 @@ foreach ($thread->emails as $email) {
                     // New format of location
                     $filename = $att->location;
                 }
-                $att = ThreadStorageManager::getInstance()->getThreadEmailAttachment($thread, $att->location);
+                $attachmentData = ThreadStorageManager::getInstance()->getThreadEmailAttachmentWithTimestamp($thread, $att->location);
+                $att = $attachmentData['attachment'];
+                $lastModified = strtotime($attachmentData['timestamp']);
+                
                 if (empty($att->content)) {
-                    throw new Exception("Attachment content empty: threadId={$threadId}, attachmentId={$att->attachment_id}", 404);
+                    throw new Exception("Attachment content empty: threadId={$threadId}, attachmentId={$att->id}", 404);
+                }
+
+                // Set Last-Modified header
+                header('Last-Modified: ' . gmdate('D, d M Y H:i:s', $lastModified) . ' GMT');
+                
+                // Set Cache-Control header
+                header('Cache-Control: private, max-age=31536000, immutable'); // 1 year for attachments
+                
+                // Check If-Modified-Since header
+                if (isset($_SERVER['HTTP_IF_MODIFIED_SINCE'])) {
+                    $ifModifiedSince = strtotime($_SERVER['HTTP_IF_MODIFIED_SINCE']);
+                    if ($ifModifiedSince >= $lastModified) {
+                        http_response_code(304);
+                        exit;
+                    }
                 }
 
                 if ($att->filetype == 'pdf') {
