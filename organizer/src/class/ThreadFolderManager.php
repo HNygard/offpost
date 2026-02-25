@@ -69,6 +69,12 @@ class ThreadFolderManager {
     public static function getThreadEmailFolder($entity_id, $thread): string {
         $title = $entity_id . ' - ' . $thread->title;
         
+        // Decode any MIME-encoded headers (e.g., =?UTF-8?B?...?= or =?iso-8859-1?Q?...?=)
+        // Only decode if the string contains MIME encoding markers to avoid corrupting UTF-8 text
+        if (strpos($title, '=?') !== false) {
+            $title = mb_decode_mimeheader($title);
+        }
+        
         // Replace Nordic characters
         $title = str_replace(
             ['Æ', 'Ø', 'Å', 'æ', 'ø', 'å'],
