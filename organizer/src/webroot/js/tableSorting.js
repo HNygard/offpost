@@ -49,8 +49,12 @@ document.addEventListener('DOMContentLoaded', () => {
         // Toggle sort direction
         sortDirection = sortDirection === 'asc' ? 'desc' : 'asc';
         
-        // Sort rows by the data-last-email-timestamp attribute
-        rows.sort((a, b) => {
+        // Separate visible and hidden rows to preserve filter state
+        const visibleRows = rows.filter(row => row.style.display !== 'none');
+        const hiddenRows = rows.filter(row => row.style.display === 'none');
+        
+        // Sort only the visible rows by the data-last-email-timestamp attribute
+        visibleRows.sort((a, b) => {
             const aTimestamp = parseInt(a.getAttribute('data-last-email-timestamp') || '0', 10);
             const bTimestamp = parseInt(b.getAttribute('data-last-email-timestamp') || '0', 10);
             
@@ -64,12 +68,16 @@ document.addEventListener('DOMContentLoaded', () => {
         // Remove all rows from the table
         allRows.forEach(row => row.remove());
         
-        // Re-append header row first, then data rows
+        // Re-append header row first, then visible rows, then hidden rows
         if (headerRow) {
             tbody.appendChild(headerRow);
         }
         
-        rows.forEach(row => {
+        visibleRows.forEach(row => {
+            tbody.appendChild(row);
+        });
+        
+        hiddenRows.forEach(row => {
             tbody.appendChild(row);
         });
         
