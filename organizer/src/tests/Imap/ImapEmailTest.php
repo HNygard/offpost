@@ -62,8 +62,9 @@ class ImapEmailTest extends TestCase {
         $subject = ImapEmail::getEmailSubject($emlWithoutSubject);
 
         // :: Assert
-        $this->assertStringStartsWith('Error getting subject - ', $subject, 
-                                     'Should return error message when subject header is missing');
+        // Zbateson returns null for missing headers, which is converted to empty string
+        $this->assertEquals('', $subject,
+                           'Should return empty string when subject header is missing');
     }
 
     public function testGetEmailSubjectWithEmptySubject() {
@@ -93,10 +94,9 @@ class ImapEmailTest extends TestCase {
         $subject = ImapEmail::getEmailSubject($malformedEml);
 
         // :: Assert
-        $this->assertStringStartsWith('Error getting subject - ', $subject, 
-                                     'Should return error message for malformed EML');
-        $this->assertStringContainsString('subject not found', $subject, 
-                                         'Error message should indicate subject header not found');
+        // Zbateson parses malformed emails gracefully, returning empty subject if no Subject header
+        $this->assertEquals('', $subject,
+                           'Should return empty string for malformed EML without subject');
     }
 
     public function testGetEmailSubjectWithPartialEml() {
@@ -149,10 +149,9 @@ class ImapEmailTest extends TestCase {
         $subject = ImapEmail::getEmailSubject($emlWithSpecialChars);
 
         // :: Assert
-        $this->assertStringStartsWith('Error getting subject - ', $subject, 
-                                     'Should return error message for invalid header value with raw special characters');
-        $this->assertStringContainsString('Invalid header value', $subject, 
-                                         'Error message should indicate invalid header value');
+        // Zbateson handles raw UTF-8 characters in headers natively
+        $this->assertEquals('Test with special chars: åæø ÄÖÜ €£$', $subject,
+                           'Should preserve special characters in subject header');
     }
 
     public function testGetEmailSubjectWithEmptyString() {
@@ -163,8 +162,9 @@ class ImapEmailTest extends TestCase {
         $subject = ImapEmail::getEmailSubject($emptyEml);
 
         // :: Assert
-        $this->assertStringStartsWith('Error getting subject - ', $subject, 
-                                     'Should return error message for empty EML string');
+        // Zbateson parses empty strings gracefully, returning empty subject
+        $this->assertEquals('', $subject,
+                           'Should return empty string for empty EML string');
     }
 
     public function testGetEmailSubjectWithUtf8ImapHeader() {
@@ -173,9 +173,86 @@ class ImapEmailTest extends TestCase {
 
         // :: Act
         $subject = ImapEmail::getEmailSubject($emlWithUtf8Header);
-        
+
         // :: Assert
-        $this->assertEquals('Re: Innsyn valggjennomføring, Nord-Odal kommune', $subject, 
+        $this->assertEquals('Re: Innsyn valggjennomføring, Nord-Odal kommune', $subject,
                            'Should handle UTF-8 encoded subject header correctly');
+    }
+
+    public function testGetEmailAddressesWithMultipleXForwardedFor() {
+        // :: Setup
+        $rawEmail = "From: sender@example.com\r\n" .
+                   "To: recipient@example.com\r\n" .
+                   "X-Forwarded-For: first@example.com\r\n" .
+                   "X-Forwarded-For: second@example.com\r\n" .
+                   "X-Forwarded-For: third@example.com\r\n" .
+                   "Subject: Test\r\n" .
+                   "Content-Type: text/plain\r\n" .
+                   "\r\n" .
+                   "Body";
+
+        // Create ImapEmail with minimal headers
+        $email = new ImapEmail();
+        $email->mailHeaders = (object)[
+            'from' => [(object)['mailbox' => 'sender', 'host' => 'example.com']],
+            'to' => [(object)['mailbox' => 'recipient', 'host' => 'example.com']]
+        ];
+
+        // :: Act
+        $addresses = $email->getEmailAddresses($rawEmail);
+
+        // :: Assert
+        $this->assertContains('first@example.com', $addresses, 'Should capture first X-Forwarded-For header');
+        $this->assertContains('second@example.com', $addresses, 'Should capture second X-Forwarded-For header');
+        $this->assertContains('third@example.com', $addresses, 'Should capture third X-Forwarded-For header');
+        $this->assertContains('sender@example.com', $addresses, 'Should include From address');
+        $this->assertContains('recipient@example.com', $addresses, 'Should include To address');
+    }
+
+    public function testGetEmailAddressesWithSingleXForwardedFor() {
+        // :: Setup
+        $rawEmail = "From: sender@example.com\r\n" .
+                   "To: recipient@example.com\r\n" .
+                   "X-Forwarded-For: forwarded@example.com\r\n" .
+                   "Subject: Test\r\n" .
+                   "Content-Type: text/plain\r\n" .
+                   "\r\n" .
+                   "Body";
+
+        $email = new ImapEmail();
+        $email->mailHeaders = (object)[
+            'from' => [(object)['mailbox' => 'sender', 'host' => 'example.com']],
+            'to' => [(object)['mailbox' => 'recipient', 'host' => 'example.com']]
+        ];
+
+        // :: Act
+        $addresses = $email->getEmailAddresses($rawEmail);
+
+        // :: Assert
+        $this->assertContains('forwarded@example.com', $addresses, 'Should capture single X-Forwarded-For header');
+    }
+
+    public function testGetEmailAddressesWithNoXForwardedFor() {
+        // :: Setup
+        $rawEmail = "From: sender@example.com\r\n" .
+                   "To: recipient@example.com\r\n" .
+                   "Subject: Test\r\n" .
+                   "Content-Type: text/plain\r\n" .
+                   "\r\n" .
+                   "Body";
+
+        $email = new ImapEmail();
+        $email->mailHeaders = (object)[
+            'from' => [(object)['mailbox' => 'sender', 'host' => 'example.com']],
+            'to' => [(object)['mailbox' => 'recipient', 'host' => 'example.com']]
+        ];
+
+        // :: Act
+        $addresses = $email->getEmailAddresses($rawEmail);
+
+        // :: Assert
+        $this->assertCount(2, $addresses, 'Should only have From and To addresses');
+        $this->assertContains('sender@example.com', $addresses);
+        $this->assertContains('recipient@example.com', $addresses);
     }
 }

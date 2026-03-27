@@ -57,38 +57,22 @@ class ThreadEmailHeaderProcessingTest extends PHPUnit\Framework\TestCase {
         $this->assertNotNull($result, "Email without DKIM-Signature should parse successfully");
     }
 
-    public function testDkimSignatureHeaderIsStripped() {
-        // Test that the stripProblematicHeaders method actually removes DKIM-Signature
+    public function testZbatesonHandlesDkimHeaderNatively() {
+        // Zbateson handles problematic DKIM headers natively without needing workarounds
         $emailWithDkim = "Return-Path: <test@example.com>\r\n" .
             "DKIM-Signature: v=1; a=rsa-sha256; c=relaxed/relaxed; d=example.com;\r\n" .
             "\tb=somebase64data\r\n" .
             "From: sender@example.com\r\n" .
             "To: recipient@example.com\r\n" .
             "Subject: Test\r\n" .
+            "Content-Type: text/plain\r\n" .
             "\r\n" .
             "Body content\r\n";
 
-        // Use reflection to access the private method
-        $reflection = new ReflectionClass('ThreadEmailExtractorEmailBody');
-        $method = $reflection->getMethod('stripProblematicHeaders');
-        $method->setAccessible(true);
-        
-        $cleanedEmail = $method->invoke(null, $emailWithDkim);
-        
-        // Verify DKIM-Signature header is removed
-        $this->assertStringContainsString('DKIM-Signature: REMOVED', $cleanedEmail, "DKIM-Signature header should be stripped");
-        
-        // Verify other headers are preserved
-        $this->assertStringContainsString('From: sender@example.com', $cleanedEmail, "From header should be preserved");
-        
-        // Verify body is preserved
-        $this->assertStringContainsString('Body content', $cleanedEmail, "Email body should be preserved");
-    }
+        $result = ThreadEmailExtractorEmailBody::extractContentFromEmail($emailWithDkim);
 
-    public function testLaminasMailLibraryDirectCallThrowsExceptionWithProblematicDkim() {
-        // Expect exception when calling Laminas Mail library directly without header stripping
-        $this->expectException(Laminas\Mail\Header\Exception\InvalidArgumentException::class);
-        new \Laminas\Mail\Storage\Message(['raw' => $this->problematicEmail]);
+        $this->assertStringContainsString('Body content', $result->plain_text, "Email body should be preserved");
+        $this->assertStringNotContainsString('ERROR', $result->plain_text, "Email should parse successfully");
     }
 
 }

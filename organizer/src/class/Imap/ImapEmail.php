@@ -6,8 +6,8 @@ require_once __DIR__ . '/../../vendor/autoload.php';
 require_once __DIR__ . '/../Extraction/ThreadEmailExtractorEmailBody.php';
 
 use Exception;
-use Laminas\Mail\Storage\Message;
 use ThreadEmailExtractorEmailBody;
+use ZBateson\MailMimeParser\MailMimeParser;
 
 class ImapEmail {
     public int $uid;
@@ -137,16 +137,13 @@ class ImapEmail {
 
         if ($rawEmail !== null) {
             try {
-                $message = ThreadEmailExtractorEmailBody::readLaminasMessage_withErrorHandling($rawEmail);
-                $x_forwarded_for = $message->getHeaders()->get('x-forwarded-for');
-                if ($x_forwarded_for !== false ) {
-                    if ($x_forwarded_for instanceof ArrayIterator) {
-                        foreach ($x_forwarded_for as $header) {
-                            $addresses[] = $header->getFieldValue();
-                        }
-                    }
-                    else {
-                        $addresses[] = $x_forwarded_for->getFieldValue();
+                $message = ThreadEmailExtractorEmailBody::parseEmail($rawEmail);
+                // Get all X-Forwarded-For headers (there can be multiple)
+                $xForwardedForHeaders = $message->getAllHeadersByName('x-forwarded-for');
+                foreach ($xForwardedForHeaders as $header) {
+                    $value = $header->getValue();
+                    if ($value !== null && $value !== '') {
+                        $addresses[] = $value;
                     }
                 }
             }
@@ -165,8 +162,11 @@ class ImapEmail {
 
     static function getEmailSubject($eml_or_partial_eml) {
         try {
-            $message = new Message(['raw' => $eml_or_partial_eml]);
-            $subject = $message->getHeader('subject')->getFieldValue();
+            $message = ThreadEmailExtractorEmailBody::parseEmail($eml_or_partial_eml);
+            $subject = $message->getHeaderValue('subject');
+            if ($subject === null) {
+                $subject = '';
+            }
         }
         catch (Exception $e) {
             $subject = 'Error getting subject - ' . $e->getMessage();
