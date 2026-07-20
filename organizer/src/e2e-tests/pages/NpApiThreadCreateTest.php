@@ -55,6 +55,17 @@ class NpApiThreadCreateTest extends TestCase {
         $this->assertEquals($resp['json']['thread_id'], $resp2['json']['thread_id']);
     }
 
+    public function testNonStringLabelGives400(): void {
+        $token = trim(file_get_contents(__DIR__ . '/../../../../secrets/np_api_token'));
+        $resp = $this->post('/api/np/thread', [
+            'entity_id_norske_postlister' => '9999-test-entity-development',
+            'title' => 'T', 'body' => 'B',
+            'labels' => ['norske_postlister_no', 'document', ['nested']],
+        ], $token);
+        $this->assertEquals(400, $resp['status']);
+        $this->assertArrayHasKey('error', $resp['json']);
+    }
+
     public function testUnknownEntityGives404(): void {
         $token = trim(file_get_contents(__DIR__ . '/../../../../secrets/np_api_token'));
         $resp = $this->post('/api/np/thread', [

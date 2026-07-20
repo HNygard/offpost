@@ -118,14 +118,15 @@ class Entity {
     }
 
     /**
-     * All norske-postlister ids this instance can resolve (active entities only).
+     * All norske-postlister ids this instance can resolve (active, non-test entities only).
      */
     public static function getAllNorskePostlisterIds(): array {
         $ids = [];
         foreach (self::loadEntities() as $entity) {
             if (isset($entity->entity_id_norske_postlister)
                 && $entity->entity_id_norske_postlister !== ''
-                && !isset($entity->entity_existed_to_and_including)) {
+                && !isset($entity->entity_existed_to_and_including)
+                && (!isset($entity->type) || $entity->type !== 'test')) {
                 $ids[] = $entity->entity_id_norske_postlister;
             }
         }

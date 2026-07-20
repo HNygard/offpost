@@ -27,7 +27,9 @@ if (!is_array($input)
 // would otherwise accept these and dedup every such document onto one thread.
 foreach ($input['labels'] as $label) {
     if (!is_string($label)) {
-        continue;
+        http_response_code(400);
+        echo json_encode(['error' => 'labels must be an array of strings']);
+        exit;
     }
     $trimmed = trim($label);
     if (($trimmed === 'document_id:') || ($trimmed === 'case_num:')) {

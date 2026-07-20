@@ -58,8 +58,16 @@ class NpApiServiceCreateTest extends TestCase {
     }
 
     public function testDailyCap(): void {
-        // Lower the cap via test hook instead of creating 100 threads.
-        NpApiService::$dailyCapOverride = 2;
+        // Lower the cap via test hook instead of creating 100 threads. The dev
+        // DB is shared with e2e runs, which may have committed thread_history
+        // rows for this user today, so measure the real baseline (same query
+        // NpApiService uses) instead of assuming it's 0.
+        $baseline = Database::queryValue(
+            "SELECT count(*) FROM thread_history
+             WHERE user_id = ? AND action = 'created' AND created_at >= date_trunc('day', now())",
+            [NpApiService::THREAD_OWNER_USER_ID]
+        );
+        NpApiService::$dailyCapOverride = $baseline + 2;
         try {
             NpApiService::createThread(self::NP_ENTITY, 'T1', 'B', ['norske_postlister_no', 'document', 'document_id:2020-1-1']);
             NpApiService::createThread(self::NP_ENTITY, 'T2', 'B', ['norske_postlister_no', 'document', 'document_id:2020-2-1']);

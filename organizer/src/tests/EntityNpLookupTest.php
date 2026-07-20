@@ -14,9 +14,15 @@ class EntityNpLookupTest extends \PHPUnit\Framework\TestCase {
         $this->assertNull(Entity::getByNorskePostlisterId('0000-does-not-exist'));
     }
 
-    public function testGetAllNorskePostlisterIds(): void {
+    public function testGetAllNorskePostlisterIdsExcludesTestEntities(): void {
         $ids = Entity::getAllNorskePostlisterIds();
-        $this->assertContains('9999-test-entity-development', $ids);
+        $this->assertNotContains('9999-test-entity-development', $ids);
+    }
+
+    public function testGetByNorskePostlisterIdStillResolvesTestEntity(): void {
+        $entity = Entity::getByNorskePostlisterId('9999-test-entity-development');
+        $this->assertNotNull($entity);
+        $this->assertEquals('000000000-test-entity-development', $entity->entity_id);
     }
 
     public function testGetByIdWithMissingEmailAndOrgNumDoesNotFatal(): void {
