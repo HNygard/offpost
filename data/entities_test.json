@@ -34,5 +34,13 @@
       "type": "test",
       "org_num": "000000000",
       "entity_id_norske_postlister": "9997-test-entity-two"
+    },
+    "000000000-test-municipality": {
+      "entity_id": "000000000-test-municipality",
+      "name": "TODO - Test Municipality (non-test type, for type-filter regression coverage)",
+      "email": "public-entity-municipality@dev.offpost.no",
+      "type": "municipality",
+      "org_num": "000000000",
+      "entity_id_norske_postlister": "9996-test-municipality"
     }
   }

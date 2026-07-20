@@ -3,6 +3,8 @@
 require_once __DIR__ . '/Thread.php';
 require_once __DIR__ . '/ThreadStorageManager.php';
 require_once __DIR__ . '/ThreadEmailSending.php';
+require_once __DIR__ . '/ThreadStatusRepository.php';
+require_once __DIR__ . '/ThreadUtils.php';
 require_once __DIR__ . '/Entity.php';
 require_once __DIR__ . '/Database.php';
 require_once __DIR__ . '/random-profile.php';
@@ -10,6 +12,7 @@ require_once __DIR__ . '/random-profile.php';
 class NpApiEntityNotFoundException extends Exception {}
 class NpApiValidationException extends Exception {}
 class NpApiCapExceededException extends Exception {}
+class NpApiUnexpectedDataException extends Exception {}
 
 class NpApiService {
     const THREAD_OWNER_USER_ID = 'norske-postlister-api';
@@ -155,5 +158,127 @@ class NpApiService {
         $base = ($environment ?? 'production') === 'development'
             ? 'http://localhost:25081' : 'https://offpost.no';
         return $base . '/thread-view?threadId=' . urlencode($threadId);
+    }
+
+    /**
+     * All threads carrying the NP label, across entities. Direct SQL: the API
+     * has no session user, and NP threads are public by construction.
+     */
+    public static function listNpThreads(): array {
+        $rows = Database::query(
+            "SELECT id, entity_id, labels FROM threads
+             WHERE archived = false AND ? = ANY(labels)",
+            [self::NP_LABEL]
+        );
+
+        // entity_id (offpost) -> NP id, for translating each thread's entity.
+        $npIdByEntityId = [];
+        foreach (Entity::getAll() as $entity) {
+            if (isset($entity->entity_id_norske_postlister)) {
+                $npIdByEntityId[$entity->entity_id] = $entity->entity_id_norske_postlister;
+            }
+        }
+
+        $threadIds = array_column($rows, 'id');
+        $statuses = count($threadIds) > 0
+            ? ThreadStatusRepository::getAllThreadStatusesEfficient($threadIds)
+            : [];
+
+        $threads = [];
+        foreach ($rows as $row) {
+            $thread = Thread::loadFromDatabase($row['id']);
+            $status = $statuses[$row['id']] ?? null;
+
+            // thread_emails.imap_headers isn't copied onto ThreadEmail by
+            // Thread::mapFromDatabase(), so fetch subjects separately rather
+            // than change that shared mapping's behavior for other callers.
+            $subjectsByEmailId = self::emailSubjectsByThreadId($row['id']);
+
+            $emails = [];
+            foreach ($thread->getEmails() as $email) {
+                if ($email->email_type !== 'IN' && $email->email_type !== 'OUT') {
+                    throw new NpApiUnexpectedDataException(
+                        'Unexpected thread_emails.email_type: ' . var_export($email->email_type, true)
+                    );
+                }
+
+                $attachments = [];
+                foreach ($email->attachments ?? [] as $att) {
+                    $attachments[] = [
+                        'id' => $att->id,
+                        'name' => $att->name,
+                        'content_type' => self::attachmentContentType($att->filetype),
+                    ];
+                }
+
+                $emails[] = [
+                    'email_type' => $email->email_type,
+                    'timestamp' => $email->timestamp_received !== null
+                        ? strtotime($email->timestamp_received) : null,
+                    'subject' => $subjectsByEmailId[$email->id] ?? null,
+                    'attachments' => $attachments,
+                ];
+            }
+
+            $threads[] = [
+                'thread_id' => $thread->id,
+                'thread_url' => self::threadUrl($thread->id),
+                'entity_id_norske_postlister' => $npIdByEntityId[$row['entity_id']] ?? null,
+                'labels' => $thread->labels,
+                'status' => $status !== null ? $status->status : ThreadStatusRepository::ERROR_THREAD_NOT_FOUND,
+                'email_count_in' => $status !== null ? (int)$status->email_count_in : 0,
+                'email_count_out' => $status !== null ? (int)$status->email_count_out : 0,
+                'email_last_activity' => $status !== null ? $status->email_last_activity : null,
+                'emails' => $emails,
+            ];
+        }
+
+        return [
+            'supported_entities' => Entity::getAllNorskePostlisterIds(),
+            'threads' => $threads,
+        ];
+    }
+
+    /**
+     * thread_email_attachments.filetype is NOT a MIME type in the real data: it's
+     * usually a bare extension (see file.php's Content-Type-header switch, which
+     * maps the same extensions), though a few legacy rows already hold a full MIME
+     * type. Map both shapes onto a MIME type; throw on anything unrecognized
+     * rather than passing bad data through to the contract's content_type field.
+     */
+    private static function attachmentContentType(?string $filetype): string {
+        $extensionToMime = [
+            'pdf' => 'application/pdf',
+            'png' => 'image/png',
+            'jpg' => 'image/jpeg',
+            'jpeg' => 'image/jpeg',
+            'gif' => 'image/gif',
+            'txt' => 'text/plain',
+        ];
+        if ($filetype !== null && isset($extensionToMime[$filetype])) {
+            return $extensionToMime[$filetype];
+        }
+        if ($filetype !== null && str_contains($filetype, '/')) {
+            // Already a MIME type.
+            return $filetype;
+        }
+        throw new NpApiUnexpectedDataException(
+            'Unexpected thread_email_attachments.filetype: ' . var_export($filetype, true)
+        );
+    }
+
+    /** @return array<string,?string> email id -> subject (or null), for one thread. */
+    private static function emailSubjectsByThreadId(string $threadId): array {
+        $rows = Database::query(
+            "SELECT id, imap_headers FROM thread_emails WHERE thread_id = ?",
+            [$threadId]
+        );
+        $subjects = [];
+        foreach ($rows as $row) {
+            $subject = $row['imap_headers'] !== null
+                ? getEmailSubjectFromImapHeaders($row['imap_headers']) : '';
+            $subjects[$row['id']] = $subject !== '' ? $subject : null;
+        }
+        return $subjects;
     }
 }
