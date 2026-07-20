@@ -197,9 +197,15 @@ class NpApiService {
             $emails = [];
             foreach ($thread->getEmails() as $email) {
                 if ($email->email_type !== 'IN' && $email->email_type !== 'OUT') {
-                    throw new NpApiUnexpectedDataException(
-                        'Unexpected thread_emails.email_type: ' . var_export($email->email_type, true)
+                    // Skip rows with an unrecognized email_type rather than 500ing the
+                    // whole (polled-by-everyone) list endpoint over one bad row. The
+                    // thread itself and its status still show up below.
+                    error_log(
+                        'NpApiService::listNpThreads: skipping thread_emails row with '
+                        . 'unexpected email_type: thread_id=' . $thread->id
+                        . ' email_id=' . $email->id . ' email_type=' . var_export($email->email_type, true)
                     );
+                    continue;
                 }
 
                 $attachments = [];
@@ -241,10 +247,12 @@ class NpApiService {
 
     /**
      * thread_email_attachments.filetype is NOT a MIME type in the real data: it's
-     * usually a bare extension (see file.php's Content-Type-header switch, which
-     * maps the same extensions), though a few legacy rows already hold a full MIME
-     * type. Map both shapes onto a MIME type; throw on anything unrecognized
-     * rather than passing bad data through to the contract's content_type field.
+     * usually a bare extension (see file.php's Content-Type-header switch and
+     * ImapAttachmentHandler::$supportedTypes, which this map mirrors), though a
+     * few legacy rows already hold a full MIME type, and some hold the 'UNKNOWN'
+     * sentinel ImapAttachmentHandler uses when it can't determine a type. This
+     * endpoint is polled for every thread, so an unrecognized value must not 500
+     * the whole list - fall back to application/octet-stream and log it instead.
      */
     private static function attachmentContentType(?string $filetype): string {
         $extensionToMime = [
@@ -254,6 +262,16 @@ class NpApiService {
             'jpeg' => 'image/jpeg',
             'gif' => 'image/gif',
             'txt' => 'text/plain',
+            'docx' => 'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
+            'doc' => 'application/msword',
+            'xlsx' => 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+            'xlsm' => 'application/vnd.ms-excel.sheet.macroEnabled.12',
+            'pptx' => 'application/vnd.openxmlformats-officedocument.presentationml.presentation',
+            'zip' => 'application/zip',
+            'gz' => 'application/gzip',
+            'eml' => 'message/rfc822',
+            'csv' => 'text/csv',
+            'UNKNOWN' => 'application/octet-stream',
         ];
         if ($filetype !== null && isset($extensionToMime[$filetype])) {
             return $extensionToMime[$filetype];
@@ -262,12 +280,20 @@ class NpApiService {
             // Already a MIME type.
             return $filetype;
         }
-        throw new NpApiUnexpectedDataException(
-            'Unexpected thread_email_attachments.filetype: ' . var_export($filetype, true)
+        error_log(
+            'NpApiService::attachmentContentType: unrecognized thread_email_attachments.filetype: '
+            . var_export($filetype, true)
         );
+        return 'application/octet-stream';
     }
 
-    /** @return array<string,?string> email id -> subject (or null), for one thread. */
+    /**
+     * @return array<string,?string> email id -> subject (or null), for one thread.
+     * TODO scaling: this issues one query per thread in listNpThreads()'s loop. If the
+     * NP thread count grows large enough for that to matter, batch it into a single
+     * "WHERE thread_id = ANY(?)" query keyed by all thread ids up front, like
+     * getAllThreadStatusesEfficient() does for statuses.
+     */
     private static function emailSubjectsByThreadId(string $threadId): array {
         $rows = Database::query(
             "SELECT id, imap_headers FROM thread_emails WHERE thread_id = ?",
