@@ -8,7 +8,7 @@
  */
 class Entity {
     public string $entity_id;
-    public string $entity_id_norske_postlister;
+    public ?string $entity_id_norske_postlister = null;
     public string $name;
     public string $email;
     public string $type;
@@ -35,8 +35,21 @@ class Entity {
     }
 
     /**
+     * Convert a stdClass entity object to an Entity instance
+     */
+    private static function createEntityFromData($data): Entity {
+        $entity = new Entity();
+        foreach ((array)$data as $key => $value) {
+            if (property_exists($entity, $key)) {
+                $entity->$key = $value;
+            }
+        }
+        return $entity;
+    }
+
+    /**
      * Load entities from JSON file
-     * 
+     *
      * @return Entity[]
      */
     private static function loadEntities() {
@@ -80,13 +93,43 @@ class Entity {
      * @return Entity Entity details
      * @throws InvalidArgumentException If the entity ID is not found
      */
-    public static function getById($entityId) {
+    public static function getById($entityId): Entity {
         $entities = self::loadEntities();
 
         if(!self::exists($entityId)) {
             throw new InvalidArgumentException("Entity ID not found: $entityId");
         }
 
-        return $entities->$entityId;
+        return self::createEntityFromData($entities->$entityId);
+    }
+
+    /**
+     * Look up an entity by its norske-postlister.no entity id.
+     * Returns null if no entity carries the id (caller must handle explicitly).
+     */
+    public static function getByNorskePostlisterId(string $npId): ?Entity {
+        foreach (self::loadEntities() as $entity) {
+            if (isset($entity->entity_id_norske_postlister)
+                && $entity->entity_id_norske_postlister === $npId) {
+                return self::getById($entity->entity_id);
+            }
+        }
+        return null;
+    }
+
+    /**
+     * All norske-postlister ids this instance can resolve (active entities only).
+     */
+    public static function getAllNorskePostlisterIds(): array {
+        $ids = [];
+        foreach (self::loadEntities() as $entity) {
+            if (isset($entity->entity_id_norske_postlister)
+                && $entity->entity_id_norske_postlister !== ''
+                && !isset($entity->entity_existed_to_and_including)) {
+                $ids[] = $entity->entity_id_norske_postlister;
+            }
+        }
+        sort($ids);
+        return $ids;
     }
 }
