@@ -26,6 +26,13 @@
       "name": "TODO - Test Entity (No Email)",
       "type": "test",
       "entity_id_norske_postlister": "9998-test-entity-no-email"
+    },
+    "000000000-test-entity-two": {
+      "entity_id": "000000000-test-entity-two",
+      "name": "TODO - Test Entity (Two)",
+      "email": "public-entity-two@dev.offpost.no",
+      "type": "test",
+      "org_num": "000000000",
+      "entity_id_norske_postlister": "9997-test-entity-two"
     }
   }
-  

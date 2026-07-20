@@ -19,7 +19,12 @@ class NpApiService {
     /** @var ?int test hook */
     public static $dailyCapOverride = null;
 
+    /** @var bool test hook: throw a non-Exception Throwable mid-transaction to verify rollback */
+    public static $forceThrowableForTest = false;
+
     public static function createThread(string $npEntityId, string $title, string $body, array $labels): array {
+        $labels = array_values(array_filter(array_map('trim', $labels), fn($l) => $l !== ''));
+
         if (trim($title) === '' || trim($body) === '') {
             throw new NpApiValidationException('title and body are required');
         }
@@ -76,7 +81,7 @@ class NpApiService {
             $thread->title = $title;
             $thread->my_name = $myName;
             $thread->my_email = $profile->email;
-            $thread->labels = array_values(array_filter(array_map('trim', $labels)));
+            $thread->labels = $labels;
             $thread->initial_request = $body;
             $thread->sending_status = Thread::SENDING_STATUS_READY_FOR_SENDING;
             $thread->sent = false;
@@ -90,6 +95,12 @@ class NpApiService {
                 ->createThread($entity->entity_id, $thread, self::THREAD_OWNER_USER_ID);
             $newThread->addUser(self::THREAD_OWNER_USER_ID, true);
 
+            if (self::$forceThrowableForTest) {
+                // Test-only hook: simulate a mid-transaction Error (not Exception) to
+                // verify the transaction is rolled back regardless of Throwable subtype.
+                throw new Error('forced test failure');
+            }
+
             ThreadEmailSending::create(
                 $newThread->id,
                 $body . "\n\n--\n" . $myName,
@@ -102,7 +113,7 @@ class NpApiService {
             if ($ownsTransaction) {
                 Database::commit();
             }
-        } catch (Exception $e) {
+        } catch (Throwable $e) {
             if ($ownsTransaction) {
                 Database::rollBack();
             }
@@ -129,6 +140,7 @@ class NpApiService {
     }
 
     public static function findExistingThread(string $entityId, array $labels): ?Thread {
+        $labels = array_values(array_filter(array_map('trim', $labels), fn($l) => $l !== ''));
         $mappingLabel = self::mappingLabel($labels);
         $row = Database::queryOneOrNone(
             "SELECT id FROM threads
