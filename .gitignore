@@ -5,6 +5,7 @@ organizer/src/vendor/
 
 # Secret files
 secrets/openai_api_key
+secrets/np_api_token
 
 # Ignore contents of data directory
 data/*
