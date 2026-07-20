@@ -60,12 +60,46 @@ class NpApiAttachmentTest extends TestCase {
     }
 
     public function testUnknownThreadGives404(): void {
-        $resp = $this->get('/api/np/attachment?thread_id=00000000-0000-4000-8000-000000000000&attachment_id=1', $this->token());
+        // attachment_id must also be UUID-shaped now (strict validation) to reach
+        // the "unknown thread/attachment" 404 path rather than the 400 malformed-id path.
+        $resp = $this->get(
+            '/api/np/attachment?thread_id=00000000-0000-4000-8000-000000000000&attachment_id=00000000-0000-4000-8000-000000000001',
+            $this->token()
+        );
         $this->assertEquals(404, $resp['status']);
     }
 
     public function testMalformedThreadIdGives400(): void {
         $resp = $this->get('/api/np/attachment?thread_id=not-a-uuid&attachment_id=1', $this->token());
+        $this->assertEquals(400, $resp['status']);
+    }
+
+    /**
+     * Regression test: 36 hex characters without dashes is the same length as a
+     * UUID and used to pass the old `/^[0-9a-f-]{36}$/` regex (which allowed
+     * dashes anywhere, so no dashes at all also satisfies "36 chars from
+     * [0-9a-f-]"), reaching the uuid-typed thread_id column in Postgres and
+     * throwing a 500 with a leaked stack trace instead of a clean 400.
+     */
+    public function testThreadId36HexNoDashesGives400(): void {
+        $resp = $this->get(
+            '/api/np/attachment?thread_id=' . str_repeat('a', 36) . '&attachment_id=1',
+            $this->token()
+        );
+        $this->assertEquals(400, $resp['status']);
+    }
+
+    /**
+     * Regression test: attachment_id was previously validated with a loose
+     * `/^[0-9a-zA-Z_-]+$/` pattern, which "abc" satisfies - reaching the
+     * uuid-typed attachment_id column in Postgres and 500ing, the same bug as
+     * above but on the other parameter.
+     */
+    public function testValidThreadIdNonUuidAttachmentIdGives400(): void {
+        $resp = $this->get(
+            '/api/np/attachment?thread_id=00000000-0000-4000-8000-000000000000&attachment_id=abc',
+            $this->token()
+        );
         $this->assertEquals(400, $resp['status']);
     }
 

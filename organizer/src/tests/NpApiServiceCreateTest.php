@@ -132,6 +132,56 @@ class NpApiServiceCreateTest extends TestCase {
         $this->assertStringContainsString($sending->email_from_name, $sending->email_content);
     }
 
+    /**
+     * Simulates the check-then-act race two concurrent createThread() calls can
+     * hit: both pass findExistingThread() before either has inserted, so two
+     * non-archived threads end up carrying the same entity+mapping label.
+     * Inserts them directly via ThreadStorageManager (bypassing
+     * NpApiService::createThread(), which would itself dedup) to set that state
+     * up, then asserts createThread() tolerates it (no throw from
+     * Database::queryOneOrNone()'s "Expected 1 row" check) and deterministically
+     * treats the oldest thread as canonical.
+     */
+    public function testFindExistingThreadTolerantOfDuplicateRace(): void {
+        $entity = Entity::getByNorskePostlisterId(self::NP_ENTITY);
+        $label = 'document_id:2020-999-race';
+        $labels = ['norske_postlister_no', 'document', $label];
+
+        $older = new Thread();
+        $older->title = 'Older duplicate';
+        $older->my_name = 'Race Tester';
+        $older->my_email = 'race-older-' . bin2hex(random_bytes(6)) . '@example.com';
+        $older->labels = $labels;
+        $older->sending_status = Thread::SENDING_STATUS_READY_FOR_SENDING;
+        $older->sent = false;
+        $older->archived = false;
+        $older->public = true;
+        $older = ThreadStorageManager::getInstance()
+            ->createThread($entity->entity_id, $older, NpApiService::THREAD_OWNER_USER_ID);
+        // Force this row to be strictly older than the next insert regardless of
+        // clock resolution, so "oldest wins" is deterministic to assert on.
+        Database::execute("UPDATE threads SET created_at = now() - interval '1 day' WHERE id = ?", [$older->id]);
+
+        $newer = new Thread();
+        $newer->title = 'Newer duplicate';
+        $newer->my_name = 'Race Tester';
+        $newer->my_email = 'race-newer-' . bin2hex(random_bytes(6)) . '@example.com';
+        $newer->labels = $labels;
+        $newer->sending_status = Thread::SENDING_STATUS_READY_FOR_SENDING;
+        $newer->sent = false;
+        $newer->archived = false;
+        $newer->public = true;
+        ThreadStorageManager::getInstance()
+            ->createThread($entity->entity_id, $newer, NpApiService::THREAD_OWNER_USER_ID);
+
+        // Two non-archived threads now share entity_id + mapping label.
+        $result = NpApiService::createThread(self::NP_ENTITY, 'Tittel', 'Innhold', $labels);
+
+        $this->assertFalse($result['created']);
+        $this->assertTrue($result['existing']);
+        $this->assertEquals($older->id, $result['thread_id'], 'Must deterministically return the oldest duplicate');
+    }
+
     public function testRollbackOnMidTransactionThrowable(): void {
         // The setUp() transaction wraps every test for isolation, which means
         // NpApiService::createThread() sees Database::inTransaction() === true

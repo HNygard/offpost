@@ -141,15 +141,44 @@ class NpApiService {
         return null;
     }
 
+    /**
+     * Deliberately tolerant of duplicates: two concurrent createThread() calls for
+     * the same entity+mapping label can both pass this check before either has
+     * inserted (classic check-then-act race), leaving 2+ non-archived threads
+     * carrying the same label. Database::queryOneOrNone() would throw on that
+     * ("Expected 1 row, got 2..."), permanently 500ing every later create for
+     * that doc/case. Using Database::query() + ORDER BY created_at ASC LIMIT 1
+     * instead makes this self-healing: the oldest thread is always treated as
+     * canonical and later duplicates just get returned as "existing" too.
+     *
+     * No DB-level unique constraint backs this. It IS expressible - labels is a
+     * text[], but Postgres allows unique indexes on immutable expressions, so a
+     * small IMMUTABLE SQL function extracting the document_id:/case_num: label
+     * (mirroring mappingLabel() below) plus
+     *   CREATE UNIQUE INDEX ... ON threads (entity_id, that_function(labels))
+     *   WHERE archived = false
+     * would work, and was verified to CREATE cleanly against the current schema.
+     * It's deliberately not added as a migration here: migrate.php runs every
+     * pending migration inside one transaction and is auto-applied unattended by
+     * servers/production/deploy-cronjob.sh every 10 minutes, and CREATE INDEX
+     * CONCURRENTLY (needed to add it without locking the table) is rejected
+     * inside a transaction block. A plain CREATE UNIQUE INDEX would run, but
+     * this exact race is presumably why production may already carry duplicate
+     * rows for the same entity+label - which isn't verifiable from a dev
+     * checkout, and would abort that whole unattended migration batch if hit.
+     * The tolerant read above is the real fix; the unique index is a follow-up
+     * that needs a data audit (and likely CONCURRENTLY run out-of-band) first.
+     */
     public static function findExistingThread(string $entityId, array $labels): ?Thread {
         $labels = array_values(array_filter(array_map('trim', $labels), fn($l) => $l !== ''));
         $mappingLabel = self::mappingLabel($labels);
-        $row = Database::queryOneOrNone(
+        $rows = Database::query(
             "SELECT id FROM threads
-             WHERE entity_id = ? AND archived = false AND ? = ANY(labels)",
+             WHERE entity_id = ? AND archived = false AND ? = ANY(labels)
+             ORDER BY created_at ASC LIMIT 1",
             [$entityId, $mappingLabel]
         );
-        return $row === null ? null : Thread::loadFromDatabase($row['id']);
+        return count($rows) === 0 ? null : Thread::loadFromDatabase($rows[0]['id']);
     }
 
     public static function threadUrl(string $threadId): string {
@@ -268,7 +297,11 @@ class NpApiService {
              WHERE te.thread_id = ? AND tea.id = ?",
             [$threadId, $attachmentId]
         );
-        if ($row === null) {
+        if ($row === null || $row['content'] === null) {
+            // thread_email_attachments.content is nullable (e.g. attachment rows
+            // whose content failed to download/store). Treat a NULL row the same
+            // as an unknown attachment - same exception, same message - rather
+            // than let strlen(null) 500 downstream in np_attachment_get.php.
             throw new NpApiEntityNotFoundException('Unknown attachment');
         }
 

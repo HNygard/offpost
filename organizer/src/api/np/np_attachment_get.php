@@ -15,7 +15,12 @@ if ($_SERVER['REQUEST_METHOD'] !== 'GET') {
 
 $threadId = $_GET['thread_id'] ?? '';
 $attachmentId = $_GET['attachment_id'] ?? '';
-if (!preg_match('/^[0-9a-f-]{36}$/', $threadId) || !preg_match('/^[0-9a-zA-Z_-]+$/', $attachmentId)) {
+// Both thread_id and attachment_id are Postgres uuid columns - anything that
+// isn't a well-formed UUID must be rejected here with a 400, not passed
+// through to the query, where Postgres would throw and 500 with a leaked
+// HTML stack trace (invalid input syntax for type uuid).
+$uuidRe = '/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/';
+if (!preg_match($uuidRe, $threadId) || !preg_match($uuidRe, $attachmentId)) {
     http_response_code(400);
     header('Content-Type: application/json');
     echo json_encode(['error' => 'Malformed thread_id or attachment_id']);

@@ -13,4 +13,9 @@ if ($_SERVER['REQUEST_METHOD'] !== 'GET') {
     exit;
 }
 
-echo json_encode(NpApiService::listNpThreads());
+// JSON_INVALID_UTF8_SUBSTITUTE: subjects come from MIME-decoded email headers
+// (see emailSubjectsByThreadId()), which is attacker-controlled input. Without
+// this flag, invalid UTF-8 anywhere in the payload makes json_encode() return
+// false, which echoes as an empty string - a hostile subject would silently
+// turn the whole feed into an empty (still-200) response for every poller.
+echo json_encode(NpApiService::listNpThreads(), JSON_INVALID_UTF8_SUBSTITUTE);

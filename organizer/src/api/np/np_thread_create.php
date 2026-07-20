@@ -22,6 +22,16 @@ if (!is_array($input)
     exit;
 }
 
+// isset() alone passes arrays/objects/numbers through - createThread() expects
+// strings for these (e.g. it calls trim() on title/body), so a non-string
+// here would otherwise TypeError into an uncaught-exception 500 instead of a
+// clean 400.
+if (!is_string($input['entity_id_norske_postlister']) || !is_string($input['title']) || !is_string($input['body'])) {
+    http_response_code(400);
+    echo json_encode(['error' => 'entity_id_norske_postlister, title and body must be strings']);
+    exit;
+}
+
 // Reject mapping labels whose value after the prefix is empty (e.g. exactly
 // "document_id:" or "case_num:" after trimming). NpApiService::createThread
 // would otherwise accept these and dedup every such document onto one thread.

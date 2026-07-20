@@ -2,6 +2,9 @@
 // organizer/src/e2e-tests/pages/NpApiThreadCreateTest.php
 use PHPUnit\Framework\TestCase;
 
+require_once __DIR__ . '/../../tests/bootstrap.php';
+require_once __DIR__ . '/../../class/Database.php';
+
 class NpApiThreadCreateTest extends TestCase {
     const BASE = 'http://localhost:25081';
 
@@ -34,6 +37,14 @@ class NpApiThreadCreateTest extends TestCase {
         $this->assertEquals(401, $resp['status']);
     }
 
+    /**
+     * Commits a real thread against the live dev DB (this test runs against the
+     * http server via curl, a separate process from phpunit, so nothing here can
+     * be rolled back the way the unit tests are). Cleans up in finally, mirroring
+     * NpApiAttachmentTest's pattern - without this, every run of the e2e suite
+     * left a thread behind, accumulating in the dev DB and burning the real
+     * daily creation cap NpApiService::DAILY_CAP enforces.
+     */
     public function testCreateAndDedup(): void {
         $token = trim(file_get_contents(__DIR__ . '/../../../../secrets/np_api_token'));
         $docId = 'document_id:2020-' . random_int(1000, 999999) . '-1';
@@ -44,15 +55,26 @@ class NpApiThreadCreateTest extends TestCase {
             'labels' => ['norske_postlister_no', 'document', $docId],
         ];
 
-        $resp = $this->post('/api/np/thread', $body, $token);
-        $this->assertEquals(200, $resp['status']);
-        $this->assertTrue($resp['json']['created']);
-        $this->assertNotEmpty($resp['json']['thread_id']);
+        $threadId = null;
+        try {
+            $resp = $this->post('/api/np/thread', $body, $token);
+            $this->assertEquals(200, $resp['status']);
+            $this->assertTrue($resp['json']['created']);
+            $this->assertNotEmpty($resp['json']['thread_id']);
+            $threadId = $resp['json']['thread_id'];
 
-        $resp2 = $this->post('/api/np/thread', $body, $token);
-        $this->assertEquals(200, $resp2['status']);
-        $this->assertFalse($resp2['json']['created']);
-        $this->assertEquals($resp['json']['thread_id'], $resp2['json']['thread_id']);
+            $resp2 = $this->post('/api/np/thread', $body, $token);
+            $this->assertEquals(200, $resp2['status']);
+            $this->assertFalse($resp2['json']['created']);
+            $this->assertEquals($resp['json']['thread_id'], $resp2['json']['thread_id']);
+        } finally {
+            if ($threadId !== null) {
+                Database::execute("DELETE FROM thread_email_sendings WHERE thread_id = ?", [$threadId]);
+                Database::execute("DELETE FROM thread_history WHERE thread_id = ?", [$threadId]);
+                Database::execute("DELETE FROM thread_authorizations WHERE thread_id = ?", [$threadId]);
+                Database::execute("DELETE FROM threads WHERE id = ?", [$threadId]);
+            }
+        }
     }
 
     public function testNonStringLabelGives400(): void {
