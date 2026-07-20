@@ -181,4 +181,54 @@ class NpApiServiceListTest extends TestCase {
         );
         $this->assertEquals('application/octet-stream', $attachmentsByName['a.xyz123']);
     }
+
+    public function testGetNpAttachmentReturnsContent(): void {
+        $created = NpApiService::createThread('9999-test-entity-development', 'T', 'B',
+            ['norske_postlister_no', 'document', 'document_id:2022-7-1']);
+
+        $ts = 1700000300;
+        $emailId = Database::queryValue(
+            "INSERT INTO thread_emails
+                (thread_id, timestamp_received, datetime_received, email_type, content, imap_headers)
+             VALUES (?, ?, ?, ?, ?::bytea, NULL) RETURNING id",
+            [$created['thread_id'], gmdate('Y-m-d\TH:i:sP', $ts), gmdate('Y-m-d\TH:i:sP', $ts), 'IN', 'content']
+        );
+        $attachmentId = Database::queryValue(
+            "INSERT INTO thread_email_attachments (email_id, name, filename, filetype, location, content)
+             VALUES (?, ?, ?, ?, ?, ?::bytea) RETURNING id",
+            [$emailId, 'svar.pdf', 'svar.pdf', 'pdf', 'svar.pdf', 'PDFBYTES']
+        );
+
+        $result = NpApiService::getNpAttachment($created['thread_id'], $attachmentId);
+        $this->assertEquals('PDFBYTES', $result['content']);
+        $this->assertEquals('application/pdf', $result['content_type']);
+        $this->assertEquals('svar.pdf', $result['name']);
+    }
+
+    public function testGetNpAttachmentRefusesNonNpThread(): void {
+        // Thread without the NP label: must be invisible to the NP API.
+        $thread = new Thread();
+        $thread->title = 'Privat';
+        $thread->my_name = 'Test Person';
+        $thread->my_email = 'test@offpost.no';
+        $thread->labels = ['annet'];
+        $thread->initial_request = 'x';
+        $thread->sending_status = Thread::SENDING_STATUS_STAGING;
+        $thread->sent = false;
+        $thread->archived = false;
+        $thread->public = false;
+        $thread->emails = [];
+        $other = ThreadStorageManager::getInstance()->createThread('000000000-test-entity-development', $thread, 'test-user');
+
+        $this->expectException(NpApiEntityNotFoundException::class);
+        NpApiService::getNpAttachment($other->id, '1');
+    }
+
+    public function testGetNpAttachmentUnknownAttachmentGives404Equivalent(): void {
+        $created = NpApiService::createThread('9999-test-entity-development', 'T', 'B',
+            ['norske_postlister_no', 'document', 'document_id:2022-7-2']);
+
+        $this->expectException(NpApiEntityNotFoundException::class);
+        NpApiService::getNpAttachment($created['thread_id'], '00000000-0000-4000-8000-000000000000');
+    }
 }

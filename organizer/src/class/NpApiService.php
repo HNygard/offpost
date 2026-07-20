@@ -12,7 +12,6 @@ require_once __DIR__ . '/random-profile.php';
 class NpApiEntityNotFoundException extends Exception {}
 class NpApiValidationException extends Exception {}
 class NpApiCapExceededException extends Exception {}
-class NpApiUnexpectedDataException extends Exception {}
 
 class NpApiService {
     const THREAD_OWNER_USER_ID = 'norske-postlister-api';
@@ -246,6 +245,49 @@ class NpApiService {
     }
 
     /**
+     * Attachment bytes for norske-postlister.no to re-serve. Only threads carrying
+     * the NP label are visible here - not-found and not-NP are deliberately the
+     * same exception/message so the response can't reveal whether a foreign
+     * (non-NP) thread exists.
+     *
+     * @return array{content: string, content_type: string, name: string}
+     */
+    public static function getNpAttachment(string $threadId, string $attachmentId): array {
+        $thread = Thread::loadFromDatabaseOrNone($threadId);
+        if ($thread === null || !in_array(self::NP_LABEL, $thread->labels)) {
+            throw new NpApiEntityNotFoundException('Unknown attachment');
+        }
+
+        $row = Database::queryOneOrNone(
+            "SELECT tea.name, tea.filetype, tea.content
+             FROM thread_email_attachments tea
+             JOIN thread_emails te ON te.id = tea.email_id
+             WHERE te.thread_id = ? AND tea.id = ?",
+            [$threadId, $attachmentId]
+        );
+        if ($row === null) {
+            throw new NpApiEntityNotFoundException('Unknown attachment');
+        }
+
+        // Same bytea decoding as ThreadStorageManager::getThreadEmailAttachment():
+        // depending on driver/insert path, content comes back either as a stream
+        // resource or as a Postgres hex-escaped string ("\x...").
+        $content = $row['content'];
+        if (is_resource($content)) {
+            $content = stream_get_contents($content);
+        }
+        if (is_string($content) && substr($content, 0, 2) === '\\x') {
+            $content = hex2bin(substr($content, 2));
+        }
+
+        return [
+            'content' => $content,
+            'content_type' => self::attachmentContentType($row['filetype']),
+            'name' => $row['name'],
+        ];
+    }
+
+    /**
      * thread_email_attachments.filetype is NOT a MIME type in the real data: it's
      * usually a bare extension (see file.php's Content-Type-header switch and
      * ImapAttachmentHandler::$supportedTypes, which this map mirrors), though a
@@ -254,7 +296,7 @@ class NpApiService {
      * endpoint is polled for every thread, so an unrecognized value must not 500
      * the whole list - fall back to application/octet-stream and log it instead.
      */
-    private static function attachmentContentType(?string $filetype): string {
+    public static function attachmentContentType(?string $filetype): string {
         $extensionToMime = [
             'pdf' => 'application/pdf',
             'png' => 'image/png',
