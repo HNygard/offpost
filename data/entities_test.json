@@ -24,7 +24,8 @@
     "000000000-test-entity-no-email": {
       "entity_id": "000000000-test-entity-no-email",
       "name": "TODO - Test Entity (No Email)",
-      "type": "test"
+      "type": "test",
+      "entity_id_norske_postlister": "9998-test-entity-no-email"
     }
   }
   
