@@ -54,7 +54,12 @@ jobs:
         mkdir -p ./secrets
         echo "# This is a placeholder for the OpenAI API key" > ./secrets/openai_api_key
         echo "sk-placeholder-api-key-not-real" >> ./secrets/openai_api_key
-        
+
+    - name: Create NP API token file
+      run: |
+        mkdir -p ./secrets
+        echo "ci-placeholder-np-api-token" > ./secrets/np_api_token
+
     - name: Start Docker compose (organizer, postgres, greenmail, auth)
       run: docker compose -f docker-compose.dev.yaml up -d greenmail postgres organizer auth
 
