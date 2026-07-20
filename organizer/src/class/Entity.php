@@ -10,9 +10,9 @@ class Entity {
     public string $entity_id;
     public ?string $entity_id_norske_postlister = null;
     public string $name;
-    public string $email;
+    public ?string $email = null;
     public string $type;
-    public string $org_num;
+    public ?string $org_num = null;
 
     // Optional fields
     public ?string $entity_existed_to_and_including = null;

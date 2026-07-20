@@ -20,6 +20,11 @@
       "email": "public-entity@dev.offpost.no",
       "type": "test",
       "org_num": "000000000"
+    },
+    "000000000-test-entity-no-email": {
+      "entity_id": "000000000-test-entity-no-email",
+      "name": "TODO - Test Entity (No Email)",
+      "type": "test"
     }
   }
   

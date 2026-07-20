@@ -18,4 +18,11 @@ class EntityNpLookupTest extends \PHPUnit\Framework\TestCase {
         $ids = Entity::getAllNorskePostlisterIds();
         $this->assertContains('9999-test-entity-development', $ids);
     }
+
+    public function testGetByIdWithMissingEmailAndOrgNumDoesNotFatal(): void {
+        $entity = Entity::getById('000000000-test-entity-no-email');
+        $this->assertInstanceOf(Entity::class, $entity);
+        $this->assertNull($entity->email, "email should be null (not fatal) when absent from entities.json");
+        $this->assertNull($entity->org_num, "org_num should be null (not fatal) when absent from entities.json");
+    }
 }
