@@ -24,8 +24,16 @@ if (!preg_match('/^[0-9a-f-]{36}$/', $threadId) || !preg_match('/^[0-9a-zA-Z_-]+
 
 try {
     $attachment = NpApiService::getNpAttachment($threadId, $attachmentId);
+    // Attachment names are attacker-controlled (incoming email attachment filenames).
+    // Strip ASCII control characters (incl. CR/LF, which would otherwise let a malicious
+    // filename inject arbitrary response headers or crash header() with a 500) plus
+    // '"' and '\' which would break out of the quoted filename value.
+    $safeName = preg_replace('/[\x00-\x1f\x7f"\\\\]/', '', $attachment['name']);
+    if ($safeName === '') {
+        $safeName = 'attachment';
+    }
     header('Content-Type: ' . $attachment['content_type']);
-    header('Content-Disposition: attachment; filename="' . str_replace('"', '', $attachment['name']) . '"');
+    header('Content-Disposition: attachment; filename="' . $safeName . '"');
     header('Content-Length: ' . strlen($attachment['content']));
     echo $attachment['content'];
 } catch (NpApiEntityNotFoundException $e) {

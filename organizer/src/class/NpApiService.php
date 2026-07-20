@@ -254,6 +254,9 @@ class NpApiService {
      */
     public static function getNpAttachment(string $threadId, string $attachmentId): array {
         $thread = Thread::loadFromDatabaseOrNone($threadId);
+        // No `archived` filter here (unlike listNpThreads()) - deliberate: once
+        // norske-postlister.no has published a link to an attachment, it must keep
+        // working even after the thread is later archived, so published links don't break.
         if ($thread === null || !in_array(self::NP_LABEL, $thread->labels)) {
             throw new NpApiEntityNotFoundException('Unknown attachment');
         }
