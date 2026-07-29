@@ -73,7 +73,8 @@
         "name": "Test Entity (Development)",
         "email": "public-entity@dev.offpost.no",
         "type": "test",
-        "org_num": "000000000"
+        "org_num": "000000000",
+        "entity_id_norske_postlister": "9999-test-entity-development"
     },
     "944383476-moss-kommune": {
         "entity_id": "944383476-moss-kommune",

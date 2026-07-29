@@ -27,14 +27,20 @@ function getNamesFromCsv($file1) {
     return $names;
 }
 
-$first_names_to_clean = array_merge(
+// Assign via $GLOBALS (not a bare top-level `$x = ...`) so these are always
+// true global variables, even when this file is first require_once'd from
+// within a function's call stack (e.g. PHPUnit's test-class loader includes
+// test files inside a method — bare top-level assignments in this file would
+// then land in that method's local scope instead of $GLOBALS, leaving
+// getRandomNameAndEmail()'s `global $first_names_to_clean` lookups empty).
+$GLOBALS['first_names_to_clean'] = array_merge(
 // Source: SSB
     getNamesFromCsv(__DIR__ . '/../copy-name-and-email-cleaner/guttenavn.csv'),
     getNamesFromCsv(__DIR__ . '/../copy-name-and-email-cleaner/jentenavn.csv')
 // Source: Motorvognregisteret (motorvognregisteret-extract-names.php)
 //getNamesFromCsv(__DIR__ . '/motorvognregisteret-first-name.csv')
 );
-$last_names_to_clean = array_merge(
+$GLOBALS['last_names_to_clean'] = array_merge(
 // Source: SSB
     getNamesFromCsv(__DIR__ . '/../copy-name-and-email-cleaner/etternavn.csv')
 // Source: Motorvognregisteret (motorvognregisteret-extract-names.php)

@@ -92,6 +92,7 @@ services:
       - ./data/entities.json:/organizer-data/entities.json
       - /opt/offpost/secrets/postgres_password:/run/secrets/postgres_password:ro
       - /opt/offpost/secrets/openai_api_key:/run/secrets/openai_api_key:ro
+      - /opt/offpost/secrets/np_api_token:/run/secrets/np_api_token:ro
       - pdf_tmpfs:/tmp/pdf_extraction
     environment:
       - ENVIRONMENT=production

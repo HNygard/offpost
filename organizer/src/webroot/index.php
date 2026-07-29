@@ -59,6 +59,11 @@ try {
             '/thread-reply' => '/../thread-reply.php',
             '/api/threads' => '/../api.php',
             '/api/thread_email_extraction' => '/../api/thread_email_extraction.php',
+            '/api/np/thread' => '/../api/np/np_thread_create.php',
+            // Target created in Task 5; safe to add now since $regularPages targets are
+            // only require()'d lazily when a request actually matches the path.
+            '/api/np/threads' => '/../api/np/np_threads_list.php',
+            '/api/np/attachment' => '/../api/np/np_attachment_get.php',
             '/callback' => '/../callback.php',
             '/logout' => '/../logout.php',
             '/file' => '/../file.php',
