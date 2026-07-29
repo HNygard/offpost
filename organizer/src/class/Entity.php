@@ -126,7 +126,11 @@ class Entity {
             if (isset($entity->entity_id_norske_postlister)
                 && $entity->entity_id_norske_postlister !== ''
                 && !isset($entity->entity_existed_to_and_including)
-                && (!isset($entity->type) || $entity->type !== 'test')) {
+                && (!isset($entity->type) || $entity->type !== 'test')
+                // Same rule createThread enforces: without a recipient email the
+                // request can never be sent, so the entity must not be advertised
+                // as supported (norske-postlister then offers copy-paste only).
+                && isset($entity->email) && trim((string)$entity->email) !== '') {
                 $ids[] = $entity->entity_id_norske_postlister;
             }
         }

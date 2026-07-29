@@ -31,6 +31,21 @@ class EntityNpLookupTest extends \PHPUnit\Framework\TestCase {
         $this->assertNotContains('9997-test-entity-two', $ids);
     }
 
+    public function testGetAllNorskePostlisterIdsExcludesEntitiesWithoutEmail(): void {
+        // supported_entities must apply the same rule createThread enforces: an entity
+        // without a recipient email can never receive a request, so it must not be
+        // advertised as supported (found live: 212 email-less entities got one-click
+        // buttons that always failed with "Entity has no email address").
+        $ids = Entity::getAllNorskePostlisterIds();
+        $this->assertNotContains('9995-test-municipality-no-email', $ids);
+
+        // ...but it must still resolve for direct lookups (createThread's own guard
+        // then produces the explicit error).
+        $entity = Entity::getByNorskePostlisterId('9995-test-municipality-no-email');
+        $this->assertNotNull($entity);
+        $this->assertEquals('000000000-test-municipality-no-email', $entity->entity_id);
+    }
+
     public function testGetByNorskePostlisterIdStillResolvesTestEntity(): void {
         $entity = Entity::getByNorskePostlisterId('9999-test-entity-development');
         $this->assertNotNull($entity);

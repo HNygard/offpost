@@ -1,46 +1,53 @@
 {
     "000000000-test-entity-development": {
-      "entity_id": "000000000-test-entity-development",
-      "name": "TODO - Test Entity (Development)",
-      "email": "public-entity@dev.offpost.no",
-      "type": "test",
-      "org_num": "000000000",
-      "entity_id_norske_postlister": "9999-test-entity-development"
+        "entity_id": "000000000-test-entity-development",
+        "name": "TODO - Test Entity (Development)",
+        "email": "public-entity@dev.offpost.no",
+        "type": "test",
+        "org_num": "000000000",
+        "entity_id_norske_postlister": "9999-test-entity-development"
     },
     "000000000-test-entity-1": {
-      "entity_id": "000000000-test-entity-1",
-      "name": "TODO - Test Entity (Development)",
-      "email": "public-entity@dev.offpost.no",
-      "type": "test",
-      "org_num": "000000000"
+        "entity_id": "000000000-test-entity-1",
+        "name": "TODO - Test Entity (Development)",
+        "email": "public-entity@dev.offpost.no",
+        "type": "test",
+        "org_num": "000000000"
     },
     "000000000-test-entity-2": {
-      "entity_id": "000000000-test-entity-2",
-      "name": "TODO - Test Entity (Development)",
-      "email": "public-entity@dev.offpost.no",
-      "type": "test",
-      "org_num": "000000000"
+        "entity_id": "000000000-test-entity-2",
+        "name": "TODO - Test Entity (Development)",
+        "email": "public-entity@dev.offpost.no",
+        "type": "test",
+        "org_num": "000000000"
     },
     "000000000-test-entity-no-email": {
-      "entity_id": "000000000-test-entity-no-email",
-      "name": "TODO - Test Entity (No Email)",
-      "type": "test",
-      "entity_id_norske_postlister": "9998-test-entity-no-email"
+        "entity_id": "000000000-test-entity-no-email",
+        "name": "TODO - Test Entity (No Email)",
+        "type": "test",
+        "entity_id_norske_postlister": "9998-test-entity-no-email"
     },
     "000000000-test-entity-two": {
-      "entity_id": "000000000-test-entity-two",
-      "name": "TODO - Test Entity (Two)",
-      "email": "public-entity-two@dev.offpost.no",
-      "type": "test",
-      "org_num": "000000000",
-      "entity_id_norske_postlister": "9997-test-entity-two"
+        "entity_id": "000000000-test-entity-two",
+        "name": "TODO - Test Entity (Two)",
+        "email": "public-entity-two@dev.offpost.no",
+        "type": "test",
+        "org_num": "000000000",
+        "entity_id_norske_postlister": "9997-test-entity-two"
     },
     "000000000-test-municipality": {
-      "entity_id": "000000000-test-municipality",
-      "name": "TODO - Test Municipality (non-test type, for type-filter regression coverage)",
-      "email": "public-entity-municipality@dev.offpost.no",
-      "type": "municipality",
-      "org_num": "000000000",
-      "entity_id_norske_postlister": "9996-test-municipality"
+        "entity_id": "000000000-test-municipality",
+        "name": "TODO - Test Municipality (non-test type, for type-filter regression coverage)",
+        "email": "public-entity-municipality@dev.offpost.no",
+        "type": "municipality",
+        "org_num": "000000000",
+        "entity_id_norske_postlister": "9996-test-municipality"
+    },
+    "000000000-test-municipality-no-email": {
+        "entity_id": "000000000-test-municipality-no-email",
+        "name": "Test Municipality No Email",
+        "type": "municipality",
+        "org_num": "000000000",
+        "entity_id_norske_postlister": "9995-test-municipality-no-email"
     }
-  }
+}
