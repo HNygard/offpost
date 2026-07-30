@@ -37,6 +37,14 @@ class ThreadStorageManager {
         return $this->dbOps->updateThread($thread, $userId);
     }
 
+    public function updateEmailClassification($threadId, $emailId, $statusType, $statusText, $ignore, $answer, $autoClassification) {
+        return $this->dbOps->updateEmailClassification($threadId, $emailId, $statusType, $statusText, $ignore, $answer, $autoClassification);
+    }
+
+    public function updateAttachmentClassification($emailId, $attachmentId, $statusType, $statusText) {
+        return $this->dbOps->updateAttachmentClassification($emailId, $attachmentId, $statusType, $statusText);
+    }
+
     public function getThreadEmailContent($thread_id, $email_id) {
         // Get email content from database
         $content = Database::queryValue(

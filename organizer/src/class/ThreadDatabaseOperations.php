@@ -463,4 +463,27 @@ class ThreadDatabaseOperations {
         
         return $thread;
     }
+
+    /**
+     * Persist an email's classification fields. The classify UI historically mutated
+     * the in-memory Thread and called updateThread(), which only writes the threads
+     * row - email classifications were silently lost after the JSON->Postgres migration.
+     */
+    public function updateEmailClassification($threadId, $emailId, $statusType, $statusText, $ignore, $answer, $autoClassification) {
+        Database::execute(
+            "UPDATE thread_emails
+             SET status_type = ?, status_text = ?, ignore = ?, answer = ?, auto_classification = ?
+             WHERE id = ? AND thread_id = ?",
+            [$statusType, $statusText, $ignore ? 't' : 'f', $answer, $autoClassification, $emailId, $threadId]
+        );
+    }
+
+    public function updateAttachmentClassification($emailId, $attachmentId, $statusType, $statusText) {
+        Database::execute(
+            "UPDATE thread_email_attachments
+             SET status_type = ?, status_text = ?
+             WHERE id = ? AND email_id = ?",
+            [$statusType, $statusText, $attachmentId, $emailId]
+        );
+    }
 }

@@ -131,12 +131,29 @@ if (isset($_POST['submit'])) {
         $email->status_text = $newStatusText;
         $email->status_type = $newStatusType; // Assign the enum instance
         $email->answer = $_POST[$emailId . '-answer'];
+        // Persist per-email fields: updateThread() below only writes the threads row,
+        // so email classifications must be written explicitly (lost silently before).
+        ThreadStorageManager::getInstance()->updateEmailClassification(
+            $thread->id,
+            $email->id,
+            $newStatusType->value,
+            $newStatusText,
+            $newIgnore,
+            $email->answer,
+            $email->auto_classification ?? null
+        );
         if (isset($email->attachments)) {
             foreach ($email->attachments as $att) {
                 $attId = str_replace(' ', '_', str_replace('.', '_', $att->location));
                 $attNewStatusTypeString = $_POST[$emailId . '-att-' . $attId . '-status_type'];
                 $att->status_text = $_POST[$emailId . '-att-' . $attId . '-status_text'];
                 $att->status_type = ThreadEmailStatusType::tryFrom($attNewStatusTypeString) ?? ThreadEmailStatusType::UNKNOWN;
+                ThreadStorageManager::getInstance()->updateAttachmentClassification(
+                    $email->id,
+                    $att->id,
+                    $att->status_type->value,
+                    $att->status_text
+                );
             }
         }
         if ($email->status_type == ThreadEmailStatusType::UNKNOWN) {
