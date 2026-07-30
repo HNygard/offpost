@@ -41,6 +41,7 @@ if (!isset($_SESSION)) {
             <li><a href="/openai-request-log-overview">OpenAI request log</a></li>
             <li><a href="/update-imap">Update IMAP</a></li>
             <li><a href="/update-identities">Update identities into Roundcube</a></li>
+            <li><a href="/api/np/threads">NP API (threads)</a></li>
         </ul>
     </div>
 <?php } ?>
