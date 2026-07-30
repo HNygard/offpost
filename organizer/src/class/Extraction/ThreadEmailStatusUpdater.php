@@ -47,7 +47,7 @@ class ThreadEmailStatusUpdater {
                     status_type = ?,
                     auto_classification = 'prompt'
                 WHERE id = ?
-                    AND (status_type = ? OR status_type = ?)"; // Only update if currently unknown
+                    AND (status_type IS NULL OR status_type = ? OR status_type = ?)"; // Only update if currently unclassified
 
         $statusType = $this->determineStatusTypeFromSummary($aiSummary);
         $statusText = $this->generateStatusTextFromSummary($aiSummary);
@@ -87,11 +87,14 @@ class ThreadEmailStatusUpdater {
             return false;
         }
 
-        // If there's no auto_classification, it means it was manually set
-        // If status_type is not unknown, and auto_classification is not set, it's manual
-        return empty($result['auto_classification']) && 
-               $result['status_type'] !== ThreadEmailStatusType::UNKNOWN->value &&
-               $result['status_type'] !== 'unknown';
+        // NULL/unknown status = never classified. Otherwise: a status without
+        // auto_classification was set manually and must not be overwritten.
+        if ($result['status_type'] === null
+            || $result['status_type'] === ThreadEmailStatusType::UNKNOWN->value
+            || $result['status_type'] === 'unknown') {
+            return false;
+        }
+        return empty($result['auto_classification']);
     }
 
     /**
