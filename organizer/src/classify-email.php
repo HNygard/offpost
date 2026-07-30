@@ -364,7 +364,7 @@ function secondsToHumanReadable($seconds) {
                         <?php
                         $forslag = array();
                         if (!$firstOut && $email->email_type == 'OUT') {
-                            $forslag[] = array('info', 'Initiell henvendelse');
+                            $forslag[] = array(ThreadEmailStatusType::OUR_REQUEST->value, 'Initiell henvendelse');
                             $firstOut = true;
                         }
                         if ($time_since_last_email < 60 && $email->email_type == 'IN') {
