@@ -301,6 +301,29 @@ This is a test email.
         $this->assertEquals('Test Email', $result->getHeader('subject')->getFieldValue());
     }
 
+    public function testReadLaminasMessage_withErrorHandling_NestedEncodedWordInFrom() {
+        // :: Setup
+        // Real-world header from Oslo kommune (Outlook/Exchange): the outer iso-8859-1
+        // encoded-word is never closed before a second UTF-8 encoded-word starts inside it,
+        // and a stray ? from the mangled closing is left after the inner ?=
+        $emailWithNestedEncodedWord = "From: =?iso-8859-1?Q?Postmottak_BYR_-_=?UTF-8?Q?Byr=C3=A5dsavdelingene?=?    <postmottak@byr.oslo.kommune.no>\r\n" .
+                                      "To: recipient@example.com\r\n" .
+                                      "Subject: Test Email\r\n" .
+                                      "Content-Type: text/plain\r\n" .
+                                      "\r\n" .
+                                      "This is a test email body";
+
+        // :: Act
+        $result = ThreadEmailExtractorEmailBody::readLaminasMessage_withErrorHandling($emailWithNestedEncodedWord);
+
+        // :: Assert
+        $this->assertInstanceOf(\Laminas\Mail\Storage\Message::class, $result);
+        $this->assertEquals(
+            'Postmottak BYR - Byrådsavdelingene <postmottak@byr.oslo.kommune.no>',
+            $result->getHeader('from')->getFieldValue()
+        );
+    }
+
     public function testReadLaminasMessage_withErrorHandling_InvalidAddressHeader() {
         // :: Setup
         // Laminas\Mail\Address::__construct throws Laminas\Mail\Exception\InvalidArgumentException

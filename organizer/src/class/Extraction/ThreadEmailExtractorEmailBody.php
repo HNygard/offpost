@@ -347,15 +347,27 @@ class ThreadEmailExtractorEmailBody extends ThreadEmailExtractor {
             // $matches[1][0] = the encoded word without proper closing
             // $matches[1][1] = the offset of the encoded word in the header line
             // $matches[2] and $matches[3] = the header name and rest of the line (we drop them)
-            
+
             $matchPos = $matches[1][1];
             $beforeMatch = substr($headerLine, 0, $matchPos);
             $encodedWord = $matches[1][0];
-            
+
             // Preserve everything before the malformed encoded-word and just fix its closing
             return $beforeMatch . $encodedWord . '?=';
         }
-        
+
+        // Fix nested encoded-words: an encoded-word that is not closed before a new
+        // encoded-word starts inside its content, e.g.
+        // =?iso-8859-1?Q?Postmottak_BYR_-_=?UTF-8?Q?Byr=C3=A5dsavdelingene?=?
+        // Close the outer word before the nested one starts. Cannot match well-formed
+        // sequences since encoded-word content can never contain a raw ? character.
+        $nestedPattern = "/({$encodedWordStart}{$encoding}\?{$encodedContent})(=\?)/";
+        if (preg_match($nestedPattern, $headerLine)) {
+            $headerLine = preg_replace($nestedPattern, '$1?= $2', $headerLine);
+            // Remove the stray ? left over from the outer word's mangled closing
+            $headerLine = preg_replace('/\?=\?(\s|$)/', '?=$1', $headerLine);
+        }
+
         return $headerLine;
     }
 
