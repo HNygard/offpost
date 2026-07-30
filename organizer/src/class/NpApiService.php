@@ -236,6 +236,12 @@ class NpApiService {
                     continue;
                 }
 
+                if (isset($email->ignore) && $email->ignore) {
+                    // Classified as ignore (e.g. an internal forwarding notice at the
+                    // entity) - not part of the conversation the consumer should see.
+                    continue;
+                }
+
                 $attachments = [];
                 foreach ($email->attachments ?? [] as $att) {
                     $attachments[] = [

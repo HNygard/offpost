@@ -129,6 +129,14 @@ class NpApiServiceListTest extends TestCase {
             [$threadId, gmdate('Y-m-d\TH:i:sP', $ts2), gmdate('Y-m-d\TH:i:sP', $ts2), 'OUT', 'content']
         );
 
+        // Ignored email (e.g. internal forwarding notice) must be excluded from the listing
+        Database::execute(
+            "INSERT INTO thread_emails
+                (thread_id, timestamp_received, datetime_received, email_type, content, imap_headers, ignore)
+             VALUES (?, now(), now(), 'IN', ?::bytea, NULL, true)",
+            [$threadId, 'content']
+        );
+
         // Email with an unknown/unrecognized email_type must be silently skipped
         // from the emails list, without affecting the thread or the other emails.
         $ts3 = 1700000200;
@@ -143,7 +151,7 @@ class NpApiServiceListTest extends TestCase {
         $threadIds = array_column($result['threads'], 'thread_id');
         $thread = $result['threads'][array_search($threadId, $threadIds)];
 
-        $this->assertCount(2, $thread['emails'], 'unknown email_type row must be omitted');
+        $this->assertCount(2, $thread['emails'], 'unknown email_type and ignored rows must be omitted');
 
         $inEmail = null;
         $outEmail = null;
