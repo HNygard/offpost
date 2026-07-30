@@ -96,11 +96,11 @@ class NpApiServiceListTest extends TestCase {
         $encodedSubject = '=?UTF-8?B?VGVzdCBtZWQgw6bDuMOl?=';
         $emailWithSubjectId = Database::queryValue(
             "INSERT INTO thread_emails
-                (thread_id, timestamp_received, datetime_received, email_type, content, imap_headers)
-             VALUES (?, ?, ?, ?, ?::bytea, ?) RETURNING id",
+                (thread_id, timestamp_received, datetime_received, email_type, content, imap_headers, status_type)
+             VALUES (?, ?, ?, ?, ?::bytea, ?, ?) RETURNING id",
             [
                 $threadId, gmdate('Y-m-d\TH:i:sP', $ts1), gmdate('Y-m-d\TH:i:sP', $ts1),
-                'IN', 'content', json_encode(['subject' => $encodedSubject]),
+                'IN', 'content', json_encode(['subject' => $encodedSubject]), 'INFORMATION_RELEASE',
             ]
         );
         Database::execute(
@@ -159,12 +159,16 @@ class NpApiServiceListTest extends TestCase {
 
         // Decoded RFC-2047 subject.
         $this->assertEquals('Test med æøå', $inEmail['subject']);
+        // Classification exposed so the consumer can tell answers from auto-replies.
+        $this->assertEquals('INFORMATION_RELEASE', $inEmail['status_type']);
         // Timestamps come back as unix ints.
         $this->assertIsInt($inEmail['timestamp']);
         $this->assertEquals(1700000000, $inEmail['timestamp']);
 
         // NULL imap_headers -> null subject.
         $this->assertNull($outEmail['subject']);
+        // No classification set -> null (consumer treats as not substantive).
+        $this->assertArrayHasKey('status_type', $outEmail);
         $this->assertIsInt($outEmail['timestamp']);
         $this->assertEquals(1700000100, $outEmail['timestamp']);
 

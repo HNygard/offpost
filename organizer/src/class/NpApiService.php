@@ -250,6 +250,10 @@ class NpApiService {
                     'timestamp' => $email->timestamp_received !== null
                         ? strtotime($email->timestamp_received) : null,
                     'subject' => $subjectsByEmailId[$email->id] ?? null,
+                    // Classification (ThreadEmailStatusType value or legacy string/null).
+                    // Lets the consumer distinguish substantive answers from auto-replies:
+                    // an unclassified incoming email must not count as "answered".
+                    'status_type' => $email->status_type ?? null,
                     'attachments' => $attachments,
                 ];
             }

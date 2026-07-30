@@ -5,7 +5,7 @@ require_once __DIR__ . '/np-api-auth.php';
 require_once __DIR__ . '/../../class/NpApiService.php';
 
 header('Content-Type: application/json');
-npApiRequireToken();
+npApiRequireTokenOrAdminSession();
 
 if ($_SERVER['REQUEST_METHOD'] !== 'GET') {
     http_response_code(405);
