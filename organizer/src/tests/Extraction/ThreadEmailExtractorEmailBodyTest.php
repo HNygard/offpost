@@ -301,6 +301,26 @@ This is a test email.
         $this->assertEquals('Test Email', $result->getHeader('subject')->getFieldValue());
     }
 
+    public function testReadLaminasMessage_withErrorHandling_InvalidAddressHeader() {
+        // :: Setup
+        // Laminas\Mail\Address::__construct throws Laminas\Mail\Exception\InvalidArgumentException
+        // (the parent class, not Header\Exception\InvalidArgumentException) when an address-list
+        // header contains an invalid email address
+        $emailWithInvalidAddress = "From: sender@example.com\r\n" .
+                                   "To: not-a-valid-address\r\n" .
+                                   "Subject: Test Email\r\n" .
+                                   "Content-Type: text/plain\r\n" .
+                                   "\r\n" .
+                                   "This is a test email body";
+
+        // :: Act & Assert
+        // The diagnostic error path should identify the problematic header
+        // instead of letting the raw Laminas exception escape
+        $this->expectException(\Exception::class);
+        $this->expectExceptionMessage("Header name: To");
+        ThreadEmailExtractorEmailBody::readLaminasMessage_withErrorHandling($emailWithInvalidAddress);
+    }
+
     public function testReadLaminasMessage_withErrorHandling_EmptyContent() {
         $this->expectException(\TypeError::class);
         $this->expectExceptionMessage("preg_split(): Argument #2 (\$subject) must be of type string, array given");

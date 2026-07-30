@@ -801,9 +801,11 @@ class ThreadEmailExtractorEmailBody extends ThreadEmailExtractor {
         $eml = self::stripProblematicHeaders($eml);
         try {
             return new \Laminas\Mail\Storage\Message(['raw' => $eml]);
-        } catch (\Laminas\Mail\Header\Exception\InvalidArgumentException | \Laminas\Mail\Exception\RuntimeException $e) {
+        } catch (\Laminas\Mail\Exception\InvalidArgumentException | \Laminas\Mail\Exception\RuntimeException $e) {
             // We hit some invalid header.
-            // Laminas\Mail\Header\Exception\InvalidArgumentException: Invalid header value detected
+            // Laminas\Mail\Exception\InvalidArgumentException: invalid address in address-list
+            //   headers (To/From/Cc) via Laminas\Mail\Address, and its subclass
+            //   Laminas\Mail\Header\Exception\InvalidArgumentException: Invalid header value detected
             // Laminas\Mail\Exception\RuntimeException: Line does not match header format
             
             // Enhanced logging with context
@@ -885,7 +887,7 @@ class ThreadEmailExtractorEmailBody extends ThreadEmailExtractor {
                 try {
                     // Try to parse the email up to the current header
                     $message = new \Laminas\Mail\Storage\Message(['raw' => self::stripProblematicHeaders($partialEml)]);
-                } catch (\Laminas\Mail\Header\Exception\InvalidArgumentException | \Laminas\Mail\Exception\RuntimeException $e2) {
+                } catch (\Laminas\Mail\Exception\InvalidArgumentException | \Laminas\Mail\Exception\RuntimeException $e2) {
                     // Failed to parse at this header, analyze the header value for problematic characters
                     $headerValue = preg_replace('/^[A-Za-z-]+:\s*/', '', $line);
                     $analysis = self::debuggingAnalyzeHeaderValue($headerValue);
