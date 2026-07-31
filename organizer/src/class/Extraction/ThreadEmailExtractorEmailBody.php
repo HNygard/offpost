@@ -554,6 +554,19 @@ class ThreadEmailExtractorEmailBody extends ThreadEmailExtractor {
                 }
             }
             
+            // If the previous output ends with an encoded-word followed only by whitespace,
+            // encode that whitespace into this word: RFC 2047 decoders ignore whitespace
+            // between adjacent encoded-words, which would otherwise lose the separation
+            if (preg_match('/\?=(\s+)$/', $result, $matches)) {
+                $whitespace = $matches[1];
+                $result = substr($result, 0, -strlen($whitespace));
+                $whitespaceEncoded = '';
+                for ($j = 0; $j < strlen($whitespace); $j++) {
+                    $whitespaceEncoded .= $whitespace[$j] === ' ' ? '_' : sprintf('=%02X', ord($whitespace[$j]));
+                }
+                $encoded = $whitespaceEncoded . $encoded;
+            }
+
             // Create the encoded-word: =?UTF-8?Q?encoded_content?=
             $result .= '=?UTF-8?Q?' . $encoded . '?=';
         }
@@ -605,19 +618,21 @@ class ThreadEmailExtractorEmailBody extends ThreadEmailExtractor {
                     // Keep the header name but replace content with "REMOVED"
                     $cleanedHeaders[] = $headerName . ": REMOVED";
                 } else {
+                    // Sanitize any raw non-ASCII bytes in the header value first: raw bytes
+                    // inside an unterminated encoded-word become a nested encoded-word here,
+                    // which the encoded-word repair below then closes properly
+                    $line = self::sanitizeNonAsciiHeaderLine($line, $currentHeaderName);
                     // Fix malformed encoded-words in the header
                     $line = self::fixMalformedEncodedWords($line);
-                    // Sanitize any raw non-ASCII bytes in the header value
-                    $line = self::sanitizeNonAsciiHeaderLine($line, $currentHeaderName);
                     $cleanedHeaders[] = $line;
                 }
             } elseif (!$skipCurrentHeader && (substr($line, 0, 1) === ' ' || substr($line, 0, 1) === "\t")) {
                 // This is a continuation line for a header we're keeping
-                // Also fix malformed encoded-words in continuation lines
-                $line = self::fixMalformedEncodedWords($line);
-                // Sanitize any raw non-ASCII bytes in continuation lines
+                // Sanitize any raw non-ASCII bytes in continuation lines first (see above)
                 // Pass the current header name so we can preserve data with encoded-words
                 $line = self::sanitizeNonAsciiHeaderLine($line, $currentHeaderName);
+                // Also fix malformed encoded-words in continuation lines
+                $line = self::fixMalformedEncodedWords($line);
                 $cleanedHeaders[] = $line;
             }
             // If $skipCurrentHeader is true, we ignore continuation lines for problematic headers

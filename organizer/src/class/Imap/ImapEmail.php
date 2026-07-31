@@ -165,10 +165,13 @@ class ImapEmail {
 
     static function getEmailSubject($eml_or_partial_eml) {
         try {
-            $message = new Message(['raw' => $eml_or_partial_eml]);
+            // Use the repair pipeline: raw EMLs from misbehaving senders (e.g. Exchange)
+            // can contain raw non-ASCII bytes or malformed encoded-words in headers that
+            // make a plain Message constructor throw
+            $message = ThreadEmailExtractorEmailBody::readLaminasMessage_withErrorHandling($eml_or_partial_eml);
             $subject = $message->getHeader('subject')->getFieldValue();
         }
-        catch (Exception $e) {
+        catch (\Throwable $e) {
             $subject = 'Error getting subject - ' . $e->getMessage();
         }
         return $subject;

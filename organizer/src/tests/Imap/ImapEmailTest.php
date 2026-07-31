@@ -149,10 +149,30 @@ class ImapEmailTest extends TestCase {
         $subject = ImapEmail::getEmailSubject($emlWithSpecialChars);
 
         // :: Assert
-        $this->assertStringStartsWith('Error getting subject - ', $subject, 
-                                     'Should return error message for invalid header value with raw special characters');
-        $this->assertStringContainsString('Invalid header value', $subject, 
-                                         'Error message should indicate invalid header value');
+        // Raw non-ASCII bytes in headers are repaired by the extraction pipeline,
+        // so the subject is returned instead of an "Invalid header value" error
+        $this->assertEquals('Test with special chars: åæø ÄÖÜ €£$', $subject,
+                            'Should repair raw special characters and return the subject');
+    }
+
+    public function testGetEmailSubjectWithRawUtf8InUnterminatedEncodedWord() {
+        // :: Setup
+        // Production case: Exchange emits an unterminated iso-8859-1 encoded-word with
+        // raw UTF-8 bytes inside the From header. Parsing the raw EML fails, so the
+        // subject must be retrieved via the repair pipeline.
+        $emlWithMangledFrom = "From: =?iso-8859-1?Q?Postmottak_BYR_-_Byr\xc3\xa5dsavdelingene?    <postmottak@byr.oslo.kommune.no>\r\n" .
+                              "To: recipient@example.com\r\n" .
+                              "Subject: Innsynshenvendelse - Wilsters vei 18\r\n" .
+                              "Content-Type: text/plain\r\n" .
+                              "\r\n" .
+                              "This is the email body.";
+
+        // :: Act
+        $subject = ImapEmail::getEmailSubject($emlWithMangledFrom);
+
+        // :: Assert
+        $this->assertEquals('Innsynshenvendelse - Wilsters vei 18', $subject,
+                            'Should repair the mangled From header and return the subject');
     }
 
     public function testGetEmailSubjectWithEmptyString() {

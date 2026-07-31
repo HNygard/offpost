@@ -324,6 +324,31 @@ This is a test email.
         );
     }
 
+    public function testReadLaminasMessage_withErrorHandling_RawUtf8InUnterminatedEncodedWord() {
+        // :: Setup
+        // The true raw form of the Oslo kommune production header: Exchange emits an
+        // unterminated iso-8859-1 encoded-word with RAW UTF-8 bytes inside. Sanitizing
+        // the raw bytes creates a nested encoded-word, so the encoded-word repair must
+        // run AFTER sanitization to close the outer word - otherwise parsing fails and
+        // the display name is lost.
+        $emailWithRawUtf8InWord = "From: =?iso-8859-1?Q?Postmottak_BYR_-_Byr\xc3\xa5dsavdelingene?    <postmottak@byr.oslo.kommune.no>\r\n" .
+                                  "To: recipient@example.com\r\n" .
+                                  "Subject: Test Email\r\n" .
+                                  "Content-Type: text/plain\r\n" .
+                                  "\r\n" .
+                                  "This is a test email body";
+
+        // :: Act
+        $result = ThreadEmailExtractorEmailBody::readLaminasMessage_withErrorHandling($emailWithRawUtf8InWord);
+
+        // :: Assert
+        $this->assertInstanceOf(\Laminas\Mail\Storage\Message::class, $result);
+        $this->assertEquals(
+            'Postmottak BYR - Byrådsavdelingene <postmottak@byr.oslo.kommune.no>',
+            $result->getHeader('from')->getFieldValue()
+        );
+    }
+
     public function testReadLaminasMessage_withErrorHandling_AddressHeaderFallback() {
         // :: Setup
         // An unquoted comma in the display name makes Laminas split the address list
