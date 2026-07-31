@@ -877,15 +877,18 @@ class ThreadEmailExtractorEmailBody extends ThreadEmailExtractor {
 
             $headers = preg_split('/\r?\n/', $eml);
             $currentHeader = '';
+            $currentHeaderIndices = [];
             $partialEml = '';
             $firstLine = true;
+            $addressListHeaders = ['from', 'to', 'cc', 'bcc', 'reply-to', 'sender'];
             foreach ($headers as $lineIndex => $line) {
                 if (preg_match('/^([A-Za-z-]+):\s*/', $line, $matches)) {
                     // New header
                     $currentHeader = $matches[1];
+                    $currentHeaderIndices = [$lineIndex];
                 } elseif (substr($line, 0, 1) === ' ' || substr($line, 0, 1) === "\t") {
                     // Continuation line
-                    // Do nothing, just continue
+                    $currentHeaderIndices[] = $lineIndex;
                 } else {
                     // Not a header line, skip
                     continue;
@@ -896,21 +899,58 @@ class ThreadEmailExtractorEmailBody extends ThreadEmailExtractor {
                 }
                 $partialEml .= $line;
                 $firstLine = false;
+
+                // Wait for the complete header before test-parsing: a folded header cut in
+                // half (e.g. an address header whose angle-addr is on the continuation line)
+                // fails parsing and would blame the wrong header
+                $nextLine = $headers[$lineIndex + 1] ?? '';
+                if ($nextLine !== '' && (substr($nextLine, 0, 1) === ' ' || substr($nextLine, 0, 1) === "\t")) {
+                    continue;
+                }
+
                 try {
                     // Try to parse the email up to the current header
                     $message = new \Laminas\Mail\Storage\Message(['raw' => self::stripProblematicHeaders($partialEml)]);
                 } catch (\Laminas\Mail\Exception\InvalidArgumentException | \Laminas\Mail\Exception\RuntimeException $e2) {
+                    // The complete (possibly folded) header that failed to parse
+                    $problematicUnit = implode("\n", array_map(function($i) use ($headers) {
+                        return $headers[$i];
+                    }, $currentHeaderIndices));
+
+                    // Fallback for address-list headers: the display name is cosmetic, the
+                    // address is what matters for extraction. If an angle-addr can be
+                    // extracted, drop the unparseable display name and retry the full email.
+                    if (in_array(strtolower($currentHeader), $addressListHeaders, true)
+                        && preg_match('/<([^<>\s]+@[^<>\s]+)>/', $problematicUnit, $addrMatch)) {
+                        $repairedHeaders = $headers;
+                        $repairedHeaders[$currentHeaderIndices[0]] = $currentHeader . ': <' . $addrMatch[1] . '>';
+                        foreach (array_slice($currentHeaderIndices, 1) as $i) {
+                            unset($repairedHeaders[$i]);
+                        }
+                        try {
+                            $message = new \Laminas\Mail\Storage\Message(['raw' => implode("\n", $repairedHeaders)]);
+                            error_log("Email parsing: dropped unparseable display name in " . $currentHeader
+                                . " header, kept address <" . $addrMatch[1] . ">."
+                                . " Original header: " . self::truncateLineForLog($problematicUnit)
+                                . " (hex: " . bin2hex(substr($problematicUnit, 0, self::ERROR_LOG_LINE_PREVIEW_LENGTH)) . ")");
+                            return $message;
+                        } catch (\Laminas\Mail\Exception\InvalidArgumentException | \Laminas\Mail\Exception\RuntimeException $e3) {
+                            // Retry failed too, fall through to the diagnostic below
+                        }
+                    }
+
                     // Failed to parse at this header, analyze the header value for problematic characters
-                    $headerValue = preg_replace('/^[A-Za-z-]+:\s*/', '', $line);
+                    $headerValue = preg_replace('/^[A-Za-z-]+:\s*/', '', $problematicUnit);
                     $analysis = self::debuggingAnalyzeHeaderValue($headerValue);
-                    
-                    $lineNumber = $lineIndex + 1;
+
+                    $lineNumber = $currentHeaderIndices[0] + 1;
                     $debugInfo = "Failed to parse email due to problematic header on line " . $lineNumber . "\n"
                         . "Header name: " . $currentHeader . "\n"
                         . "Exception type: " . get_class($e2) . "\n"
                         . "Original error: " . $e->getMessage() . "\n"
                         . "New error: " . $e2->getMessage() . "\n"
-                        . "Problematic line: " . self::truncateLineForLog($line) . "\n\n";
+                        . "Problematic line: " . self::truncateLineForLog($problematicUnit) . "\n"
+                        . "Problematic line (hex): " . bin2hex(substr($problematicUnit, 0, self::ERROR_LOG_LINE_PREVIEW_LENGTH)) . "\n\n";
                     
                     // Add character-level debugging information
                     if (!empty($analysis['issues'])) {

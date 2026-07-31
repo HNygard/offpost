@@ -324,6 +324,53 @@ This is a test email.
         );
     }
 
+    public function testReadLaminasMessage_withErrorHandling_AddressHeaderFallback() {
+        // :: Setup
+        // An unquoted comma in the display name makes Laminas split the address list
+        // and fail on the fragment without an @. The fallback should keep just the
+        // angle-addr and drop the unparseable display name.
+        $emailWithCommaInName = "From: Postmottak BYR, Byradsavdelingene <postmottak@example.com>\r\n" .
+                                "To: recipient@example.com\r\n" .
+                                "Subject: Test Email\r\n" .
+                                "Content-Type: text/plain\r\n" .
+                                "\r\n" .
+                                "This is a test email body";
+
+        // :: Act
+        $result = ThreadEmailExtractorEmailBody::readLaminasMessage_withErrorHandling($emailWithCommaInName);
+
+        // :: Assert
+        $this->assertInstanceOf(\Laminas\Mail\Storage\Message::class, $result);
+        $this->assertEquals(
+            'postmottak@example.com',
+            $result->getHeader('from')->getFieldValue()
+        );
+    }
+
+    public function testReadLaminasMessage_withErrorHandling_AddressHeaderFallbackFolded() {
+        // :: Setup
+        // Same as above but with the address on a folded continuation line. The
+        // diagnostic loop must accumulate the complete folded header before
+        // test-parsing, otherwise the angle-addr on the continuation line is lost.
+        $emailWithFoldedFrom = "From: Postmottak BYR, Byradsavdelingene\r\n" .
+                               "    <postmottak@example.com>\r\n" .
+                               "To: recipient@example.com\r\n" .
+                               "Subject: Test Email\r\n" .
+                               "Content-Type: text/plain\r\n" .
+                               "\r\n" .
+                               "This is a test email body";
+
+        // :: Act
+        $result = ThreadEmailExtractorEmailBody::readLaminasMessage_withErrorHandling($emailWithFoldedFrom);
+
+        // :: Assert
+        $this->assertInstanceOf(\Laminas\Mail\Storage\Message::class, $result);
+        $this->assertEquals(
+            'postmottak@example.com',
+            $result->getHeader('from')->getFieldValue()
+        );
+    }
+
     public function testReadLaminasMessage_withErrorHandling_InvalidAddressHeader() {
         // :: Setup
         // Laminas\Mail\Address::__construct throws Laminas\Mail\Exception\InvalidArgumentException
