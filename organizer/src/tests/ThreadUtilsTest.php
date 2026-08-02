@@ -44,6 +44,14 @@ class ThreadUtilsTest extends TestCase {
         $this->assertEquals('label', getLabelType('any', 'unknown'));
     }
 
+    public function testGetLabelTypeAskingForClarification() {
+        $this->assertEquals('label label_asking_for_clarification', getLabelType('any', 'ASKING_FOR_CLARIFICATION'));
+    }
+
+    public function testGetLabelTypeClarificationSent() {
+        $this->assertEquals('label label_clarification_sent', getLabelType('any', 'CLARIFICATION_SENT'));
+    }
+
     public function testGetLabelTypeInvalid() {
         $this->expectException(Exception::class);
         $this->expectExceptionMessage('Unknown status_type[any]: invalid');

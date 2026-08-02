@@ -117,7 +117,14 @@ class ThreadEmailStatusUpdater {
         if (preg_match('/\b(avslag|avslår|avslå|avslås|kan ikke|avvise)\b/u', $summary_lower)) {
             return ThreadEmailStatusType::REQUEST_REJECTED;
         }
-        
+
+        // Check for clarification requests - must come before the copy and
+        // information release patterns, which would otherwise swallow
+        // summaries like "ber om tilbakemelding på hvilke ... innsyn i"
+        if (preg_match('/\b(presiser\w*|avklar\w*|konkretiser\w*|spesifiser\w*|tilbakemelding på hvilke|hvilke .{0,60}innsyn)/u', $summary_lower)) {
+            return ThreadEmailStatusType::ASKING_FOR_CLARIFICATION;
+        }
+
         // Check for copy requests - include "ber om" and "videresend" patterns
         if (preg_match('/\b(kopi|kopi av|kan vi få|send|videresend|ber om.*dokumenter)\b/u', $summary_lower)) {
             return ThreadEmailStatusType::ASKING_FOR_COPY;

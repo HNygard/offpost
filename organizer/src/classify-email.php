@@ -180,14 +180,16 @@ if (isset($_POST['submit'])) {
 
 function labelSelect($currentTypeInput, $id) {
     $currentTypeValue = $currentTypeInput instanceof ThreadEmailStatusType ? $currentTypeInput->value : $currentTypeInput;
+    $currentCase = $currentTypeValue !== null ? ThreadEmailStatusType::tryFrom($currentTypeValue) : null;
     ?>
-    <select name="<?= $id ?>">
+    <select name="<?= $id ?>" onchange="visStatusBeskrivelse(this)">
         <?php foreach (ThreadEmailStatusType::cases() as $case): ?>
             <option value="<?= $case->value ?>" <?= $currentTypeValue == $case->value ? ' selected="selected"' : '' ?>>
                 <?= htmlspecialchars($case->label()) ?> (<?= htmlspecialchars($case->value) ?>)
             </option>
         <?php endforeach; ?>
     </select>
+    <div class="status-description" id="<?= $id ?>-description"><?= htmlspecialchars($currentCase ? $currentCase->description() : '') ?></div>
     <?php
 }
 function secondsToHumanReadable($seconds) {
@@ -244,6 +246,11 @@ function secondsToHumanReadable($seconds) {
         }
         .form-group textarea {
             resize: vertical;
+        }
+        .status-description {
+            font-size: 12px;
+            color: #7f8c8d;
+            margin-top: 4px;
         }
         .btn {
             background-color: #3498db;
@@ -316,9 +323,20 @@ function secondsToHumanReadable($seconds) {
         }
     </style>
     <script>
+    var statusDescriptions = <?= json_encode(array_combine(
+        array_map(fn($c) => $c->value, ThreadEmailStatusType::cases()),
+        array_map(fn($c) => $c->description(), ThreadEmailStatusType::cases())
+    )) ?>;
+    function visStatusBeskrivelse(selectElement) {
+        var div = document.getElementById(selectElement.name + '-description');
+        if (div) {
+            div.textContent = statusDescriptions[selectElement.value] || '';
+        }
+    }
     function settForslag(emailId, forslagStatus, forslagTekst) {
         var selectElement = document.querySelector('select[name="' + emailId + '-status_type"]');
         selectElement.value = forslagStatus;
+        visStatusBeskrivelse(selectElement);
 
         var inputElement = document.querySelector('input[name="' + emailId + '-status_text"]');
         inputElement.value = forslagTekst;

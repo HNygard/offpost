@@ -126,14 +126,42 @@ class ThreadEmailStatusUpdaterTest extends TestCase {
         // :: Setup
         $emailId = $this->createTestEmail();
         $aiSummary = "Vi ber om kopi av dokumenter relatert til saken";
-        
+
         // :: Act
         $result = $this->statusUpdater->updateFromAISummary($emailId, $aiSummary);
-        
+
         // :: Assert
         $this->assertTrue($result);
         $email = Database::queryOne("SELECT status_type FROM thread_emails WHERE id = ?", [$emailId]);
         $this->assertEquals('ASKING_FOR_COPY', $email['status_type']);
+    }
+
+    public function testDetermineStatusTypeFromSummaryAskingForClarification() {
+        // :: Setup
+        $emailId = $this->createTestEmail();
+        $aiSummary = "Ber om tilbakemelding på hvilke av journalpostene du ønsker innsyn i";
+
+        // :: Act
+        $result = $this->statusUpdater->updateFromAISummary($emailId, $aiSummary);
+
+        // :: Assert
+        $this->assertTrue($result);
+        $email = Database::queryOne("SELECT status_type FROM thread_emails WHERE id = ?", [$emailId]);
+        $this->assertEquals('ASKING_FOR_CLARIFICATION', $email['status_type']);
+    }
+
+    public function testDetermineStatusTypeFromSummaryClarificationAvklaring() {
+        // :: Setup
+        $emailId = $this->createTestEmail();
+        $aiSummary = "Kommunen ber om en avklaring av hva forespørselen gjelder";
+
+        // :: Act
+        $result = $this->statusUpdater->updateFromAISummary($emailId, $aiSummary);
+
+        // :: Assert
+        $this->assertTrue($result);
+        $email = Database::queryOne("SELECT status_type FROM thread_emails WHERE id = ?", [$emailId]);
+        $this->assertEquals('ASKING_FOR_CLARIFICATION', $email['status_type']);
     }
 
     public function testDetermineStatusTypeFromSummaryAskingForMoreTime() {
