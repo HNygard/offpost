@@ -109,6 +109,10 @@ class ThreadEmailDatabaseSaver {
                         'Multiple matching threads found for email(s): ' . implode(', ', $all_emails)
                     );
 
+                    // Only alert (throw) the first time this email is seen.
+                    // Must be checked before the upsert below registers the error.
+                    $known_error = ThreadEmailProcessingErrorManager::hasUnresolvedError($email_identifier);
+
                     // Commit current transaction to save error record separately
                     // This ensures the error is persisted even if processing fails
                     if (Database::getInstance()->inTransaction()) {
@@ -127,6 +131,14 @@ class ThreadEmailDatabaseSaver {
                         $folder
                     );
                     Database::commit();
+
+                    if ($known_error) {
+                        // Admin was already alerted about this email. Leave it in the
+                        // folder for GUI resolution and process the rest of the folder.
+                        $this->connection->logDebug("Skipping email with known processing error [$email_identifier]: $message");
+                        Database::beginTransaction();
+                        continue;
+                    }
 
                     throw new Exception("Failed to process email:\n"
                         . $message . "\n"

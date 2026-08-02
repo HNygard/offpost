@@ -34,6 +34,19 @@ class ThreadEmailProcessingErrorManager {
     }
     
     /**
+     * Check if an unresolved error is already registered for an email
+     *
+     * @param string $emailIdentifier Email identifier
+     * @return bool True if an unresolved error exists
+     */
+    public static function hasUnresolvedError(string $emailIdentifier): bool {
+        return Database::queryValue(
+            "SELECT COUNT(*) FROM thread_email_processing_errors WHERE email_identifier = ? AND resolved = false",
+            [$emailIdentifier]
+        ) > 0;
+    }
+
+    /**
      * Resolve an error by creating a manual mapping
      * 
      * @param int $errorId Error ID
