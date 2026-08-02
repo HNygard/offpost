@@ -24,7 +24,7 @@ foreach ($argv as $arg) {
 
 $sql = "SELECT DISTINCT ON (e.id) e.id AS email_id, x.extracted_text
         FROM thread_emails e
-        JOIN thread_email_extractions x ON x.email_id = e.id::text
+        JOIN thread_email_extractions x ON x.email_id::text = e.id::text
         WHERE e.email_type = 'IN'
           AND (e.status_type IS NULL OR e.status_type IN ('unknown', 'UNKNOWN'))
           AND COALESCE(e.ignore, false) = false
