@@ -328,9 +328,13 @@ class ThreadEmailExtractorEmailBody extends ThreadEmailExtractor {
      * Subject: =?iso-8859-1?Q?text?=
      * 
      * @param string $headerLine Header line to fix
+     * @param bool $truncatedGluedHeader Set to true when a glued next-header name was
+     *        truncated away - the caller must then drop that header's continuation lines
      * @return string Fixed header line
      */
-    private static function fixMalformedEncodedWords($headerLine) {
+    private static function fixMalformedEncodedWords($headerLine, &$truncatedGluedHeader = false) {
+        $truncatedGluedHeader = false;
+
         // Pattern components for readability
         // Encoded word format: =?charset?encoding?content
         $encodedWordStart = '=\?[^?]+\?';           // =?charset?
@@ -339,10 +343,14 @@ class ThreadEmailExtractorEmailBody extends ThreadEmailExtractor {
         $missingClose = '\?';                        // The ? that should be followed by = but isn't
         $nextHeaderName = '([A-Za-z][A-Za-z0-9-]*)'; // The next header name that appears too early
         $headerColon = ':';                          // The colon after header name
-        
-        // Full pattern: match encoded word missing ?= followed by header name
+
+        // Step 1: truncate a glued next-header name. Exchange can drop the CRLF before
+        // the next header, gluing its name (and value) onto an encoded word, e.g.
+        // =?iso-8859-1?Q?text?Thread-Topic: ...
+        // Must run before the lone-? repair below, which would otherwise absorb the
+        // ? that this pattern anchors on.
         $pattern = "/({$encodedWordStart}{$encoding}\?{$encodedContent}){$missingClose}{$nextHeaderName}{$headerColon}(.*)$/";
-        
+
         if (preg_match($pattern, $headerLine, $matches, PREG_OFFSET_CAPTURE)) {
             // $matches[1][0] = the encoded word without proper closing
             // $matches[1][1] = the offset of the encoded word in the header line
@@ -353,10 +361,25 @@ class ThreadEmailExtractorEmailBody extends ThreadEmailExtractor {
             $encodedWord = $matches[1][0];
 
             // Preserve everything before the malformed encoded-word and just fix its closing
-            return $beforeMatch . $encodedWord . '?=';
+            $headerLine = $beforeMatch . $encodedWord . '?=';
+            $truncatedGluedHeader = true;
         }
 
-        // Fix nested encoded-words: an encoded-word that is not closed before a new
+        // Step 2: close encoded-words terminated with a lone ? instead of ?=
+        // (Exchange), e.g. =?iso-8859-1?Q?S\xc3\xb8knad_om_dispen? followed by
+        // whitespace or end of line. The lookarounds keep well-formed ?= closings
+        // and nested =? starts untouched.
+        $headerLine = preg_replace(
+            "/({$encodedWordStart}{$encoding}\?{$encodedContent})(?<!=)\?(?!=)/",
+            '$1?=',
+            $headerLine
+        );
+
+        // Step 3: the now-closed words may carry raw UTF-8 bytes despite an
+        // iso-8859-1 charset declaration - re-encode and relabel them
+        $headerLine = self::fixCharsetMismatchInEncodedWords($headerLine);
+
+        // Step 4: fix nested encoded-words: an encoded-word that is not closed before a new
         // encoded-word starts inside its content, e.g.
         // =?iso-8859-1?Q?Postmottak_BYR_-_=?UTF-8?Q?Byr=C3=A5dsavdelingene?=?
         // Close the outer word before the nested one starts. Cannot match well-formed
@@ -604,6 +627,7 @@ class ThreadEmailExtractorEmailBody extends ThreadEmailExtractor {
         $headerLines = preg_split('/\r?\n/', $headerPart);
         $cleanedHeaders = [];
         $skipCurrentHeader = false;
+        $skipGluedContinuations = false;
         $currentHeaderName = '';  // Track current header name for continuation lines
 
         foreach ($headerLines as $line) {
@@ -613,27 +637,35 @@ class ThreadEmailExtractorEmailBody extends ThreadEmailExtractor {
                 $headerName = $matches[1];
                 $currentHeaderName = $headerName;  // Save for continuation lines
                 $skipCurrentHeader = in_array($headerName, $problematicHeaders);
-                
+                $skipGluedContinuations = false;
+
                 if ($skipCurrentHeader) {
                     // Keep the header name but replace content with "REMOVED"
                     $cleanedHeaders[] = $headerName . ": REMOVED";
                 } else {
-                    // Sanitize any raw non-ASCII bytes in the header value first: raw bytes
-                    // inside an unterminated encoded-word become a nested encoded-word here,
-                    // which the encoded-word repair below then closes properly
+                    // Fix malformed encoded-words in the header (closes lone-? terminated
+                    // words with raw UTF-8 bytes still inside, so this must run before
+                    // the raw-byte sanitizer below)
+                    $line = self::fixMalformedEncodedWords($line, $truncatedGluedHeader);
+                    // Sanitize any remaining raw non-ASCII bytes in the header value
                     $line = self::sanitizeNonAsciiHeaderLine($line, $currentHeaderName);
-                    // Fix malformed encoded-words in the header
-                    $line = self::fixMalformedEncodedWords($line);
                     $cleanedHeaders[] = $line;
+                    $skipGluedContinuations = $truncatedGluedHeader;
                 }
             } elseif (!$skipCurrentHeader && (substr($line, 0, 1) === ' ' || substr($line, 0, 1) === "\t")) {
+                if ($skipGluedContinuations) {
+                    // The previous line ended with a glued next-header name that was
+                    // truncated away; these continuation lines carry that header's
+                    // value and must be dropped with it
+                    continue;
+                }
                 // This is a continuation line for a header we're keeping
-                // Sanitize any raw non-ASCII bytes in continuation lines first (see above)
+                // Fix malformed encoded-words first (see above), then sanitize.
                 // Pass the current header name so we can preserve data with encoded-words
+                $line = self::fixMalformedEncodedWords($line, $truncatedGluedHeader);
                 $line = self::sanitizeNonAsciiHeaderLine($line, $currentHeaderName);
-                // Also fix malformed encoded-words in continuation lines
-                $line = self::fixMalformedEncodedWords($line);
                 $cleanedHeaders[] = $line;
+                $skipGluedContinuations = $truncatedGluedHeader;
             }
             // If $skipCurrentHeader is true, we ignore continuation lines for problematic headers
         }

@@ -324,6 +324,40 @@ This is a test email.
         );
     }
 
+    public function testReadLaminasMessage_withErrorHandling_ExchangeLoneQuestionMarkTerminators() {
+        // :: Setup
+        // Byte-exact reproduction of a production email from Oslo kommune (Exchange).
+        // Exchange terminates encoded-words with a lone ? instead of ?=, embeds raw
+        // UTF-8 bytes in iso-8859-1 words, glues the next header name (Thread-Topic:,
+        // Thread-Index:) onto the end of folded lines, and folds the Thread-Topic value
+        // in as a Subject continuation line.
+        $eml = "From: =?iso-8859-1?Q?Postmottak_BYR_-_Byr\xc3\xa5dsavdelingene?\t<postmottak@byr.oslo.kommune.no>\r\n" .
+               "To: PBE Postmottak <postmottak@pbe.oslo.kommune.no>\r\n" .
+               "Subject:\r\n" .
+               " =?iso-8859-1?Q?VS:_Innsynshenvendelse_-_2018/14642-6_-_S\xc3\xb8knad_om_dispen? =?iso-8859-1?Q?sasjon_fra_krav_om_avstand_til_vei_-_Wilsters_vei_18?Thread-Topic:\r\n" .
+               " =?iso-8859-1?Q?Innsynshenvendelse_-_2018/14642-6_-_S\xc3\xb8knad_om_dispensasj? =?iso-8859-1?Q?on_fra_krav_om_avstand_til_vei_-_Wilsters_vei_18?Thread-Index: AQHdH24GUsI7oOHcAkeP2eBBZeWTYLaFkx4g\r\n" .
+               "Date: Thu, 30 Jul 2026 06:04:38 +0000\r\n" .
+               "Content-Type: text/plain\r\n" .
+               "\r\n" .
+               "This is the email body";
+
+        // :: Act
+        $result = ThreadEmailExtractorEmailBody::readLaminasMessage_withErrorHandling($eml);
+
+        // :: Assert
+        $this->assertInstanceOf(\Laminas\Mail\Storage\Message::class, $result);
+        $this->assertEquals(
+            'Postmottak BYR - Byrådsavdelingene <postmottak@byr.oslo.kommune.no>',
+            $result->getHeader('from')->getFieldValue()
+        );
+        // Lone-? terminators closed, dispen+sasjon rejoined via adjacent encoded-words,
+        // and the glued Thread-Topic duplicate dropped
+        $this->assertEquals(
+            'VS: Innsynshenvendelse - 2018/14642-6 - Søknad om dispensasjon fra krav om avstand til vei - Wilsters vei 18',
+            $result->getHeader('subject')->getFieldValue()
+        );
+    }
+
     public function testReadLaminasMessage_withErrorHandling_RawUtf8InUnterminatedEncodedWord() {
         // :: Setup
         // The true raw form of the Oslo kommune production header: Exchange emits an
