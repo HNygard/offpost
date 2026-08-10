@@ -397,6 +397,12 @@ class ThreadEmailStatusUpdaterTest extends TestCase {
             // INFORMATION_RELEASE patterns
             ['Informasjon er vedlagt i e-posten', 'INFORMATION_RELEASE'],
             ['Dokumenter sendt som vedlegg', 'INFORMATION_RELEASE'],
+
+            // A reply letter that also releases documents stays an information
+            // release. RESPONSE_TO_REQUEST is manual-only: an auto-pattern for
+            // it would have to run before the information-release check and
+            // would swallow real releases like this one.
+            ['Svar på innsynskrav, dokumentene er vedlagt', 'INFORMATION_RELEASE'],
         ];
         
         foreach ($testCases as [$summary, $expectedStatus]) {

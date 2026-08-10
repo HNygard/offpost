@@ -28,6 +28,8 @@ function getLabelType($type, $status_type_input) {
             return 'label label_asking_for_clarification';
         case ThreadEmailStatusType::CLARIFICATION_SENT->value:
             return 'label label_clarification_sent';
+        case ThreadEmailStatusType::RESPONSE_TO_REQUEST->value:
+            return 'label label_response_to_request';
         case ThreadEmailStatusType::REQUEST_REJECTED->value:
             return 'label label_request_rejected label_warn'; // Suggest new style, maybe warn
         case ThreadEmailStatusType::INFORMATION_RELEASE->value:
