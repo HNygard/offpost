@@ -24,6 +24,32 @@ class ThreadClassifyPageTest extends E2EPageTestCase {
         $this->assertStringContainsString('name="submit"', $response->body);
     }
 
+    public function testStatusDropdownIsGroupedBySenderAndSorted() {
+        // :: Setup
+        $testData = E2ETestSetup::createTestThread();
+
+        // :: Act
+        $response = $this->renderPage(
+            '/thread-classify?threadId=' . $testData['thread']->id . '&emailId=' . $testData['email_id']
+        );
+
+        // :: Assert
+        // The option labels carry their sender group, so the classifying user can
+        // see which statuses apply to our email and which to the entity's
+        $this->assertStringContainsString('From us: Our Request', $response->body);
+        $this->assertStringContainsString('From entity: Receipt of Request', $response->body);
+
+        // Options are emitted in enum declaration order, so the from-us block
+        // must appear ahead of the from-entity block
+        $firstFromUs = strpos($response->body, 'From us: Our Request');
+        $firstFromEntity = strpos($response->body, 'From entity: Receipt of Request');
+        $this->assertLessThan(
+            $firstFromEntity,
+            $firstFromUs,
+            'From-us statuses should be listed before from-entity statuses'
+        );
+    }
+
     public function testPagePost() {
         // :: Setup - Use the test data we created
         $testData = E2ETestSetup::createTestThread();

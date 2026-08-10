@@ -24,6 +24,8 @@ function getLabelType($type, $status_type_input) {
             return 'label label_asking_for_copy'; // Suggest new style
         case ThreadEmailStatusType::COPY_SENT->value:
             return 'label label_copy_sent'; // Suggest new style
+        case ThreadEmailStatusType::REQUEST_RECEIPT->value:
+            return 'label label_request_receipt';
         case ThreadEmailStatusType::ASKING_FOR_CLARIFICATION->value:
             return 'label label_asking_for_clarification';
         case ThreadEmailStatusType::CLARIFICATION_SENT->value:

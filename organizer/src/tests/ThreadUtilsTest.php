@@ -56,6 +56,12 @@ class ThreadUtilsTest extends TestCase {
         $this->assertEquals('label label_response_to_request', getLabelType('any', 'RESPONSE_TO_REQUEST'));
     }
 
+    public function testGetLabelTypeRequestReceipt() {
+        // getLabelType() throws on unrecognised values, so a missing case here
+        // would make the thread view and front page fail for receipt emails
+        $this->assertEquals('label label_request_receipt', getLabelType('any', 'REQUEST_RECEIPT'));
+    }
+
     public function testGetLabelTypeInvalid() {
         $this->expectException(Exception::class);
         $this->expectExceptionMessage('Unknown status_type[any]: invalid');

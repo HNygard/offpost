@@ -12,9 +12,9 @@ class ThreadEmailStatusTypeTest extends TestCase {
 
         // :: Act & Assert
         $this->assertEquals('ASKING_FOR_CLARIFICATION', ThreadEmailStatusType::ASKING_FOR_CLARIFICATION->value);
-        $this->assertEquals('Asking for Clarification', ThreadEmailStatusType::ASKING_FOR_CLARIFICATION->label());
+        $this->assertEquals('From entity: Asking for Clarification', ThreadEmailStatusType::ASKING_FOR_CLARIFICATION->label());
         $this->assertEquals('CLARIFICATION_SENT', ThreadEmailStatusType::CLARIFICATION_SENT->value);
-        $this->assertEquals('Clarification Sent', ThreadEmailStatusType::CLARIFICATION_SENT->label());
+        $this->assertEquals('From us: Clarification Sent', ThreadEmailStatusType::CLARIFICATION_SENT->label());
     }
 
     public function testResponseToRequestCase() {
@@ -22,7 +22,87 @@ class ThreadEmailStatusTypeTest extends TestCase {
 
         // :: Act & Assert
         $this->assertEquals('RESPONSE_TO_REQUEST', ThreadEmailStatusType::RESPONSE_TO_REQUEST->value);
-        $this->assertEquals('Response to Request', ThreadEmailStatusType::RESPONSE_TO_REQUEST->label());
+        $this->assertEquals('From entity: Response to Request', ThreadEmailStatusType::RESPONSE_TO_REQUEST->label());
+    }
+
+    public function testRequestReceiptCase() {
+        // :: Setup
+        $case = ThreadEmailStatusType::REQUEST_RECEIPT;
+
+        // :: Act & Assert
+        $this->assertEquals('REQUEST_RECEIPT', $case->value);
+        $this->assertEquals('From entity: Receipt of Request', $case->label());
+    }
+
+    public function testRequestReceiptDescriptionNamesTheNorwegianTermAndIgnoreEffect() {
+        // :: Setup
+        $case = ThreadEmailStatusType::REQUEST_RECEIPT;
+
+        // :: Act
+        $description = $case->description();
+
+        // :: Assert
+        // The Norwegian wording is what the classifying user sees in the email
+        $this->assertStringContainsString('Kvittering på mottatt innsynshenvendelse', $description);
+        $this->assertStringContainsString('Ignore', $description);
+        $this->assertStringContainsString('NP integration', $description);
+    }
+
+    public function testEveryCaseHasAGroupExceptUnknown() {
+        // :: Setup
+        $cases = ThreadEmailStatusType::cases();
+
+        // :: Act & Assert
+        foreach ($cases as $case) {
+            if ($case === ThreadEmailStatusType::UNKNOWN) {
+                $this->assertNull($case->group(), 'UNKNOWN should not be grouped by sender');
+                continue;
+            }
+            $this->assertNotEmpty($case->group(), 'Missing group for ' . $case->value);
+        }
+    }
+
+    public function testLabelIsPrefixedWithItsGroup() {
+        // :: Setup
+        $grouped = ThreadEmailStatusType::OUR_REQUEST;
+        $ungrouped = ThreadEmailStatusType::UNKNOWN;
+
+        // :: Act & Assert
+        $this->assertEquals('From us: Our Request', $grouped->label());
+        $this->assertEquals('Unknown', $ungrouped->label(), 'Ungrouped cases keep a bare label');
+    }
+
+    public function testCasesAreOrderedByGroup() {
+        // :: Setup
+        // cases() returns declaration order, and the classify dropdown iterates it
+        // directly, so declaration order is what the user sees.
+        $expected = [
+            'OUR_REQUEST',
+            'CLARIFICATION_SENT',
+            'COPY_SENT',
+            'REQUEST_RECEIPT',
+            'ASKING_FOR_MORE_TIME',
+            'ASKING_FOR_COPY',
+            'ASKING_FOR_CLARIFICATION',
+            'RESPONSE_TO_REQUEST',
+            'REQUEST_REJECTED',
+            'INFORMATION_RELEASE',
+            'info',
+            'error',
+            'success',
+            'unknown',
+        ];
+
+        // :: Act
+        $actual = ThreadEmailStatusType::values();
+
+        // :: Assert
+        $this->assertEquals(
+            $expected,
+            $actual,
+            'Dropdown order should group from-us, then from-entity, then legacy, then unknown. Got: '
+                . json_encode($actual, JSON_PRETTY_PRINT)
+        );
     }
 
     public function testResponseToRequestDescriptionNamesInnsynskravAndIgnoreEffect() {
