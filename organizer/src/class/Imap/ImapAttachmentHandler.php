@@ -140,7 +140,13 @@ class ImapAttachmentHandler {
         // Handle RFC 2047 MIME encoded-words: =?charset?encoding?text?=
         // Examples: =?utf-8?B?...?=, =?iso-8859-1?Q?...?=, =?windows-1252?Q?...?=
         if (preg_match('/=\?[^?]+\?[BQbq]\?[^?]*\?=/i', $string)) {
-            $decoded = mb_decode_mimeheader($string);
+            // iconv_mime_decode() implements RFC 2047 section 4.2 rule 2, where "_" in a
+            // Q-encoded word means a space. mb_decode_mimeheader() leaves "_" as-is, which
+            // turns "Klage_p=E5" into "Klage_på" instead of "Klage på".
+            $decoded = iconv_mime_decode($string, ICONV_MIME_DECODE_CONTINUE_ON_ERROR, 'UTF-8');
+            if ($decoded === false) {
+                $decoded = mb_decode_mimeheader($string);
+            }
 
             // Ensure result is valid UTF-8
             if (!mb_check_encoding($decoded, 'UTF-8')) {
