@@ -9,14 +9,28 @@ ini_set('display_startup_errors', true);
 define('PHPUNIT_RUNNING', true);
 $environment = 'development';
 
-// Set up test database configuration for development environment
-putenv('DB_HOST=127.0.0.1');
-putenv('DB_PORT=25432');
-putenv('DB_NAME=offpost');
-putenv('DB_USER=offpost');
+// Set up test database configuration for development environment.
+//
+// The defaults are the host-side view of the dev stack: docker-compose.dev.yaml
+// publishes postgres on 127.0.0.1:25432, and the password file sits in the repo.
+// Running `./organizer/src/vendor/bin/phpunit organizer/src/tests/` from the repo
+// root therefore needs no environment at all, as before.
+//
+// Each value yields to one already in the environment, so the same suite can run
+// inside a container - where postgres is `postgres:5432` and the password is at
+// /run/secrets/postgres_password, and where the repo-relative path below does not
+// resolve. Without this the hardcoded values won every time and in-container runs
+// could not reach the database.
+function testEnvDefault(string $name, string $value): void {
+    $existing = getenv($name);
+    putenv($name . '=' . ($existing !== false && $existing !== '' ? $existing : $value));
+}
 
-// Use the actual postgres password file
-putenv('DB_PASSWORD_FILE=' . __DIR__ . '/../../../secrets/postgres_password');
+testEnvDefault('DB_HOST', '127.0.0.1');
+testEnvDefault('DB_PORT', '25432');
+testEnvDefault('DB_NAME', 'offpost');
+testEnvDefault('DB_USER', 'offpost');
+testEnvDefault('DB_PASSWORD_FILE', __DIR__ . '/../../../secrets/postgres_password');
 
 // Define test directories
 define('DATA_DIR', '/tmp/organizer-test-data');

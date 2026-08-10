@@ -85,6 +85,18 @@ I pledge to follow the custom instructions.
 - Run all tests (unit + e2e) using:
     ./organizer/src/vendor/bin/phpunit organizer/src/tests/ organizer/src/e2e-tests/
 
+- The three commands above run on the host and need PHP with pdo_pgsql plus dev
+  dependencies in organizer/src/vendor/ (the image installs --no-dev, and the
+  anonymous /php-frontend/vendor volume keeps the container's copy off the host).
+  To run unit tests entirely in a container instead, with no host PHP or composer:
+    docker-compose -f docker-compose.dev.yaml run --rm --entrypoint sh \
+      -e DB_HOST=postgres -e DB_PORT=5432 \
+      -e DB_PASSWORD_FILE=/run/secrets/postgres_password \
+      organizer -c "composer install --no-interaction --no-progress && ./vendor/bin/phpunit tests/"
+  The DB_* variables are what tests/bootstrap.php falls back from; its defaults
+  are the host-side view (127.0.0.1:25432 and the repo's secrets/ path), neither
+  of which resolves inside a container.
+
 - Run system using:
     docker-compose -f docker-compose.dev.yaml up -d
 
