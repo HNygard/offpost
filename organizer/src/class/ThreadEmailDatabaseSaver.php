@@ -193,7 +193,7 @@ class ThreadEmailDatabaseSaver {
                         if (!empty($attachments)) {
                             $newEmail->attachments = array_map(function($att) {
                                 $att->status_type = ThreadEmailStatusType::UNKNOWN;
-                                $att->status_text = 'uklassifisert-dok';
+                                $att->status_text = ThreadEmailAttachment::UNCLASSIFIED_STATUS_TEXT;
                                 return $att;
                             }, $attachments);
                         }
@@ -338,7 +338,7 @@ class ThreadEmailDatabaseSaver {
             ':filetype' => $attachment->filetype,
             ':location' => $attachment->location,
             ':status_type' => ThreadEmailStatusType::UNKNOWN->value,
-            ':status_text' => 'uklassifisert-dok'
+            ':status_text' => ThreadEmailAttachment::UNCLASSIFIED_STATUS_TEXT
         ];
         
         // Handle binary content separately

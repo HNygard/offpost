@@ -6,6 +6,7 @@ require_once __DIR__ . '/auth.php';
 require_once __DIR__ . '/class/Threads.php';
 require_once __DIR__ . '/class/ThreadEmailClassifier.php';
 require_once __DIR__ . '/class/ThreadStorageManager.php';
+require_once __DIR__ . '/class/ThreadEmailAttachment.php';
 require_once __DIR__ . '/class/ThreadEmailHistory.php';
 require_once __DIR__ . '/class/ThreadAuthorization.php';
 require_once __DIR__ . '/class/common.php';
@@ -146,8 +147,13 @@ if (isset($_POST['submit'])) {
             foreach ($email->attachments as $att) {
                 $attId = str_replace(' ', '_', str_replace('.', '_', $att->location));
                 $attNewStatusTypeString = $_POST[$emailId . '-att-' . $attId . '-status_type'];
-                $att->status_text = $_POST[$emailId . '-att-' . $attId . '-status_text'];
                 $att->status_type = ThreadEmailStatusType::tryFrom($attNewStatusTypeString) ?? ThreadEmailStatusType::UNKNOWN;
+                // The form pre-fills the ingest placeholder, so it survives a real
+                // classification unless it is dropped here.
+                $att->status_text = ThreadEmailAttachment::normalizeStatusText(
+                    $att->status_type,
+                    $_POST[$emailId . '-att-' . $attId . '-status_text']
+                );
                 ThreadStorageManager::getInstance()->updateAttachmentClassification(
                     $email->id,
                     $att->id,
