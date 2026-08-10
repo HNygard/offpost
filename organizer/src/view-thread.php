@@ -423,15 +423,13 @@ function print_extraction ($extraction) {
                 $thread->emails = array();
             }
             foreach ($thread->emails as $email):
-                $label_type = getLabelType('email', $email->status_type);
-
                 $extractions = $extraction_service->getExtractionsForEmail($email->id);
             ?>
                 <div class="email-item<?= $email->ignore ? ' ignored' : '' ?>">
                     <div class="email-header">
                         <span class="datetime"><?= htmlescape(formatDateTimeOslo($email->datetime_received)) ?></span>
                         <span class="email-type"><?= htmlescape($email->email_type) ?></span>
-                        <span class="<?= $label_type ?>"><?= htmlescape($email->status_text) ?></span>
+                        <?= renderClassification($email->status_type, $email->status_text) ?>
                         <?php
                         if (ThreadEmailClassifier::getClassificationLabel($email) !== null) {
                             ?>
@@ -493,11 +491,10 @@ function print_extraction ($extraction) {
                             <span class="attachments-label">Attachments:</span>
                             <div class="attachments-list">
                                 <?php foreach ($email->attachments as $att):
-                                    $label_type = getLabelType('attachement', $att->status_type);
                                     $iconClass = getIconClass($att->filetype);
                                 ?>
                                 <div class="attachment-item">
-                                    <span class="<?= $label_type ?>"><?= htmlescape($att->status_text) ?></span>
+                                    <?= renderClassification($att->status_type, $att->status_text) ?>
                                     <?= htmlescape($att->filetype) ?> - 
                                     <?php if (isset($att->location)): ?>
                                         <a href="/file?threadId=<?= htmlescape($threadId) ?>&attachmentId=<?= urlencode($att->id) ?>">

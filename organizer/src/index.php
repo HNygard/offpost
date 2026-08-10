@@ -361,12 +361,11 @@ function getThreadStatusLabelClass($status) {
                                 $thread->emails = array();
                             }
                             foreach ($thread->emails as $email) {
-                                $label_type = getLabelType('email', $email->status_type);
                                 ?>
                                 <div <?= $email->ignore ? ' style="color: gray;"' : '' ?>>
                                     <?= formatDateTimeOslo($email->datetime_received, false) ?>:
                                     <?= $email->email_type ?> -
-                                    <span class="<?= $label_type ?>"><?= $email->status_text ?></span>
+                                    <?= renderClassification($email->status_type, $email->status_text) ?>
                                     <?php
                                     if (ThreadEmailClassifier::getClassificationLabel($email) !== null) {
                                         ?>
@@ -381,11 +380,10 @@ function getThreadStatusLabelClass($status) {
                                     <?php
                                     if (isset($email->attachments)) {
                                         foreach ($email->attachments as $att) {
-                                            $label_type = getLabelType('attachement', $att->status_type);
                                             echo chr(10);
                                             ?>
                                             <li>
-                                                <span class="<?= $label_type ?>"><?= $att->status_text ?></span>
+                                                <?= renderClassification($att->status_type, $att->status_text) ?>
                                                 <?= $att->filetype ?> - <i><?= htmlentities($att->name, ENT_QUOTES) ?></i>
                                             </li>
                                             <?php
