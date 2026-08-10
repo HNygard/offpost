@@ -148,27 +148,42 @@ unclassified rows and `isset()` stays false — `getClassificationLabel()` keeps
 
 ### 4. Clear the placeholder on save
 
-The rule lives with the constant, as a static on `ThreadEmailAttachment`:
+There are **two** placeholders, one per level, and both need the same treatment:
+
+- `ThreadEmailAttachment::UNCLASSIFIED_STATUS_TEXT` = `'uklassifisert-dok'`, stamped at
+  `ThreadEmailDatabaseSaver.php:196` and `:341`.
+- `ThreadEmail::UNCLASSIFIED_STATUS_TEXT` = `'Uklassifisert'`, stamped at
+  `ThreadEmailDatabaseSaver.php:190` and `:292`.
+
+An earlier draft of this document claimed emails never receive a placeholder. That was
+wrong — the final whole-branch review caught it, with 121 such rows sitting in the dev
+database. The email row is the more prominent of the two, so leaving it would have left
+half the reported bug in place.
+
+Each class carries the rule alongside its own constant, as a static:
 
 ```php
 public static function normalizeStatusText($statusType, $statusText)
 ```
 
-It returns `''` when `$statusText` is exactly `UNCLASSIFIED_STATUS_TEXT` and `$statusType`
-is anything other than `UNKNOWN`, and returns `$statusText` unchanged otherwise. It accepts
-either a `ThreadEmailStatusType` case or a raw string for `$statusType`, matching how the
-rest of the codebase passes status types around.
+It returns `''` when `$statusText` is exactly that class's `UNCLASSIFIED_STATUS_TEXT` and
+`$statusType` is anything other than `UNKNOWN`, and returns `$statusText` unchanged
+otherwise (`null` becomes `''`). It accepts either a `ThreadEmailStatusType` case or a raw
+string for `$statusType`, matching how the rest of the codebase passes status types around.
 
-`classify-email.php` runs the submitted attachment text through it before persisting.
-Keeping the rule in a class rather than inline in the page script is what makes it
-unit-testable — the page script itself cannot be exercised from PHPUnit.
+`classify-email.php` runs both the submitted email text and the submitted attachment text
+through the matching rule before persisting. Keeping the rule in a class rather than inline
+in the page script is what makes it unit-testable — the page script itself cannot be
+exercised from PHPUnit.
 
-Choosing `UNKNOWN` keeps the placeholder — the attachment is genuinely still unclassified
-and should keep saying so.
+Choosing `UNKNOWN` keeps the placeholder — the email or attachment is genuinely still
+unclassified and should keep saying so.
 
-Attachments only. Emails never receive the placeholder, so no clearing rule is added on the
-email path. The display suppression in section 1 stays uniform across both levels because
-one unconditional rule in the helper is simpler than branching on level.
+Note the deliberate asymmetry between the two mechanisms: display suppression (section 1)
+is unconditional, while save-clearing is conditional on a non-`UNKNOWN` type. One
+unconditional rule in the helper is simpler than branching on level, and hiding a
+placeholder from the reader costs nothing, whereas erasing it from the database would lose
+the marker that says an item still needs classifying.
 
 ## Testing
 
