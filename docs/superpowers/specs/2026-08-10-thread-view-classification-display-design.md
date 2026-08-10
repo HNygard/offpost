@@ -61,16 +61,24 @@ looks.
 Output shape:
 
 ```html
-<span class="label label_information_release label_ok">Information Release</span>
-<span class="status-text">Svar med vedlegg</span>
+<span class="classification label label_information_release label_ok">From entity: Information Release</span> <span class="status-text">Svar med vedlegg</span>
 ```
 
 Rules:
 
-- The chip's CSS classes come from the existing `getLabelType()`, unchanged.
-- The chip's text is `ThreadEmailStatusType::tryFrom($status_type)->label()`. A null or
-  empty `status_type` renders as `Unknown`. A value not present in the enum renders as the
-  raw string rather than being swallowed, so unexpected database values stay visible.
+- The chip carries `classification` plus the classes from the existing `getLabelType()`,
+  unchanged. The extra `classification` class is the styling hook (see section 2b) and does
+  not disturb any existing selector.
+- The chip's text is `ThreadEmailStatusType::tryFrom($status_type)->label()`. Null or empty
+  `status_type` is normalised to `UNKNOWN` first, so it renders as `Unknown` rather than
+  reaching `getLabelType()`'s `default:` branch. A value that `getLabelType()` accepts but
+  the enum does not (`disabled`, `danger`, `UNKNOWN` in caps) renders as the raw string
+  rather than being swallowed. Anything else still throws from `getLabelType()`, exactly as
+  it does today.
+- `label()` includes the group prefix added in a7ccd70 — `From us: `, `From entity: `,
+  `Legacy: ` — so the chip reads "From entity: Information Release". This is the label the
+  classify page's dropdown already shows, and it tells the reader who sent the email on
+  attachment rows, where the `IN`/`OUT` marker is not repeated.
 - `status_text` is appended in a muted `status-text` span, and is **omitted** when it is
   empty, when it equals the chip's label, or when it equals the placeholder
   `uklassifisert-dok`.
@@ -100,6 +108,30 @@ Four blocks collapse to calls of the helper:
 `index.php` currently echoes `$email->status_text` and `$att->status_text` without
 escaping. Routing both through the helper closes that hole.
 
+### 2b. Chip styling
+
+`webroot/css/style.css` styles labels through `span.label a` — the background, border,
+padding and radius all live on the anchor. A label with no link inside it, which is exactly
+what these classification labels are, renders as unstyled plain text. On top of that,
+`label_our_request`, `label_request_receipt`, `label_asking_for_*`, `label_clarification_sent`,
+`label_copy_sent`, `label_response_to_request`, `label_request_rejected` and
+`label_information_release` have no CSS rules anywhere. The classification is therefore not
+merely missing its type — even the coloured chip the markup implies has never rendered.
+
+Add to `style.css`:
+
+- `span.label.classification` — the chip box (background, 1px border, 4px radius, 4px/10px
+  padding, `cursor: default`), mirroring `span.label a` so linked and unlinked labels look
+  alike. It also neutralises the `span.label:hover` lift, which is a link affordance.
+- One background/border pair per status group, keyed off the `label_*` classes that
+  `getLabelType()` already emits: "From us" blue, "From entity" amber for the asking/waiting
+  states, green for `label_information_release`, red for `label_request_rejected`, neutral
+  grey for unknown and legacy.
+- `.status-text` — muted (`#6c757d`), `0.9em`, no chip box.
+
+Existing `span.label a` rules are untouched, so the label chips in the thread header, the
+label filters and the status labels keep their current appearance.
+
 ### 3. Load `auto_classification`
 
 Map the column in the three loaders that build `ThreadEmail` objects:
@@ -116,9 +148,20 @@ unclassified rows and `isset()` stays false — `getClassificationLabel()` keeps
 
 ### 4. Clear the placeholder on save
 
-In `classify-email.php`, when a submitted attachment `status_text` is exactly the
-placeholder and the chosen `status_type` is anything other than `UNKNOWN`, persist an empty
-string instead.
+The rule lives with the constant, as a static on `ThreadEmailAttachment`:
+
+```php
+public static function normalizeStatusText($statusType, $statusText)
+```
+
+It returns `''` when `$statusText` is exactly `UNCLASSIFIED_STATUS_TEXT` and `$statusType`
+is anything other than `UNKNOWN`, and returns `$statusText` unchanged otherwise. It accepts
+either a `ThreadEmailStatusType` case or a raw string for `$statusType`, matching how the
+rest of the codebase passes status types around.
+
+`classify-email.php` runs the submitted attachment text through it before persisting.
+Keeping the rule in a class rather than inline in the page script is what makes it
+unit-testable — the page script itself cannot be exercised from PHPUnit.
 
 Choosing `UNKNOWN` keeps the placeholder — the attachment is genuinely still unclassified
 and should keep saying so.
@@ -132,14 +175,16 @@ one unconditional rule in the helper is simpler than branching on level.
 New unit tests:
 
 - `ThreadUtilsRenderClassificationTest` — one case per enum value asserting the exact
-  rendered HTML; null and empty `status_type` render `Unknown`; an unrecognised database
-  value renders verbatim; `status_text` suppressed when empty, when equal to the label, and
-  when it is the placeholder; `status_text` shown otherwise; HTML in `status_text` and in an
-  unrecognised `status_type` is escaped.
+  rendered HTML; null and empty `status_type` render `Unknown`; the legacy `disabled`,
+  `danger` and caps-`UNKNOWN` values render verbatim; `status_text` suppressed when empty,
+  when equal to the label, and when it is the placeholder; `status_text` shown otherwise;
+  HTML in `status_text` is escaped; a `ThreadEmailStatusType` case and its raw string value
+  produce identical output.
+- `ThreadEmailAttachmentNormalizeStatusTextTest` — placeholder + real type → `''`;
+  placeholder + `UNKNOWN` (both as enum case and as the string `'unknown'`) → placeholder
+  retained; non-placeholder text → untouched; empty and null text → untouched.
 - Extend the existing thread-loading tests to assert `auto_classification` survives a load
   through `getThreads()`, `getThreadsForEntity()` and `Thread::loadFromDatabase()`.
-- A test for the attachment placeholder-clearing rule: placeholder + real type → empty;
-  placeholder + `UNKNOWN` → placeholder retained; non-placeholder text → untouched.
 
 Existing suites that must still pass unchanged: `ThreadEmailClassifierTest`,
 `ThreadEmailClassificationPersistenceTest`, `SummaryClassificationWiringTest`,
