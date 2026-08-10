@@ -80,7 +80,7 @@ class BulkThreadActionsPageTest extends E2EPageTestCase {
         // Prepare thread IDs for the POST request
         $threadIds = [];
         foreach ($this->testThreads as $testData) {
-            $threadIds[] = $this->testEntityId . ':' . $testData['thread']->id;
+            $threadIds[] = $testData['thread']->id;
         }
         
         // :: Act
@@ -170,7 +170,7 @@ class BulkThreadActionsPageTest extends E2EPageTestCase {
         // Prepare thread IDs for the POST request
         $threadIds = [];
         foreach ($this->testThreads as $testData) {
-            $threadIds[] = $this->testEntityId . ':' . $testData['thread']->id;
+            $threadIds[] = $testData['thread']->id;
         }
         
         // :: Act
@@ -224,7 +224,7 @@ class BulkThreadActionsPageTest extends E2EPageTestCase {
         // Prepare thread IDs for the POST request
         $threadIds = [];
         foreach ($this->testThreads as $testData) {
-            $threadIds[] = $this->testEntityId . ':' . $testData['thread']->id;
+            $threadIds[] = $testData['thread']->id;
         }
         
         // :: Act
@@ -274,7 +274,7 @@ class BulkThreadActionsPageTest extends E2EPageTestCase {
         // Prepare thread IDs for the POST request
         $threadIds = [];
         foreach ($this->testThreads as $testData) {
-            $threadIds[] = $this->testEntityId . ':' . $testData['thread']->id;
+            $threadIds[] = $testData['thread']->id;
         }
         
         // :: Act
@@ -316,7 +316,7 @@ class BulkThreadActionsPageTest extends E2EPageTestCase {
         // Prepare thread IDs for the POST request
         $threadIds = [];
         foreach ($this->testThreads as $testData) {
-            $threadIds[] = $this->testEntityId . ':' . $testData['thread']->id;
+            $threadIds[] = $testData['thread']->id;
         }
         
         // :: Act
@@ -351,9 +351,47 @@ class BulkThreadActionsPageTest extends E2EPageTestCase {
         );
     }
 
-    public function testMalformedThreadReferenceReportsReason() {
+    public function testLegacyEntityPrefixedReferenceStillArchives() {
         // :: Setup
-        $threadIds = ['this-reference-has-no-separator'];
+        // Pages used to submit "entityId:threadId". A page loaded before the change to
+        // plain thread IDs must keep working rather than failing on submit.
+        $thread = $this->testThreads[0]['thread'];
+        Database::execute(
+            "UPDATE threads SET archived = false WHERE id = ?",
+            [$thread->id]
+        );
+        $legacyReference = $this->testEntityId . ':' . $thread->id;
+
+        // :: Act
+        $this->renderPage(
+            '/thread-bulk-actions',
+            'dev-user-id',
+            'POST',
+            '302 Found',
+            [
+                'action' => 'archive',
+                'thread_ids' => [$legacyReference]
+            ]
+        );
+        $response = $this->renderPage('/?archived');
+
+        // :: Assert
+        $this->assertStringContainsString(
+            'Successfully processed 1 thread(s)',
+            $response->body,
+            "A legacy entityId:threadId reference should still resolve"
+        );
+
+        $isArchived = Database::queryValue(
+            "SELECT archived FROM threads WHERE id = ?",
+            [$thread->id]
+        );
+        $this->assertTrue((bool)$isArchived, "Thread should be archived via a legacy reference");
+    }
+
+    public function testUnrecognisedReferenceReportsThatNoThreadExists() {
+        // :: Setup
+        $threadIds = ['this-is-not-a-thread-id'];
 
         // :: Act
         $this->renderPage(
@@ -370,12 +408,12 @@ class BulkThreadActionsPageTest extends E2EPageTestCase {
 
         // :: Assert
         $this->assertStringContainsString(
-            'Invalid thread reference (expected entityId:threadId)',
+            'No thread exists with this ID',
             $response->body,
-            "Malformed thread reference should be reported with its own reason"
+            "An unrecognised reference should be reported as a missing thread"
         );
         $this->assertStringContainsString(
-            'this-reference-has-no-separator',
+            'this-is-not-a-thread-id',
             $response->body,
             "Error message should echo the submitted reference so the admin can identify it"
         );
@@ -385,7 +423,7 @@ class BulkThreadActionsPageTest extends E2EPageTestCase {
         // :: Setup
         // A syntactically valid UUID that is not in the database
         $missingThreadId = '00000000-0000-4000-8000-000000000001';
-        $threadIds = [$this->testEntityId . ':' . $missingThreadId];
+        $threadIds = [$missingThreadId];
 
         // :: Act
         $this->renderPage(
@@ -411,7 +449,7 @@ class BulkThreadActionsPageTest extends E2EPageTestCase {
     public function testNonUuidThreadIdReportsThatNoThreadExists() {
         // :: Setup
         // threads.id is a uuid column, so a non-uuid value must not crash the lookup
-        $threadIds = [$this->testEntityId . ':not-a-uuid-at-all'];
+        $threadIds = ['not-a-uuid-at-all'];
 
         // :: Act
         $this->renderPage(
@@ -434,33 +472,6 @@ class BulkThreadActionsPageTest extends E2EPageTestCase {
         );
     }
 
-    public function testWrongEntityIdReportsEntityMismatch() {
-        // :: Setup
-        // Reference an existing thread through an entity it does not belong to
-        $thread = $this->testThreads[0]['thread'];
-        $threadIds = ['999999999-wrong-entity-development:' . $thread->id];
-
-        // :: Act
-        $this->renderPage(
-            '/thread-bulk-actions',
-            'dev-user-id',
-            'POST',
-            '302 Found',
-            [
-                'action' => 'archive',
-                'thread_ids' => $threadIds
-            ]
-        );
-        $response = $this->renderPage('/');
-
-        // :: Assert
-        $this->assertStringContainsString(
-            'Thread belongs to entity ' . $this->testEntityId . ', not 999999999-wrong-entity-development',
-            $response->body,
-            "An entity/thread mismatch should name both the actual and the submitted entity"
-        );
-    }
-
     public function testReadyForSendingOnNonStagingThreadReportsCurrentStatus() {
         // :: Setup
         $thread = $this->testThreads[0]['thread'];
@@ -468,7 +479,7 @@ class BulkThreadActionsPageTest extends E2EPageTestCase {
             "UPDATE threads SET sending_status = ? WHERE id = ?",
             [Thread::SENDING_STATUS_SENT, $thread->id]
         );
-        $threadIds = [$this->testEntityId . ':' . $thread->id];
+        $threadIds = [$thread->id];
 
         // :: Act
         $this->renderPage(
@@ -512,7 +523,7 @@ class BulkThreadActionsPageTest extends E2EPageTestCase {
             "UPDATE threads SET sending_status = ? WHERE id = ?",
             [Thread::SENDING_STATUS_SENT, $thread->id]
         );
-        $threadIds = [$this->testEntityId . ':' . $thread->id];
+        $threadIds = [$thread->id];
 
         // :: Act
         $this->renderPage(
@@ -539,6 +550,54 @@ class BulkThreadActionsPageTest extends E2EPageTestCase {
             $alert,
             "The error alert should name the thread ID. Alert was: " . $alert
         );
+    }
+
+    public function testArchiveButtonOnThreadViewPageArchivesTheThread() {
+        // :: Setup
+        // Use the thread reference exactly as the thread view page renders it, so a page
+        // that submits an unusable reference fails here rather than silently doing nothing
+        $thread = $this->testThreads[0]['thread'];
+        Database::execute(
+            "UPDATE threads SET archived = false WHERE id = ?",
+            [$thread->id]
+        );
+
+        $threadViewResponse = $this->renderPage(
+            '/thread-view?threadId=' . urlencode($thread->id)
+        );
+        preg_match(
+            '#<input type="hidden" name="thread_ids\[\]" value="([^"]*)">#',
+            $threadViewResponse->body,
+            $matches
+        );
+        $this->assertNotEmpty($matches, "Thread view page should render a bulk action thread reference");
+        $renderedReference = html_entity_decode($matches[1]);
+
+        // :: Act
+        $this->renderPage(
+            '/thread-bulk-actions',
+            'dev-user-id',
+            'POST',
+            '302 Found',
+            [
+                'action' => 'archive',
+                'thread_ids' => [$renderedReference]
+            ]
+        );
+        $response = $this->renderPage('/?archived');
+
+        // :: Assert
+        $this->assertStringContainsString(
+            'Successfully processed 1 thread(s)',
+            $response->body,
+            "Archiving from the thread view page should succeed. Reference submitted: " . $renderedReference
+        );
+
+        $isArchived = Database::queryValue(
+            "SELECT archived FROM threads WHERE id = ?",
+            [$thread->id]
+        );
+        $this->assertTrue((bool)$isArchived, "Thread should be archived after using the thread view archive button");
     }
 
     public function testErrorAlertRendersEachFailureOnItsOwnLine() {
@@ -577,8 +636,8 @@ class BulkThreadActionsPageTest extends E2EPageTestCase {
         $thread = $this->testThreads[0]['thread'];
         $missingThreadId = '00000000-0000-4000-8000-000000000002';
         $threadIds = [
-            $this->testEntityId . ':' . $thread->id,
-            $this->testEntityId . ':' . $missingThreadId,
+            $thread->id,
+            $missingThreadId,
         ];
 
         // :: Act

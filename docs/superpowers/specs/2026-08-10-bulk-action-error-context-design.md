@@ -28,6 +28,10 @@ a different entity" and "you are not authorized". The `canUserAccess()` half of
 that condition is effectively dead — anything present in the list already
 satisfies it.
 
+The first row is not hypothetical. The thread view page submits `:threadId`
+with an empty entity, so its Archive/Unarchive button never matches a thread.
+See section 2b.
+
 ## Goals
 
 Tell the admin, per failed thread, what specifically stopped it.
@@ -64,24 +68,35 @@ prefix so the current e2e assertion keeps matching.
 
 ### 2. Diagnose the not-found case
 
-When a thread reference is absent from the user's thread list, run one targeted
-lookup against `threads` by ID to distinguish three causes:
+When a thread ID is absent from the user's thread list, run one targeted lookup
+against `threads` by ID to distinguish two causes:
 
 | Lookup result | Reason |
 |---|---|
 | No row | `No thread exists with this ID` |
-| Row with a different `entity_id` | `Thread belongs to entity <actual>, not <submitted>` |
-| Row with the same `entity_id` | `You do not have access to this thread (not public, no authorization)` |
-
-The wrong-entity case is the most likely explanation for a bulk action that
-fails on a thread the admin can plainly see: a stale listing page posts an
-`entityId` that no longer matches the thread's row, the inner match loop never
-fires, and the old message says only "Failed to process 1 thread(s)".
+| Row exists | `You do not have access to this thread (not public, no authorization)` |
 
 Distinguishing "does not exist" from "no access" does confirm the existence of a
 thread ID to a user not authorized for it. Accepted: the ID is a UUID the caller
 must already possess, and this is an authenticated internal tool. The diagnostic
 value outweighs the disclosure.
+
+### 2b. Identify threads by ID alone
+
+Bulk actions took references shaped `entityId:threadId`, a leftover from the
+era when threads lived in `threads-<entity>.json` files. Thread IDs are UUIDs
+and the primary key, so the entity prefix carries no information.
+
+`fd3c025` moved the thread view to threadId-only but left the archive button
+submitting a hardcoded empty prefix (`:threadId`), which no longer matched any
+thread. The Archive/Unarchive button on the thread view page has been silently
+broken since - producing exactly the bare "Failed to process 1 thread(s)" that
+prompted this work.
+
+The handler now resolves threads by ID alone and both pages submit a plain
+thread ID. A leading `entityId:` prefix is still accepted so a page loaded
+before the change keeps working. The entity-mismatch reason disappears with it,
+since entity is no longer part of resolution.
 
 ### 3. Report exceptions instead of dying
 
@@ -99,23 +114,27 @@ Escaping still happens first, so `nl2br()` only ever sees escaped text.
 
 | Trigger | Reason |
 |---|---|
-| Malformed reference | `Invalid thread reference (expected entityId:threadId)` |
-| Thread row missing | `No thread exists with this ID` |
-| Entity mismatch | `Thread belongs to entity X, not Y` |
+| Thread row missing, or reference is not a thread ID | `No thread exists with this ID` |
 | Not authorized | `You do not have access to this thread (not public, no authorization)` |
-| Wrong sending status | `Cannot mark as ready for sending: status is X, expected staging` |
-| Unknown action | `Unknown bulk action` |
-| Exception | `Database update failed: <message>` |
+| Wrong sending status | `Cannot mark as ready for sending: status is X, expected STAGING` |
+| Unknown action | `Unknown bulk action "<action>"` |
+| Exception | `Update failed: <message>` |
 
 ## Testing
 
 Extend `organizer/src/e2e-tests/pages/BulkThreadActionsPageTest.php`:
 
-- malformed reference produces the invalid-reference reason
-- non-existent thread ID produces the no-such-thread reason
-- reference with a mismatched entity ID produces the wrong-entity reason
+- the archive button as the thread view page actually renders it archives the
+  thread — scrape the form value from `/thread-view` and submit that, so a page
+  emitting an unusable reference fails the test instead of silently doing nothing
+- a legacy `entityId:threadId` reference still resolves
+- an unrecognised reference produces the no-such-thread reason
+- a non-uuid thread ID reports cleanly rather than raising a Postgres parse error
 - `ready_for_sending` against a sent thread names the current status
 - the unknown-action case still reports the count, now with a reason per thread
+- the error alert names the failed thread's title, asserted against the alert
+  box itself rather than the whole page
+- each failure renders on its own line
 - a mixed batch reports both the success count and the per-thread failures
 
 Reason strings are deterministic, so assert them with `assertStringContainsString`

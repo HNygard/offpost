@@ -265,7 +265,7 @@ function getThreadStatusLabelClass($status) {
                     <tr id="thread-<?= $thread->id ?>" data-last-email-timestamp="<?= $lastEmailTimestamp ?>">
                         <td>
                             <div class="thread-checkbox-container">
-                                <input type="checkbox" class="thread-checkbox" name="thread_ids[]" value="<?= htmlescape($threads->entity_id) ?>:<?= htmlescape($thread->id) ?>" form="bulk-actions-form">
+                                <input type="checkbox" class="thread-checkbox" name="thread_ids[]" value="<?= htmlescape($thread->id) ?>" form="bulk-actions-form">
                             </div>
                         </td>
                         <?php /* Entity name / id */ ?>

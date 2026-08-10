@@ -332,7 +332,7 @@ function print_extraction ($extraction) {
             <div class="action-links">
                 <form method="POST" action="/thread-bulk-actions" style="display: inline;">
                     <input type="hidden" name="action" value="<?= $thread->archived ? 'unarchive' : 'archive' ?>">
-                    <input type="hidden" name="thread_ids[]" value=":<?= htmlescape($threadId) ?>">
+                    <input type="hidden" name="thread_ids[]" value="<?= htmlescape($threadId) ?>">
                     <button type="submit" class="button">
                         <?= $thread->archived ? 'Unarchive thread' : 'Archive thread' ?>
                     </button>

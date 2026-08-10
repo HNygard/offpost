@@ -6,31 +6,38 @@ require_once __DIR__ . '/class/ThreadHistory.php';
 require_once __DIR__ . '/class/ThreadEmailSending.php';
 
 /**
- * Explain why a thread reference could not be resolved to a thread the user may act on.
+ * Read a thread ID out of a submitted thread reference.
  *
- * getThreads() only returns threads the user can access, so a reference missing from that
- * list has one of three distinct causes. Telling them apart is the difference between an
- * admin knowing to fix a stale link and an admin knowing to request access.
+ * Threads are identified by ID alone. Pages used to submit "entityId:threadId", so an
+ * entity prefix is still accepted to keep an already-loaded page working.
+ */
+function parseThreadReference($threadInfo) {
+    $separator = strrpos($threadInfo, ':');
+    if ($separator === false) {
+        return $threadInfo;
+    }
+    return substr($threadInfo, $separator + 1);
+}
+
+/**
+ * Explain why a thread ID could not be resolved to a thread the user may act on.
+ *
+ * getThreads() only returns threads the user can access, so an ID missing from that list
+ * either does not exist or is one the user may not touch. Telling those apart is the
+ * difference between an admin chasing a bad link and an admin requesting access.
  *
  * @return array{reason: string, title: ?string}
  */
-function describeUnavailableThread($entityId, $threadId) {
+function describeUnavailableThread($threadId) {
     // threads.id is a uuid column, so compare as text to tolerate malformed input
     // queryOneOrNone, not queryOne: a missing thread is the expected case here, not an error
     $row = Database::queryOneOrNone(
-        "SELECT entity_id, title FROM threads WHERE id::text = ?",
+        "SELECT title FROM threads WHERE id::text = ?",
         [$threadId]
     );
 
     if (empty($row)) {
         return ['reason' => 'No thread exists with this ID', 'title' => null];
-    }
-
-    if ($row['entity_id'] !== $entityId) {
-        return [
-            'reason' => 'Thread belongs to entity ' . $row['entity_id'] . ', not ' . $entityId,
-            'title' => $row['title']
-        ];
     }
 
     return [
@@ -65,38 +72,24 @@ $errors = array();
 
 // Process each thread
 foreach ($threadIds as $threadInfo) {
-    // Parse thread info (format: entityId:threadId)
-    $parts = explode(':', $threadInfo);
-    if (count($parts) !== 2) {
-        $errors[] = [
-            'ref' => $threadInfo,
-            'title' => null,
-            'reason' => 'Invalid thread reference (expected entityId:threadId)'
-        ];
-        continue;
-    }
-
-    $entityId = $parts[0];
-    $threadId = $parts[1];
+    $threadId = parseThreadReference($threadInfo);
 
     // Find the thread
     $thread = null;
     foreach ($allThreads as $file => $threads) {
-        if ($threads->entity_id === $entityId) {
-            foreach ($threads->threads as $t) {
-                if ($t->id === $threadId) {
-                    $thread = $t;
-                    break 2;
-                }
+        foreach ($threads->threads as $t) {
+            if ($t->id === $threadId) {
+                $thread = $t;
+                break 2;
             }
         }
     }
 
     // Skip if thread not found or user not authorized, explaining which of the two it was
     if (!$thread || !$thread->canUserAccess($userId)) {
-        $explanation = describeUnavailableThread($entityId, $threadId);
+        $explanation = describeUnavailableThread($threadId);
         $errors[] = [
-            'ref' => $threadInfo,
+            'ref' => $threadId,
             'title' => $explanation['title'],
             'reason' => $explanation['reason']
         ];
@@ -136,7 +129,7 @@ foreach ($threadIds as $threadInfo) {
                     $processedCount++;
                 } else {
                     $errors[] = [
-                        'ref' => $threadInfo,
+                        'ref' => $threadId,
                         'title' => $thread->title,
                         'reason' => 'Cannot mark as ready for sending: status is '
                             . $thread->sending_status . ', expected ' . Thread::SENDING_STATUS_STAGING
@@ -168,7 +161,7 @@ foreach ($threadIds as $threadInfo) {
 
             default:
                 $errors[] = [
-                    'ref' => $threadInfo,
+                    'ref' => $threadId,
                     'title' => $thread->title,
                     'reason' => 'Unknown bulk action "' . $action . '"'
                 ];
@@ -177,7 +170,7 @@ foreach ($threadIds as $threadInfo) {
     }
     catch (Exception $e) {
         $errors[] = [
-            'ref' => $threadInfo,
+            'ref' => $threadId,
             'title' => $thread->title,
             'reason' => 'Update failed: ' . $e->getMessage()
         ];
@@ -207,30 +200,24 @@ if (count($errors) > 0) {
 // Redirect back to the appropriate page
 // If only one thread was processed, redirect back to thread view
 if ($processedCount === 1 && count($threadIds) === 1) {
-    $parts = explode(':', $threadIds[0]);
-    if (count($parts) === 2) {
-        $entityId = $parts[0];
-        $threadId = $parts[1];
-        
-        // Security: Validate that the thread actually exists and user has access
-        // This prevents open redirect attacks by ensuring we only redirect to valid threads
-        $thread = null;
-        foreach ($allThreads as $file => $threads) {
-            if ($threads->entity_id === $entityId) {
-                foreach ($threads->threads as $t) {
-                    if ($t->id === $threadId && $t->canUserAccess($userId)) {
-                        $thread = $t;
-                        break 2;
-                    }
-                }
+    $threadId = parseThreadReference($threadIds[0]);
+
+    // Security: Validate that the thread actually exists and user has access
+    // This prevents open redirect attacks by ensuring we only redirect to valid threads
+    $thread = null;
+    foreach ($allThreads as $file => $threads) {
+        foreach ($threads->threads as $t) {
+            if ($t->id === $threadId && $t->canUserAccess($userId)) {
+                $thread = $t;
+                break 2;
             }
         }
-        
-        // Only redirect if thread exists and user has access
-        if ($thread) {
-            header("Location: /thread-view?threadId=" . urlencode($threadId) . "&entityId=" . urlencode($entityId));
-            exit;
-        }
+    }
+
+    // Only redirect if thread exists and user has access
+    if ($thread) {
+        header("Location: /thread-view?threadId=" . urlencode($threadId));
+        exit;
     }
 }
 
