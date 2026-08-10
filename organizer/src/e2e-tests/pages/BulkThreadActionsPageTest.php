@@ -342,5 +342,279 @@ class BulkThreadActionsPageTest extends E2EPageTestCase {
             $response->body,
             "Error message should be displayed"
         );
+
+        // Each failed thread should say why it failed
+        $this->assertStringContainsString(
+            'Unknown bulk action',
+            $response->body,
+            "Error message should name the reason the action could not be applied"
+        );
+    }
+
+    public function testMalformedThreadReferenceReportsReason() {
+        // :: Setup
+        $threadIds = ['this-reference-has-no-separator'];
+
+        // :: Act
+        $this->renderPage(
+            '/thread-bulk-actions',
+            'dev-user-id',
+            'POST',
+            '302 Found',
+            [
+                'action' => 'archive',
+                'thread_ids' => $threadIds
+            ]
+        );
+        $response = $this->renderPage('/');
+
+        // :: Assert
+        $this->assertStringContainsString(
+            'Invalid thread reference (expected entityId:threadId)',
+            $response->body,
+            "Malformed thread reference should be reported with its own reason"
+        );
+        $this->assertStringContainsString(
+            'this-reference-has-no-separator',
+            $response->body,
+            "Error message should echo the submitted reference so the admin can identify it"
+        );
+    }
+
+    public function testNonExistentThreadReportsThatNoThreadExists() {
+        // :: Setup
+        // A syntactically valid UUID that is not in the database
+        $missingThreadId = '00000000-0000-4000-8000-000000000001';
+        $threadIds = [$this->testEntityId . ':' . $missingThreadId];
+
+        // :: Act
+        $this->renderPage(
+            '/thread-bulk-actions',
+            'dev-user-id',
+            'POST',
+            '302 Found',
+            [
+                'action' => 'archive',
+                'thread_ids' => $threadIds
+            ]
+        );
+        $response = $this->renderPage('/');
+
+        // :: Assert
+        $this->assertStringContainsString(
+            'No thread exists with this ID',
+            $response->body,
+            "A thread ID with no matching row should be reported as non-existent"
+        );
+    }
+
+    public function testNonUuidThreadIdReportsThatNoThreadExists() {
+        // :: Setup
+        // threads.id is a uuid column, so a non-uuid value must not crash the lookup
+        $threadIds = [$this->testEntityId . ':not-a-uuid-at-all'];
+
+        // :: Act
+        $this->renderPage(
+            '/thread-bulk-actions',
+            'dev-user-id',
+            'POST',
+            '302 Found',
+            [
+                'action' => 'archive',
+                'thread_ids' => $threadIds
+            ]
+        );
+        $response = $this->renderPage('/');
+
+        // :: Assert
+        $this->assertStringContainsString(
+            'No thread exists with this ID',
+            $response->body,
+            "A non-uuid thread ID should be reported as non-existent rather than crashing the page"
+        );
+    }
+
+    public function testWrongEntityIdReportsEntityMismatch() {
+        // :: Setup
+        // Reference an existing thread through an entity it does not belong to
+        $thread = $this->testThreads[0]['thread'];
+        $threadIds = ['999999999-wrong-entity-development:' . $thread->id];
+
+        // :: Act
+        $this->renderPage(
+            '/thread-bulk-actions',
+            'dev-user-id',
+            'POST',
+            '302 Found',
+            [
+                'action' => 'archive',
+                'thread_ids' => $threadIds
+            ]
+        );
+        $response = $this->renderPage('/');
+
+        // :: Assert
+        $this->assertStringContainsString(
+            'Thread belongs to entity ' . $this->testEntityId . ', not 999999999-wrong-entity-development',
+            $response->body,
+            "An entity/thread mismatch should name both the actual and the submitted entity"
+        );
+    }
+
+    public function testReadyForSendingOnNonStagingThreadReportsCurrentStatus() {
+        // :: Setup
+        $thread = $this->testThreads[0]['thread'];
+        Database::execute(
+            "UPDATE threads SET sending_status = ? WHERE id = ?",
+            [Thread::SENDING_STATUS_SENT, $thread->id]
+        );
+        $threadIds = [$this->testEntityId . ':' . $thread->id];
+
+        // :: Act
+        $this->renderPage(
+            '/thread-bulk-actions',
+            'dev-user-id',
+            'POST',
+            '302 Found',
+            [
+                'action' => 'ready_for_sending',
+                'thread_ids' => $threadIds
+            ]
+        );
+        $response = $this->renderPage('/');
+
+        // :: Assert
+        $this->assertStringContainsString(
+            'Cannot mark as ready for sending: status is SENT, expected STAGING',
+            $response->body,
+            "A wrong sending status should be reported with the status the thread actually has"
+        );
+    }
+
+    /**
+     * Extract the contents of the error alert box, so assertions cannot accidentally
+     * be satisfied by text that appears elsewhere on the thread listing page.
+     */
+    private function getErrorAlert($body) {
+        $this->assertMatchesRegularExpression(
+            '#<div class="alert alert-error">#',
+            $body,
+            "Page should contain an error alert box"
+        );
+        preg_match('#<div class="alert alert-error">(.*?)</div>#s', $body, $matches);
+        return html_entity_decode($matches[1]);
+    }
+
+    public function testFailedThreadIsIdentifiedByTitleInsideErrorAlert() {
+        // :: Setup
+        $thread = $this->testThreads[0]['thread'];
+        Database::execute(
+            "UPDATE threads SET sending_status = ? WHERE id = ?",
+            [Thread::SENDING_STATUS_SENT, $thread->id]
+        );
+        $threadIds = [$this->testEntityId . ':' . $thread->id];
+
+        // :: Act
+        $this->renderPage(
+            '/thread-bulk-actions',
+            'dev-user-id',
+            'POST',
+            '302 Found',
+            [
+                'action' => 'ready_for_sending',
+                'thread_ids' => $threadIds
+            ]
+        );
+        $response = $this->renderPage('/');
+
+        // :: Assert
+        $alert = $this->getErrorAlert($response->body);
+        $this->assertStringContainsString(
+            $thread->title,
+            $alert,
+            "The error alert should name the thread title, not just its ID. Alert was: " . $alert
+        );
+        $this->assertStringContainsString(
+            $thread->id,
+            $alert,
+            "The error alert should name the thread ID. Alert was: " . $alert
+        );
+    }
+
+    public function testErrorAlertRendersEachFailureOnItsOwnLine() {
+        // :: Setup
+        // Two unresolvable references, so the message has a heading plus two failure lines
+        $threadIds = [
+            $this->testEntityId . ':00000000-0000-4000-8000-000000000003',
+            $this->testEntityId . ':00000000-0000-4000-8000-000000000004',
+        ];
+
+        // :: Act
+        $this->renderPage(
+            '/thread-bulk-actions',
+            'dev-user-id',
+            'POST',
+            '302 Found',
+            [
+                'action' => 'archive',
+                'thread_ids' => $threadIds
+            ]
+        );
+        $response = $this->renderPage('/');
+
+        // :: Assert
+        $alert = $this->getErrorAlert($response->body);
+        $this->assertEquals(
+            2,
+            substr_count($alert, '<br />'),
+            "Heading and both failure lines should be separated by line breaks. Alert was: " . $alert
+        );
+    }
+
+    public function testMixedBatchReportsBothSuccessesAndPerThreadFailures() {
+        // :: Setup
+        // One thread that can be archived, one reference that cannot be resolved
+        $thread = $this->testThreads[0]['thread'];
+        $missingThreadId = '00000000-0000-4000-8000-000000000002';
+        $threadIds = [
+            $this->testEntityId . ':' . $thread->id,
+            $this->testEntityId . ':' . $missingThreadId,
+        ];
+
+        // :: Act
+        $this->renderPage(
+            '/thread-bulk-actions',
+            'dev-user-id',
+            'POST',
+            '302 Found',
+            [
+                'action' => 'archive',
+                'thread_ids' => $threadIds
+            ]
+        );
+        $response = $this->renderPage('/');
+
+        // :: Assert
+        $this->assertStringContainsString(
+            'Successfully processed 1 thread(s)',
+            $response->body,
+            "The thread that could be archived should still be reported as processed"
+        );
+        $this->assertStringContainsString(
+            'Failed to process 1 thread(s)',
+            $response->body,
+            "The unresolvable reference should be reported as a failure"
+        );
+        $this->assertStringContainsString(
+            'No thread exists with this ID',
+            $response->body,
+            "The failure should carry its specific reason"
+        );
+
+        $isArchived = Database::queryValue(
+            "SELECT archived FROM threads WHERE id = ?",
+            [$thread->id]
+        );
+        $this->assertTrue((bool)$isArchived, "The resolvable thread should have been archived despite the other failure");
     }
 }

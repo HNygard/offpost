@@ -182,7 +182,8 @@ function getThreadStatusLabelClass($status) {
         }
         
         if (isset($_SESSION['error_message'])) {
-            echo '<div class="alert alert-error">' . htmlescape($_SESSION['error_message']) . '</div>';
+            // nl2br so multi-line messages, such as per-thread bulk action failures, stay readable
+            echo '<div class="alert alert-error">' . nl2br(htmlescape($_SESSION['error_message'])) . '</div>';
             unset($_SESSION['error_message']);
         }
         ?>

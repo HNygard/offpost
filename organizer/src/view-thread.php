@@ -272,7 +272,7 @@ function print_extraction ($extraction) {
 
         <?php if (isset($_SESSION['error_message'])): ?>
             <div class="alert-error" style="margin: 1em 0; padding: 1em; background-color: #f8d7da; border: 1px solid #f5c6cb; color: #721c24; border-radius: 4px;">
-                <?= htmlescape($_SESSION['error_message']) ?>
+                <?= nl2br(htmlescape($_SESSION['error_message'])) ?>
             </div>
             <?php unset($_SESSION['error_message']); ?>
         <?php endif; ?>

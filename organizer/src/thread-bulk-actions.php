@@ -1,8 +1,43 @@
 <?php
 require_once __DIR__ . '/auth.php';
+require_once __DIR__ . '/class/Database.php';
 require_once __DIR__ . '/class/ThreadStorageManager.php';
 require_once __DIR__ . '/class/ThreadHistory.php';
 require_once __DIR__ . '/class/ThreadEmailSending.php';
+
+/**
+ * Explain why a thread reference could not be resolved to a thread the user may act on.
+ *
+ * getThreads() only returns threads the user can access, so a reference missing from that
+ * list has one of three distinct causes. Telling them apart is the difference between an
+ * admin knowing to fix a stale link and an admin knowing to request access.
+ *
+ * @return array{reason: string, title: ?string}
+ */
+function describeUnavailableThread($entityId, $threadId) {
+    // threads.id is a uuid column, so compare as text to tolerate malformed input
+    // queryOneOrNone, not queryOne: a missing thread is the expected case here, not an error
+    $row = Database::queryOneOrNone(
+        "SELECT entity_id, title FROM threads WHERE id::text = ?",
+        [$threadId]
+    );
+
+    if (empty($row)) {
+        return ['reason' => 'No thread exists with this ID', 'title' => null];
+    }
+
+    if ($row['entity_id'] !== $entityId) {
+        return [
+            'reason' => 'Thread belongs to entity ' . $row['entity_id'] . ', not ' . $entityId,
+            'title' => $row['title']
+        ];
+    }
+
+    return [
+        'reason' => 'You do not have access to this thread (not public, no authorization)',
+        'title' => $row['title']
+    ];
+}
 
 // Require authentication
 requireAuth();
@@ -26,20 +61,24 @@ $userId = $_SESSION['user']['sub']; // OpenID Connect subject identifier
 $storageManager = ThreadStorageManager::getInstance();
 $allThreads = $storageManager->getThreads($userId);
 $processedCount = 0;
-$errorCount = 0;
+$errors = array();
 
 // Process each thread
 foreach ($threadIds as $threadInfo) {
     // Parse thread info (format: entityId:threadId)
     $parts = explode(':', $threadInfo);
     if (count($parts) !== 2) {
-        $errorCount++;
+        $errors[] = [
+            'ref' => $threadInfo,
+            'title' => null,
+            'reason' => 'Invalid thread reference (expected entityId:threadId)'
+        ];
         continue;
     }
-    
+
     $entityId = $parts[0];
     $threadId = $parts[1];
-    
+
     // Find the thread
     $thread = null;
     foreach ($allThreads as $file => $threads) {
@@ -52,73 +91,96 @@ foreach ($threadIds as $threadInfo) {
             }
         }
     }
-    
-    // Skip if thread not found or user not authorized
+
+    // Skip if thread not found or user not authorized, explaining which of the two it was
     if (!$thread || !$thread->canUserAccess($userId)) {
-        $errorCount++;
+        $explanation = describeUnavailableThread($entityId, $threadId);
+        $errors[] = [
+            'ref' => $threadInfo,
+            'title' => $explanation['title'],
+            'reason' => $explanation['reason']
+        ];
         continue;
     }
-    
-    // Apply the selected action
-    switch ($action) {
-        case 'archive':
-            $thread->archived = true;
-            $storageManager->updateThread($thread, $userId);
-            $processedCount++;
-            break;
-            
-        case 'unarchive':
-            $thread->archived = false;
-            $storageManager->updateThread($thread, $userId);
-            $processedCount++;
-            break;
-            
-        case 'ready_for_sending':
-            if ($thread->sending_status === Thread::SENDING_STATUS_STAGING) {
-                $thread->sending_status = Thread::SENDING_STATUS_READY_FOR_SENDING;
+
+    // Apply the selected action. A failing update must not abort the whole batch.
+    try {
+        switch ($action) {
+            case 'archive':
+                $thread->archived = true;
                 $storageManager->updateThread($thread, $userId);
-                
-                // Also update the corresponding ThreadEmailSending records
-                $emailSendings = ThreadEmailSending::getByThreadId($thread->id);
-                foreach ($emailSendings as $emailSending) {
-                    if ($emailSending->status === ThreadEmailSending::STATUS_STAGING) {
-                        ThreadEmailSending::updateStatus(
-                            $emailSending->id,
-                            ThreadEmailSending::STATUS_READY_FOR_SENDING
-                        );
+                $processedCount++;
+                break;
+
+            case 'unarchive':
+                $thread->archived = false;
+                $storageManager->updateThread($thread, $userId);
+                $processedCount++;
+                break;
+
+            case 'ready_for_sending':
+                if ($thread->sending_status === Thread::SENDING_STATUS_STAGING) {
+                    $thread->sending_status = Thread::SENDING_STATUS_READY_FOR_SENDING;
+                    $storageManager->updateThread($thread, $userId);
+
+                    // Also update the corresponding ThreadEmailSending records
+                    $emailSendings = ThreadEmailSending::getByThreadId($thread->id);
+                    foreach ($emailSendings as $emailSending) {
+                        if ($emailSending->status === ThreadEmailSending::STATUS_STAGING) {
+                            ThreadEmailSending::updateStatus(
+                                $emailSending->id,
+                                ThreadEmailSending::STATUS_READY_FOR_SENDING
+                            );
+                        }
                     }
+                    $processedCount++;
+                } else {
+                    $errors[] = [
+                        'ref' => $threadInfo,
+                        'title' => $thread->title,
+                        'reason' => 'Cannot mark as ready for sending: status is '
+                            . $thread->sending_status . ', expected ' . Thread::SENDING_STATUS_STAGING
+                    ];
                 }
-                $processedCount++;
-            } else {
-                $errorCount++;
-            }
-            break;
-            
-        case 'make_private':
-            if ($thread->public) {
-                $thread->public = false;
-                $storageManager->updateThread($thread, $userId);
-                $processedCount++;
-            } else {
-                // Already private, count as processed
-                $processedCount++;
-            }
-            break;
-            
-        case 'make_public':
-            if (!$thread->public) {
-                $thread->public = true;
-                $storageManager->updateThread($thread, $userId);
-                $processedCount++;
-            } else {
-                // Already public, count as processed
-                $processedCount++;
-            }
-            break;
-            
-        default:
-            $errorCount++;
-            break;
+                break;
+
+            case 'make_private':
+                if ($thread->public) {
+                    $thread->public = false;
+                    $storageManager->updateThread($thread, $userId);
+                    $processedCount++;
+                } else {
+                    // Already private, count as processed
+                    $processedCount++;
+                }
+                break;
+
+            case 'make_public':
+                if (!$thread->public) {
+                    $thread->public = true;
+                    $storageManager->updateThread($thread, $userId);
+                    $processedCount++;
+                } else {
+                    // Already public, count as processed
+                    $processedCount++;
+                }
+                break;
+
+            default:
+                $errors[] = [
+                    'ref' => $threadInfo,
+                    'title' => $thread->title,
+                    'reason' => 'Unknown bulk action "' . $action . '"'
+                ];
+                break;
+        }
+    }
+    catch (Exception $e) {
+        $errors[] = [
+            'ref' => $threadInfo,
+            'title' => $thread->title,
+            'reason' => 'Update failed: ' . $e->getMessage()
+        ];
     }
 }
 
@@ -127,8 +189,19 @@ if ($processedCount > 0) {
     $_SESSION['success_message'] = "Successfully processed $processedCount thread(s)";
 }
 
-if ($errorCount > 0) {
-    $_SESSION['error_message'] = "Failed to process $errorCount thread(s)";
+if (count($errors) > 0) {
+    // One line per failure, so an admin can see which thread failed and why
+    $errorLines = array();
+    foreach ($errors as $error) {
+        $label = $error['ref'];
+        if (!empty($error['title'])) {
+            $label .= ' (' . $error['title'] . ')';
+        }
+        $errorLines[] = "\u{2022} " . $label . " \u{2014} " . $error['reason'];
+    }
+
+    $_SESSION['error_message'] = 'Failed to process ' . count($errors) . " thread(s):\n"
+        . implode("\n", $errorLines);
 }
 
 // Redirect back to the appropriate page
