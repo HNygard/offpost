@@ -2,6 +2,7 @@
 
 require_once __DIR__ . '/Enums/ThreadEmailStatusType.php';
 require_once __DIR__ . '/Imap/ImapEmail.php';
+require_once __DIR__ . '/ThreadEmailAttachment.php';
 use App\Enums\ThreadEmailStatusType;
 use Imap\ImapEmail;
 
@@ -59,6 +60,46 @@ function getLabelType($type, $status_type_input) {
         default:
             throw new Exception('Unknown status_type[' . $type . ']: ' . $status_type_input);
     }
+}
+
+/**
+ * Render one classification - the status type and, when it adds anything, its
+ * free-text description.
+ *
+ * The status type is the classification; status_text is only a human note
+ * beside it. Pages used to print the text alone, which left the classification
+ * invisible and made attachments still carrying the ingest placeholder look
+ * unclassified after they had been classified.
+ *
+ * @param ThreadEmailStatusType|string|null $status_type
+ * @param string|null $status_text
+ * @return string HTML
+ */
+function renderClassification($status_type, $status_text) {
+    $type_value = $status_type instanceof ThreadEmailStatusType ? $status_type->value : $status_type;
+
+    // Normalise before getLabelType(), whose default branch throws.
+    if ($type_value === null || $type_value === '') {
+        $type_value = ThreadEmailStatusType::UNKNOWN->value;
+    }
+
+    $label_type = getLabelType('classification', $type_value);
+
+    // Legacy values such as 'disabled' and 'danger' are accepted by
+    // getLabelType() but are not enum cases - show them rather than swallow them.
+    $case = ThreadEmailStatusType::tryFrom($type_value);
+    $label_text = $case !== null ? $case->label() : $type_value;
+
+    $html = '<span class="classification ' . $label_type . '">' . htmlescape($label_text) . '</span>';
+
+    if ($status_text !== null
+        && $status_text !== ''
+        && $status_text !== $label_text
+        && $status_text !== ThreadEmailAttachment::UNCLASSIFIED_STATUS_TEXT) {
+        $html .= ' <span class="status-text">' . htmlescape($status_text) . '</span>';
+    }
+
+    return $html;
 }
 
 /**
