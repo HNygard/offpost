@@ -64,8 +64,45 @@ class Entity {
             
             $json = file_get_contents(self::$jsonPath);
             self::$entities = json_decode($json);
+
+            self::mergeDevelopmentEntities();
         }
         return self::$entities;
+    }
+
+    /**
+     * Make the test entities resolvable when running in development.
+     *
+     * Tests create threads on the entities in entities_test.json. The app resolves
+     * entities from entities.json, so those threads used to throw from getById() -
+     * and because index.php resolves the entity of every listed thread, one such row
+     * took the whole front page down with a 500.
+     *
+     * Production is protected twice: docker-compose.prod.yaml mounts only
+     * entities.json, so the file is not there at all, and the environment guard
+     * would skip it even if it were. Entities already in entities.json win, so a
+     * test file can never shadow a real entity.
+     */
+    private static function mergeDevelopmentEntities(): void {
+        if (getenv('ENVIRONMENT') !== 'development') {
+            return;
+        }
+
+        $developmentPath = dirname(self::$jsonPath) . '/entities_test.json';
+        if ($developmentPath === self::$jsonPath || !file_exists($developmentPath)) {
+            return;
+        }
+
+        $developmentEntities = json_decode(file_get_contents($developmentPath));
+        if ($developmentEntities === null) {
+            return;
+        }
+
+        foreach ($developmentEntities as $entityId => $entity) {
+            if (!isset(self::$entities->$entityId)) {
+                self::$entities->$entityId = $entity;
+            }
+        }
     }
     
     /**

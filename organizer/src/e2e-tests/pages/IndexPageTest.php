@@ -1,6 +1,7 @@
 <?php
 
 require_once __DIR__ . '/common/E2EPageTestCase.php';
+require_once __DIR__ . '/common/E2ETestSetup.php';
 
 class IndexPageTest extends E2EPageTestCase {
 
@@ -15,6 +16,25 @@ class IndexPageTest extends E2EPageTestCase {
         // :: Assert that page rendered data (only check for structure, not content)
         $this->assertStringContainsString('<tr id="thread-', $response->body);
         $this->assertStringContainsString('<a href="/thread-view?entityId=', $response->body);
+    }
+
+    public function testThreadOnDevelopmentOnlyEntityRenders() {
+        // :: Setup
+        // Entities in entities_test.json exist only in development. A thread on one of
+        // them must render: previously Entity::getById() threw for these, and because
+        // index.php resolves every listed thread's entity, a single such row took the
+        // whole front page down with a 500.
+        E2ETestSetup::createTestThread('000000000-test-entity-1');
+
+        // :: Act
+        $response = $this->renderPage('/');
+
+        // :: Assert
+        $this->assertStringContainsString(
+            'TODO - Test Entity (Development)',
+            $response->body,
+            'Front page should resolve and show the development-only entity name'
+        );
     }
 
     public function testLastEmailColumnHeader() {

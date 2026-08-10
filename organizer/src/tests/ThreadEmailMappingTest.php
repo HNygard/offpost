@@ -64,27 +64,61 @@ class ThreadEmailMappingTest extends PHPUnit\Framework\TestCase {
             )"
         );
         
+        // Delete extractions and attachment migration state (foreign key to thread_emails)
+        Database::execute(
+            "DELETE FROM thread_email_extractions WHERE email_id IN (
+                SELECT te.id FROM thread_emails te
+                JOIN threads t ON te.thread_id = t.id
+                WHERE t.entity_id = '000000000-test-entity-development'
+            )"
+        );
+        Database::execute(
+            "DELETE FROM attachment_migration_state WHERE email_id IN (
+                SELECT te.id FROM thread_emails te
+                JOIN threads t ON te.thread_id = t.id
+                WHERE t.entity_id = '000000000-test-entity-development'
+            )"
+        );
+
         // Delete thread emails (foreign key to threads)
         Database::execute(
             "DELETE FROM thread_emails WHERE thread_id IN (
                 SELECT id FROM threads WHERE entity_id = '000000000-test-entity-development'
             )"
         );
-        
+
         // Delete thread history (foreign key to threads)
         Database::execute(
             "DELETE FROM thread_history WHERE thread_id IN (
                 SELECT id FROM threads WHERE entity_id = '000000000-test-entity-development'
             )"
         );
-        
+
         // Delete thread email mappings
         Database::execute(
             "DELETE FROM thread_email_mapping WHERE thread_id IN (
                 SELECT id FROM threads WHERE entity_id = '000000000-test-entity-development'
             )"
         );
-        
+
+        // Delete remaining rows referencing threads: sendings, folder status and
+        // authorizations, all of which e2e tests leave behind under this entity
+        Database::execute(
+            "DELETE FROM thread_email_sendings WHERE thread_id IN (
+                SELECT id FROM threads WHERE entity_id = '000000000-test-entity-development'
+            )"
+        );
+        Database::execute(
+            "DELETE FROM imap_folder_status WHERE thread_id IN (
+                SELECT id FROM threads WHERE entity_id = '000000000-test-entity-development'
+            )"
+        );
+        Database::execute(
+            "DELETE FROM thread_authorizations WHERE thread_id IN (
+                SELECT id FROM threads WHERE entity_id = '000000000-test-entity-development'
+            )"
+        );
+
         // Delete test threads created during tests
         Database::execute(
             "DELETE FROM threads WHERE entity_id = '000000000-test-entity-development'"
