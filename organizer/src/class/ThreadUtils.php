@@ -3,6 +3,7 @@
 require_once __DIR__ . '/Enums/ThreadEmailStatusType.php';
 require_once __DIR__ . '/Imap/ImapEmail.php';
 require_once __DIR__ . '/ThreadEmailAttachment.php';
+require_once __DIR__ . '/ThreadEmail.php';
 use App\Enums\ThreadEmailStatusType;
 use Imap\ImapEmail;
 
@@ -95,7 +96,8 @@ function renderClassification($status_type, $status_text) {
     if ($status_text !== null
         && $status_text !== ''
         && $status_text !== $label_text
-        && $status_text !== ThreadEmailAttachment::UNCLASSIFIED_STATUS_TEXT) {
+        && $status_text !== ThreadEmailAttachment::UNCLASSIFIED_STATUS_TEXT
+        && $status_text !== ThreadEmail::UNCLASSIFIED_STATUS_TEXT) {
         $html .= ' <span class="status-text">' . htmlescape($status_text) . '</span>';
     }
 

@@ -187,7 +187,7 @@ class ThreadEmailDatabaseSaver {
                         $newEmail->id_old = $filename;
                         $newEmail->email_type = $direction;
                         $newEmail->status_type = ThreadEmailStatusType::UNKNOWN;
-                        $newEmail->status_text = 'Uklassifisert';
+                        $newEmail->status_text = ThreadEmail::UNCLASSIFIED_STATUS_TEXT;
                         $newEmail->ignore = false;
                         
                         if (!empty($attachments)) {
@@ -289,7 +289,7 @@ class ThreadEmailDatabaseSaver {
             ':ignore' => 'f', // PostgreSQL boolean false
             ':email_type' => $direction,
             ':status_type' => ThreadEmailStatusType::UNKNOWN->value,
-            ':status_text' => 'Uklassifisert',
+            ':status_text' => ThreadEmail::UNCLASSIFIED_STATUS_TEXT,
             ':imap_headers' => json_encode($imap_headers, JSON_UNESCAPED_UNICODE ^ JSON_UNESCAPED_SLASHES),
             ':id_old' => $filename
         ];

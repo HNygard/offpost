@@ -6,6 +6,7 @@ use App\Enums\ThreadEmailStatusType;
 require_once __DIR__ . '/bootstrap.php';
 require_once __DIR__ . '/../class/ThreadUtils.php';
 require_once __DIR__ . '/../class/ThreadEmailAttachment.php';
+require_once __DIR__ . '/../class/ThreadEmail.php';
 
 /**
  * thread-view and the front page used to print only the free-text status_text,
@@ -99,12 +100,12 @@ class ThreadUtilsRenderClassificationTest extends TestCase {
         $statusType = ThreadEmailStatusType::UNKNOWN;
 
         // :: Act
-        $result = renderClassification($statusType, 'Uklassifisert');
+        $result = renderClassification($statusType, 'Trenger oppfolging');
 
         // :: Assert
         $this->assertEquals(
             '<span class="classification label">Unknown</span>'
-            . ' <span class="status-text">Uklassifisert</span>',
+            . ' <span class="status-text">Trenger oppfolging</span>',
             $result
         );
     }
@@ -184,6 +185,37 @@ class ThreadUtilsRenderClassificationTest extends TestCase {
         $this->assertEquals(
             '<span class="classification label label_information_release label_ok">'
             . 'From entity: Information Release</span>',
+            $result
+        );
+    }
+
+    public function testEmailPlaceholderStatusTextIsSuppressed(): void {
+        // :: Setup
+        $statusType = ThreadEmailStatusType::INFORMATION_RELEASE;
+        $statusText = ThreadEmail::UNCLASSIFIED_STATUS_TEXT;
+
+        // :: Act
+        $result = renderClassification($statusType, $statusText);
+
+        // :: Assert
+        $this->assertEquals(
+            '<span class="classification label label_information_release label_ok">'
+            . 'From entity: Information Release</span>',
+            $result
+        );
+    }
+
+    public function testEmailPlaceholderStatusTextIsSuppressedEvenWhenUnknown(): void {
+        // :: Setup
+        $statusType = ThreadEmailStatusType::UNKNOWN;
+        $statusText = ThreadEmail::UNCLASSIFIED_STATUS_TEXT;
+
+        // :: Act
+        $result = renderClassification($statusType, $statusText);
+
+        // :: Assert
+        $this->assertEquals(
+            '<span class="classification label">Unknown</span>',
             $result
         );
     }

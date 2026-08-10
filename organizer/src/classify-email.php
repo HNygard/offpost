@@ -92,10 +92,16 @@ if (isset($_POST['submit'])) {
     foreach ($thread->emails as $email) {
         $emailId = str_replace(' ', '_', str_replace('.', '_', $email->id));
         $newIgnore = isset($_POST[$emailId . '-ignore']) && $_POST[$emailId . '-ignore'] == 'true';
-        $newStatusText = $_POST[$emailId . '-status_text'];
         $newStatusTypeString = $_POST[$emailId . '-status_type'];
         $newStatusType = ThreadEmailStatusType::tryFrom($newStatusTypeString) ?? ThreadEmailStatusType::UNKNOWN; // Fallback to UNKNOWN
-        
+        // The form pre-fills the ingest placeholder, so it survives a real
+        // classification unless it is dropped here. Must run before the
+        // "was it changed" comparison below, which relies on the normalised value.
+        $newStatusText = ThreadEmail::normalizeStatusText(
+            $newStatusType,
+            $_POST[$emailId . '-status_text']
+        );
+
         // Check if status was actually changed
         $currentStatusValue = ($email->status_type instanceof ThreadEmailStatusType ? $email->status_type->value : $email->status_type);
         if ($currentStatusValue !== $newStatusType->value ||
