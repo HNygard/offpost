@@ -142,10 +142,14 @@ class NpApiService {
     }
 
     /**
+     * No `archived` filter: archiving is an offpost-GUI display action, and letting
+     * it fall out of this query meant a visitor clicking "søk innsyn" on a document
+     * whose thread had been archived sent a second real email to the myndighet.
+     *
      * Deliberately tolerant of duplicates: two concurrent createThread() calls for
      * the same entity+mapping label can both pass this check before either has
-     * inserted (classic check-then-act race), leaving 2+ non-archived threads
-     * carrying the same label. Database::queryOneOrNone() would throw on that
+     * inserted (classic check-then-act race), leaving 2+ threads carrying the
+     * same label. Database::queryOneOrNone() would throw on that
      * ("Expected 1 row, got 2..."), permanently 500ing every later create for
      * that doc/case. Using Database::query() + ORDER BY created_at ASC LIMIT 1
      * instead makes this self-healing: the oldest thread is always treated as
@@ -156,8 +160,9 @@ class NpApiService {
      * small IMMUTABLE SQL function extracting the document_id:/case_num: label
      * (mirroring mappingLabel() below) plus
      *   CREATE UNIQUE INDEX ... ON threads (entity_id, that_function(labels))
-     *   WHERE archived = false
-     * would work, and was verified to CREATE cleanly against the current schema.
+     * would work, and was verified to CREATE cleanly against the current schema
+     * (back when the query still carried a WHERE archived = false predicate that
+     * the index had to mirror; without it the index is simply unconditional).
      * It's deliberately not added as a migration here: migrate.php runs every
      * pending migration inside one transaction and is auto-applied unattended by
      * servers/production/deploy-cronjob.sh every 10 minutes, and CREATE INDEX
@@ -174,7 +179,7 @@ class NpApiService {
         $mappingLabel = self::mappingLabel($labels);
         $rows = Database::query(
             "SELECT id FROM threads
-             WHERE entity_id = ? AND archived = false AND ? = ANY(labels)
+             WHERE entity_id = ? AND ? = ANY(labels)
              ORDER BY created_at ASC LIMIT 1",
             [$entityId, $mappingLabel]
         );
@@ -191,11 +196,17 @@ class NpApiService {
     /**
      * All threads carrying the NP label, across entities. Direct SQL: the API
      * has no session user, and NP threads are public by construction.
+     *
+     * No `archived` filter, here or anywhere else in this class: `archived` is an
+     * offpost-GUI concept (index.php hides archived threads from the thread list)
+     * and must stay invisible to norske-postlister.no. Filtering on it here used
+     * to erase the innsynshenvendelse from /innsyn on the next 15-minute poll,
+     * along with its status and its answer documents.
      */
     public static function listNpThreads(): array {
         $rows = Database::query(
             "SELECT id, entity_id, labels FROM threads
-             WHERE archived = false AND ? = ANY(labels)",
+             WHERE ? = ANY(labels)",
             [self::NP_LABEL]
         );
 
@@ -207,9 +218,16 @@ class NpApiService {
             }
         }
 
+        // getAllThreadStatusesEfficient()'s $archived is an either/or filter, not
+        // "include both", and it defaults to false - so archived threads need the
+        // second call or they get no status row at all, and the null fallback below
+        // reports them as ERROR_THREAD_NOT_FOUND with 0/0 email counts. Same union
+        // as index.php and recent-activity.php. Both halves key by thread_id and a
+        // thread is in exactly one of them, so `+` cannot drop a row.
         $threadIds = array_column($rows, 'id');
         $statuses = count($threadIds) > 0
-            ? ThreadStatusRepository::getAllThreadStatusesEfficient($threadIds)
+            ? ThreadStatusRepository::getAllThreadStatusesEfficient($threadIds, archived: false)
+            + ThreadStatusRepository::getAllThreadStatusesEfficient($threadIds, archived: true)
             : [];
 
         $threads = [];
@@ -293,7 +311,7 @@ class NpApiService {
      */
     public static function getNpAttachment(string $threadId, string $attachmentId): array {
         $thread = Thread::loadFromDatabaseOrNone($threadId);
-        // No `archived` filter here (unlike listNpThreads()) - deliberate: once
+        // No `archived` filter - as in listNpThreads()/findExistingThread(). Once
         // norske-postlister.no has published a link to an attachment, it must keep
         // working even after the thread is later archived, so published links don't break.
         if ($thread === null || !in_array(self::NP_LABEL, $thread->labels)) {

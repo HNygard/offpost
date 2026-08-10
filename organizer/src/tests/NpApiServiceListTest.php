@@ -71,14 +71,52 @@ class NpApiServiceListTest extends TestCase {
         $this->assertCount($before, NpApiService::listNpThreads()['threads']);
     }
 
-    public function testArchivedNpThreadExcluded(): void {
+    /**
+     * `archived` is an offpost-GUI concept (it hides a finished thread from the
+     * thread list in index.php). It must not reach norske-postlister.no: archiving
+     * a thread used to erase the innsynshenvendelse from /innsyn, put the "søk
+     * innsyn" button back on the journal entry, and let the next click send a
+     * duplicate request to the myndighet.
+     *
+     * The email counts are the sharp end of this test. Dropping the `archived`
+     * filter from the thread query alone is not enough - the status lookup filters
+     * on `archived` separately, and its default is false - so a half-done change
+     * still lists the thread, but with 0/0 counts and ERROR_THREAD_NOT_FOUND. On
+     * the NP side that renders an answered request as "Sendes snart" with none of
+     * its documents, which is worse than hiding it.
+     */
+    public function testArchivedNpThreadIncludedWithRealStatusAndCounts(): void {
         $labels = ['norske_postlister_no', 'document', 'document_id:2021-77-3'];
         $created = NpApiService::createThread('9999-test-entity-development', 'Tittel', 'Innhold', $labels);
+        $threadId = $created['thread_id'];
 
-        Database::execute('UPDATE threads SET archived = true WHERE id = ?', [$created['thread_id']]);
+        Database::execute(
+            "INSERT INTO thread_emails
+                (thread_id, timestamp_received, datetime_received, email_type, content, imap_headers, status_type)
+             VALUES (?, now(), now(), 'OUT', ?::bytea, NULL, 'OUR_REQUEST')",
+            [$threadId, 'content']
+        );
+        Database::execute(
+            "INSERT INTO thread_emails
+                (thread_id, timestamp_received, datetime_received, email_type, content, imap_headers, status_type)
+             VALUES (?, now(), now(), 'IN', ?::bytea, NULL, 'INFORMATION_RELEASE')",
+            [$threadId, 'content']
+        );
 
-        $threadIds = array_column(NpApiService::listNpThreads()['threads'], 'thread_id');
-        $this->assertNotContains($created['thread_id'], $threadIds);
+        Database::execute('UPDATE threads SET archived = true WHERE id = ?', [$threadId]);
+
+        $result = NpApiService::listNpThreads();
+        $threadIds = array_column($result['threads'], 'thread_id');
+        $this->assertContains($threadId, $threadIds);
+
+        $thread = $result['threads'][array_search($threadId, $threadIds)];
+        $this->assertEquals(1, $thread['email_count_in']);
+        $this->assertEquals(1, $thread['email_count_out']);
+        $this->assertNotEquals(
+            ThreadStatusRepository::ERROR_THREAD_NOT_FOUND,
+            $thread['status'],
+            'Archived thread must get a real status row, not the missing-status fallback'
+        );
     }
 
     public function testEmailsAttachmentsAndUnknownEmailType(): void {

@@ -103,6 +103,23 @@ class NpApiServiceCreateTest extends TestCase {
         $this->assertEquals($first['thread_id'], $second['thread_id']);
     }
 
+    /**
+     * Archiving is an offpost-GUI display action and must not make the same
+     * innsynshenvendelse sendable twice. Without this, a visitor clicking "søk
+     * innsyn" on a document whose thread had been archived would cause a second
+     * real email to the myndighet.
+     */
+    public function testArchivedThreadStillDeduplicates(): void {
+        $first = NpApiService::createThread(self::NP_ENTITY, 'Tittel', 'Innhold', self::LABELS);
+        Database::execute('UPDATE threads SET archived = true WHERE id = ?', [$first['thread_id']]);
+
+        $second = NpApiService::createThread(self::NP_ENTITY, 'Tittel', 'Innhold', self::LABELS);
+
+        $this->assertFalse($second['created']);
+        $this->assertTrue($second['existing']);
+        $this->assertEquals($first['thread_id'], $second['thread_id']);
+    }
+
     public function testSameLabelDifferentEntityCreatesSeparateThread(): void {
         $otherNpEntity = '9997-test-entity-two';
 

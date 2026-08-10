@@ -119,20 +119,19 @@ misleading:
 
 `organizer/src/tests/NpApiServiceListTest.php`:
 
-- An archived thread carrying the NP label still appears in `listNpThreads()`.
-- Its `status` is a real status, not `ERROR_THREAD_NOT_FOUND`, and its
-  `email_count_in` / `email_count_out` reflect its actual emails. This is the
-  regression test for change 2 — change 1 without change 2 passes a naive
-  "is it in the list" assertion while producing wrong data.
+- `testArchivedNpThreadExcluded()` asserts today's behaviour and is inverted into
+  `testArchivedNpThreadIncludedWithRealStatusAndCounts()`.
+- The replacement asserts not just that the thread is listed, but that its
+  `email_count_in` / `email_count_out` match its actual emails and that its
+  `status` is not `ERROR_THREAD_NOT_FOUND`. This is the regression test for
+  change 2 — change 1 without change 2 passes a naive "is it in the list"
+  assertion while serving wrong data.
 
 `organizer/src/tests/NpApiServiceCreateTest.php`:
 
-- `createThread()` against a label whose only thread is archived returns
-  `created: false`, `existing: true`, and the archived thread's `thread_id` —
-  no new thread, no new outbound email.
-
-No existing test asserts the current archived-excluding behaviour, so nothing
-needs inverting.
+- `testArchivedThreadStillDeduplicates()`: `createThread()` against a label whose
+  only thread is archived returns `created: false`, `existing: true`, and the
+  archived thread's `thread_id` — no new thread, no new outbound email.
 
 ## Out of scope
 
