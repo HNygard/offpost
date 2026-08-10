@@ -12,6 +12,7 @@ enum ThreadEmailStatusType: string
     case COPY_SENT = 'COPY_SENT';
     case ASKING_FOR_CLARIFICATION = 'ASKING_FOR_CLARIFICATION';
     case CLARIFICATION_SENT = 'CLARIFICATION_SENT';
+    case RESPONSE_TO_REQUEST = 'RESPONSE_TO_REQUEST';
     case REQUEST_REJECTED = 'REQUEST_REJECTED';
     case INFORMATION_RELEASE = 'INFORMATION_RELEASE';
 
@@ -34,6 +35,7 @@ enum ThreadEmailStatusType: string
             self::COPY_SENT => 'Copy Sent',
             self::ASKING_FOR_CLARIFICATION => 'Asking for Clarification',
             self::CLARIFICATION_SENT => 'Clarification Sent',
+            self::RESPONSE_TO_REQUEST => 'Response to Request',
             self::REQUEST_REJECTED => 'Request Rejected',
             self::INFORMATION_RELEASE => 'Information Release',
             self::INFO => 'Info',
@@ -55,6 +57,7 @@ enum ThreadEmailStatusType: string
             self::COPY_SENT => 'We sent the requested copy. Administrative — generally mark Ignore (hidden from listings and excluded from the NP integration).',
             self::ASKING_FOR_CLARIFICATION => 'The entity asks us to clarify or narrow the request (e.g. which journal posts we want). Not a response — generally mark Ignore (hidden from listings and excluded from the NP integration).',
             self::CLARIFICATION_SENT => 'Our reply clarifying or narrowing the request. Generally mark Ignore (hidden from listings and excluded from the NP integration).',
+            self::RESPONSE_TO_REQUEST => 'The entity\'s formal reply to the innsynskrav ("Svar på innsynskrav") — a covering or decision letter. May be the whole email, or one attachment alongside the released documents. No general rule on Ignore; decide per email (ignoring hides it from listings and excludes it from the NP integration).',
             self::REQUEST_REJECTED => 'The entity rejected the request. A real response. Never ignore.',
             self::INFORMATION_RELEASE => 'The entity released the requested information or documents. A real response. Never ignore.',
             self::INFO => 'Legacy value. Do not use for new classifications.',

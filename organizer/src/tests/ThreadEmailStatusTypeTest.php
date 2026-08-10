@@ -17,6 +17,29 @@ class ThreadEmailStatusTypeTest extends TestCase {
         $this->assertEquals('Clarification Sent', ThreadEmailStatusType::CLARIFICATION_SENT->label());
     }
 
+    public function testResponseToRequestCase() {
+        // :: Setup
+
+        // :: Act & Assert
+        $this->assertEquals('RESPONSE_TO_REQUEST', ThreadEmailStatusType::RESPONSE_TO_REQUEST->value);
+        $this->assertEquals('Response to Request', ThreadEmailStatusType::RESPONSE_TO_REQUEST->label());
+    }
+
+    public function testResponseToRequestDescriptionNamesInnsynskravAndIgnoreEffect() {
+        // :: Setup
+        $case = ThreadEmailStatusType::RESPONSE_TO_REQUEST;
+
+        // :: Act
+        $description = $case->description();
+
+        // :: Assert
+        // The Norwegian term is what the classifying user sees in the email,
+        // and the Ignore consequence must be stated even though this status
+        // carries no Ignore recommendation.
+        $this->assertStringContainsString('innsynskrav', $description);
+        $this->assertStringContainsString('NP integration', $description);
+    }
+
     public function testAllCasesHaveLabelAndDescription() {
         // :: Setup
         $cases = ThreadEmailStatusType::cases();
