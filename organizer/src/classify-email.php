@@ -6,6 +6,7 @@ require_once __DIR__ . '/auth.php';
 require_once __DIR__ . '/class/Threads.php';
 require_once __DIR__ . '/class/ThreadEmailClassifier.php';
 require_once __DIR__ . '/class/ThreadStorageManager.php';
+require_once __DIR__ . '/class/ThreadEmailAttachment.php';
 require_once __DIR__ . '/class/ThreadEmailHistory.php';
 require_once __DIR__ . '/class/ThreadAuthorization.php';
 require_once __DIR__ . '/class/common.php';
@@ -91,10 +92,16 @@ if (isset($_POST['submit'])) {
     foreach ($thread->emails as $email) {
         $emailId = str_replace(' ', '_', str_replace('.', '_', $email->id));
         $newIgnore = isset($_POST[$emailId . '-ignore']) && $_POST[$emailId . '-ignore'] == 'true';
-        $newStatusText = $_POST[$emailId . '-status_text'];
         $newStatusTypeString = $_POST[$emailId . '-status_type'];
         $newStatusType = ThreadEmailStatusType::tryFrom($newStatusTypeString) ?? ThreadEmailStatusType::UNKNOWN; // Fallback to UNKNOWN
-        
+        // The form pre-fills the ingest placeholder, so it survives a real
+        // classification unless it is dropped here. Must run before the
+        // "was it changed" comparison below, which relies on the normalised value.
+        $newStatusText = ThreadEmail::normalizeStatusText(
+            $newStatusType,
+            $_POST[$emailId . '-status_text']
+        );
+
         // Check if status was actually changed
         $currentStatusValue = ($email->status_type instanceof ThreadEmailStatusType ? $email->status_type->value : $email->status_type);
         if ($currentStatusValue !== $newStatusType->value ||
@@ -146,8 +153,13 @@ if (isset($_POST['submit'])) {
             foreach ($email->attachments as $att) {
                 $attId = str_replace(' ', '_', str_replace('.', '_', $att->location));
                 $attNewStatusTypeString = $_POST[$emailId . '-att-' . $attId . '-status_type'];
-                $att->status_text = $_POST[$emailId . '-att-' . $attId . '-status_text'];
                 $att->status_type = ThreadEmailStatusType::tryFrom($attNewStatusTypeString) ?? ThreadEmailStatusType::UNKNOWN;
+                // The form pre-fills the ingest placeholder, so it survives a real
+                // classification unless it is dropped here.
+                $att->status_text = ThreadEmailAttachment::normalizeStatusText(
+                    $att->status_type,
+                    $_POST[$emailId . '-att-' . $attId . '-status_text']
+                );
                 ThreadStorageManager::getInstance()->updateAttachmentClassification(
                     $email->id,
                     $att->id,

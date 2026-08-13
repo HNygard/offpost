@@ -203,6 +203,7 @@ class Thread implements JsonSerializable {
             $email->status_text = $emailData['status_text'];
             $email->description = $emailData['description'];
             $email->answer = $emailData['answer'];
+            $email->auto_classification = $emailData['auto_classification'];
             // Load attachments from thread_email_attachments table
             $attachments = Database::query(
                 "SELECT * FROM thread_email_attachments WHERE email_id = ?",

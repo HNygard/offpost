@@ -49,6 +49,7 @@ class ThreadDatabaseOperations {
                     e.email_type,
                     e.status_type as email_status_type,
                     e.status_text as email_status_text,
+                    e.auto_classification as email_auto_classification,
                     e.description,
                     e.ignore,
                     a.id as attachment_id,
@@ -147,6 +148,7 @@ class ThreadDatabaseOperations {
                 $currentEmail->email_type = $row['email_type'];
                 $currentEmail->status_type = $row['email_status_type'];
                 $currentEmail->status_text = $row['email_status_text'];
+                $currentEmail->auto_classification = $row['email_auto_classification'];
                 $currentEmail->description = $row['description'];
                 $currentEmail->ignore = (bool)$row['ignore'];
                 $currentEmail->attachments = array();
@@ -203,6 +205,7 @@ class ThreadDatabaseOperations {
                     e.email_type,
                     e.status_type as email_status_type,
                     e.status_text as email_status_text,
+                    e.auto_classification as email_auto_classification,
                     e.description,
                     e.ignore,
                     a.id as attachment_id,
@@ -279,6 +282,7 @@ class ThreadDatabaseOperations {
                 $currentEmail->email_type = $row['email_type'];
                 $currentEmail->status_type = $row['email_status_type'];
                 $currentEmail->status_text = $row['email_status_text'];
+                $currentEmail->auto_classification = $row['email_auto_classification'];
                 $currentEmail->description = $row['description'];
                 $currentEmail->ignore = (bool)$row['ignore'];
                 $currentEmail->attachments = array();
