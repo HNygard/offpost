@@ -129,6 +129,14 @@ class ImapEmailProcessorTest extends TestCase {
         // :: Setup
         $resource = fopen('php://memory', 'r');
         $testFolder = 'TestFolder';
+        $debugConnection = new ImapConnection(
+            $this->testServer,
+            $this->testEmail,
+            $this->testPassword,
+            true,
+            $this->mockWrapper
+        );
+        $processor = new ImapEmailProcessor($debugConnection, $this->tempCacheFile);
 
         $this->mockWrapper->expects($this->once())
             ->method('open')
@@ -187,13 +195,30 @@ class ImapEmailProcessorTest extends TestCase {
             ->willReturnCallback(function($str) { return $str; });
 
         // :: Act
-        $emails = $this->processor->getEmails($testFolder);
+        ob_start();
+        $emails = $processor->getEmails($testFolder);
+        $debugOutput = ob_get_clean();
 
         // :: Assert
         $this->assertCount(1, $emails, "Malformed IMAP messages should be skipped. Got: " . json_encode(array_map(function ($email) {
             return $email->subject;
         }, $emails), JSON_PRETTY_PRINT));
         $this->assertEquals('Valid email', $emails[0]->subject, 'Processing should continue to later valid emails');
+        $this->assertStringContainsString(
+            "Skipping email UID 1 due to processing error (Imap\\MalformedImapEmailException): Email UID 1 is missing 'from' address",
+            $debugOutput,
+            "Debug output should identify missing from-address errors without dumping headers. Got: " . json_encode($debugOutput, JSON_PRETTY_PRINT)
+        );
+        $this->assertStringContainsString(
+            "Skipping email UID 2 due to processing error (Imap\\MalformedImapEmailException): Email UID 2 has invalid header data",
+            $debugOutput,
+            "Debug output should identify invalid header data errors. Got: " . json_encode($debugOutput, JSON_PRETTY_PRINT)
+        );
+        $this->assertStringNotContainsString(
+            '{"subject":"Broken email"',
+            $debugOutput,
+            "Debug output should not include raw header JSON. Got: " . json_encode($debugOutput, JSON_PRETTY_PRINT)
+        );
 
         fclose($resource);
     }

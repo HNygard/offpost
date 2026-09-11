@@ -88,7 +88,7 @@ class ImapEmailProcessor {
             $this->connection->logDebug("Fetching email UID: $uid");
             try {
                 $email = $this->getEmail($uid);
-            } catch (\Throwable $e) {
+            } catch (MalformedImapEmailException $e) {
                 $sanitizedMessage = preg_replace('/:\s*\{.*$/s', '', $e->getMessage()) ?? '';
                 $sanitizedMessage = preg_replace('/\s+/', ' ', $sanitizedMessage) ?? '';
                 $sanitizedMessage = trim($sanitizedMessage);
@@ -124,7 +124,11 @@ class ImapEmailProcessor {
 
         // Get email body
         $body = $this->connection->getBody($uid, FT_UID);
-        
-        return ImapEmail::fromImap($this->connection, $uid, $headers, $body);
+
+        try {
+            return ImapEmail::fromImap($this->connection, $uid, $headers, $body);
+        } catch (\TypeError $e) {
+            throw new MalformedImapEmailException("Email UID {$uid} has invalid header data", 0, $e);
+        }
     }
 }

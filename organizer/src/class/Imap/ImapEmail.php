@@ -9,6 +9,9 @@ use Exception;
 use Laminas\Mail\Storage\Message;
 use ThreadEmailExtractorEmailBody;
 
+class MalformedImapEmailException extends \UnexpectedValueException {
+}
+
 class ImapEmail {
     public int $uid;
     public string $subject;
@@ -35,7 +38,7 @@ class ImapEmail {
         $email = new self();
 
         if (!isset($headers->fromaddress)) {
-            throw new Exception("Email UID {$uid} is missing 'from' address: " . json_encode($headers));
+            throw new MalformedImapEmailException("Email UID {$uid} is missing 'from' address: " . json_encode($headers));
         }
         
         // Basic email information
