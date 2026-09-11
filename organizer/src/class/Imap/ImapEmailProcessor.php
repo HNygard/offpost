@@ -89,7 +89,7 @@ class ImapEmailProcessor {
             try {
                 $email = $this->getEmail($uid);
             } catch (\Throwable $e) {
-                $this->connection->logDebug("Skipping email UID {$uid} due to processing error: " . $e->getMessage());
+                $this->connection->logDebug("Skipping email UID {$uid} due to processing error (" . $e::class . ")");
                 continue;
             }
 
