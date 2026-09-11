@@ -89,7 +89,14 @@ class ImapEmailProcessor {
             try {
                 $email = $this->getEmail($uid);
             } catch (\Throwable $e) {
-                $this->connection->logDebug("Skipping email UID {$uid} due to processing error (" . $e::class . ")");
+                $sanitizedMessage = preg_replace('/:\s*\{.*$/s', '', $e->getMessage()) ?? '';
+                $sanitizedMessage = preg_replace('/\s+/', ' ', $sanitizedMessage) ?? '';
+                $sanitizedMessage = trim($sanitizedMessage);
+                if (strlen($sanitizedMessage) > 200) {
+                    $sanitizedMessage = substr($sanitizedMessage, 0, 200) . '...';
+                }
+
+                $this->connection->logDebug("Skipping email UID {$uid} due to processing error (" . $e::class . "): {$sanitizedMessage}");
                 continue;
             }
 
