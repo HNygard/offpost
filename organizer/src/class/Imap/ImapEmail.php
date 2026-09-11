@@ -3,14 +3,12 @@
 namespace Imap;
 
 require_once __DIR__ . '/../../vendor/autoload.php';
+require_once __DIR__ . '/MalformedImapEmailException.php';
 require_once __DIR__ . '/../Extraction/ThreadEmailExtractorEmailBody.php';
 
 use Exception;
 use Laminas\Mail\Storage\Message;
 use ThreadEmailExtractorEmailBody;
-
-class MalformedImapEmailException extends \UnexpectedValueException {
-}
 
 class ImapEmail {
     public int $uid;
