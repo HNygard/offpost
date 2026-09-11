@@ -48,8 +48,12 @@ class ImapEmail {
         // Clean up and convert character encodings
         $email->toaddress = isset($headers->toaddress) ? $connection->utf8($headers->toaddress) : null;
         $email->fromaddress = $connection->utf8($headers->fromaddress);
-        $email->senderaddress = $connection->utf8($headers->senderaddress);
-        $email->reply_toaddress = $connection->utf8($headers->reply_toaddress);
+        $email->senderaddress = isset($headers->senderaddress)
+            ? $connection->utf8($headers->senderaddress)
+            : $email->fromaddress;
+        $email->reply_toaddress = isset($headers->reply_toaddress)
+            ? $connection->utf8($headers->reply_toaddress)
+            : $email->fromaddress;
 
         // Convert personal names to UTF-8
         if (isset($headers->to[0]->personal)) {

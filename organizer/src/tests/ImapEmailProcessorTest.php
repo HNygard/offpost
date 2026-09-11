@@ -173,7 +173,6 @@ class ImapEmailProcessorTest extends TestCase {
             'subject' => 'Broken sender email',
             'date' => '2023-12-25 10:31:00',
             'fromaddress' => 'broken2@test.com',
-            'reply_toaddress' => 'broken2@test.com',
             'to' => [],
             'from' => [],
             'reply_to' => [],
@@ -200,20 +199,19 @@ class ImapEmailProcessorTest extends TestCase {
         $debugOutput = ob_get_clean();
 
         // :: Assert
-        $this->assertCount(1, $emails, "Malformed IMAP messages should be skipped. Got: " . json_encode(array_map(function ($email) {
+        $this->assertCount(2, $emails, "Only malformed IMAP messages should be skipped. Got: " . json_encode(array_map(function ($email) {
             return $email->subject;
         }, $emails), JSON_PRETTY_PRINT));
-        $this->assertEquals('Valid email', $emails[0]->subject, 'Processing should continue to later valid emails');
+        $this->assertEquals('Broken sender email', $emails[0]->subject, 'Missing senderaddress should fall back to fromaddress');
+        $this->assertEquals('broken2@test.com', $emails[0]->senderaddress, 'Missing senderaddress should default to fromaddress');
+        $this->assertEquals('broken2@test.com', $emails[0]->reply_toaddress, 'Missing reply_toaddress should default to fromaddress');
+        $this->assertEquals('Valid email', $emails[1]->subject, 'Processing should continue to later valid emails');
         $this->assertStringContainsString(
             "Skipping email UID 1 due to processing error (Imap\\MalformedImapEmailException): Email UID 1 is missing 'from' address",
             $debugOutput,
             "Debug output should identify missing from-address errors without dumping headers. Got: " . json_encode($debugOutput, JSON_PRETTY_PRINT)
         );
-        $this->assertStringContainsString(
-            "Skipping email UID 2 due to processing error (Imap\\MalformedImapEmailException): Email UID 2 has invalid header data",
-            $debugOutput,
-            "Debug output should identify invalid header data errors. Got: " . json_encode($debugOutput, JSON_PRETTY_PRINT)
-        );
+        $this->assertStringNotContainsString('Skipping email UID 2', $debugOutput, "Emails missing optional sender/reply-to headers should still be processed. Got: " . json_encode($debugOutput, JSON_PRETTY_PRINT));
         $this->assertStringNotContainsString(
             '{"subject":"Broken email"',
             $debugOutput,

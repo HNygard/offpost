@@ -125,10 +125,6 @@ class ImapEmailProcessor {
         // Get email body
         $body = $this->connection->getBody($uid, FT_UID);
 
-        try {
-            return ImapEmail::fromImap($this->connection, $uid, $headers, $body);
-        } catch (\TypeError $e) {
-            throw new MalformedImapEmailException("Email UID {$uid} has invalid header data", 0, $e);
-        }
+        return ImapEmail::fromImap($this->connection, $uid, $headers, $body);
     }
 }
