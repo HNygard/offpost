@@ -125,6 +125,102 @@ class ImapEmailProcessorTest extends TestCase {
         fclose($resource);
     }
 
+    public function testGetEmailsSkipsMalformedEmailAndContinues(): void {
+        // :: Setup
+        $resource = fopen('php://memory', 'r');
+        $testFolder = 'TestFolder';
+        $debugConnection = new ImapConnection(
+            $this->testServer,
+            $this->testEmail,
+            $this->testPassword,
+            true,
+            $this->mockWrapper
+        );
+        $processor = new ImapEmailProcessor($debugConnection, $this->tempCacheFile);
+
+        $this->mockWrapper->expects($this->once())
+            ->method('open')
+            ->with(
+                $this->stringContains($testFolder),
+                $this->equalTo($this->testEmail),
+                $this->equalTo($this->testPassword)
+            )
+            ->willReturn($resource);
+
+        $this->mockWrapper->expects($this->once())
+            ->method('search')
+            ->with($resource, "ALL", SE_UID)
+            ->willReturn([1, 2, 3]);
+
+        $this->mockWrapper->method('msgno')
+            ->willReturnMap([
+                [$resource, 1, 1],
+                [$resource, 2, 2],
+                [$resource, 3, 3]
+            ]);
+
+        $headersWithoutFromAddress = (object)[
+            'subject' => 'Broken email',
+            'date' => '2023-12-25 10:30:00',
+            'senderaddress' => 'broken@test.com',
+            'reply_toaddress' => 'broken@test.com',
+            'to' => [],
+            'from' => [],
+            'reply_to' => [],
+            'sender' => []
+        ];
+        $headersWithoutSenderAddress = (object)[
+            'subject' => 'Broken sender email',
+            'date' => '2023-12-25 10:31:00',
+            'fromaddress' => 'broken2@test.com',
+            'to' => [],
+            'from' => [],
+            'reply_to' => [],
+            'sender' => []
+        ];
+        $validHeaders = $this->createTestHeaders('Valid email', 'sender3@test.com');
+
+        $this->mockWrapper->method('headerinfo')
+            ->willReturnMap([
+                [$resource, 1, $headersWithoutFromAddress],
+                [$resource, 2, $headersWithoutSenderAddress],
+                [$resource, 3, $validHeaders]
+            ]);
+
+        $this->mockWrapper->method('body')
+            ->willReturn('Test email body');
+
+        $this->mockWrapper->method('utf8')
+            ->willReturnCallback(function($str) { return $str; });
+
+        // :: Act
+        ob_start();
+        $emails = $processor->getEmails($testFolder);
+        $debugOutput = ob_get_clean();
+
+        // :: Assert
+        $this->assertCount(2, $emails, "Only malformed IMAP messages should be skipped. Got: " . json_encode(array_map(function ($email) {
+            return $email->subject;
+        }, $emails), JSON_PRETTY_PRINT));
+        $this->assertEquals('Broken sender email', $emails[0]->subject, 'Missing senderaddress should fall back to fromaddress');
+        $this->assertEquals('broken2@test.com', $emails[0]->senderaddress, 'Missing senderaddress should default to fromaddress');
+        $this->assertEquals('broken2@test.com', $emails[0]->reply_toaddress, 'Missing reply_toaddress should default to fromaddress');
+        $this->assertEquals('Valid email', $emails[1]->subject, 'Processing should continue to later valid emails');
+        $this->assertStringContainsString(
+            "Skipping email UID 1 due to processing error (Imap\\MalformedImapEmailException): Email UID 1 is missing 'from' address",
+            $debugOutput,
+            "Debug output should identify missing from-address errors without dumping headers. Got: " . json_encode($debugOutput, JSON_PRETTY_PRINT)
+        );
+        $this->assertStringNotContainsString('Skipping email UID 2', $debugOutput, "Emails missing optional sender/reply-to headers should still be processed. Got: " . json_encode($debugOutput, JSON_PRETTY_PRINT));
+        $this->assertStringNotContainsString(
+            '{"subject":"Broken email"',
+            $debugOutput,
+            "Debug output should not include raw header JSON. Got: " . json_encode($debugOutput, JSON_PRETTY_PRINT)
+        );
+
+        fclose($resource);
+    }
+
     public function testGetEmailDirection(): void {
         $myEmail = 'test@example.com';
         

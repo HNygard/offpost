@@ -86,7 +86,23 @@ class ImapEmailProcessor {
 
         foreach ($mailUIDs as $uid) {
             $this->connection->logDebug("Fetching email UID: $uid");
-            $emails[] = $this->getEmail($uid);
+            try {
+                $email = $this->getEmail($uid);
+            } catch (MalformedImapEmailException $e) {
+                $sanitizedMessage = preg_replace('/:\s*\{.*$/s', '', $e->getMessage()) ?? '';
+                $sanitizedMessage = preg_replace('/\s+/', ' ', $sanitizedMessage) ?? '';
+                $sanitizedMessage = trim($sanitizedMessage);
+                if (mb_strlen($sanitizedMessage) > 500) {
+                    $sanitizedMessage = mb_substr($sanitizedMessage, 0, 500) . '...';
+                }
+
+                $this->connection->logDebug("Skipping email UID {$uid} due to processing error (" . $e::class . "): {$sanitizedMessage}");
+                continue;
+            }
+
+            if ($email !== null) {
+                $emails[] = $email;
+            }
         }
 
         return $emails;
@@ -108,7 +124,7 @@ class ImapEmailProcessor {
 
         // Get email body
         $body = $this->connection->getBody($uid, FT_UID);
-        
+
         return ImapEmail::fromImap($this->connection, $uid, $headers, $body);
     }
 }

@@ -3,6 +3,7 @@
 namespace Imap;
 
 require_once __DIR__ . '/../../vendor/autoload.php';
+require_once __DIR__ . '/MalformedImapEmailException.php';
 require_once __DIR__ . '/../Extraction/ThreadEmailExtractorEmailBody.php';
 
 use Exception;
@@ -35,7 +36,7 @@ class ImapEmail {
         $email = new self();
 
         if (!isset($headers->fromaddress)) {
-            throw new Exception("Email UID {$uid} is missing 'from' address: " . json_encode($headers));
+            throw new MalformedImapEmailException("Email UID {$uid} is missing 'from' address: " . json_encode($headers));
         }
         
         // Basic email information
@@ -47,8 +48,12 @@ class ImapEmail {
         // Clean up and convert character encodings
         $email->toaddress = isset($headers->toaddress) ? $connection->utf8($headers->toaddress) : null;
         $email->fromaddress = $connection->utf8($headers->fromaddress);
-        $email->senderaddress = $connection->utf8($headers->senderaddress);
-        $email->reply_toaddress = $connection->utf8($headers->reply_toaddress);
+        $email->senderaddress = isset($headers->senderaddress)
+            ? $connection->utf8($headers->senderaddress)
+            : $email->fromaddress;
+        $email->reply_toaddress = isset($headers->reply_toaddress)
+            ? $connection->utf8($headers->reply_toaddress)
+            : $email->fromaddress;
 
         // Convert personal names to UTF-8
         if (isset($headers->to[0]->personal)) {
