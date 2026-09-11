@@ -92,8 +92,8 @@ class ImapEmailProcessor {
                 $sanitizedMessage = preg_replace('/:\s*\{.*$/s', '', $e->getMessage()) ?? '';
                 $sanitizedMessage = preg_replace('/\s+/', ' ', $sanitizedMessage) ?? '';
                 $sanitizedMessage = trim($sanitizedMessage);
-                if (mb_strlen($sanitizedMessage) > 200) {
-                    $sanitizedMessage = mb_substr($sanitizedMessage, 0, 200) . '...';
+                if (mb_strlen($sanitizedMessage) > 500) {
+                    $sanitizedMessage = mb_substr($sanitizedMessage, 0, 500) . '...';
                 }
 
                 $this->connection->logDebug("Skipping email UID {$uid} due to processing error (" . $e::class . "): {$sanitizedMessage}");
