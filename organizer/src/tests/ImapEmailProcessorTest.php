@@ -125,6 +125,79 @@ class ImapEmailProcessorTest extends TestCase {
         fclose($resource);
     }
 
+    public function testGetEmailsSkipsMalformedEmailAndContinues(): void {
+        // :: Setup
+        $resource = fopen('php://memory', 'r');
+        $testFolder = 'TestFolder';
+
+        $this->mockWrapper->expects($this->once())
+            ->method('open')
+            ->with(
+                $this->stringContains($testFolder),
+                $this->equalTo($this->testEmail),
+                $this->equalTo($this->testPassword)
+            )
+            ->willReturn($resource);
+
+        $this->mockWrapper->expects($this->once())
+            ->method('search')
+            ->with($resource, "ALL", SE_UID)
+            ->willReturn([1, 2, 3]);
+
+        $this->mockWrapper->method('msgno')
+            ->willReturnMap([
+                [$resource, 1, 1],
+                [$resource, 2, 2],
+                [$resource, 3, 3]
+            ]);
+
+        $headersWithoutFromAddress = (object)[
+            'subject' => 'Broken email',
+            'date' => '2023-12-25 10:30:00',
+            'senderaddress' => 'broken@test.com',
+            'reply_toaddress' => 'broken@test.com',
+            'to' => [],
+            'from' => [],
+            'reply_to' => [],
+            'sender' => []
+        ];
+        $headersWithoutSenderAddress = (object)[
+            'subject' => 'Broken sender email',
+            'date' => '2023-12-25 10:31:00',
+            'fromaddress' => 'broken2@test.com',
+            'reply_toaddress' => 'broken2@test.com',
+            'to' => [],
+            'from' => [],
+            'reply_to' => [],
+            'sender' => []
+        ];
+        $validHeaders = $this->createTestHeaders('Valid email', 'sender3@test.com');
+
+        $this->mockWrapper->method('headerinfo')
+            ->willReturnMap([
+                [$resource, 1, $headersWithoutFromAddress],
+                [$resource, 2, $headersWithoutSenderAddress],
+                [$resource, 3, $validHeaders]
+            ]);
+
+        $this->mockWrapper->method('body')
+            ->willReturn('Test email body');
+
+        $this->mockWrapper->method('utf8')
+            ->willReturnCallback(function($str) { return $str; });
+
+        // :: Act
+        $emails = $this->processor->getEmails($testFolder);
+
+        // :: Assert
+        $this->assertCount(1, $emails, "Malformed IMAP messages should be skipped. Got: " . json_encode(array_map(function ($email) {
+            return $email->subject;
+        }, $emails), JSON_PRETTY_PRINT));
+        $this->assertEquals('Valid email', $emails[0]->subject, 'Processing should continue to later valid emails');
+
+        fclose($resource);
+    }
+
     public function testGetEmailDirection(): void {
         $myEmail = 'test@example.com';
         

@@ -86,7 +86,16 @@ class ImapEmailProcessor {
 
         foreach ($mailUIDs as $uid) {
             $this->connection->logDebug("Fetching email UID: $uid");
-            $emails[] = $this->getEmail($uid);
+            try {
+                $email = $this->getEmail($uid);
+            } catch (\Throwable $e) {
+                $this->connection->logDebug("Skipping email UID {$uid} due to processing error: " . $e->getMessage());
+                continue;
+            }
+
+            if ($email !== null) {
+                $emails[] = $email;
+            }
         }
 
         return $emails;
