@@ -65,7 +65,7 @@ class ThreadEmailMover {
             }
             catch (Exception $e) {
                 if ($this->isMissingUidError($e)) {
-                    error_log("ThreadEmailMover: Skipping email UID {$email->uid} from {$mailbox} because it no longer exists: " . $e->getMessage());
+                    $this->notifyMissingUidFetchError($mailbox, $email, $e);
                     continue;
                 }
                 throw new Exception("Failed to fetch raw email UID {$email->uid} from {$mailbox}: " . $e->getMessage(), $e->getCode(), $e);
@@ -185,6 +185,47 @@ class ThreadEmailMover {
             $error = $error->getPrevious();
         }
         return false;
+    }
+
+    private function notifyMissingUidFetchError(string $mailbox, object $email, Exception $exception): void {
+        $errorDetails = [
+            'mailbox' => $mailbox,
+            'email_uid' => $email->uid,
+            'email_subject' => $email->subject ?? null,
+            'email_timestamp' => $email->timestamp ?? null,
+            'error' => $exception->getMessage(),
+            'error_code' => $exception->getCode(),
+            'exception_chain' => $this->getExceptionChainMessages($exception),
+        ];
+
+        $logMessage = "ThreadEmailMover: Raw email fetch skipped due to missing UID. " . json_encode($errorDetails);
+        error_log($logMessage);
+
+        // Lazily initialize the admin notification service if not injected
+        if ($this->adminNotificationService === null) {
+            $this->adminNotificationService = new AdminNotificationService();
+        }
+
+        $this->adminNotificationService->notifyAdminOfError(
+            'email-fetch-missing-uid',
+            "Missing UID while fetching raw email in {$mailbox}; skipping message and continuing processing.",
+            [
+                'log_line' => $logMessage,
+                ...$errorDetails,
+            ]
+        );
+    }
+
+    private function getExceptionChainMessages(Exception $exception): array {
+        $messages = [];
+        $error = $exception;
+
+        while ($error !== null) {
+            $messages[] = $error->getMessage();
+            $error = $error->getPrevious();
+        }
+
+        return $messages;
     }
 
     /**

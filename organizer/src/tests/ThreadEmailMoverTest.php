@@ -223,8 +223,12 @@ class ThreadEmailMoverTest extends TestCase {
 
     public function testProcessMailboxSkipsEmailWhenUidDoesNotExistDuringFetch() {
         // :: Setup
+        $mockAdminNotificationService = $this->createMock(AdminNotificationService::class);
+
         $missingEmail = $this->createMock(\Imap\ImapEmail::class);
         $missingEmail->uid = 1;
+        $missingEmail->subject = 'Missing UID test subject';
+        $missingEmail->timestamp = 1700000000;
         $missingEmail->expects($this->never())
             ->method('getEmailAddresses');
 
@@ -253,10 +257,36 @@ class ThreadEmailMoverTest extends TestCase {
             ->method('moveEmail')
             ->with(2, 'INBOX.Test - Thread');
 
+        $mockAdminNotificationService->expects($this->once())
+            ->method('notifyAdminOfError')
+            ->with(
+                'email-fetch-missing-uid',
+                $this->stringContains('Missing UID while fetching raw email in INBOX'),
+                $this->callback(function(array $errorDetails): bool {
+                    $this->assertEquals('INBOX', $errorDetails['mailbox']);
+                    $this->assertEquals(1, $errorDetails['email_uid']);
+                    $this->assertEquals('Missing UID test subject', $errorDetails['email_subject']);
+                    $this->assertEquals(1700000000, $errorDetails['email_timestamp']);
+                    $this->assertStringContainsString('UID does not exist', $errorDetails['error']);
+                    $this->assertStringContainsString('Raw email fetch skipped due to missing UID', $errorDetails['log_line']);
+                    $this->assertIsArray($errorDetails['exception_chain']);
+                    $this->assertNotEmpty($errorDetails['exception_chain']);
+                    return true;
+                })
+            )
+            ->willReturn(true);
+
+        $threadEmailMover = new ThreadEmailMover(
+            $this->mockConnection,
+            $this->mockFolderManager,
+            $this->mockEmailProcessor,
+            $mockAdminNotificationService
+        );
+
         $emailToFolder = ['test@example.com' => 'INBOX.Test - Thread'];
 
         // :: Act
-        $result = $this->threadEmailMover->processMailbox('INBOX', $emailToFolder);
+        $result = $threadEmailMover->processMailbox('INBOX', $emailToFolder);
 
         // :: Assert
         $this->assertEquals(
