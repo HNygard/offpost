@@ -259,8 +259,13 @@ class ThreadEmailMoverTest extends TestCase {
         $result = $this->threadEmailMover->processMailbox('INBOX', $emailToFolder);
 
         // :: Assert
-        $this->assertSame([], $result['unmatched']);
-        $this->assertFalse($result['maxed_out']);
+        $this->assertEquals(
+            [
+                'unmatched' => [],
+                'maxed_out' => false
+            ],
+            $result
+        );
     }
 
     public function testProcessMailboxWithUnmatchedEmail() {
