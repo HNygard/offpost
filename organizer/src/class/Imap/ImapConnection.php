@@ -395,7 +395,18 @@ class ImapConnection {
         ];
         $probes = [
             'connection_alive' => fn() => $this->wrapper->ping($this->getConnection()),
-            'selected_mailbox' => fn() => $this->wrapper->check($this->getConnection()),
+            'selected_mailbox' => function() {
+                $selected = $this->wrapper->check($this->getConnection());
+                if ($selected !== false && isset($selected->Mailbox)) {
+                    $selected = clone $selected;
+                    $selected->Mailbox = preg_replace(
+                        '/\/(?:user|authuser)=(?:"(?:[^"\\\\]|\\\\.)*"|[^\/}]+)/i',
+                        '',
+                        $selected->Mailbox
+                    );
+                }
+                return $selected;
+            },
             'mailbox_status' => fn() => $this->wrapper->status(
                 $this->getConnection(), $this->wrapper->utf7Encode($this->server . $mailbox)
             ),

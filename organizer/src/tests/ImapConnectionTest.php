@@ -45,8 +45,10 @@ class ImapConnectionTest extends TestCase
             ->willReturnOnConsecutiveCalls(['Server alert'], [], [], [], [], [], []);
         $this->mockWrapper->expects($this->once())->method('ping')->with($stream)->willReturn(true);
         $selected = (object)['Mailbox' => $this->testServer . 'OtherFolder', 'Nmsgs' => 2, 'Recent' => 0];
+        $nativeSelected = clone $selected;
+        $nativeSelected->Mailbox = '{imap.test.com:993/imap/ssl/user="test@test.com"/authuser="proxy"}OtherFolder';
         $status = (object)['messages' => 3, 'recent' => 0, 'unseen' => 1, 'uidnext' => 44, 'uidvalidity' => 99];
-        $this->mockWrapper->expects($this->once())->method('check')->with($stream)->willReturn($selected);
+        $this->mockWrapper->expects($this->once())->method('check')->with($stream)->willReturn($nativeSelected);
         $this->mockWrapper->expects($this->once())->method('status')
             ->with($stream, $this->testServer . 'INBOX')->willReturn($status);
         $this->mockWrapper->expects($this->once())->method('search')
