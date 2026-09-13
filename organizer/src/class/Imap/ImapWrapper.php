@@ -7,6 +7,60 @@ class ImapWrapper {
     private const RETRY_DELAY_MS = 100; // Base delay in milliseconds
     
     private bool $debug;
+    private array $operationHistory = [];
+    private const HISTORY_LIMIT = 100;
+
+    public function getOperationHistory(): array {
+        return $this->operationHistory;
+    }
+
+    private function recordOperation(string $operation, ?array $params, array $details = []): void {
+        // Never retain decoded text, credentials, or arbitrary search expressions.
+        if (!in_array($operation, ['open', 'close', 'search', 'msgno', 'headerinfo', 'body',
+            'fetchbody', 'fetchstructure', 'mailMove', 'createMailbox', 'subscribe', 'renameMailbox'])) {
+            return;
+        }
+        $safeParams = array_values(array_filter($params ?? [], static function(string $param): bool {
+            return preg_match('/^(uid|msg_number|msglist|options|flags|mailbox|old_name|new_name): /', $param) === 1
+                || preg_match('/^criteria: (ALL|UID [0-9]+)$/', $param) === 1;
+        }));
+        if ($operation === 'open' || $operation === 'search') {
+            unset($details['error']);
+        }
+        $this->operationHistory[] = [
+            'time' => microtime(true),
+            'operation' => $operation,
+            'params' => $safeParams,
+            ...$details,
+        ];
+        if (count($this->operationHistory) > self::HISTORY_LIMIT) {
+            array_shift($this->operationHistory);
+        }
+    }
+
+    public function check(mixed $stream): object|false {
+        return \imap_check($stream);
+    }
+
+    public function status(mixed $stream, string $mailbox): object|false {
+        return \imap_status($stream, $mailbox, SA_ALL);
+    }
+
+    public function ping(mixed $stream): bool {
+        return \imap_ping($stream);
+    }
+
+    public function errors(): array {
+        return \imap_errors() ?: [];
+    }
+
+    public function alerts(): array {
+        return \imap_alerts() ?: [];
+    }
+
+    public function fetchOverview(mixed $stream, int $uid): array|false {
+        return \imap_fetch_overview($stream, (string)$uid, FT_UID);
+    }
     
     /**
      * @param bool $debug Whether to enable debug logging
@@ -19,6 +73,7 @@ class ImapWrapper {
      * Log debug message if debug is enabled
      */
     private function logDebug(string $operation, ?array $params = null): void {
+        $this->recordOperation($operation, $params, ['outcome' => 'started']);
         if ($this->debug) {
             $context = '';
             if ($params && !empty($params)) {
@@ -92,6 +147,7 @@ class ImapWrapper {
                 $error = \imap_last_error();
                 if ($error !== false) {
                     if ($this->isRetryableError($error) && $attempt < self::MAX_RETRIES) {
+                        $this->recordOperation($operationName, $params, ['attempt' => $attempt, 'outcome' => 'retry', 'error' => $error]);
                         $lastError = $error;
                         error_log("IMAP retry attempt $attempt/" . self::MAX_RETRIES . " for $operationName: $error");
                         $this->waitBeforeRetry($attempt);
@@ -110,11 +166,20 @@ class ImapWrapper {
                 if ($attempt > 1) {
                     error_log("IMAP operation $operationName succeeded on attempt $attempt");
                 }
+                $this->recordOperation($operationName, $params, [
+                    'attempt' => $attempt,
+                    'outcome' => $result === false ? 'returned_false' : 'succeeded',
+                ]);
                 
                 return $result;
                 
             } catch (\Exception $e) {
                 $errorMessage = $e->getMessage();
+                $this->recordOperation($operationName, $params, [
+                    'attempt' => $attempt,
+                    'outcome' => $this->isRetryableError($errorMessage) && $attempt < self::MAX_RETRIES ? 'retry' : 'failed',
+                    'error' => $errorMessage,
+                ]);
                 
                 // Check if this is a retryable error
                 if ($this->isRetryableError($errorMessage) && $attempt < self::MAX_RETRIES) {
@@ -216,8 +281,17 @@ class ImapWrapper {
 
     public function mailMove(mixed $imap_stream, string $msglist, string $mailbox, int $options = 0): bool {
         $this->logDebug('mailMove', ["msglist: $msglist", "mailbox: $mailbox", "options: $options"]);
-        $result = \imap_mail_move($imap_stream, $msglist, $mailbox, $options);
-        $this->checkError('mailMove', null, true);
+        try {
+            $result = \imap_mail_move($imap_stream, $msglist, $mailbox, $options);
+            $this->recordOperation('mailMove', ["msglist: $msglist", "mailbox: $mailbox", "options: $options"], [
+                'outcome' => $result ? 'succeeded' : 'returned_false',
+                'last_error' => \imap_last_error(),
+            ]);
+            $this->checkError('mailMove', null, true);
+        } catch (\Exception $e) {
+            $this->recordOperation('mailMove', ["msglist: $msglist", "mailbox: $mailbox"], ['outcome' => 'failed', 'error' => $e->getMessage()]);
+            throw $e;
+        }
         return $result;
     }
 
@@ -242,6 +316,7 @@ class ImapWrapper {
     public function msgno(mixed $imap_stream, int $uid): int {
         $this->logDebug('msgno', ["uid: $uid"]);
         $result = \imap_msgno($imap_stream, $uid);
+        $this->recordOperation('msgno', ["uid: $uid"], ['message_number' => $result]);
         $this->checkError('msgno');
         return $result;
     }

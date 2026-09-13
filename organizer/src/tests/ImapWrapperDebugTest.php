@@ -7,6 +7,48 @@ require_once __DIR__ . '/../class/Imap/ImapWrapper.php';
 
 class ImapWrapperDebugTest extends TestCase
 {
+    public function testOperationHistoryIsBoundedAndAvailableWithoutDebugOutput(): void
+    {
+        // :: Setup
+        $wrapper = new ImapWrapper(false);
+        $method = (new ReflectionClass(ImapWrapper::class))->getMethod('logDebug');
+        $this->expectOutputString('');
+
+        // :: Act
+        for ($uid = 1; $uid <= 105; $uid++) {
+            $method->invoke($wrapper, 'fetchbody', ["msg_number: $uid", 'section: ', 'options: 1']);
+        }
+        $history = $wrapper->getOperationHistory();
+
+        // :: Assert
+        $this->assertCount(100, $history, json_encode($history, JSON_PRETTY_PRINT));
+        $this->assertEquals(['msg_number: 6', 'options: 1'], $history[0]['params']);
+        $this->assertEquals(['msg_number: 105', 'options: 1'], $history[99]['params']);
+        $this->assertEquals('started', $history[99]['outcome']);
+    }
+
+    public function testOperationHistoryOmitsCredentialsAndMessageText(): void
+    {
+        // :: Setup
+        $wrapper = new ImapWrapper(false);
+        $method = (new ReflectionClass(ImapWrapper::class))->getMethod('logDebug');
+
+        // :: Act
+        $method->invoke($wrapper, 'open', ['mailbox: INBOX', 'username: private@example.com', 'password: not-retained']);
+        $method->invoke($wrapper, 'utf8', ['text: Private message']);
+        $method->invoke($wrapper, 'search', ['criteria: BODY "Private message"', 'options: 1']);
+        $history = $wrapper->getOperationHistory();
+        foreach ($history as &$event) {
+            unset($event['time']);
+        }
+
+        // :: Assert
+        $this->assertEquals([
+            ['operation' => 'open', 'params' => ['mailbox: INBOX'], 'outcome' => 'started'],
+            ['operation' => 'search', 'params' => ['options: 1'], 'outcome' => 'started'],
+        ], $history);
+    }
+
     public function testConstructorWithDebugEnabled()
     {
         $wrapper = new ImapWrapper(true);

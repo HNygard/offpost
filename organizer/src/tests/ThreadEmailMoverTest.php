@@ -221,6 +221,120 @@ class ThreadEmailMoverTest extends TestCase {
         $this->assertArrayHasKey('unmatched', $result);
     }
 
+    public function testProcessMailboxSkipsEmailWhenUidDoesNotExistDuringFetch() {
+        // :: Setup
+        $mockAdminNotificationService = $this->createMock(AdminNotificationService::class);
+        $listing = [
+            'before_search' => ['mailbox_status' => ['messages' => 3, 'uidvalidity' => 10, 'uidnext' => 4]],
+            'search' => ['criteria' => 'ALL', 'uid_count' => 3, 'uid_sample' => [3, 1, 2]],
+        ];
+        $history = [
+            ['operation' => 'mailMove', 'params' => ['msglist: 3', 'mailbox: INBOX.Test - Thread'], 'outcome' => 'succeeded'],
+            ['operation' => 'fetchbody', 'params' => ['msg_number: 1'], 'outcome' => 'failed', 'error' => 'UID does not exist'],
+        ];
+        $currentState = [
+            'connection_alive' => true,
+            'selected_mailbox' => ['Mailbox' => 'INBOX', 'Nmsgs' => 1],
+            'mailbox_status' => ['messages' => 1, 'uidvalidity' => 10, 'uidnext' => 4],
+            'uid_search' => [],
+            'uid_message_number' => 0,
+            'uid_flags' => [],
+        ];
+        $this->mockEmailProcessor->method('getListingDiagnostics')->willReturn($listing);
+        $this->mockConnection->method('getOperationHistory')->willReturn($history);
+        $this->mockConnection->expects($this->once())->method('getMailboxState')
+            ->with('INBOX', 1)->willReturn($currentState);
+
+        $previousEmail = $this->createMock(\Imap\ImapEmail::class);
+        $previousEmail->uid = 3;
+        $previousEmail->method('getEmailAddresses')->willReturn(['test@example.com']);
+
+        $missingEmail = $this->createMock(\Imap\ImapEmail::class);
+        $missingEmail->uid = 1;
+        $missingEmail->subject = 'Missing UID test subject';
+        $missingEmail->timestamp = 1700000000;
+        $missingEmail->expects($this->never())
+            ->method('getEmailAddresses');
+
+        $existingEmail = $this->createMock(\Imap\ImapEmail::class);
+        $existingEmail->uid = 2;
+        $existingEmail->expects($this->once())
+            ->method('getEmailAddresses')
+            ->willReturn(['test@example.com']);
+
+        $this->mockEmailProcessor->expects($this->once())
+            ->method('getEmails')
+            ->with('INBOX', true)
+            ->willReturn([$previousEmail, $missingEmail, $existingEmail]);
+
+        $this->mockConnection->expects($this->exactly(3))
+            ->method('getRawEmail')
+            ->willReturnCallback(function(int $uid) {
+                if ($uid === 1) {
+                    throw new Exception('IMAP error during fetchbody [msg_number: 1, section: , options: 1]: UID does not exist');
+                }
+
+                return 'Raw email content';
+            });
+
+        $movedUids = [];
+        $this->mockFolderManager->expects($this->exactly(2))
+            ->method('moveEmail')
+            ->willReturnCallback(function(int $uid, string $folder) use (&$movedUids) {
+                $this->assertEquals('INBOX.Test - Thread', $folder);
+                $movedUids[] = $uid;
+            });
+
+        $mockAdminNotificationService->expects($this->once())
+            ->method('notifyAdminOfError')
+            ->with(
+                'email-fetch-missing-uid',
+                $this->stringContains('Missing UID while fetching raw email in INBOX'),
+                $this->callback(function(array $errorDetails) use ($listing, $history, $currentState, &$movedUids): bool {
+                    $this->assertEquals('INBOX', $errorDetails['mailbox']);
+                    $this->assertEquals(1, $errorDetails['email_uid']);
+                    $this->assertEquals('Missing UID test subject', $errorDetails['email_subject']);
+                    $this->assertEquals(1700000000, $errorDetails['email_timestamp']);
+                    $this->assertStringContainsString('UID does not exist', $errorDetails['error']);
+                    $this->assertStringContainsString('Raw email fetch skipped due to missing UID', $errorDetails['log_line']);
+                    $this->assertIsArray($errorDetails['exception_chain']);
+                    $this->assertNotEmpty($errorDetails['exception_chain']);
+                    $this->assertEquals([3], $movedUids, 'Notification must include context after the earlier move and before processing the next UID');
+                    $this->assertEquals($listing, $errorDetails['listing']);
+                    $this->assertEquals($history, $errorDetails['recent_imap_operations']);
+                    $this->assertEquals($currentState, $errorDetails['imap_state_at_failure']);
+                    $loggedDetails = json_decode(substr($errorDetails['log_line'], strlen('ThreadEmailMover: Raw email fetch skipped due to missing UID. ')), true);
+                    $detailsWithoutLog = $errorDetails;
+                    unset($detailsWithoutLog['log_line']);
+                    $this->assertEquals($detailsWithoutLog, $loggedDetails);
+                    return true;
+                })
+            )
+            ->willReturn(true);
+
+        $threadEmailMover = new ThreadEmailMover(
+            $this->mockConnection,
+            $this->mockFolderManager,
+            $this->mockEmailProcessor,
+            $mockAdminNotificationService
+        );
+
+        $emailToFolder = ['test@example.com' => 'INBOX.Test - Thread'];
+
+        // :: Act
+        $result = $threadEmailMover->processMailbox('INBOX', $emailToFolder);
+
+        // :: Assert
+        $this->assertEquals([3, 2], $movedUids);
+        $this->assertEquals(
+            [
+                'unmatched' => [],
+                'maxed_out' => false
+            ],
+            $result
+        );
+    }
+
     public function testProcessMailboxWithUnmatchedEmail() {
         // Create mock ImapEmail with unmatched address
         $mockEmail = $this->createMock(\Imap\ImapEmail::class);

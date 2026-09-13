@@ -32,6 +32,89 @@ class ImapConnectionTest extends TestCase
         $this->imapConnection->closeConnection();
     }
 
+    public function testMailboxStatePreservesFailureAndChecksUidWithoutChangingMailbox(): void
+    {
+        // :: Setup
+        $stream = fopen('php://memory', 'r');
+        $this->mockWrapper->method('open')->willReturn($stream);
+        $this->imapConnection->openConnection('INBOX');
+        $this->mockWrapper->method('utf7Encode')->willReturnArgument(0);
+        $this->mockWrapper->expects($this->exactly(7))->method('errors')
+            ->willReturnOnConsecutiveCalls(['UID does not exist'], [], [], [], [], [], []);
+        $this->mockWrapper->expects($this->exactly(7))->method('alerts')
+            ->willReturnOnConsecutiveCalls(['Server alert'], [], [], [], [], [], []);
+        $this->mockWrapper->expects($this->once())->method('ping')->with($stream)->willReturn(true);
+        $selected = (object)['Mailbox' => $this->testServer . 'OtherFolder', 'Nmsgs' => 2, 'Recent' => 0];
+        $nativeSelected = clone $selected;
+        $nativeSelected->Mailbox = '{imap.test.com:993/imap/ssl/user="test@test.com"/authuser="proxy"}OtherFolder';
+        $status = (object)['messages' => 3, 'recent' => 0, 'unseen' => 1, 'uidnext' => 44, 'uidvalidity' => 99];
+        $this->mockWrapper->expects($this->once())->method('check')->with($stream)->willReturn($nativeSelected);
+        $this->mockWrapper->expects($this->once())->method('status')
+            ->with($stream, $this->testServer . 'INBOX')->willReturn($status);
+        $this->mockWrapper->expects($this->once())->method('search')
+            ->with($stream, 'UID 42', SE_UID)->willReturn([42]);
+        $this->mockWrapper->expects($this->once())->method('msgno')->with($stream, 42)->willReturn(2);
+        $this->mockWrapper->expects($this->once())->method('fetchOverview')->with($stream, 42)
+            ->willReturn([(object)['uid' => 42, 'msgno' => 2, 'deleted' => 1, 'seen' => 1,
+                'subject' => 'Do not retain', 'from' => 'private@example.com']]);
+        $this->mockWrapper->expects($this->never())->method('mailMove');
+        $this->mockWrapper->expects($this->never())->method('fetchbody');
+
+        // :: Act
+        $state = $this->imapConnection->getMailboxState('INBOX', 42);
+
+        // :: Assert
+        $this->assertIsFloat($state['time']);
+        unset($state['time']);
+        $emptyQueues = array_fill_keys(['connection_alive', 'selected_mailbox', 'mailbox_status',
+            'uid_search', 'uid_message_number', 'uid_flags'], []);
+        $this->assertEquals([
+            'mailbox' => 'INBOX',
+            'errors_before_probes' => ['UID does not exist'],
+            'alerts_before_probes' => ['Server alert'],
+            'connection_alive' => true,
+            'selected_mailbox' => $selected,
+            'mailbox_status' => $status,
+            'uid_search' => [42],
+            'uid_message_number' => 2,
+            'uid_flags' => [['uid' => 42, 'msgno' => 2, 'deleted' => 1, 'seen' => 1]],
+            'probe_errors' => $emptyQueues,
+            'probe_alerts' => $emptyQueues,
+        ], $state);
+        fclose($stream);
+    }
+
+    public function testMailboxStateContinuesWhenProbesFail(): void
+    {
+        // :: Setup
+        $stream = fopen('php://memory', 'r');
+        $this->mockWrapper->method('open')->willReturn($stream);
+        $this->imapConnection->openConnection();
+        $this->mockWrapper->method('ping')->willReturn(false);
+        $this->mockWrapper->method('check')->willThrowException(new RuntimeException('Connection closed'));
+        $this->mockWrapper->method('status')->willReturn(false);
+        $this->mockWrapper->method('search')->willThrowException(new RuntimeException('Search failed'));
+        $this->mockWrapper->method('msgno')->willReturn(0);
+        $this->mockWrapper->expects($this->once())->method('fetchOverview')->willReturn([]);
+        $this->mockWrapper->method('errors')->willReturnOnConsecutiveCalls(
+            ['Original fetch error'], [], [], ['Status failed'], [], [], []
+        );
+
+        // :: Act
+        $state = $this->imapConnection->getMailboxState('INBOX', 42);
+
+        // :: Assert
+        $this->assertEquals(['Original fetch error'], $state['errors_before_probes']);
+        $this->assertFalse($state['connection_alive']);
+        $this->assertEquals(['probe_error' => 'Connection closed'], $state['selected_mailbox']);
+        $this->assertFalse($state['mailbox_status']);
+        $this->assertEquals(['Status failed'], $state['probe_errors']['mailbox_status']);
+        $this->assertEquals(['probe_error' => 'Search failed'], $state['uid_search']);
+        $this->assertEquals(0, $state['uid_message_number']);
+        $this->assertEquals([], $state['uid_flags']);
+        fclose($stream);
+    }
+
     public function testOpenConnectionSuccess()
     {
         $resource = fopen('php://memory', 'r');

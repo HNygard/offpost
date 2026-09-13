@@ -7,6 +7,60 @@ require_once __DIR__ . '/../class/Imap/ImapWrapper.php';
 
 class ImapWrapperRetryTest extends TestCase
 {
+    public function testHistoryRecordsTerminalFetchError(): void
+    {
+        // :: Setup
+        $method = (new ReflectionClass(ImapWrapper::class))->getMethod('executeWithRetry');
+        $error = new RuntimeException('UID does not exist');
+
+        // :: Act
+        try {
+            $method->invoke($this->wrapper, static function() use ($error) {
+                throw $error;
+            }, 'fetchbody', ['msg_number: 42']);
+            $this->fail('The original fetch failure must still propagate');
+        } catch (RuntimeException $caught) {
+            $this->assertSame($error, $caught);
+        }
+        $history = $this->wrapper->getOperationHistory();
+        unset($history[0]['time']);
+
+        // :: Assert
+        $this->assertEquals([
+            ['operation' => 'fetchbody', 'params' => ['msg_number: 42'], 'attempt' => 1,
+                'outcome' => 'failed', 'error' => 'UID does not exist'],
+        ], $history);
+    }
+
+    public function testHistoryRecordsRetryAndSuccessWithoutRetainingBody(): void
+    {
+        // :: Setup
+        $method = (new ReflectionClass(ImapWrapper::class))->getMethod('executeWithRetry');
+        $attempt = 0;
+        $operation = static function() use (&$attempt) {
+            if (++$attempt === 1) {
+                throw new RuntimeException('No body information available');
+            }
+            return 'Private email body';
+        };
+
+        // :: Act
+        $result = $method->invoke($this->wrapper, $operation, 'fetchbody', ['msg_number: 42']);
+        $history = $this->wrapper->getOperationHistory();
+        foreach ($history as &$event) {
+            unset($event['time']);
+        }
+
+        // :: Assert
+        $this->assertEquals('Private email body', $result);
+        $this->assertEquals([
+            ['operation' => 'fetchbody', 'params' => ['msg_number: 42'], 'attempt' => 1,
+                'outcome' => 'retry', 'error' => 'No body information available'],
+            ['operation' => 'fetchbody', 'params' => ['msg_number: 42'], 'attempt' => 2,
+                'outcome' => 'succeeded'],
+        ], $history);
+    }
+
     private $mockStream;
     private $wrapper;
 

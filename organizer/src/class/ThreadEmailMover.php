@@ -54,7 +54,7 @@ class ThreadEmailMover {
      */
     public function processMailbox(string $mailbox, array $emailToFolder): array {
         $unmatchedAddresses = [];
-        $emails = $this->emailProcessor->getEmails($mailbox);
+        $emails = $this->emailProcessor->getEmails($mailbox, true);
         
         $maxed_out = false;
         $errorCount = 0;
@@ -64,6 +64,9 @@ class ThreadEmailMover {
                 $rawEmail = $this->connection->getRawEmail($email->uid);
             }
             catch (Exception $e) {
+                if ($this->isMissingUidError($e)) {
+                    $this->notifyMissingUidFetchError($mailbox, $email, $e);
+                }
                 throw new Exception("Failed to fetch raw email UID {$email->uid} from {$mailbox}: " . $e->getMessage(), $e->getCode(), $e);
             }
             $addresses = $email->getEmailAddresses($rawEmail);
@@ -170,6 +173,62 @@ class ThreadEmailMover {
             'unmatched' => array_unique($unmatchedAddresses),
             'maxed_out' => $maxed_out,
         );
+    }
+
+    private function isMissingUidError(Exception $exception): bool {
+        $error = $exception;
+        while ($error !== null) {
+            if (stripos($error->getMessage(), 'UID does not exist') !== false) {
+                return true;
+            }
+            $error = $error->getPrevious();
+        }
+        return false;
+    }
+
+    private function notifyMissingUidFetchError(string $mailbox, object $email, Exception $exception): void {
+        $errorDetails = [
+            'mailbox' => $mailbox,
+            'email_uid' => $email->uid,
+            'email_subject' => $email->subject ?? null,
+            'email_timestamp' => $email->timestamp ?? null,
+            'error' => $exception->getMessage(),
+            'error_code' => $exception->getCode(),
+            'exception_chain' => $this->getExceptionChainMessages($exception),
+            'listing' => $this->emailProcessor->getListingDiagnostics(),
+            // Capture history first so the diagnostic probes do not displace the failed operation.
+            'recent_imap_operations' => $this->connection->getOperationHistory(),
+            'imap_state_at_failure' => $this->connection->getMailboxState($mailbox, $email->uid),
+        ];
+
+        $logMessage = "ThreadEmailMover: Raw email fetch skipped due to missing UID. " . json_encode($errorDetails, JSON_INVALID_UTF8_SUBSTITUTE);
+        error_log($logMessage);
+
+        // Lazily initialize the admin notification service if not injected
+        if ($this->adminNotificationService === null) {
+            $this->adminNotificationService = new AdminNotificationService();
+        }
+
+        $this->adminNotificationService->notifyAdminOfError(
+            'email-fetch-missing-uid',
+            "Missing UID while fetching raw email in {$mailbox}; skipping message and continuing processing.",
+            [
+                'log_line' => $logMessage,
+                ...$errorDetails,
+            ]
+        );
+    }
+
+    private function getExceptionChainMessages(Exception $exception): array {
+        $messages = [];
+        $error = $exception;
+
+        while ($error !== null) {
+            $messages[] = $error->getMessage();
+            $error = $error->getPrevious();
+        }
+
+        return $messages;
     }
 
     /**
