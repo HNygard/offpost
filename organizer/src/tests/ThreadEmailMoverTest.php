@@ -221,6 +221,48 @@ class ThreadEmailMoverTest extends TestCase {
         $this->assertArrayHasKey('unmatched', $result);
     }
 
+    public function testProcessMailboxSkipsEmailWhenUidDoesNotExistDuringFetch() {
+        // :: Setup
+        $missingEmail = $this->createMock(\Imap\ImapEmail::class);
+        $missingEmail->uid = 1;
+        $missingEmail->expects($this->never())
+            ->method('getEmailAddresses');
+
+        $existingEmail = $this->createMock(\Imap\ImapEmail::class);
+        $existingEmail->uid = 2;
+        $existingEmail->expects($this->once())
+            ->method('getEmailAddresses')
+            ->willReturn(['test@example.com']);
+
+        $this->mockEmailProcessor->expects($this->once())
+            ->method('getEmails')
+            ->with('INBOX')
+            ->willReturn([$missingEmail, $existingEmail]);
+
+        $this->mockConnection->expects($this->exactly(2))
+            ->method('getRawEmail')
+            ->willReturnCallback(function(int $uid) {
+                if ($uid === 1) {
+                    throw new Exception('IMAP error during fetchbody [msg_number: 1, section: , options: 1]: UID does not exist');
+                }
+
+                return 'Raw email content';
+            });
+
+        $this->mockFolderManager->expects($this->once())
+            ->method('moveEmail')
+            ->with(2, 'INBOX.Test - Thread');
+
+        $emailToFolder = ['test@example.com' => 'INBOX.Test - Thread'];
+
+        // :: Act
+        $result = $this->threadEmailMover->processMailbox('INBOX', $emailToFolder);
+
+        // :: Assert
+        $this->assertSame([], $result['unmatched']);
+        $this->assertFalse($result['maxed_out']);
+    }
+
     public function testProcessMailboxWithUnmatchedEmail() {
         // Create mock ImapEmail with unmatched address
         $mockEmail = $this->createMock(\Imap\ImapEmail::class);

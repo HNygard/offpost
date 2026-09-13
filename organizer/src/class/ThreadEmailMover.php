@@ -64,6 +64,10 @@ class ThreadEmailMover {
                 $rawEmail = $this->connection->getRawEmail($email->uid);
             }
             catch (Exception $e) {
+                if ($this->isMissingUidError($e)) {
+                    error_log("ThreadEmailMover: Skipping email UID {$email->uid} from {$mailbox} because it no longer exists: " . $e->getMessage());
+                    continue;
+                }
                 throw new Exception("Failed to fetch raw email UID {$email->uid} from {$mailbox}: " . $e->getMessage(), $e->getCode(), $e);
             }
             $addresses = $email->getEmailAddresses($rawEmail);
@@ -170,6 +174,17 @@ class ThreadEmailMover {
             'unmatched' => array_unique($unmatchedAddresses),
             'maxed_out' => $maxed_out,
         );
+    }
+
+    private function isMissingUidError(Exception $exception): bool {
+        $error = $exception;
+        while ($error !== null) {
+            if (stripos($error->getMessage(), 'UID does not exist') !== false) {
+                return true;
+            }
+            $error = $error->getPrevious();
+        }
+        return false;
     }
 
     /**
