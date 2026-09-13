@@ -221,7 +221,7 @@ class ThreadEmailMoverTest extends TestCase {
         $this->assertArrayHasKey('unmatched', $result);
     }
 
-    public function testProcessMailboxSkipsEmailWhenUidDoesNotExistDuringFetch() {
+    public function testProcessMailboxLogsMissingUidAndRethrowsFetchFailure() {
         // :: Setup
         $mockAdminNotificationService = $this->createMock(AdminNotificationService::class);
         $listing = [
@@ -267,7 +267,7 @@ class ThreadEmailMoverTest extends TestCase {
             ->with('INBOX', true)
             ->willReturn([$previousEmail, $missingEmail, $existingEmail]);
 
-        $this->mockConnection->expects($this->exactly(3))
+        $this->mockConnection->expects($this->exactly(2))
             ->method('getRawEmail')
             ->willReturnCallback(function(int $uid) {
                 if ($uid === 1) {
@@ -278,7 +278,7 @@ class ThreadEmailMoverTest extends TestCase {
             });
 
         $movedUids = [];
-        $this->mockFolderManager->expects($this->exactly(2))
+        $this->mockFolderManager->expects($this->once())
             ->method('moveEmail')
             ->willReturnCallback(function(int $uid, string $folder) use (&$movedUids) {
                 $this->assertEquals('INBOX.Test - Thread', $folder);
@@ -299,7 +299,7 @@ class ThreadEmailMoverTest extends TestCase {
                     $this->assertStringContainsString('Raw email fetch skipped due to missing UID', $errorDetails['log_line']);
                     $this->assertIsArray($errorDetails['exception_chain']);
                     $this->assertNotEmpty($errorDetails['exception_chain']);
-                    $this->assertEquals([3], $movedUids, 'Notification must include context after the earlier move and before processing the next UID');
+                    $this->assertEquals([3], $movedUids, 'Notification must include context after the earlier move and before rethrowing');
                     $this->assertEquals($listing, $errorDetails['listing']);
                     $this->assertEquals($history, $errorDetails['recent_imap_operations']);
                     $this->assertEquals($currentState, $errorDetails['imap_state_at_failure']);
@@ -322,17 +322,16 @@ class ThreadEmailMoverTest extends TestCase {
         $emailToFolder = ['test@example.com' => 'INBOX.Test - Thread'];
 
         // :: Act
-        $result = $threadEmailMover->processMailbox('INBOX', $emailToFolder);
-
-        // :: Assert
-        $this->assertEquals([3, 2], $movedUids);
-        $this->assertEquals(
-            [
-                'unmatched' => [],
-                'maxed_out' => false
-            ],
-            $result
-        );
+        try {
+            $threadEmailMover->processMailbox('INBOX', $emailToFolder);
+            $this->fail('Expected fetch failure to be rethrown for missing UID errors');
+        } catch (Exception $exception) {
+            // :: Assert
+            $this->assertStringContainsString('Failed to fetch raw email UID 1 from INBOX', $exception->getMessage());
+            $this->assertInstanceOf(Exception::class, $exception->getPrevious());
+            $this->assertStringContainsString('UID does not exist', $exception->getPrevious()->getMessage());
+            $this->assertEquals([3], $movedUids);
+        }
     }
 
     public function testProcessMailboxWithUnmatchedEmail() {
