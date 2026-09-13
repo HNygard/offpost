@@ -54,7 +54,7 @@ class ThreadEmailMover {
      */
     public function processMailbox(string $mailbox, array $emailToFolder): array {
         $unmatchedAddresses = [];
-        $emails = $this->emailProcessor->getEmails($mailbox);
+        $emails = $this->emailProcessor->getEmails($mailbox, true);
         
         $maxed_out = false;
         $errorCount = 0;
@@ -196,9 +196,13 @@ class ThreadEmailMover {
             'error' => $exception->getMessage(),
             'error_code' => $exception->getCode(),
             'exception_chain' => $this->getExceptionChainMessages($exception),
+            'listing' => $this->emailProcessor->getListingDiagnostics(),
+            // Capture history first so the diagnostic probes do not displace the failed operation.
+            'recent_imap_operations' => $this->connection->getOperationHistory(),
+            'imap_state_at_failure' => $this->connection->getMailboxState($mailbox, $email->uid),
         ];
 
-        $logMessage = "ThreadEmailMover: Raw email fetch skipped due to missing UID. " . json_encode($errorDetails);
+        $logMessage = "ThreadEmailMover: Raw email fetch skipped due to missing UID. " . json_encode($errorDetails, JSON_INVALID_UTF8_SUBSTITUTE);
         error_log($logMessage);
 
         // Lazily initialize the admin notification service if not injected

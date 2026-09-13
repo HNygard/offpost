@@ -47,6 +47,43 @@ class ImapEmailProcessorTest extends TestCase {
         }
     }
 
+    public function testListingDiagnosticsAreCapturedBeforeSearchAndResetForNextListing(): void {
+        // :: Setup
+        $connection = $this->createMock(ImapConnection::class);
+        $processor = new ImapEmailProcessor($connection, $this->tempCacheFile);
+        $stream = fopen('php://memory', 'r');
+        $events = [];
+        $baseline = ['mailbox_status' => ['uidvalidity' => 99, 'uidnext' => 42, 'messages' => 0]];
+        $connection->method('openConnection')->willReturnCallback(function($folder) use (&$events, $stream) {
+            $events[] = "open:$folder";
+            return $stream;
+        });
+        $connection->expects($this->once())->method('getMailboxState')->with('INBOX')
+            ->willReturnCallback(function() use (&$events, $baseline) {
+                $events[] = 'snapshot';
+                return $baseline;
+            });
+        $connection->method('search')->with('ALL', SE_UID)->willReturnCallback(function() use (&$events) {
+            $events[] = 'search';
+            return [];
+        });
+
+        // :: Act
+        $emails = $processor->getEmails('INBOX', true);
+        $diagnostics = $processor->getListingDiagnostics();
+        $processor->getEmails('OtherFolder');
+
+        // :: Assert
+        $this->assertEquals([], $emails);
+        $this->assertEquals(['open:INBOX', 'snapshot', 'search', 'open:OtherFolder', 'search'], $events);
+        $this->assertEquals($baseline, $diagnostics['before_search']);
+        $this->assertIsFloat($diagnostics['search']['time']);
+        unset($diagnostics['search']['time']);
+        $this->assertEquals(['criteria' => 'ALL', 'options' => SE_UID, 'uid_count' => 0, 'uid_sample' => []], $diagnostics['search']);
+        $this->assertEquals([], $processor->getListingDiagnostics());
+        fclose($stream);
+    }
+
     public function testNeedsUpdateWithNewFolder(): void {
         $this->assertTrue($this->processor->needsUpdate('TestFolder'));
     }

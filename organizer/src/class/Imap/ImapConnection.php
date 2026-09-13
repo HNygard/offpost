@@ -379,6 +379,53 @@ class ImapConnection {
         return $this->connection;
     }
 
+    public function getOperationHistory(): array {
+        return $this->wrapper->getOperationHistory();
+    }
+
+    /**
+     * Best-effort read-only probes. Preserve the failure queue before any probe can clear it.
+     */
+    public function getMailboxState(string $mailbox, ?int $uid = null): array {
+        $state = [
+            'time' => microtime(true),
+            'mailbox' => $mailbox,
+            'errors_before_probes' => $this->wrapper->errors(),
+            'alerts_before_probes' => $this->wrapper->alerts(),
+        ];
+        $probes = [
+            'connection_alive' => fn() => $this->wrapper->ping($this->getConnection()),
+            'selected_mailbox' => fn() => $this->wrapper->check($this->getConnection()),
+            'mailbox_status' => fn() => $this->wrapper->status(
+                $this->getConnection(), $this->wrapper->utf7Encode($this->server . $mailbox)
+            ),
+        ];
+        if ($uid !== null) {
+            $probes['uid_search'] = fn() => $this->wrapper->search($this->getConnection(), "UID $uid", SE_UID);
+            $probes['uid_message_number'] = fn() => $this->wrapper->msgno($this->getConnection(), $uid);
+            $probes['uid_flags'] = function() use ($uid) {
+                $overview = $this->wrapper->fetchOverview($this->getConnection(), $uid);
+                if ($overview === false) {
+                    return false;
+                }
+                return array_map(static fn($message) => array_intersect_key((array)$message, array_flip([
+                    'uid', 'msgno', 'deleted', 'seen', 'recent', 'answered', 'draft', 'flagged'
+                ])), $overview);
+            };
+        }
+        foreach ($probes as $name => $probe) {
+            try {
+                $state[$name] = $probe();
+            } catch (\Throwable $e) {
+                $state[$name] = ['probe_error' => $e->getMessage()];
+            } finally {
+                $state['probe_errors'][$name] = $this->wrapper->errors();
+                $state['probe_alerts'][$name] = $this->wrapper->alerts();
+            }
+        }
+        return $state;
+    }
+
     /**
      * Destructor ensures connection is closed
      */

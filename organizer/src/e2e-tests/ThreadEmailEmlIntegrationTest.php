@@ -303,7 +303,7 @@ class MockImapEmailProcessor extends ImapEmailProcessor {
      * @param string $folder Folder name (ignored in mock)
      * @return array Array of ImapEmail objects
      */
-    public function getEmails(string $folder): array {
+    public function getEmails(string $folder, bool $collectDiagnostics = false): array {
         $emails = [];
         $uid = 1;
         

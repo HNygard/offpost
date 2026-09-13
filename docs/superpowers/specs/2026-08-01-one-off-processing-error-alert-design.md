@@ -47,3 +47,35 @@ resolution produces one fresh alert rather than silence.
   - First encounter: throws, error row registered.
   - Known error: no throw, ambiguous email skipped, remaining emails in the
     folder are saved.
+
+## Missing IMAP UID diagnostics
+
+Separate from the attribution-error deduplication above, `ThreadEmailMover`
+reports vanished UIDs as `email-fetch-missing-uid`. Each report includes the
+same structured diagnostic log line written to the application log:
+
+- Mailbox status before `SEARCH ALL` (message counts, UIDVALIDITY, UIDNEXT),
+  search time/options, total UID count, and the first 20 UIDs.
+- The last 100 IMAP operation events, including timestamps, UID/message-number
+  mappings, fetch attempts/retries, move targets/results, and close flags.
+  History is retained even when debug output is disabled; bodies, decoded text,
+  authentication parameters, and arbitrary search expressions are not retained.
+- At failure: queued IMAP errors/alerts, connection liveness, the server-reported
+  selected mailbox, current source-mailbox status, a fresh search for the failed
+  UID, its message number, and flags including `deleted`. Each probe's errors
+  are included separately so a failed probe is not mistaken for proof of deletion.
+
+Compare UIDVALIDITY first: a change invalidates the old UID namespace. A different
+selected mailbox indicates a selection mismatch. With the same UIDVALIDITY and
+mailbox, an empty successful UID search indicates the UID is now absent; a
+present UID with `deleted` set is marked for deletion but not yet expunged.
+Earlier move events can show whether this process moved that UID, including
+moves back to the same folder. A UID still present after the failed fetch points
+to a transient fetch/client-state problem rather than confirmed disappearance.
+
+Probes do not reopen, move, delete, or explicitly expunge messages, and failures
+are recorded without hiding the original fetch error. These observations are
+not an atomic snapshot or a server audit trail: concurrent changes can happen
+between probes. The history is bounded, and identifying another client or
+scheduled worker that deleted/expunged a UID requires IMAP server logs correlated
+with the mailbox, UIDVALIDITY, UID, and event timestamps.

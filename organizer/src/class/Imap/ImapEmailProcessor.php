@@ -10,6 +10,11 @@ class ImapEmailProcessor {
     private ImapConnection $connection;
     private string $cacheFile;
     private ?object $cache = null;
+    private array $listingDiagnostics = [];
+
+    public function getListingDiagnostics(): array {
+        return $this->listingDiagnostics;
+    }
 
     public function __construct(ImapConnection $connection, string $cacheFile = '/organizer-data/cache-threads.json') {
         $this->connection = $connection;
@@ -70,14 +75,27 @@ class ImapEmailProcessor {
      * 
      * @return ImapEmail[] List of emails
      */
-    public function getEmails(string $folder): array {
+    public function getEmails(string $folder, bool $collectDiagnostics = false): array {
+        $this->listingDiagnostics = [];
         $imapStream = $this->connection->openConnection($folder);
         if (!$imapStream) {
             throw new \Exception('No active IMAP connection');
         }
 
         $emails = [];
+        if ($collectDiagnostics) {
+            $this->listingDiagnostics['before_search'] = $this->connection->getMailboxState($folder);
+        }
         $mailUIDs = $this->connection->search("ALL", SE_UID);
+        if ($collectDiagnostics) {
+            $this->listingDiagnostics['search'] = [
+                'time' => microtime(true),
+                'criteria' => 'ALL',
+                'options' => SE_UID,
+                'uid_count' => count($mailUIDs),
+                'uid_sample' => array_slice($mailUIDs, 0, 20),
+            ];
+        }
 
         if (!$mailUIDs) {
             $this->connection->logDebug('No emails found in folder: ' . $folder);
