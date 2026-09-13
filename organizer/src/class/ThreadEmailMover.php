@@ -66,7 +66,6 @@ class ThreadEmailMover {
             catch (Exception $e) {
                 if ($this->isMissingUidError($e)) {
                     $this->notifyMissingUidFetchError($mailbox, $email, $e);
-                    continue;
                 }
                 throw new Exception("Failed to fetch raw email UID {$email->uid} from {$mailbox}: " . $e->getMessage(), $e->getCode(), $e);
             }
