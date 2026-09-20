@@ -281,4 +281,168 @@ class NpApiServiceListTest extends TestCase {
         $this->expectException(NpApiEntityNotFoundException::class);
         NpApiService::getNpAttachment($created['thread_id'], '00000000-0000-4000-8000-000000000000');
     }
+
+    // --- label / entity filters and the fields added for postliste threads ---
+
+    private function createPostlisteThread(string $npEntity, string $period, string $title = 'Offentlig journal'): string {
+        $created = NpApiService::createThread($npEntity, $title, 'Innhold', ['postliste', 'postliste:' . $period]);
+        return $created['thread_id'];
+    }
+
+    public function testDefaultListingExcludesPostlisteThreadsWithoutNpLabel(): void {
+        $postlisteId = $this->createPostlisteThread('9999-test-entity-development', '2026-W38');
+
+        $threadIds = array_column(NpApiService::listNpThreads()['threads'], 'thread_id');
+
+        $this->assertNotContains($postlisteId, $threadIds, 'No-parameter listing must keep its old shape (norske_postlister_no only)');
+    }
+
+    public function testLabelFilterRequiresEveryLabel(): void {
+        // :: Setup
+        $week38 = $this->createPostlisteThread('9999-test-entity-development', '2026-W38');
+        $week39 = $this->createPostlisteThread('9999-test-entity-development', '2026-W39');
+        $docThread = NpApiService::createThread('9999-test-entity-development', 'T', 'B',
+            ['norske_postlister_no', 'document', 'document_id:2026-1-1'])['thread_id'];
+
+        // :: Act
+        $bothWeeks = array_column(NpApiService::listNpThreads(['postliste'])['threads'], 'thread_id');
+        $onlyWeek38 = array_column(NpApiService::listNpThreads(['postliste', 'postliste:2026-W38'])['threads'], 'thread_id');
+        $none = array_column(NpApiService::listNpThreads(['postliste', 'document_id:2026-1-1'])['threads'], 'thread_id');
+
+        // :: Assert
+        $this->assertContains($week38, $bothWeeks);
+        $this->assertContains($week39, $bothWeeks);
+        $this->assertNotContains($docThread, $bothWeeks, 'label filter replaces the norske_postlister_no match');
+
+        $this->assertEquals([$week38], $onlyWeek38, json_encode($onlyWeek38, JSON_PRETTY_PRINT));
+        $this->assertEquals([], $none, 'all given labels must be present on one thread');
+    }
+
+    public function testLabelFilterIsExactMatch(): void {
+        $week38 = $this->createPostlisteThread('9999-test-entity-development', '2026-W38');
+
+        $threadIds = array_column(NpApiService::listNpThreads(['postliste:2026-W3'])['threads'], 'thread_id');
+
+        $this->assertNotContains($week38, $threadIds, 'prefix of a label must not match');
+    }
+
+    public function testEntityFilterRestrictsToThatEntity(): void {
+        $entityOne = $this->createPostlisteThread('9999-test-entity-development', '2026-W38');
+        $entityTwo = $this->createPostlisteThread('9997-test-entity-two', '2026-W38');
+
+        $threadIds = array_column(
+            NpApiService::listNpThreads(['postliste'], '9997-test-entity-two')['threads'], 'thread_id'
+        );
+
+        $this->assertEquals([$entityTwo], $threadIds, json_encode($threadIds, JSON_PRETTY_PRINT));
+        $this->assertNotContains($entityOne, $threadIds);
+    }
+
+    public function testEntityFilterWithoutLabelsKeepsNpLabelMatch(): void {
+        $docThread = NpApiService::createThread('9997-test-entity-two', 'T', 'B',
+            ['norske_postlister_no', 'document', 'document_id:2026-2-2'])['thread_id'];
+        $postliste = $this->createPostlisteThread('9997-test-entity-two', '2026-W38');
+
+        $threadIds = array_column(NpApiService::listNpThreads([], '9997-test-entity-two')['threads'], 'thread_id');
+
+        $this->assertContains($docThread, $threadIds);
+        $this->assertNotContains($postliste, $threadIds);
+    }
+
+    public function testUnknownEntityFilterGivesEmptyListButStillSupportedEntities(): void {
+        $this->createPostlisteThread('9999-test-entity-development', '2026-W38');
+
+        $result = NpApiService::listNpThreads(['postliste'], '0000-finnes-ikke');
+
+        $this->assertSame([], $result['threads']);
+        $this->assertArrayHasKey('supported_entities', $result);
+    }
+
+    public function testArchivedThreadIncludedWhenLabelGiven(): void {
+        // A finished postliste thread may be archived by hand; norske-postlister
+        // still needs it to rebuild its period state.
+        $threadId = $this->createPostlisteThread('9999-test-entity-development', '2025-01--2025-06');
+        Database::execute('UPDATE threads SET archived = true WHERE id = ?', [$threadId]);
+
+        $result = NpApiService::listNpThreads(['postliste', 'postliste:2025-01--2025-06']);
+        $threadIds = array_column($result['threads'], 'thread_id');
+
+        $this->assertEquals([$threadId], $threadIds, json_encode($threadIds, JSON_PRETTY_PRINT));
+        $this->assertNotEquals(ThreadStatusRepository::ERROR_THREAD_NOT_FOUND, $result['threads'][0]['status']);
+    }
+
+    public function testListingExposesSendingStatusFollowUpPlanAndCreatedAt(): void {
+        $threadId = $this->createPostlisteThread('9999-test-entity-development', '2026-09');
+        Database::execute(
+            "UPDATE threads SET created_at = '2026-09-01T10:00:00+00:00' WHERE id = ?",
+            [$threadId]
+        );
+
+        $result = NpApiService::listNpThreads(['postliste:2026-09']);
+        $thread = $result['threads'][0];
+
+        $this->assertEquals($threadId, $thread['thread_id']);
+        $this->assertEquals(Thread::SENDING_STATUS_READY_FOR_SENDING, $thread['sending_status']);
+        $this->assertEquals(Thread::REQUEST_FOLLOW_UP_PLAN_SPEEDY, $thread['request_follow_up_plan']);
+        $this->assertEquals(strtotime('2026-09-01T10:00:00+00:00'), $thread['created_at']);
+    }
+
+    public function testAttachmentSizeFromColumnOrContent(): void {
+        // :: Setup
+        $threadId = $this->createPostlisteThread('9999-test-entity-development', '2026-W40');
+        $emailId = Database::queryValue(
+            "INSERT INTO thread_emails
+                (thread_id, timestamp_received, datetime_received, email_type, content, imap_headers)
+             VALUES (?, '2026-10-01T10:00:00+00:00', '2026-10-01T10:00:00+00:00', 'IN', ?::bytea, NULL) RETURNING id",
+            [$threadId, 'content']
+        );
+        // size column set explicitly
+        Database::execute(
+            "INSERT INTO thread_email_attachments (email_id, name, filename, filetype, location, size, content)
+             VALUES (?, 'a.pdf', 'a.pdf', 'pdf', 'a.pdf', 12345, ?::bytea)",
+            [$emailId, 'x']
+        );
+        // size column null, content present -> measured from content
+        Database::execute(
+            "INSERT INTO thread_email_attachments (email_id, name, filename, filetype, location, size, content)
+             VALUES (?, 'b.pdf', 'b.pdf', 'pdf', 'b.pdf', NULL, ?::bytea)",
+            [$emailId, 'PDFBYTES']
+        );
+        // neither -> null
+        Database::execute(
+            "INSERT INTO thread_email_attachments (email_id, name, filename, filetype, location, size, content)
+             VALUES (?, 'c.pdf', 'c.pdf', 'pdf', 'c.pdf', NULL, NULL)",
+            [$emailId]
+        );
+
+        // :: Act
+        $result = NpApiService::listNpThreads(['postliste:2026-W40']);
+
+        // :: Assert
+        $sizesByName = [];
+        foreach ($result['threads'][0]['emails'][0]['attachments'] as $att) {
+            $sizesByName[$att['name']] = $att['size'];
+        }
+        $this->assertEquals(['a.pdf' => 12345, 'b.pdf' => 8, 'c.pdf' => null], $sizesByName, json_encode($sizesByName, JSON_PRETTY_PRINT));
+    }
+
+    public function testGetNpAttachmentAllowsPostlisteThread(): void {
+        $threadId = $this->createPostlisteThread('9999-test-entity-development', '2026-W41');
+        $emailId = Database::queryValue(
+            "INSERT INTO thread_emails
+                (thread_id, timestamp_received, datetime_received, email_type, content, imap_headers)
+             VALUES (?, '2026-10-12T10:00:00+00:00', '2026-10-12T10:00:00+00:00', 'IN', ?::bytea, NULL) RETURNING id",
+            [$threadId, 'content']
+        );
+        $attachmentId = Database::queryValue(
+            "INSERT INTO thread_email_attachments (email_id, name, filename, filetype, location, content)
+             VALUES (?, 'journal.pdf', 'journal.pdf', 'pdf', 'journal.pdf', ?::bytea) RETURNING id",
+            [$emailId, 'JOURNAL']
+        );
+
+        $result = NpApiService::getNpAttachment($threadId, $attachmentId);
+
+        $this->assertEquals('JOURNAL', $result['content']);
+        $this->assertEquals('journal.pdf', $result['name']);
+    }
 }

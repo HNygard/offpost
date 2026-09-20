@@ -35,6 +35,7 @@ if (!is_string($input['entity_id_norske_postlister']) || !is_string($input['titl
 // Reject mapping labels whose value after the prefix is empty (e.g. exactly
 // "document_id:" or "case_num:" after trimming). NpApiService::createThread
 // would otherwise accept these and dedup every such document onto one thread.
+// (An empty "postliste:" is caught by the period validation in createThread.)
 foreach ($input['labels'] as $label) {
     if (!is_string($label)) {
         http_response_code(400);

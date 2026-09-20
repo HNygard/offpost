@@ -8,6 +8,7 @@ require_once __DIR__ . '/ThreadUtils.php';
 require_once __DIR__ . '/Entity.php';
 require_once __DIR__ . '/Database.php';
 require_once __DIR__ . '/random-profile.php';
+require_once __DIR__ . '/PostlistePeriod.php';
 
 class NpApiEntityNotFoundException extends Exception {}
 class NpApiValidationException extends Exception {}
@@ -17,6 +18,10 @@ class NpApiService {
     const THREAD_OWNER_USER_ID = 'norske-postlister-api';
     const DAILY_CAP = 100;
     const NP_LABEL = 'norske_postlister_no';
+    // Postjournal-request threads (one per entity per period) carry this label
+    // plus a `postliste:<period>` mapping label - see PostlistePeriod. They are
+    // visible to the NP API like NP_LABEL threads are.
+    const POSTLISTE_LABEL = 'postliste';
 
     /** @var ?int test hook */
     public static $dailyCapOverride = null;
@@ -32,7 +37,14 @@ class NpApiService {
         }
         $mappingLabel = self::mappingLabel($labels);
         if ($mappingLabel === null) {
-            throw new NpApiValidationException('labels must contain a document_id: or case_num: label');
+            throw new NpApiValidationException('labels must contain a document_id:, case_num: or postliste: label');
+        }
+        if (str_starts_with($mappingLabel, PostlistePeriod::LABEL_PREFIX)
+            && !PostlistePeriod::isValid(substr($mappingLabel, strlen(PostlistePeriod::LABEL_PREFIX)))) {
+            throw new NpApiValidationException(
+                'Malformed postliste period in label "' . $mappingLabel
+                . '": expected YYYY-Www, YYYY-MM, YYYY, YYYY-MM--YYYY-MM or YYYY--YYYY'
+            );
         }
         $entity = Entity::getByNorskePostlisterId($npEntityId);
         if ($entity === null) {
@@ -131,14 +143,29 @@ class NpApiService {
         ];
     }
 
-    /** The label that identifies the doc/case this thread requests. */
+    /**
+     * The label that identifies what this thread requests: a document, a case,
+     * or a postjournal period. Dedup in findExistingThread() keys on it.
+     */
     public static function mappingLabel(array $labels): ?string {
         foreach ($labels as $label) {
-            if (str_starts_with($label, 'document_id:') || str_starts_with($label, 'case_num:')) {
+            if (str_starts_with($label, 'document_id:')
+                || str_starts_with($label, 'case_num:')
+                || str_starts_with($label, PostlistePeriod::LABEL_PREFIX)) {
                 return $label;
             }
         }
         return null;
+    }
+
+    /**
+     * Whether the NP API may see this thread at all. Both the document/case
+     * threads (NP_LABEL) and the postjournal threads (POSTLISTE_LABEL) are
+     * created for or by norske-postlister.no; anything else stays invisible.
+     */
+    public static function isNpVisible(Thread $thread): bool {
+        return in_array(self::NP_LABEL, $thread->labels)
+            || in_array(self::POSTLISTE_LABEL, $thread->labels);
     }
 
     /**
@@ -202,12 +229,37 @@ class NpApiService {
      * and must stay invisible to norske-postlister.no. Filtering on it here used
      * to erase the innsynshenvendelse from /innsyn on the next 15-minute poll,
      * along with its status and its answer documents.
+     *
+     * @param string[] $labels When non-empty, list threads carrying ALL of these
+     *   labels (exact match) instead of the fixed NP_LABEL. This is how
+     *   norske-postlister.no rebuilds its postliste period state
+     *   (`postliste` + `postliste:<period>`), archived threads included.
+     * @param ?string $npEntityId Restrict to one entity (its norske-postlister id).
+     *   An id no entity maps to yields an empty thread list.
      */
-    public static function listNpThreads(): array {
+    public static function listNpThreads(array $labels = [], ?string $npEntityId = null): array {
+        $labels = array_values(array_filter(array_map('trim', $labels), fn($l) => $l !== ''));
+
+        $params = [];
+        if (count($labels) === 0) {
+            $where = "? = ANY(labels)";
+            $params[] = self::NP_LABEL;
+        } else {
+            // labels @> ARRAY[...]: every requested label must be present.
+            $where = "labels @> ARRAY[" . implode(',', array_fill(0, count($labels), '?')) . "]::text[]";
+            $params = $labels;
+        }
+        if ($npEntityId !== null) {
+            $entity = Entity::getByNorskePostlisterId($npEntityId);
+            $where .= " AND entity_id = ?";
+            // No entity -> a value no thread can have, so the query is still one
+            // shape and the result is simply empty.
+            $params[] = $entity !== null ? $entity->entity_id : '';
+        }
+
         $rows = Database::query(
-            "SELECT id, entity_id, labels FROM threads
-             WHERE ? = ANY(labels)",
-            [self::NP_LABEL]
+            "SELECT id, entity_id, labels FROM threads WHERE " . $where,
+            $params
         );
 
         // entity_id (offpost) -> NP id, for translating each thread's entity.
@@ -239,6 +291,7 @@ class NpApiService {
             // Thread::mapFromDatabase(), so fetch subjects separately rather
             // than change that shared mapping's behavior for other callers.
             $subjectsByEmailId = self::emailSubjectsByThreadId($row['id']);
+            $attachmentSizesById = self::attachmentSizesByThreadId($row['id']);
 
             $emails = [];
             foreach ($thread->getEmails() as $email) {
@@ -266,6 +319,8 @@ class NpApiService {
                         'id' => $att->id,
                         'name' => $att->name,
                         'content_type' => self::attachmentContentType($att->filetype),
+                        // Bytes, or null when the content was never stored.
+                        'size' => $attachmentSizesById[$att->id] ?? null,
                     ];
                 }
 
@@ -287,6 +342,9 @@ class NpApiService {
                 'thread_url' => self::threadUrl($thread->id),
                 'entity_id_norske_postlister' => $npIdByEntityId[$row['entity_id']] ?? null,
                 'labels' => $thread->labels,
+                'sending_status' => $thread->sending_status,
+                'request_follow_up_plan' => $thread->request_follow_up_plan,
+                'created_at' => $thread->created_at !== null ? strtotime($thread->created_at) : null,
                 'status' => $status !== null ? $status->status : ThreadStatusRepository::ERROR_THREAD_NOT_FOUND,
                 'email_count_in' => $status !== null ? (int)$status->email_count_in : 0,
                 'email_count_out' => $status !== null ? (int)$status->email_count_out : 0,
@@ -314,7 +372,7 @@ class NpApiService {
         // No `archived` filter - as in listNpThreads()/findExistingThread(). Once
         // norske-postlister.no has published a link to an attachment, it must keep
         // working even after the thread is later archived, so published links don't break.
-        if ($thread === null || !in_array(self::NP_LABEL, $thread->labels)) {
+        if ($thread === null || !self::isNpVisible($thread)) {
             throw new NpApiEntityNotFoundException('Unknown attachment');
         }
 
@@ -391,6 +449,29 @@ class NpApiService {
             . var_export($filetype, true)
         );
         return 'application/octet-stream';
+    }
+
+    /**
+     * @return array<string,?int> attachment id -> size in bytes, for one thread.
+     * thread_email_attachments.size is null on rows written before the column
+     * existed, so fall back to measuring the stored content. Rows with neither
+     * are left out (the caller reports null).
+     */
+    private static function attachmentSizesByThreadId(string $threadId): array {
+        $rows = Database::query(
+            "SELECT tea.id, COALESCE(tea.size, octet_length(tea.content)) AS size
+             FROM thread_email_attachments tea
+             JOIN thread_emails te ON te.id = tea.email_id
+             WHERE te.thread_id = ?",
+            [$threadId]
+        );
+        $sizes = [];
+        foreach ($rows as $row) {
+            if ($row['size'] !== null) {
+                $sizes[$row['id']] = (int)$row['size'];
+            }
+        }
+        return $sizes;
     }
 
     /**

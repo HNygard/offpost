@@ -229,4 +229,76 @@ class NpApiServiceCreateTest extends TestCase {
             Database::beginTransaction();
         }
     }
+
+    // --- postliste:<period> mapping label (postjournal requests) ---
+
+    public function testPostlistePeriodLabelAcceptedAndDeduplicated(): void {
+        // :: Setup
+        $labels = ['postliste', 'postliste:2026-W38'];
+
+        // :: Act
+        $first = NpApiService::createThread(self::NP_ENTITY, 'Offentlig journal uke 38', 'Innhold', $labels);
+        $second = NpApiService::createThread(self::NP_ENTITY, 'Offentlig journal uke 38', 'Innhold', $labels);
+
+        // :: Assert
+        $this->assertTrue($first['created']);
+        $thread = Thread::loadFromDatabase($first['thread_id']);
+        $this->assertEquals(['postliste', 'postliste:2026-W38'], $thread->labels);
+
+        $this->assertFalse($second['created']);
+        $this->assertTrue($second['existing']);
+        $this->assertEquals($first['thread_id'], $second['thread_id']);
+    }
+
+    public function testDifferentPostlistePeriodsAreSeparateThreads(): void {
+        $first = NpApiService::createThread(self::NP_ENTITY, 'T', 'B', ['postliste', 'postliste:2026-W38']);
+        $second = NpApiService::createThread(self::NP_ENTITY, 'T', 'B', ['postliste', 'postliste:2026-W39']);
+
+        $this->assertTrue($second['created']);
+        $this->assertNotEquals($first['thread_id'], $second['thread_id']);
+    }
+
+    public function testArchivedPostlisteThreadStillDeduplicates(): void {
+        $first = NpApiService::createThread(self::NP_ENTITY, 'T', 'B', ['postliste', 'postliste:2025']);
+        Database::execute('UPDATE threads SET archived = true WHERE id = ?', [$first['thread_id']]);
+
+        $second = NpApiService::createThread(self::NP_ENTITY, 'T', 'B', ['postliste', 'postliste:2025']);
+
+        $this->assertFalse($second['created']);
+        $this->assertEquals($first['thread_id'], $second['thread_id']);
+    }
+
+    /**
+     * @dataProvider malformedPostlisteLabels
+     */
+    public function testMalformedPostlistePeriodThrows(string $label): void {
+        $this->expectException(NpApiValidationException::class);
+        $this->expectExceptionMessage('Malformed postliste period');
+        NpApiService::createThread(self::NP_ENTITY, 'T', 'B', ['postliste', $label]);
+    }
+
+    public static function malformedPostlisteLabels(): array {
+        return [
+            'empty period' => ['postliste:'],
+            'legacy single dash range' => ['postliste:2011-2021'],
+            'week 60' => ['postliste:2026-W60'],
+            'month 13' => ['postliste:2026-13'],
+            'day precision' => ['postliste:2026-09-14'],
+        ];
+    }
+
+    public function testPostlisteLabelWithoutPeriodIsNotAMappingLabel(): void {
+        // A bare `postliste` label is a category, not a period: it must not
+        // satisfy the mapping-label requirement, or every such thread would
+        // dedup onto the first one.
+        $this->expectException(NpApiValidationException::class);
+        NpApiService::createThread(self::NP_ENTITY, 'T', 'B', ['postliste']);
+    }
+
+    public function testMappingLabelRecognizesAllThreePrefixes(): void {
+        $this->assertEquals('document_id:1', NpApiService::mappingLabel(['x', 'document_id:1']));
+        $this->assertEquals('case_num:2', NpApiService::mappingLabel(['case_num:2']));
+        $this->assertEquals('postliste:2026-09', NpApiService::mappingLabel(['postliste', 'postliste:2026-09']));
+        $this->assertNull(NpApiService::mappingLabel(['postliste', 'norske_postlister_no']));
+    }
 }
