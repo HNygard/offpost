@@ -35,4 +35,17 @@ class NpApiAuthTest extends TestCase {
         $this->assertFalse(npApiCheckToken(''));
         $this->assertFalse(npApiCheckToken('anything'));
     }
+
+    // --- X-Requested-With gate for session-authed POST endpoints ---
+
+    public function testOffpostEmailHeaderRecognized(): void {
+        $this->assertTrue(npApiIsOffpostEmailRequest(['HTTP_X_REQUESTED_WITH' => 'offpost-email']));
+    }
+
+    public function testOffpostEmailHeaderMissingOrDifferentRejected(): void {
+        $this->assertFalse(npApiIsOffpostEmailRequest([]));
+        $this->assertFalse(npApiIsOffpostEmailRequest(['HTTP_X_REQUESTED_WITH' => 'XMLHttpRequest']));
+        $this->assertFalse(npApiIsOffpostEmailRequest(['HTTP_X_REQUESTED_WITH' => 'Offpost-Email']), 'exact match only');
+        $this->assertFalse(npApiIsOffpostEmailRequest(['HTTP_X_REQUESTED_WITH' => '']));
+    }
 }

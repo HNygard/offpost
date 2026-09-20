@@ -72,8 +72,20 @@ try {
             '/recent-activity' => '/../recent-activity.php',
         ];
 
+        // NP API routes with ids in the path. The ids are handed over via $_GET
+        // and re-validated as UUIDs in the endpoint.
+        $npEmailClassifyRe = '#^/api/np/thread/([^/]+)/email/([^/]+)/classify$#';
+        $npThreadReplyRe = '#^/api/np/thread/([^/]+)/reply$#';
+
         if (array_key_exists($path, $regularPages)) {
             require __DIR__ . $regularPages[$path];
+        } elseif (preg_match($npEmailClassifyRe, $path, $m)) {
+            $_GET['thread_id'] = urldecode($m[1]);
+            $_GET['email_id'] = urldecode($m[2]);
+            require __DIR__ . '/../api/np/np_email_classify.php';
+        } elseif (preg_match($npThreadReplyRe, $path, $m)) {
+            $_GET['thread_id'] = urldecode($m[1]);
+            require __DIR__ . '/../api/np/np_thread_reply.php';
         } else {
             throw new Exception("404 Not Found", 404);
         }

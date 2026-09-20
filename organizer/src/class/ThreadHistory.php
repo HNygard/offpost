@@ -82,6 +82,21 @@ recipients']) : 'Unknown recipients';
                 return 'Reply draft saved'
                     . ' to [' . $recipients . ']'
                     . ' with subject [' . ($details['subject'] ?? 'No subject') . ']';
+            // Written by NpApiService (HISTORY_ACTION_EMAIL_CLASSIFIED /
+            // HISTORY_ACTION_REPLY); literal here to avoid a require cycle.
+            case 'np_api_email_classified':
+                $details = json_decode($details, true);
+                $text = 'norske-postlister.no classified email [' . ($details['email_id'] ?? '?') . ']'
+                    . ' as [' . ($details['status_type'] ?? '?') . ']';
+                if (!empty($details['status_text'])) {
+                    $text .= ' - ' . $details['status_text'];
+                }
+                return $text;
+            case 'np_api_reply_queued':
+                $details = json_decode($details, true);
+                return 'norske-postlister.no queued a reply'
+                    . ' to [' . ($details['recipient'] ?? 'Unknown recipient') . ']'
+                    . ' with subject [' . ($details['subject'] ?? 'No subject') . ']';
             default:
                 throw new Exception('Unknown action: ' . $action);
         }

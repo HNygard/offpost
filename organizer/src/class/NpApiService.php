@@ -9,6 +9,11 @@ require_once __DIR__ . '/Entity.php';
 require_once __DIR__ . '/Database.php';
 require_once __DIR__ . '/random-profile.php';
 require_once __DIR__ . '/PostlistePeriod.php';
+require_once __DIR__ . '/ThreadHistory.php';
+require_once __DIR__ . '/ThreadEmailHistory.php';
+require_once __DIR__ . '/Enums/ThreadEmailStatusType.php';
+
+use App\Enums\ThreadEmailStatusType;
 
 class NpApiEntityNotFoundException extends Exception {}
 class NpApiValidationException extends Exception {}
@@ -23,17 +28,37 @@ class NpApiService {
     // visible to the NP API like NP_LABEL threads are.
     const POSTLISTE_LABEL = 'postliste';
 
+    // thread_history actions written by this API. The follow-up sender reads
+    // HISTORY_ACTION_REPLY to restart its day count from norske-postlister's
+    // own reply (see ThreadScheduledFollowUpSender).
+    const HISTORY_ACTION_EMAIL_CLASSIFIED = 'np_api_email_classified';
+    const HISTORY_ACTION_REPLY = 'np_api_reply_queued';
+    const REPLIES_PER_THREAD_PER_DAY = 1;
+
     /** @var ?int test hook */
     public static $dailyCapOverride = null;
 
     /** @var bool test hook: throw a non-Exception Throwable mid-transaction to verify rollback */
     public static $forceThrowableForTest = false;
 
-    public static function createThread(string $npEntityId, string $title, string $body, array $labels): array {
+    /**
+     * @param ?string $followUpPlan One of Thread::REQUEST_FOLLOW_UP_PLANS, or
+     *   null/'' for the default (speedy). Postjournal threads use 'postliste'.
+     */
+    public static function createThread(string $npEntityId, string $title, string $body, array $labels, ?string $followUpPlan = null): array {
         $labels = array_values(array_filter(array_map('trim', $labels), fn($l) => $l !== ''));
 
         if (trim($title) === '' || trim($body) === '') {
             throw new NpApiValidationException('title and body are required');
+        }
+        if ($followUpPlan === null || $followUpPlan === '') {
+            $followUpPlan = Thread::REQUEST_FOLLOW_UP_PLAN_SPEEDY;
+        }
+        if (!in_array($followUpPlan, Thread::REQUEST_FOLLOW_UP_PLANS, true)) {
+            throw new NpApiValidationException(
+                'Unknown request_follow_up_plan: ' . $followUpPlan
+                . ' (expected ' . implode(', ', Thread::REQUEST_FOLLOW_UP_PLANS) . ' or empty)'
+            );
         }
         $mappingLabel = self::mappingLabel($labels);
         if ($mappingLabel === null) {
@@ -102,7 +127,7 @@ class NpApiService {
             $thread->archived = false;
             $thread->public = true;
             $thread->request_law_basis = Thread::REQUEST_LAW_BASIS_OFFENTLEGLOVA;
-            $thread->request_follow_up_plan = Thread::REQUEST_FOLLOW_UP_PLAN_SPEEDY;
+            $thread->request_follow_up_plan = $followUpPlan;
             $thread->emails = [];
 
             $newThread = ThreadStorageManager::getInstance()
@@ -357,6 +382,177 @@ class NpApiService {
             'supported_entities' => Entity::getAllNorskePostlisterIds(),
             'threads' => $threads,
         ];
+    }
+
+    /**
+     * Manual classification of one incoming email, as the classify form does it:
+     * the status is set, auto_classification is cleared so the AI extraction
+     * will not overwrite it (manual wins), ignore/answer are left as they were.
+     *
+     * Used by norske-postlister.no when a postjournal reply cannot be read
+     * (status RESPONSE_UNREADABLE) - but any ThreadEmailStatusType is accepted.
+     *
+     * @return array{classified: bool, thread_id: string, email_id: string, status_type: string, status_text: string}
+     */
+    public static function classifyEmail(string $threadId, string $emailId, string $statusType, ?string $statusText): array {
+        $thread = self::loadVisibleThread($threadId);
+
+        $email = null;
+        foreach ($thread->getEmails() as $candidate) {
+            if ($candidate->id === $emailId) {
+                $email = $candidate;
+                break;
+            }
+        }
+        if ($email === null) {
+            throw new NpApiEntityNotFoundException('Unknown email');
+        }
+        if ($email->email_type !== 'IN') {
+            throw new NpApiValidationException('Only IN emails can be classified through this API');
+        }
+
+        $newStatusType = ThreadEmailStatusType::tryFrom($statusType);
+        if ($newStatusType === null || $newStatusType === ThreadEmailStatusType::UNKNOWN) {
+            throw new NpApiValidationException(
+                'Unknown status_type: ' . $statusType . ' (expected one of '
+                . implode(', ', array_filter(ThreadEmailStatusType::values(), fn($v) => $v !== ThreadEmailStatusType::UNKNOWN->value)) . ')'
+            );
+        }
+        $newStatusText = ThreadEmail::normalizeStatusText($newStatusType, $statusText);
+
+        $ownsTransaction = !Database::getInstance()->inTransaction();
+        if ($ownsTransaction) {
+            Database::beginTransaction();
+        }
+        try {
+            ThreadStorageManager::getInstance()->updateEmailClassification(
+                $thread->id,
+                $email->id,
+                $newStatusType->value,
+                $newStatusText,
+                (bool)$email->ignore,
+                $email->answer,
+                null // manual classification: drop any AI auto_classification
+            );
+            $details = [
+                'status_type' => $newStatusType->value,
+                'status_text' => $newStatusText,
+                'previous_status_type' => $email->status_type instanceof ThreadEmailStatusType
+                    ? $email->status_type->value : $email->status_type,
+            ];
+            (new ThreadEmailHistory())->logAction($thread->id, $email->id, 'classified', self::THREAD_OWNER_USER_ID, $details);
+            (new ThreadHistory())->logAction(
+                $thread->id,
+                self::HISTORY_ACTION_EMAIL_CLASSIFIED,
+                self::THREAD_OWNER_USER_ID,
+                $details + ['email_id' => $email->id]
+            );
+            if ($ownsTransaction) {
+                Database::commit();
+            }
+        } catch (Throwable $e) {
+            if ($ownsTransaction) {
+                Database::rollBack();
+            }
+            throw $e;
+        }
+
+        return [
+            'classified' => true,
+            'thread_id' => $thread->id,
+            'email_id' => $email->id,
+            'status_type' => $newStatusType->value,
+            'status_text' => $newStatusText,
+        ];
+    }
+
+    /**
+     * Queue a reply from the thread's own profile to the entity, at
+     * READY_FOR_SENDING (no human release). Same recipient rule as
+     * thread-reply.php: the entity's address, which must be a valid reply
+     * recipient for the thread. The signature is appended like createThread().
+     *
+     * At most REPLIES_PER_THREAD_PER_DAY per thread per day from this API, so a
+     * looping caller cannot spam an entity.
+     *
+     * @return array{queued: bool, sending_id: int, thread_id: string}
+     */
+    public static function replyToThread(string $threadId, string $subject, string $body): array {
+        if (trim($subject) === '' || trim($body) === '') {
+            throw new NpApiValidationException('subject and body are required');
+        }
+        $thread = self::loadVisibleThread($threadId);
+
+        $entity = $thread->getEntity();
+        if ($entity === null || $entity->email === null || $entity->email === '') {
+            throw new NpApiValidationException('Entity has no email address for thread ' . $thread->id);
+        }
+        $recipient = strtolower(trim($entity->email));
+        if (!in_array($recipient, getThreadReplyRecipients($thread), true)) {
+            throw new NpApiValidationException('Entity address is not a valid reply recipient for thread ' . $thread->id);
+        }
+
+        $repliesToday = (int)Database::queryValue(
+            "SELECT count(*) FROM thread_history
+             WHERE thread_id = ? AND user_id = ? AND action = ? AND created_at >= date_trunc('day', now())",
+            [$thread->id, self::THREAD_OWNER_USER_ID, self::HISTORY_ACTION_REPLY]
+        );
+        if ($repliesToday >= self::REPLIES_PER_THREAD_PER_DAY) {
+            throw new NpApiCapExceededException(
+                'Reply cap reached for thread ' . $thread->id . ': ' . self::REPLIES_PER_THREAD_PER_DAY . ' per day'
+            );
+        }
+
+        $ownsTransaction = !Database::getInstance()->inTransaction();
+        if ($ownsTransaction) {
+            Database::beginTransaction();
+        }
+        try {
+            $sending = ThreadEmailSending::create(
+                $thread->id,
+                trim($body) . "\n\n--\n" . $thread->my_name,
+                trim($subject),
+                $recipient,
+                $thread->my_email,
+                $thread->my_name,
+                ThreadEmailSending::STATUS_READY_FOR_SENDING
+            );
+            if ($sending === null) {
+                throw new Exception('Failed to create email sending record for thread ' . $thread->id);
+            }
+            (new ThreadHistory())->logAction($thread->id, self::HISTORY_ACTION_REPLY, self::THREAD_OWNER_USER_ID, [
+                'email_sending_ids' => [$sending->id],
+                'recipient' => $recipient,
+                'subject' => trim($subject),
+            ]);
+            if ($ownsTransaction) {
+                Database::commit();
+            }
+        } catch (Throwable $e) {
+            if ($ownsTransaction) {
+                Database::rollBack();
+            }
+            throw $e;
+        }
+
+        return [
+            'queued' => true,
+            'sending_id' => (int)$sending->id,
+            'thread_id' => $thread->id,
+        ];
+    }
+
+    /**
+     * A thread this API may act on. Not-found and not-visible are the same
+     * exception and message, as in getNpAttachment(), so the response cannot
+     * reveal whether a foreign thread exists.
+     */
+    private static function loadVisibleThread(string $threadId): Thread {
+        $thread = Thread::loadFromDatabaseOrNone($threadId);
+        if ($thread === null || !self::isNpVisible($thread)) {
+            throw new NpApiEntityNotFoundException('Unknown thread');
+        }
+        return $thread;
     }
 
     /**

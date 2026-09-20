@@ -38,6 +38,8 @@ function getLabelType($type, $status_type_input) {
             return 'label label_request_rejected label_warn'; // Suggest new style, maybe warn
         case ThreadEmailStatusType::INFORMATION_RELEASE->value:
             return 'label label_information_release label_ok'; // Suggest new style, maybe ok
+        case ThreadEmailStatusType::RESPONSE_UNREADABLE->value:
+            return 'label label_response_unreadable label_warn';
 
         // Handle old string values that might still be in use or DB
         case ThreadEmailStatusType::INFO->value:

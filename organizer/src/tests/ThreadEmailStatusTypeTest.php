@@ -87,6 +87,7 @@ class ThreadEmailStatusTypeTest extends TestCase {
             'RESPONSE_TO_REQUEST',
             'REQUEST_REJECTED',
             'INFORMATION_RELEASE',
+            'RESPONSE_UNREADABLE',
             'info',
             'error',
             'success',

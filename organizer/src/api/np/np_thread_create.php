@@ -1,11 +1,12 @@
 <?php
 // organizer/src/api/np/np_thread_create.php
-// Server-to-server API for norske-postlister.no. Token auth, NOT session auth.
+// Server-to-server API for norske-postlister.no. Token auth, or an admin
+// session carrying X-Requested-With: offpost-email (see np-api-auth.php).
 require_once __DIR__ . '/np-api-auth.php';
 require_once __DIR__ . '/../../class/NpApiService.php';
 
 header('Content-Type: application/json');
-npApiRequireToken();
+npApiRequireTokenOrOffpostEmailAdminSession();
 
 if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
     http_response_code(405);
@@ -32,6 +33,14 @@ if (!is_string($input['entity_id_norske_postlister']) || !is_string($input['titl
     exit;
 }
 
+// Optional: speedy (default), slow or postliste. Validated in createThread().
+$followUpPlan = $input['request_follow_up_plan'] ?? null;
+if ($followUpPlan !== null && !is_string($followUpPlan)) {
+    http_response_code(400);
+    echo json_encode(['error' => 'request_follow_up_plan must be a string']);
+    exit;
+}
+
 // Reject mapping labels whose value after the prefix is empty (e.g. exactly
 // "document_id:" or "case_num:" after trimming). NpApiService::createThread
 // would otherwise accept these and dedup every such document onto one thread.
@@ -55,7 +64,8 @@ try {
         $input['entity_id_norske_postlister'],
         $input['title'],
         $input['body'],
-        $input['labels']
+        $input['labels'],
+        $followUpPlan
     );
     echo json_encode($result);
 } catch (NpApiEntityNotFoundException $e) {

@@ -23,6 +23,12 @@ enum ThreadEmailStatusType: string
     case RESPONSE_TO_REQUEST = 'RESPONSE_TO_REQUEST';
     case REQUEST_REJECTED = 'REQUEST_REJECTED';
     case INFORMATION_RELEASE = 'INFORMATION_RELEASE';
+    // The entity answered, but what it sent cannot be read (scanned journal
+    // with no text, empty or corrupt attachment). Set by norske-postlister.no
+    // through the NP API after it fails to ingest a postjournal reply. Not an
+    // answer: the postliste follow-up plan keeps nagging, and the NP feed does
+    // not count it as substantive.
+    case RESPONSE_UNREADABLE = 'RESPONSE_UNREADABLE';
 
     // Existing values - to be reviewed/phased out if possible,
     // but included for now to avoid immediate breaks.
@@ -49,7 +55,8 @@ enum ThreadEmailStatusType: string
             self::ASKING_FOR_CLARIFICATION,
             self::RESPONSE_TO_REQUEST,
             self::REQUEST_REJECTED,
-            self::INFORMATION_RELEASE => 'From entity',
+            self::INFORMATION_RELEASE,
+            self::RESPONSE_UNREADABLE => 'From entity',
 
             self::INFO,
             self::ERROR,
@@ -80,6 +87,7 @@ enum ThreadEmailStatusType: string
             self::RESPONSE_TO_REQUEST => 'Response to Request',
             self::REQUEST_REJECTED => 'Request Rejected',
             self::INFORMATION_RELEASE => 'Information Release',
+            self::RESPONSE_UNREADABLE => 'Response Unreadable',
             self::INFO => 'Info',
             self::ERROR => 'Error',
             self::SUCCESS => 'Success',
@@ -103,6 +111,7 @@ enum ThreadEmailStatusType: string
             self::RESPONSE_TO_REQUEST => 'The entity\'s formal reply to the innsynskrav ("Svar på innsynskrav") — a covering or decision letter. May be the whole email, or one attachment alongside the released documents. No general rule on Ignore; decide per email (ignoring hides it from listings and excludes it from the NP integration).',
             self::REQUEST_REJECTED => 'The entity rejected the request. A real response. Never ignore.',
             self::INFORMATION_RELEASE => 'The entity released the requested information or documents. A real response. Never ignore.',
+            self::RESPONSE_UNREADABLE => 'The entity answered, but the answer could not be read (e.g. a scanned journal without text, or an empty or corrupt attachment). Usually set by norske-postlister.no, which then replies asking for a readable copy. Not an answer: the postliste follow-up plan keeps sending reminders. Never ignore.',
             self::INFO => 'Legacy value. Do not use for new classifications.',
             self::ERROR => 'Legacy value. Do not use for new classifications.',
             self::SUCCESS => 'Legacy value. Do not use for new classifications.',

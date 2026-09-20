@@ -13,8 +13,11 @@ Code: `organizer/src/api/np/` (endpoints), `organizer/src/class/NpApiService.php
 |---|---|---|
 | Shared token | `X-Np-Api-Token: <token>` (file `NP_API_TOKEN_FILE`, default `/run/secrets/np_api_token`) | every endpoint |
 | Admin session | cookie session from `auth.offpost.no`, user listed in `$admins` | GET endpoints (`npApiRequireTokenOrAdminSession()`) |
+| Admin session + `X-Requested-With: offpost-email` | same session, plus the header | POST endpoints (`npApiRequireTokenOrOffpostEmailAdminSession()`) |
 
-Session auth on the POST endpoints is deliberately not accepted (CSRF).
+A browser cannot attach a custom header to a form post or a simple cross-site request, so the
+header is what keeps the session-authed POST endpoints closed to CSRF. The norske-postlister
+`offpost-email` downloader uses the admin session with this header; it has no token.
 
 ## Thread kinds and labels
 
@@ -93,28 +96,82 @@ stored. Emails marked *ignore* in Offpost are left out.
 
 ## `POST /api/np/thread`
 
-Token only. JSON body:
+Token, or admin session with `X-Requested-With: offpost-email`. JSON body:
 
 ```json
 {
   "entity_id_norske_postlister": "...",
   "title": "...",
   "body": "...",
-  "labels": ["postliste", "postliste:2026-W38"]
+  "labels": ["postliste", "postliste:2026-W38"],
+  "request_follow_up_plan": "postliste"
 }
 ```
 
 `labels` must contain exactly one kind of mapping label (see table above). Creates a thread with
-a fresh random profile, law basis `offentleglova`, follow-up plan `speedy`, and queues the
-request email at `READY_FOR_SENDING`. If a non-archived or archived thread already carries the
-same mapping label for the same entity, no new thread is created and the oldest one is returned
-with `existing: true`.
+a fresh random profile, law basis `offentleglova`, and queues the request email at
+`READY_FOR_SENDING`. If a non-archived or archived thread already carries the same mapping label
+for the same entity, no new thread is created and the oldest one is returned with
+`existing: true`.
+
+`request_follow_up_plan` is optional: `speedy` (default when missing or empty), `slow` or
+`postliste`. See [Follow-up plans](#follow-up-plans).
 
 Responses: 200 `{created, existing, thread_id, thread_url, status}`; 400 validation (including a
-malformed `postliste:` period); 404 unknown entity; 429 daily cap (100 threads per day across all
-callers of this endpoint).
+malformed `postliste:` period or unknown plan); 404 unknown entity; 429 daily cap (100 threads
+per day, shared by every caller of this endpoint including the frontend one-click requests).
+
+## `POST /api/np/thread/{thread_id}/email/{email_id}/classify`
+
+Token, or admin session with `X-Requested-With: offpost-email`. Sets the classification of one
+incoming (`IN`) email the way the manual classify form does: the status is written, any AI
+`auto_classification` is cleared so extraction will not overwrite it, and the email's
+ignore flag and answer text are left untouched. Logged to `thread_email_history` (`classified`)
+and `thread_history` (`np_api_email_classified`) as user `norske-postlister-api`.
+
+```json
+{"status_type": "RESPONSE_UNREADABLE", "status_text": "Skannet journal uten tekst"}
+```
+
+`status_type` is any `ThreadEmailStatusType` value except `unknown`. norske-postlister uses
+`RESPONSE_UNREADABLE` when it receives a postjournal it cannot read; that status does not count
+as an answer for the `postliste` follow-up plan, and consumers of the feed should not treat it as
+substantive.
+
+Responses: 200 `{classified: true, thread_id, email_id, status_type, status_text}`; 400 malformed
+ids, unknown status type, or an `OUT` email; 404 thread not visible to this API or email not in
+the thread.
+
+## `POST /api/np/thread/{thread_id}/reply`
+
+Token, or admin session with `X-Requested-With: offpost-email`. Queues an email from the
+thread's own profile (`my_name` / `my_email`) to the entity's address at `READY_FOR_SENDING`,
+so it goes out with the next sending run, no human release. The signature (`--` and the
+profile name) is appended like the initial request. Logged to `thread_history`
+(`np_api_reply_queued`).
+
+```json
+{"subject": "Re: Offentlig journal uke 38", "body": "Hei, ..."}
+```
+
+At most one reply per thread per day through this endpoint. The reply text itself is owned by
+norske-postlister.
+
+Responses: 200 `{queued: true, sending_id, thread_id}`; 400 missing subject/body or the entity
+has no usable address; 404 thread not visible to this API; 429 reply cap.
 
 ## `GET /api/np/attachment?thread_id=<uuid>&attachment_id=<uuid>`
 
 Attachment bytes with `Content-Type` and `Content-Disposition`. 404 when the thread is not
 visible to this API or the attachment is unknown or has no stored content.
+
+## Follow-up plans
+
+`threads.request_follow_up_plan`, handled by `ThreadScheduledFollowUpSender` (cron
+`scheduled-thread-follow-up`, one email per run):
+
+| Plan | Reminder | Release |
+|---|---|---|
+| `speedy` | one reminder 5 days after the request, only while nothing has been received | staged; a human releases it |
+| `slow` | same, after 14 days | staged; a human releases it |
+| `postliste` | see package 3 of the spec (in progress) | automatic |

@@ -22,6 +22,15 @@ class Thread implements JsonSerializable {
     // Request follow-up plan constants
     const REQUEST_FOLLOW_UP_PLAN_SPEEDY = 'speedy';
     const REQUEST_FOLLOW_UP_PLAN_SLOW = 'slow';
+    // Postjournal requests from norske-postlister.no: automatic reminders on
+    // day 10 and day 20, sent without human release. See
+    // ThreadScheduledFollowUpSender and docs/np-api.md.
+    const REQUEST_FOLLOW_UP_PLAN_POSTLISTE = 'postliste';
+    const REQUEST_FOLLOW_UP_PLANS = [
+        self::REQUEST_FOLLOW_UP_PLAN_SPEEDY,
+        self::REQUEST_FOLLOW_UP_PLAN_SLOW,
+        self::REQUEST_FOLLOW_UP_PLAN_POSTLISTE,
+    ];
 
     var $id;
     var $id_old;

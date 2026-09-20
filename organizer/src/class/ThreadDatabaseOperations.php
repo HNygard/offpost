@@ -429,7 +429,7 @@ class ThreadDatabaseOperations {
         }
         if ($thread->request_follow_up_plan != null && !in_array(
             $thread->request_follow_up_plan,
-            [Thread::REQUEST_FOLLOW_UP_PLAN_SPEEDY, Thread::REQUEST_FOLLOW_UP_PLAN_SLOW]
+            Thread::REQUEST_FOLLOW_UP_PLANS
         )) {
             throw new Exception("Invalid request follup plan");
         }
