@@ -170,7 +170,10 @@ organizer/src/
 - `ThreadEmailMover` - Moves emails between IMAP folders with error handling
 - `ThreadScheduledEmailReceiver` - Polls IMAP for new emails
 - `ThreadScheduledEmailSender` - Sends queued emails
-- `ThreadScheduledFollowUpSender` - Automatic follow-up email management
+- `ThreadScheduledFollowUpSender` - Automatic follow-up email management (plans speedy/slow staged for a human; postliste automatic on day 10/20)
+- `PostlisteFollowUpPlanner` - Pure decision rules for the postliste plan (tested with a fixed clock)
+- `PostlistePeriod` - Validates/parses `postliste:<period>` labels (ISO week, month, year, ranges)
+- `NpApiService` - norske-postlister.no API: thread creation, listing, email classification, replies (docs/np-api.md)
 - `ThreadEmailDatabaseSaver` - Parses EML files and saves to database
 - `AdminNotificationService` - Sends admin alerts for critical issues
 

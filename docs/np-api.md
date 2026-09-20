@@ -170,8 +170,47 @@ visible to this API or the attachment is unknown or has no stored content.
 `threads.request_follow_up_plan`, handled by `ThreadScheduledFollowUpSender` (cron
 `scheduled-thread-follow-up`, one email per run):
 
-| Plan | Reminder | Release |
+| Plan | Reminders | Release |
 |---|---|---|
-| `speedy` | one reminder 5 days after the request, only while nothing has been received | staged; a human releases it |
+| `speedy` | one reminder 5 days after the request, only for threads with exactly one OUT email and nothing received | staged; a human releases it |
 | `slow` | same, after 14 days | staged; a human releases it |
-| `postliste` | see package 3 of the spec (in progress) | automatic |
+| `postliste` | day 10 and day 20, see below | queued `READY_FOR_SENDING`, no human release |
+
+### Plan `postliste`
+
+For postjournal requests (law basis `offentleglova`). Decision rules live in
+`PostlisteFollowUpPlanner`; the sender loads candidates and queues the email. Per cron run at
+most one email is queued, across both plan families.
+
+Day count starts at the first `OUT` email (the request). If norske-postlister later replies
+through `POST /api/np/thread/{id}/reply`, the count restarts from that reply (the
+`np_api_reply_queued` history entry), and the two-reminder budget starts over.
+
+| Day | Email | Subject |
+|---|---|---|
+| 10 | Reminder 1: refers to the request, § 29 (uten ugrunnet opphold), asks for the journal | `Purring - <title>` |
+| 20 | Reminder 2: reminder 1 plus § 32 (unanswered = refusal) and that a klage to `{klageinstans}` will be considered | `Purring 2 - <title>` |
+
+Nothing after day 20; a klage is a human decision. `{klageinstans}` comes from the entity type:
+`Statsforvalteren` for municipality/county types, `overordnet departement` for agency,
+directorate, health and technical, otherwise `klageinstansen`. The period in the text comes from
+the `postliste:<period>` label; threads without a parseable period get the sentence without it.
+
+A thread is skipped (no reminder) when:
+
+- it has no `OUT` email yet, or its status is not `EMAIL_SENT_NOTHING_RECEIVED` / `STATUS_OK`
+  (an `ERROR_*` status means the mailbox is not synced, so an answer may be sitting unseen);
+- any `thread_email_sendings` row is not yet `SENT` (a reminder or reply in flight);
+- it is archived;
+- any non-ignored `IN` email is classified `REQUEST_REJECTED` (permanent stop);
+- a non-ignored `IN` email received after the anchor is not classified `REQUEST_RECEIPT`,
+  `ASKING_FOR_MORE_TIME` or `RESPONSE_UNREADABLE`. An unclassified email counts as an answer
+  until someone classifies it, so a fresh real answer never gets a reminder on top;
+- both reminders have been queued since the anchor.
+
+Each queued reminder is logged to `thread_history` as `postliste_follow_up_queued` (user
+`scheduled-thread-follow-up`) with the reminder number, sending id, anchor and request date.
+Skips are not logged: the cron runs every minute and would flood the table.
+
+The reminder texts are a first draft from the spec and are meant to be iterated on once the
+flow runs. They live in `ThreadScheduledFollowUpSender::createPostlisteFollowUpEmailContent()`.

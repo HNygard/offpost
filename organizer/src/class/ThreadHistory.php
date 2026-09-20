@@ -92,6 +92,10 @@ recipients']) : 'Unknown recipients';
                     $text .= ' - ' . $details['status_text'];
                 }
                 return $text;
+            case 'postliste_follow_up_queued':
+                $details = json_decode($details, true);
+                return 'Automatic postliste reminder ' . ($details['reminder'] ?? '?')
+                    . ' queued for sending with subject [' . ($details['subject'] ?? 'No subject') . ']';
             case 'np_api_reply_queued':
                 $details = json_decode($details, true);
                 return 'norske-postlister.no queued a reply'
