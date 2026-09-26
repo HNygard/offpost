@@ -176,6 +176,9 @@ organizer/src/
 - `NpApiService` - norske-postlister.no API: thread creation, listing, email classification, replies (docs/np-api.md)
 - `ThreadEmailDatabaseSaver` - Parses EML files and saves to database
 - `AdminNotificationService` - Sends admin alerts for critical issues
+- `ThreadEmailResponseClassifier` - Pure rules classifying incoming email from subject, AI summary and attachments (docs/np-api.md)
+- `ThreadEmailStatusUpdater` - Applies those rules to thread_emails; never overwrites a manual classification
+- `NpThreadAutoArchiver` - Decides and archives finished norske-postlister threads
 
 ### Scheduled Tasks
 Located in `system-pages/`, triggered by cron:
@@ -184,6 +187,8 @@ Located in `system-pages/`, triggered by cron:
 - `scheduled-imap-handling` - Manage IMAP folder structure
 - `scheduled-email-extraction` - Extract content using AI
 - `scheduled-thread-follow-up` - Automatic follow-up handling
+- `scheduled-email-classification` - Rule-based classification of incoming email (auto-replies, documents) before the AI summary
+- `scheduled-np-thread-archiving` - Archive norske-postlister threads that finished successfully (`?dry_run=1` to preview)
 
 ## Database
 

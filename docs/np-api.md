@@ -160,6 +160,51 @@ norske-postlister.
 Responses: 200 `{queued: true, sending_id, thread_id}`; 400 missing subject/body or the entity
 has no usable address; 404 thread not visible to this API; 429 reply cap.
 
+## Classification of incoming email
+
+The `status_type` of each email in `GET /api/np/threads` is set automatically, unless
+someone classified the email by hand (classify form or the classify endpoint above); a
+manual classification is never overwritten. `ThreadEmailResponseClassifier` holds the
+rules, `ThreadEmailStatusUpdater` applies them. In order:
+
+| Rule | Result |
+|---|---|
+| Auto-reply subject (`Automatic reply`, `Automatisk svar`, `Autosvar`, `Bekreftelse på mottatt e-post`, `Takk for e-posten din!`, `Automatisk kvittering ...`), after stripping `SV:`/`RE:`/`VS:` | `REQUEST_RECEIPT` |
+| AI summary says the request was received/registered/journalført/will be handled, no document attached | `REQUEST_RECEIPT` (the confirmation from postmottak that typically comes the next working day) |
+| AI summary keywords | `ASKING_FOR_MORE_TIME`, `REQUEST_REJECTED`, `ASKING_FOR_CLARIFICATION`, `ASKING_FOR_COPY`, `INFORMATION_RELEASE` |
+| A document is attached (pdf, docx, xlsx, zip, ...; not images or .txt) | `INFORMATION_RELEASE`, or `REQUEST_REJECTED` when the extracted PDF text refuses the innsyn request ("avslår innsynskravet", "gis ikke innsyn", ...) |
+
+Two passes run on cron:
+
+No rule is based on timing alone: the entity may reply just as we send something.
+
+- `scheduled-email-classification`: subject and attachment rules on new unclassified
+  emails, without waiting for the AI summary. It waits up to a day for the PDF text
+  extraction of attached PDFs. Emails it cannot place stay `unknown` (marked
+  `auto_classification = 'algo'` so they are not rescanned).
+- The AI summary extraction (`scheduled-email-extraction?type=prompt_summary`) re-runs the
+  same rules with the summary and replaces the earlier automatic classification.
+
+To apply improved rules to old data: `php bin/backfill-email-classification-from-summaries.php
+--include-auto [--dry-run]` in the organizer container.
+
+## Automatic archiving
+
+`scheduled-np-thread-archiving` (`NpThreadAutoArchiver`) archives `norske_postlister_no`
+threads that finished successfully. A thread is archived when all of these hold:
+
+- status `STATUS_OK` and no `thread_email_sendings` row that is not `SENT`;
+- every non-ignored `IN` email is `REQUEST_RECEIPT`, `ASKING_FOR_MORE_TIME` or
+  `INFORMATION_RELEASE`, and the latest one that is not a receipt is `INFORMATION_RELEASE`.
+
+Anything unclassified, rejected, asking for clarification or copy, unreadable, or with a
+legacy status is left for a human, and keeps getting follow-ups. There is no waiting period:
+a finished thread is archived on the next run. Archived threads are left out of the IMAP
+email-to-folder mapping, so an email arriving after archiving is not sorted into the thread.
+Each archive is logged to `thread_history` as `archived`
+by `np-thread-auto-archiver`. Archived threads are still listed by this API. `?dry_run=1`
+lists what would be archived without changing anything.
+
 ## `GET /api/np/attachment?thread_id=<uuid>&attachment_id=<uuid>`
 
 Attachment bytes with `Content-Type` and `Content-Disposition`. 404 when the thread is not

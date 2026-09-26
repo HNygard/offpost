@@ -27,6 +27,7 @@ based on the to/from addresses that matches the profile of the thread.
 - Reports missing IMAP UIDs to administrators with recent operation history and before/after mailbox diagnostics; see [diagnostic interpretation](docs/superpowers/specs/2026-08-01-one-off-processing-error-alert-design.md#missing-imap-uid-diagnostics).
 - Server-to-server API for norske-postlister.no (`/api/np/*`): create document, case and postjournal (`postliste:<period>`) requests, list threads with filters, reclassify replies, queue replies and download attachments; see [docs/np-api.md](docs/np-api.md).
 - Automatic follow-up plans: `speedy`/`slow` stage one reminder for a human to release; `postliste` sends reminders on day 10 and 20 without human release, restarting the count when norske-postlister replies; see [Follow-up plans](docs/np-api.md#follow-up-plans).
+- Automatic classification of incoming email (auto-replies and next-day receipt confirmations, released documents, refusals in attached letters) and automatic archiving of norske-postlister threads that finished successfully; see [Classification](docs/np-api.md#classification-of-incoming-email) and [Automatic archiving](docs/np-api.md#automatic-archiving).
 
 ### Roundcube
 - Webmail client using the IMAP server directly
