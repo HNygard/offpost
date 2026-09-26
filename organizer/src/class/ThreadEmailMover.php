@@ -118,6 +118,14 @@ class ThreadEmailMover {
                 }
             }
 
+            // Email already belongs where it is (e.g. unmatched/DMARC in INBOX). Do not "move" it
+            // to its own folder: IMAP does that as COPY + expunge, which gives the email a new UID
+            // every run and makes UIDs vanish under any other session listing the same mailbox.
+            // Not counted towards the per-run limit, so emails left in place cannot starve the rest.
+            if ($targetFolder === $mailbox) {
+                continue;
+            }
+
             // Move the email to the target folder
             try {
                 $this->folderManager->moveEmail($email->uid, $targetFolder);

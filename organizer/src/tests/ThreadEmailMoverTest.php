@@ -165,10 +165,9 @@ class ThreadEmailMoverTest extends TestCase {
             ->with('INBOX')
             ->willReturn([$mockEmail]);
 
-        // DMARC emails should be left in INBOX
-        $this->mockFolderManager->expects($this->once())
-            ->method('moveEmail')
-            ->with(1, 'INBOX');
+        // DMARC emails should be left in INBOX, without an IMAP move to the same folder
+        $this->mockFolderManager->expects($this->never())
+            ->method('moveEmail');
 
         $emailToFolder = ['other@example.com' => 'INBOX.Test - Thread 1'];
         $unmatchedAddresses = $this->threadEmailMover->processMailbox('INBOX', $emailToFolder)['unmatched'];
@@ -351,9 +350,9 @@ class ThreadEmailMoverTest extends TestCase {
             ->with('INBOX')
             ->willReturn([$mockEmail]);
 
-        $this->mockFolderManager->expects($this->once())
-            ->method('moveEmail')
-            ->with(1, 'INBOX');
+        // Unmatched emails stay in INBOX, without an IMAP move to the same folder
+        $this->mockFolderManager->expects($this->never())
+            ->method('moveEmail');
 
         // Empty email-to-folder mapping
         $emailToFolder = [];
@@ -363,6 +362,39 @@ class ThreadEmailMoverTest extends TestCase {
         // Verify unmatched address is returned
         $this->assertCount(1, $unmatchedAddresses);
         $this->assertEquals('unmatched@example.com', $unmatchedAddresses[0]);
+    }
+
+    public function testProcessMailboxEmailsLeftInPlaceDoNotCountTowardsLimit() {
+        // :: Setup
+        // 150 DMARC emails before one matched email. The DMARC emails stay in INBOX
+        // and must not use up the 100 emails per run limit.
+        $emails = [];
+        for ($uid = 1; $uid <= 150; $uid++) {
+            $mockEmail = $this->createMock(\Imap\ImapEmail::class);
+            $mockEmail->uid = $uid;
+            $mockEmail->method('getEmailAddresses')->willReturn([self::DMARC_EMAIL]);
+            $emails[] = $mockEmail;
+        }
+        $matchedEmail = $this->createMock(\Imap\ImapEmail::class);
+        $matchedEmail->uid = 151;
+        $matchedEmail->method('getEmailAddresses')->willReturn(['test1@example.com']);
+        $emails[] = $matchedEmail;
+
+        $this->mockEmailProcessor->expects($this->once())
+            ->method('getEmails')
+            ->with('INBOX')
+            ->willReturn($emails);
+
+        $this->mockFolderManager->expects($this->once())
+            ->method('moveEmail')
+            ->with(151, 'INBOX.Test - Thread 1');
+
+        // :: Act
+        $result = $this->threadEmailMover->processMailbox('INBOX', ['test1@example.com' => 'INBOX.Test - Thread 1']);
+
+        // :: Assert
+        $this->assertFalse($result['maxed_out'], 'Only one email was moved, far below the limit');
+        $this->assertCount(0, $result['unmatched'], json_encode($result['unmatched'], JSON_PRETTY_PRINT));
     }
 
     /**
@@ -391,9 +423,9 @@ class ThreadEmailMoverTest extends TestCase {
             ->with('INBOX')
             ->willReturn([$mockEmail]);
 
-        $this->mockFolderManager->expects($this->once())
-            ->method('moveEmail')
-            ->with(1, 'INBOX');
+        // Unmatched emails stay in INBOX, without an IMAP move to the same folder
+        $this->mockFolderManager->expects($this->never())
+            ->method('moveEmail');
 
         // Start a database transaction for test isolation
         Database::beginTransaction();
@@ -491,9 +523,15 @@ class ThreadEmailMoverTest extends TestCase {
             ->with($sourceMailbox)
             ->willReturn([$mockEmail]);
 
-        $this->mockFolderManager->expects($this->once())
-            ->method('moveEmail')
-            ->with(1, $expectedTargetFolder);
+        if ($expectedTargetFolder === $sourceMailbox) {
+            $this->mockFolderManager->expects($this->never())
+                ->method('moveEmail');
+        }
+        else {
+            $this->mockFolderManager->expects($this->once())
+                ->method('moveEmail')
+                ->with(1, $expectedTargetFolder);
+        }
 
         $result = $this->threadEmailMover->processMailbox($sourceMailbox, $emailToFolderMapping);
 
@@ -538,14 +576,14 @@ class ThreadEmailMoverTest extends TestCase {
             ->willReturn([$mockEmail1, $mockEmail2, $mockEmail3]);
 
         // Use a callback matcher to verify the moves
+        // UID 1 belongs in the folder it is already in, so it is not moved
         $expectedMoves = [
-            [1, 'INBOX.Entity - Thread A'],  // stays in same folder
             [2, 'INBOX.Entity - Thread B'],  // moves to different thread
             [3, 'INBOX']                      // moves to INBOX
         ];
         $moveIndex = 0;
         
-        $this->mockFolderManager->expects($this->exactly(3))
+        $this->mockFolderManager->expects($this->exactly(2))
             ->method('moveEmail')
             ->willReturnCallback(function($uid, $folder) use (&$moveIndex, $expectedMoves) {
                 $this->assertEquals($expectedMoves[$moveIndex][0], $uid, "Move #{$moveIndex}: UID mismatch");

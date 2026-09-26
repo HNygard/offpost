@@ -25,6 +25,20 @@ error_log(date('Y-m-d H:i:s') . " [$taskName] Starting task");
 try {
     require_once __DIR__ . '/../username-password.php';
     require_once __DIR__ . '/../update-imap-functions.php';
+    require_once __DIR__ . '/../class/Database.php';
+
+    // Cron starts this every minute and a run can outlast that. Two runs working on INBOX at
+    // the same time move and expunge each other's emails ("UID does not exist" mid-run).
+    // Session-level lock, released automatically when the DB connection closes at request end.
+    if (!Database::queryValue("SELECT pg_try_advisory_lock(hashtext('scheduled-imap-handling'))")) {
+        error_log(date('Y-m-d H:i:s') . " [$taskName] Previous run still in progress, skipping");
+        header('Content-Type: application/json');
+        echo json_encode([
+            'success' => true,
+            'message' => 'Skipped: previous IMAP handling run still in progress',
+        ], JSON_PRETTY_PRINT);
+        return;
+    }
 
     // Start output buffering to capture debug output
     ob_start();
