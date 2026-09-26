@@ -242,7 +242,10 @@ class ImapWrapper {
     public function utf7Encode(string $string): string {
         $stringPreview = strlen($string) > 50 ? substr($string, 0, 50) . '...' : $string;
         $this->logDebug('utf7Encode', ["string: $stringPreview"]);
-        return \imap_utf7_encode($string);
+        // imap_utf7_encode() treats its input as ISO-8859-1 (one byte = one char), so any
+        // multi-byte UTF-8 character (e.g. an en dash "–") gets mangled into an invalid
+        // mUTF-7 sequence. Our strings are UTF-8, so encode with that explicitly.
+        return \mb_convert_encoding($string, 'UTF7-IMAP', 'UTF-8');
     }
 
     public function open(string $mailbox, string $username, string $password, int $options = 0, int $retries = 0, array $flags = []): mixed {
