@@ -89,6 +89,13 @@ try {
         $debugOutput = '';
     }
     
+    // Walk the exception chain so wrapped causes (e.g. the original IMAP error
+    // behind a rethrow) are captured, not just the outermost message.
+    $exceptionChain = [];
+    for ($chainError = $e; $chainError !== null; $chainError = $chainError->getPrevious()) {
+        $exceptionChain[] = $chainError->getMessage();
+    }
+
     // Log the error and notify administrators
     $adminNotificationService = new AdminNotificationService();
     $adminNotificationService->notifyAdminOfError(
@@ -98,7 +105,11 @@ try {
             'file' => $e->getFile(),
             'line' => $e->getLine(),
             'stack_trace' => $e->getTraceAsString(),
-            'debug_output' => $debugOutput
+            'debug_output' => $debugOutput,
+            'exception_chain' => $exceptionChain,
+            // Bounded history of recent IMAP wrapper calls (open/search/fetch/move/etc.)
+            // leading up to the failure - available regardless of debug output.
+            'recent_imap_operations' => isset($connection) ? $connection->getOperationHistory() : null,
         ]
     );
 

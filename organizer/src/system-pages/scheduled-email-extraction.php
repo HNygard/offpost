@@ -75,6 +75,12 @@ try {
 } catch (Exception $e) {
     $duration = round(microtime(true) - $startTime, 3);
     error_log(date('Y-m-d H:i:s') . " [$taskName] Task failed in {$duration}s - Exception: " . $e->getMessage());
+    // Walk the exception chain so wrapped causes are captured, not just the
+    // outermost message.
+    $exceptionChain = [];
+    for ($chainError = $e; $chainError !== null; $chainError = $chainError->getPrevious()) {
+        $exceptionChain[] = $chainError->getMessage();
+    }
     // Log the error and notify administrators
     $adminNotificationService = new AdminNotificationService();
     $adminNotificationService->notifyAdminOfError(
@@ -84,7 +90,8 @@ try {
             'extraction_type' => $extractionType,
             'file' => $e->getFile(),
             'line' => $e->getLine(),
-            'stack_trace' => $e->getTraceAsString()
+            'stack_trace' => $e->getTraceAsString(),
+            'exception_chain' => $exceptionChain,
         ]
     );
 
