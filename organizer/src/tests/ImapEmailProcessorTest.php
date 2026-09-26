@@ -39,6 +39,7 @@ class ImapEmailProcessorTest extends TestCase {
         // Setup default mock behavior for connection closing
         $this->mockWrapper->method('close')->willReturn(true);
         $this->mockWrapper->method('lastError')->willReturn('');
+        $this->mockWrapper->method('utf7Encode')->willReturnArgument(0);
     }
 
     protected function tearDown(): void {

@@ -51,7 +51,7 @@ class ImapConnection {
             $server = str_replace('}', '/novalidate-cert}', $server);
         }
 
-        $fullMailbox = $server . $folder;
+        $fullMailbox = $this->wrapper->utf7Encode($server . $folder);
         $this->connection = $this->wrapper->open(
             $fullMailbox,
             $this->email, 

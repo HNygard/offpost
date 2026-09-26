@@ -118,6 +118,7 @@ class ImapConnectionTest extends TestCase
     public function testOpenConnectionSuccess()
     {
         $resource = fopen('php://memory', 'r');
+        $this->mockWrapper->method('utf7Encode')->willReturnArgument(0);
         $this->mockWrapper->expects($this->once())
             ->method('open')
             ->with(
@@ -131,6 +132,31 @@ class ImapConnectionTest extends TestCase
             ->willReturn($resource);
 
         $result = $this->imapConnection->openConnection();
+        $this->assertSame($resource, $result);
+        fclose($resource);
+    }
+
+    public function testOpenConnectionEncodesNonAsciiFolderAsModifiedUtf7()
+    {
+        // :: Setup
+        // openConnection() used to build the mailbox string without utf7Encode(),
+        // unlike createFolder()/subscribeFolder()/renameFolder()/moveEmail(). Opening
+        // a thread folder with a non-ASCII character (e.g. the en dash "–") would then
+        // be rejected by the server as invalid mUTF-7.
+        $resource = fopen('php://memory', 'r');
+        $folder = "986965610-helfo - Innsyn i offentlig journal uke 38 2026 \u{2013} Helfo";
+        $encodedMailbox = $this->testServer . '986965610-helfo - Innsyn i offentlig journal uke 38 2026 &IBM- Helfo';
+        $this->mockWrapper->method('utf7Encode')
+            ->willReturnCallback(fn($str) => \mb_convert_encoding($str, 'UTF7-IMAP', 'UTF-8'));
+
+        // :: Act
+        $this->mockWrapper->expects($this->once())
+            ->method('open')
+            ->with($encodedMailbox, $this->testEmail, $this->testPassword, 0, 1, ['DISABLE_AUTHENTICATOR' => 'PLAIN'])
+            ->willReturn($resource);
+        $result = $this->imapConnection->openConnection($folder);
+
+        // :: Assert
         $this->assertSame($resource, $result);
         fclose($resource);
     }
