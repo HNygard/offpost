@@ -4651,7 +4651,7 @@
         "entity_id": "986965610-helfo",
         "entity_id_norske_postlister": "helse-helfo",
         "name": "Helfo",
-        "email": "",
+        "email": "post@helfo.no",
         "type": "health",
         "org_num": "986965610"
     },
