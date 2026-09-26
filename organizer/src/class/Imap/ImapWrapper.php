@@ -248,6 +248,12 @@ class ImapWrapper {
         return \mb_convert_encoding($string, 'UTF7-IMAP', 'UTF-8');
     }
 
+    public function utf7Decode(string $string): string {
+        $stringPreview = strlen($string) > 50 ? substr($string, 0, 50) . '...' : $string;
+        $this->logDebug('utf7Decode', ["string: $stringPreview"]);
+        return \mb_convert_encoding($string, 'UTF-8', 'UTF7-IMAP');
+    }
+
     public function open(string $mailbox, string $username, string $password, int $options = 0, int $retries = 0, array $flags = []): mixed {
         $this->logDebug('open', ['mailbox: ' . $mailbox, 'username: ' . $username]);
         

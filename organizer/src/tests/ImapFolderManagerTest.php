@@ -31,7 +31,9 @@ class ImapFolderManagerTest extends TestCase
             ->willReturn('');
         $this->mockWrapper->method('utf7Encode')
             ->willReturnCallback(function($str) { return $str; });
-            
+        $this->mockWrapper->method('utf7Decode')
+            ->willReturnCallback(fn($str) => \mb_convert_encoding($str, 'UTF-8', 'UTF7-IMAP'));
+
         $this->connection = new ImapConnection(
             $this->testServer,
             $this->testEmail,
@@ -116,6 +118,35 @@ class ImapFolderManagerTest extends TestCase
         $this->folderManager->ensureFolderExists($folderName);
         
         $this->assertContains($folderName, $this->folderManager->getExistingFolders());
+    }
+
+    public function testEnsureFolderExistsRecognizesMUtf7EncodedFolderNameFromServer()
+    {
+        // :: Setup
+        // The server returns folder names in raw modified UTF-7 (e.g. "&IBM-" for the
+        // en dash "–"), while callers ask about the plain UTF-8 folder name built from
+        // the thread title. Without decoding, ensureFolderExists() never recognizes the
+        // folder as existing and calls createMailbox() again, which then fails with
+        // "[ALREADYEXISTS] Mailbox already exists".
+        $plainFolderName = "986965610-helfo - Innsyn i offentlig journal uke 38 2026 \u{2013} Helfo";
+        $mUtf7FolderName = '986965610-helfo - Innsyn i offentlig journal uke 38 2026 &IBM- Helfo';
+
+        $this->mockWrapper->method('list')
+            ->willReturn([$this->testServer . $mUtf7FolderName]);
+
+        $this->folderManager->initialize();
+
+        // :: Act
+        $this->mockWrapper->expects($this->never())
+            ->method('createMailbox');
+        $this->folderManager->ensureFolderExists($plainFolderName);
+
+        // :: Assert
+        $this->assertContains(
+            $plainFolderName,
+            $this->folderManager->getExistingFolders(),
+            json_encode($this->folderManager->getExistingFolders(), JSON_PRETTY_PRINT)
+        );
     }
 
     public function testEnsureFolderExistsIsCaseInsensitive()

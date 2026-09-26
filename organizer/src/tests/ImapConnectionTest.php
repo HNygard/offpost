@@ -170,6 +170,7 @@ class ImapConnectionTest extends TestCase
         $this->mockWrapper->expects($this->once())
             ->method('list')
             ->willReturn($folders);
+        $this->mockWrapper->method('utf7Decode')->willReturnArgument(0);
 
         $result = $this->imapConnection->listFolders();
         $this->assertEquals(['INBOX', 'Sent', 'Trash'], $result);
@@ -198,6 +199,7 @@ class ImapConnectionTest extends TestCase
         $this->mockWrapper->expects($this->once())
             ->method('lsub')
             ->willReturn($folders);
+        $this->mockWrapper->method('utf7Decode')->willReturnArgument(0);
 
         $result = $this->imapConnection->listSubscribedFolders();
         $this->assertEquals(['INBOX', 'Sent'], $result);

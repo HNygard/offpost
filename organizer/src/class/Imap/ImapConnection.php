@@ -110,14 +110,17 @@ class ImapConnection {
         }
 
         $list = $this->wrapper->list($this->connection, $this->server, "*");
-        
+
         if (!$list) {
             return [];
         }
 
         \sort($list);
         return \array_map(function($folder) {
-            return \str_replace($this->server, '', $folder);
+            // imap_list() returns folder names in the server's raw modified UTF-7
+            // encoding, while callers compare against plain UTF-8 folder names built
+            // from thread titles - decode so both sides match.
+            return $this->wrapper->utf7Decode(\str_replace($this->server, '', $folder));
         }, $list);
     }
 
@@ -133,14 +136,17 @@ class ImapConnection {
         }
 
         $list = $this->wrapper->lsub($this->connection, $this->server, '*');
-        
+
         if (!$list) {
             return [];
         }
 
         \sort($list);
         return \array_map(function($folder) {
-            return \str_replace($this->server, '', $folder);
+            // imap_lsub() returns folder names in the server's raw modified UTF-7
+            // encoding, while callers compare against plain UTF-8 folder names built
+            // from thread titles - decode so both sides match.
+            return $this->wrapper->utf7Decode(\str_replace($this->server, '', $folder));
         }, $list);
     }
 

@@ -37,4 +37,17 @@ class ImapWrapperUtf7EncodeTest extends TestCase
         // :: Assert
         $this->assertEquals('uke 38 2026 &IBM- Helfo', $result, $result);
     }
+
+    public function testUtf7DecodeIsTheInverseOfUtf7Encode(): void
+    {
+        // :: Setup
+        $wrapper = new ImapWrapper(false);
+        $title = "uke 38 2026 \u{2013} Helfo";
+
+        // :: Act
+        $result = $wrapper->utf7Decode($wrapper->utf7Encode($title));
+
+        // :: Assert
+        $this->assertEquals($title, $result, $result);
+    }
 }
