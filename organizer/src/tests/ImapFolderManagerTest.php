@@ -30,7 +30,7 @@ class ImapFolderManagerTest extends TestCase
         $this->mockWrapper->method('lastError')
             ->willReturn('');
         $this->mockWrapper->method('utf7Encode')
-            ->willReturnCallback(function($str) { return $str; });
+            ->willReturnCallback(fn($str) => \mb_convert_encoding($str, 'UTF7-IMAP', 'UTF-8'));
         $this->mockWrapper->method('utf7Decode')
             ->willReturnCallback(fn($str) => \mb_convert_encoding($str, 'UTF-8', 'UTF7-IMAP'));
 
@@ -214,6 +214,27 @@ class ImapFolderManagerTest extends TestCase
             ->with($this->mockStream, (string)$uid, $targetFolder)
             ->willReturn(true);
 
+        $this->folderManager->moveEmail($uid, $targetFolder);
+    }
+
+    public function testMoveEmailEncodesNonAsciiTargetFolderAsModifiedUtf7()
+    {
+        // :: Setup
+        // moveEmail() used to pass the target folder straight to imap_mail_move()
+        // without utf7Encode(), unlike createFolder()/subscribeFolder()/renameFolder().
+        // Any folder name with a non-ASCII character (e.g. the en dash "–") was then
+        // rejected by the server with "Mailbox name is not valid mUTF-7".
+        $uid = 123;
+        $targetFolder = "986965610-helfo - Innsyn i offentlig journal uke 38 2026 \u{2013} Helfo";
+        $encodedTargetFolder = '986965610-helfo - Innsyn i offentlig journal uke 38 2026 &IBM- Helfo';
+
+        // :: Act
+        $this->mockWrapper->expects($this->once())
+            ->method('mailMove')
+            ->with($this->mockStream, (string)$uid, $encodedTargetFolder)
+            ->willReturn(true);
+
+        // :: Assert
         $this->folderManager->moveEmail($uid, $targetFolder);
     }
 

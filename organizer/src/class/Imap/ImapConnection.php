@@ -190,7 +190,7 @@ class ImapConnection {
             throw new \Exception('No active IMAP connection');
         }
 
-        $this->wrapper->mailMove($this->connection, (string)$uid, $targetFolder, CP_UID);
+        $this->wrapper->mailMove($this->connection, (string)$uid, $this->wrapper->utf7Encode($targetFolder), CP_UID);
     }
 
     /**
