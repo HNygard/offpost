@@ -258,7 +258,7 @@ class ThreadEmailMoverTest extends TestCase {
 
         $existingEmail = $this->createMock(\Imap\ImapEmail::class);
         $existingEmail->uid = 2;
-        $existingEmail->expects($this->once())
+        $existingEmail->expects($this->never())
             ->method('getEmailAddresses')
             ->willReturn(['test@example.com']);
 
