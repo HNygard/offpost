@@ -47,7 +47,9 @@ class ThreadStateTypeDeriver {
             }
 
             $anyRefused = self::anyMatch($statuses, fn(ThreadStateItemStatus $s) => $s->isRefused());
-            $anyReleased = self::anyMatch($statuses, fn(ThreadStateItemStatus $s) => $s->isReleased());
+            // "released" here means isFulfilled(): a real release, or an
+            // ANSWERED_IN_TEXT item (the email body was the response).
+            $anyReleased = self::anyMatch($statuses, fn(ThreadStateItemStatus $s) => $s->isFulfilled());
 
             // Rule 5: every item final, at least one refused, none released.
             if ($anyRefused && !$anyReleased) {

@@ -128,6 +128,20 @@ class ThreadStateTest extends TestCase {
         ThreadState::fromArray($blob);
     }
 
+    public function testAnsweredInTextStatusIsAccepted(): void {
+        // :: Setup
+        $blob = $this->validBlob();
+        $blob['items'][0]['status'] = 'ANSWERED_IN_TEXT';
+        $blob['items'][0]['denial_basis'] = null;
+        $blob['items'][0]['released_in_email_ids'] = [];
+
+        // :: Act
+        $state = ThreadState::fromArray($blob);
+
+        // :: Assert
+        $this->assertEquals($blob, $state->toArray(), json_encode($state->toArray(), JSON_PRETTY_PRINT));
+    }
+
     public function testDenialBasisNullIsAcceptedOnDenied(): void {
         // :: Setup
         $blob = $this->validBlob();

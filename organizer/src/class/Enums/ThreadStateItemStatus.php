@@ -17,6 +17,7 @@ enum ThreadStateItemStatus: string
     case WILL_RELEASE_PARTLY = 'WILL_RELEASE_PARTLY';
     case PARTLY_RELEASED = 'PARTLY_RELEASED';
     case RELEASED = 'RELEASED';
+    case ANSWERED_IN_TEXT = 'ANSWERED_IN_TEXT';
     case DENIED = 'DENIED';
     case NO_DOCUMENTS = 'NO_DOCUMENTS';
     case WITHDRAWN = 'WITHDRAWN';
@@ -28,6 +29,7 @@ enum ThreadStateItemStatus: string
         return match ($this) {
             self::PARTLY_RELEASED,
             self::RELEASED,
+            self::ANSWERED_IN_TEXT,
             self::DENIED,
             self::NO_DOCUMENTS,
             self::WITHDRAWN => true,
@@ -40,7 +42,7 @@ enum ThreadStateItemStatus: string
         };
     }
 
-    // Used by ThreadStateTypeDeriver's rules 5-6: refused/released together
+    // Used by ThreadStateTypeDeriver's rules 5-6: refused/fulfilled together
     // decide DENIED vs. PARTLY_DENIED_PARTLY_RELEASED. A lone PARTLY_RELEASED
     // item is both.
     public function isRefused(): bool
@@ -48,9 +50,20 @@ enum ThreadStateItemStatus: string
         return $this === self::DENIED || $this === self::PARTLY_RELEASED;
     }
 
+    // A document was actually delivered. ANSWERED_IN_TEXT is deliberately
+    // excluded here - see isFulfilled() for the broader "counts as released
+    // for the thread status" check used by the deriver.
     public function isReleased(): bool
     {
         return $this === self::RELEASED || $this === self::PARTLY_RELEASED;
+    }
+
+    // Used by ThreadStateTypeDeriver's rules 5-7: whether this item counts as
+    // "released" for the thread status, even though ANSWERED_IN_TEXT never
+    // delivered a document - the email body itself was the response.
+    public function isFulfilled(): bool
+    {
+        return $this->isReleased() || $this === self::ANSWERED_IN_TEXT;
     }
 
     // Helper to get all values for e.g. validation

@@ -25,7 +25,10 @@ The next event is evaluated from your `thread_state` and the next email only, wi
 
 The first event is normally our request (OUT, `OUR_REQUEST`). Build the state from it:
 - `request.summary`: what we asked for, in one sentence. `request.law_basis`: the law we cite (normally `offentleglova`). `request.sent_at`: the email's date (YYYY-MM-DD).
-- `items`: one item per document type named in the request, e.g. "valgprotokoll", "møtebok fra valgstyret", "korrespondanse med X". Ids "1", "2", … in the order they appear. `asked_for` names the document type as the request does. All start as `NOT_ANSWERED`.
+- `items`: one item per document type or concrete piece of information asked for. Offentleglova covers both documents and concrete information, such as the answer to a question.
+  - Examples: "valgprotokoll", "møtebok fra valgstyret", "korrespondanse med X", "hvilken opptellingsmetode kommunen bruker".
+  - Ids "1", "2", … in the order they appear. `asked_for` names the document type or the question as the request does.
+  - All start as `NOT_ANSWERED`.
 - `waiting_for`: `ENTITY`.
 
 If the first event is not our request (the export may start later), build the items from the initial request text in the thread details, then apply this email.
@@ -41,10 +44,12 @@ If the first event is not our request (the export may start later), build the it
 | `WILL_RELEASE_PARTLY` | The entity has decided to refuse part and release the rest, but not yet sent it |
 | `PARTLY_RELEASED` | Delivered, with part refused (redacted, or some documents held back) |
 | `RELEASED` | Delivered in full |
+| `ANSWERED_IN_TEXT` | The information asked for is given in the email body itself, not as a document |
 | `DENIED` | All of it refused |
 | `NO_DOCUMENTS` | The entity says no such documents exist |
 | `WITHDRAWN` | We withdrew the item or narrowed it away |
 
+- The email body is part of the response, like a document; attachments may come in addition. Judge each item from the body and the attachments together.
 - A decision and the delivery may come in different emails: first `WILL_RELEASE_PARTLY`, later `PARTLY_RELEASED`.
 - When documents for an item are attached or linked, add this email's id to the item's `released_in_email_ids`. The item stays `WILL_RELEASE…` until everything for it has come.
 - Forwarding to another entity (videresending) counts as `DENIED` for this thread, with the forwarding described in the item's `note`.
@@ -90,9 +95,9 @@ A new refusal after a complaint can lead to a new round.
 | `ASKING_FOR_MORE_TIME` | IN | The entity needs more time, or gives a later date |
 | `ASKING_FOR_COPY` | IN | The entity asks us for a copy of something |
 | `ASKING_FOR_CLARIFICATION` | IN | The entity asks what we mean, or asks us to narrow the request |
-| `RESPONSE_TO_REQUEST` | IN | An answer that is neither a release nor a refusal (e.g. "no documents", a decision without documents) |
+| `RESPONSE_TO_REQUEST` | IN | An answer that is neither a release nor a refusal (e.g. "no documents", a decision to release later) |
 | `REQUEST_REJECTED` | IN | A refusal of all or part of the request |
-| `INFORMATION_RELEASE` | IN | Documents are released (attached or linked) |
+| `INFORMATION_RELEASE` | IN | Documents or the information asked for are released: attached, linked, or given in the body |
 | `RESPONSE_UNREADABLE` | IN | The entity answered, but the content cannot be read (empty or unreadable attachment, scan without text) |
 | `unknown` | either | None of the above fits. Then set `email_type_gap` |
 

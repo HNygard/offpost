@@ -215,8 +215,8 @@ TXT;
                                     'asked_for' => ['type' => 'string'],
                                     'status' => ['type' => 'string', 'enum' => [
                                         'NOT_ANSWERED', 'ACKNOWLEDGED', 'BEING_EVALUATED', 'WILL_RELEASE',
-                                        'WILL_RELEASE_PARTLY', 'PARTLY_RELEASED', 'RELEASED', 'DENIED',
-                                        'NO_DOCUMENTS', 'WITHDRAWN',
+                                        'WILL_RELEASE_PARTLY', 'PARTLY_RELEASED', 'RELEASED', 'ANSWERED_IN_TEXT',
+                                        'DENIED', 'NO_DOCUMENTS', 'WITHDRAWN',
                                     ]],
                                     'denial_basis' => [
                                         'type' => ['object', 'null'],

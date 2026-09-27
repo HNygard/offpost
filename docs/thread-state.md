@@ -84,6 +84,7 @@ Item statuses:
 | `WILL_RELEASE_PARTLY` | Decided: part refused, the rest not yet delivered | | yes |
 | `PARTLY_RELEASED` | Delivered, with part refused | yes | yes |
 | `RELEASED` | Delivered in full | yes | |
+| `ANSWERED_IN_TEXT` | The information asked for is given in the email body itself, not as a document | yes | |
 | `DENIED` | All of it refused | yes | yes |
 | `NO_DOCUMENTS` | No such documents exist | yes | |
 | `WITHDRAWN` | We withdrew or narrowed it away | yes | |
@@ -130,7 +131,9 @@ Checked in order; the first match wins.
 
 Definitions for rules 5-6:
 - An item is **refused** when its status is `DENIED` or `PARTLY_RELEASED`.
-- An item is **released** when its status is `RELEASED` or `PARTLY_RELEASED`.
+- An item is **released** when its status is `RELEASED`, `PARTLY_RELEASED` or `ANSWERED_IN_TEXT`.
+  `ANSWERED_IN_TEXT` is never a refusal - it counts as fulfilled the same way a release does, so
+  with every item final and none refused it gives `ANSWERED` (rule 7), same as `RELEASED`.
 - A lone `PARTLY_RELEASED` item is therefore both refused and released, which gives
   `PARTLY_DENIED_PARTLY_RELEASED`.
 

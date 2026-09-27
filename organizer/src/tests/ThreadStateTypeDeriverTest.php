@@ -172,6 +172,39 @@ class ThreadStateTypeDeriverTest extends TestCase {
         $this->assertEquals(ThreadStateType::WAITING_FOR_ENTITY, $result);
     }
 
+    public function testAllItemsAnsweredInTextGivesAnswered(): void {
+        // :: Setup
+        $state = $this->state(['ANSWERED_IN_TEXT', 'ANSWERED_IN_TEXT'], 'NOBODY');
+
+        // :: Act
+        $result = ThreadStateTypeDeriver::derive($state);
+
+        // :: Assert
+        $this->assertEquals(ThreadStateType::ANSWERED, $result);
+    }
+
+    public function testAnsweredInTextPlusDeniedGivesPartlyDeniedPartlyReleased(): void {
+        // :: Setup
+        $state = $this->state(['ANSWERED_IN_TEXT', 'DENIED'], 'NOBODY');
+
+        // :: Act
+        $result = ThreadStateTypeDeriver::derive($state);
+
+        // :: Assert
+        $this->assertEquals(ThreadStateType::PARTLY_DENIED_PARTLY_RELEASED, $result);
+    }
+
+    public function testAnsweredInTextPlusNotAnsweredGivesPartlyAnswered(): void {
+        // :: Setup
+        $state = $this->state(['ANSWERED_IN_TEXT', 'NOT_ANSWERED'], 'NOBODY');
+
+        // :: Act
+        $result = ThreadStateTypeDeriver::derive($state);
+
+        // :: Assert
+        $this->assertEquals(ThreadStateType::PARTLY_ANSWERED, $result);
+    }
+
     public function testOpenComplaintBeatsWaitingForUsAndAllFinalItems(): void {
         // :: Setup
         $state = $this->state(['RELEASED'], 'US', [$this->complaintRound('SENT')]);
