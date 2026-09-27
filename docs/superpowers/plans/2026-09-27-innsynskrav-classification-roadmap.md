@@ -39,18 +39,49 @@ offentleglova, for all Offpost threads (not only norske-postlister):
 - An admin page to download it, and a way to pull it from the command line.
 - The data stays local, outside git (it contains email content).
 
+Status: done (6657235b). See docs/thread-export-api.md.
+
 ### 2. Find out what data and context the classifiers need
 
-- Label a sample of whole threads locally with an expensive model. For each
-  email, record the label and what decided it: subject, headers, current
-  body, attachment, which earlier email, the sending log.
-- A human confirms the labels. Together with the manual classifications
-  already in prod, they are the dataset with known answers.
-- From this, write down:
-  - which statuses the flow needs;
-  - which data must be extracted per email;
-  - how much of the thread each classification needs as context;
-  - which classifications a simple rule can do and which need AI.
+The goal is the current state of a thread at every event (every email, in
+or out). Two things are recorded per email:
+
+- **The email itself:** its type (`status_type`) and a note describing it
+  (`status_text`), as today.
+- **The cumulative thread state after this email:**
+  - a JSON blob: what we asked for and the state of each item, dates given,
+    case numbers, who we are waiting for, and so on;
+  - a thread status type derived from the blob by code.
+  - The blob starts from a consistent "initial request" blob built from our
+    request.
+  - Each event is evaluated from the previous state plus the new email, so
+    the blob must carry everything the next evaluation needs.
+
+Sub-steps, one change at a time:
+
+1. Expand the data model with the cumulative state: storage per email,
+   the blob schema, the thread status types and the derivation from the blob.
+   Item and thread statuses are settled by interviewing the owner.
+2. Local analysis with Opus 5.5 through headless Claude Code, run in the
+   background: one call per event, token usage stored for every call. This is
+   for local evaluation only; prod will use code rules and OpenAI models.
+3. A script that generates an HTML dashboard of the analyses and their
+   token usage.
+4. From the results, write down:
+   - which statuses the flow needs;
+   - which data must be extracted per email;
+   - how much of the thread each classification needs as context;
+   - which classifications a simple rule can do and which need AI.
+
+### 2b. Feedback on the analysis, reported to prod
+
+- A small system where the owner marks the correct labelling of a thread:
+  email types, and the state blob at each event.
+- Corrections are reported to prod as manual classifications, so prod gets
+  better data, and the next local pull brings them back. The next analysis
+  run treats manual states as fixed anchors.
+- Confirmed states can also become cases in the existing local test bench
+  (`organizer/src/bin/ai-check-models.php --prompt-tester`, `data/test-prompts/`).
 
 ### 3. Make a plan for adjusting the classifiers
 
