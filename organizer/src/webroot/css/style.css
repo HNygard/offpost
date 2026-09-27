@@ -252,6 +252,26 @@ span.label.classification.label_error {
     border-color: #c0392b;
 }
 
+/*
+ * Generic classification modifiers, used by ThreadStateView for the thread
+ * state badges (unlike the enum-specific ones above, these are reused across
+ * unrelated ThreadStateType values).
+ */
+span.label.classification.label_ok {
+    background-color: #83f883;
+    border-color: #4cae4c;
+}
+
+span.label.classification.label_warn {
+    background-color: #ffe1b8;
+    border-color: #b3792a;
+}
+
+span.label.classification.label_info {
+    background-color: #cfe0ff;
+    border-color: #3f4b65;
+}
+
 .status-text {
     color: #6c757d;
     font-size: 0.9em;
@@ -502,6 +522,63 @@ span.label.classification.label_error {
 .email-header .email-type {
     font-weight: bold;
     color: #34495e;
+}
+
+.email-header .thread-state-badge,
+.email-header .thread-state-details {
+    font-size: 0.85em;
+}
+
+.email-header .thread-state-details summary {
+    cursor: pointer;
+    color: #666;
+}
+
+.email-header .thread-state-details pre {
+    max-width: 100%;
+    overflow-x: auto;
+    background-color: #f8f9fa;
+    border: 1px solid #eee;
+    border-radius: 4px;
+    padding: 8px;
+    font-size: 0.9em;
+}
+
+/*
+ * The "Thread state" block, rendered by ThreadStateView from the thread's
+ * cumulative ThreadState blob (docs/thread-state.md).
+ */
+.thread-state {
+    margin: 20px 0;
+    padding: 15px;
+    background-color: #f8f9fa;
+    border: 1px solid #dee2e6;
+    border-radius: 6px;
+}
+
+.thread-state h2 {
+    margin-top: 0;
+}
+
+.thread-state-items,
+.thread-state-complaints {
+    width: 100%;
+    margin: 10px 0;
+}
+
+.thread-state-items th,
+.thread-state-complaints th {
+    text-align: left;
+}
+
+.thread-state-dates {
+    margin: 10px 0;
+    padding-left: 20px;
+}
+
+.thread-state-source {
+    color: #6c757d;
+    font-size: 0.9em;
 }
 
 .email-description {

@@ -27,4 +27,23 @@ enum ThreadStateType: string
     {
         return array_column(self::cases(), 'value');
     }
+
+    // Short, natural Bokmål label shown in the thread view (ThreadStateView).
+    // The enum value itself is shown alongside it, in a `title` attribute.
+    public function label(): string
+    {
+        return match ($this) {
+            self::COMPLAINT_SENT => 'Klage sendt',
+            self::COMPLAINT_FORWARDED => 'Klage videresendt',
+            self::OMBUD_COMPLAINT_SENT => 'Klage sendt til Sivilombudet',
+            self::WAITING_FOR_US => 'Venter på oss',
+            self::CLOSED => 'Avsluttet',
+            self::NO_DOCUMENTS => 'Ingen dokumenter',
+            self::DENIED => 'Avslått',
+            self::PARTLY_DENIED_PARTLY_RELEASED => 'Delvis avslått, delvis utlevert',
+            self::ANSWERED => 'Besvart',
+            self::PARTLY_ANSWERED => 'Delvis besvart',
+            self::WAITING_FOR_ENTITY => 'Venter på offentlig organ',
+        };
+    }
 }

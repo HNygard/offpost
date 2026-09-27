@@ -71,4 +71,23 @@ enum ThreadStateItemStatus: string
     {
         return array_column(self::cases(), 'value');
     }
+
+    // Short, natural Bokmål label shown in the thread view (ThreadStateView).
+    // The enum value itself is shown alongside it, in a `title` attribute.
+    public function label(): string
+    {
+        return match ($this) {
+            self::NOT_ANSWERED => 'Ikke besvart',
+            self::ACKNOWLEDGED => 'Mottatt bekreftelse',
+            self::BEING_EVALUATED => 'Under vurdering',
+            self::WILL_RELEASE => 'Vil bli utlevert',
+            self::WILL_RELEASE_PARTLY => 'Vil bli delvis utlevert',
+            self::PARTLY_RELEASED => 'Delvis utlevert',
+            self::RELEASED => 'Utlevert',
+            self::ANSWERED_IN_TEXT => 'Besvart i e-posten',
+            self::DENIED => 'Avslått',
+            self::NO_DOCUMENTS => 'Ingen slike dokumenter',
+            self::WITHDRAWN => 'Trukket',
+        };
+    }
 }

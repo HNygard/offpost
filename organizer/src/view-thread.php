@@ -9,6 +9,7 @@ require_once __DIR__ . '/class/ThreadEmailSending.php';
 require_once __DIR__ . '/class/Extraction/ThreadEmailExtractionService.php';
 require_once __DIR__ . '/class/ThreadUtils.php';
 require_once __DIR__ . '/class/SuggestedReplyGenerator.php';
+require_once __DIR__ . '/class/ThreadState/ThreadStateView.php';
 
 // Require authentication
 requireAuth();
@@ -162,6 +163,13 @@ $extraction_service = new ThreadEmailExtractionService();
 // Get thread history
 $history = new ThreadHistory();
 $historyEntries = $history->getHistoryForThread($thread->id);
+
+// Cumulative thread state (docs/thread-state.md), keyed by email id. Not
+// carried on ThreadEmail by Thread::mapFromDatabase(), so loaded separately.
+$threadStates = ThreadStateView::loadEmailStates($thread->id);
+$latestThreadState = !empty($threadStates) ? end($threadStates) : null;
+$threadStatesByEmailId = array_column($threadStates, null, 'id');
+$isAdminForThreadState = isset($_SESSION['user']['sub']) && in_array($_SESSION['user']['sub'], $admins);
 
 // Function to get icon class based on file type
 function getIconClass($filetype) {
@@ -410,6 +418,16 @@ function print_extraction ($extraction) {
             <?php endif; ?>
         </div>
 
+        <?php if ($latestThreadState !== null): ?>
+            <?= ThreadStateView::renderBlock(
+                $latestThreadState['thread_state'],
+                $latestThreadState['thread_state_type'],
+                $latestThreadState['thread_state_source'],
+                $isAdminForThreadState,
+                $thread->id
+            ) ?>
+        <?php endif; ?>
+
         <h2>Emails in Thread</h2>
         <div class="emails-list">
             <?php
@@ -437,6 +455,12 @@ function print_extraction ($extraction) {
                             [Classified by <?= ThreadEmailClassifier::getClassificationLabel($email) ?>]
                             </span>
                             <?php
+                        }
+                        if (isset($threadStatesByEmailId[$email->id])) {
+                            echo ThreadStateView::renderEmailBadge(
+                                $threadStatesByEmailId[$email->id]['thread_state'],
+                                $threadStatesByEmailId[$email->id]['thread_state_type']
+                            );
                         }
                         ?>
                     </div>

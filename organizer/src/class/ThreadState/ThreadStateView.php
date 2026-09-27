@@ -1,0 +1,246 @@
+<?php
+// organizer/src/class/ThreadState/ThreadStateView.php
+
+require_once __DIR__ . '/../Enums/ThreadStateType.php';
+require_once __DIR__ . '/../Enums/ThreadStateItemStatus.php';
+require_once __DIR__ . '/../Database.php';
+
+use App\Enums\ThreadStateItemStatus;
+use App\Enums\ThreadStateType;
+
+/**
+ * Renders the "Thread state" block and the per-email state badge shown in
+ * view-thread.php, from a thread's cumulative ThreadState blob
+ * (docs/thread-state.md). See "Shown in the thread view" in that doc.
+ *
+ * The rendering methods (renderBlock, renderEmailBadge) are pure: they take
+ * plain arrays and return HTML, so they can be unit tested without a
+ * database. All output is escaped with htmlspecialchars().
+ *
+ * loadEmailStates() is the one method that touches the database: it reads
+ * thread_state/thread_state_type/thread_state_source directly, because
+ * Thread::mapFromDatabase() does not copy those columns onto ThreadEmail.
+ */
+class ThreadStateView {
+    // Bokmål labels for `waiting_for` (see docs/thread-state.md).
+    const WAITING_FOR_LABELS = [
+        'ENTITY' => 'Venter på offentlig organ',
+        'US' => 'Venter på oss',
+        'NOBODY' => 'Ingen venter',
+    ];
+
+    // Bokmål labels for a denial's `issues` - these are complaint grounds.
+    const DENIAL_ISSUE_LABELS = [
+        'NO_REASON_GIVEN' => 'Ingen grunn oppgitt',
+        'NO_LEGAL_REFERENCE' => 'Ingen lovhenvisning',
+        'INCOMPLETE_REFERENCE' => 'Mangelfull henvisning',
+    ];
+
+    // Bokmål labels for a complaint round's `status`.
+    const COMPLAINT_STATUS_LABELS = [
+        'SENT' => 'Klage sendt',
+        'FORWARDED' => 'Klage videresendt',
+        'DECIDED' => 'Klage avgjort',
+        'OMBUD_SENT' => 'Sendt til Sivilombudet',
+        'OMBUD_DECIDED' => 'Avgjort av Sivilombudet',
+    ];
+
+    // Maps each ThreadStateType to one of the four badge styles in
+    // webroot/css/style.css (span.label.classification.label_*).
+    const STATUS_TYPE_LABEL_CLASS = [
+        'COMPLAINT_SENT' => 'label_warn',
+        'COMPLAINT_FORWARDED' => 'label_warn',
+        'OMBUD_COMPLAINT_SENT' => 'label_warn',
+        'WAITING_FOR_US' => 'label_warn',
+        'CLOSED' => 'label_info',
+        'NO_DOCUMENTS' => 'label_info',
+        'DENIED' => 'label_error',
+        'PARTLY_DENIED_PARTLY_RELEASED' => 'label_warn',
+        'ANSWERED' => 'label_ok',
+        'PARTLY_ANSWERED' => 'label_warn',
+        'WAITING_FOR_ENTITY' => 'label_info',
+    ];
+
+    /**
+     * All emails of the thread that carry a thread_state, oldest first (by
+     * datetime_received, then id) - so the last entry is the thread's
+     * current state, per docs/thread-state.md.
+     *
+     * @return array<int, array{id: string, thread_state: array, thread_state_type: ?string, thread_state_source: ?string}>
+     */
+    public static function loadEmailStates(string $threadId): array {
+        $rows = Database::query(
+            "SELECT id, thread_state, thread_state_type, thread_state_source
+             FROM thread_emails
+             WHERE thread_id = ? AND thread_state IS NOT NULL
+             ORDER BY datetime_received, id",
+            [$threadId]
+        );
+
+        return array_map(function ($row) {
+            return [
+                'id' => $row['id'],
+                'thread_state' => json_decode($row['thread_state'], true),
+                'thread_state_type' => $row['thread_state_type'],
+                'thread_state_source' => $row['thread_state_source'],
+            ];
+        }, $rows);
+    }
+
+    /**
+     * The "Thread state" block, shown just before "Emails in Thread". Shown
+     * only when the caller has a state to render - the caller decides that
+     * from loadEmailStates() being non-empty.
+     *
+     * @param array $state a validated ThreadState blob (ThreadState::toArray())
+     * @param string|null $stateType the derived ThreadStateType value
+     * @param string|null $stateSource 'auto' or 'manual'
+     */
+    public static function renderBlock(array $state, ?string $stateType, ?string $stateSource, bool $isAdmin, string $threadId): string {
+        $html = '<div class="thread-state">';
+        $html .= '<h2>Thread state</h2>';
+
+        $html .= '<p class="thread-state-status">' . self::renderStatusBadge($stateType);
+        if ($stateSource !== null) {
+            $html .= ' <span class="thread-state-source">(' . self::e($stateSource) . ')</span>';
+        }
+        $html .= '</p>';
+
+        $html .= '<p class="thread-state-waiting-for"><strong>Waiting for:</strong> '
+            . self::e(self::WAITING_FOR_LABELS[$state['waiting_for']] ?? $state['waiting_for'])
+            . '</p>';
+
+        if (!empty($state['asks_to_us'])) {
+            $html .= '<p class="thread-state-asks"><strong>Asks of us:</strong> '
+                . self::e(implode(', ', $state['asks_to_us'])) . '</p>';
+        }
+
+        $html .= self::renderItemsTable($state['items']);
+
+        if (!empty($state['case_numbers'])) {
+            $html .= '<p class="thread-state-case-numbers"><strong>Case numbers:</strong> '
+                . self::e(implode(', ', $state['case_numbers'])) . '</p>';
+        }
+
+        if (!empty($state['dates'])) {
+            $html .= self::renderDatesList($state['dates']);
+        }
+
+        if (!empty($state['complaints'])) {
+            $html .= self::renderComplaintsTable($state['complaints']);
+        }
+
+        if (!empty($state['notes'])) {
+            $html .= '<p class="thread-state-notes"><strong>Notes:</strong> ' . self::e($state['notes']) . '</p>';
+        }
+
+        if ($isAdmin) {
+            $html .= '<p class="thread-state-admin-link"><a href="/thread-analysis/thread?id='
+                . self::e($threadId) . '">Analysis details</a></p>';
+        }
+
+        $html .= '</div>';
+
+        return $html;
+    }
+
+    /**
+     * The small per-email badge and "Show state" toggle in .email-header,
+     * shown when the email has a thread_state.
+     */
+    public static function renderEmailBadge(array $state, ?string $stateType): string {
+        $html = '<span class="thread-state-badge">' . self::renderStatusBadge($stateType, ' (after this email)') . '</span>';
+        $html .= ' <details class="thread-state-details"><summary>Show state</summary><pre>'
+            . self::e(json_encode($state, JSON_PRETTY_PRINT | JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE)) . '</pre></details>';
+
+        return $html;
+    }
+
+    private static function renderStatusBadge(?string $stateType, string $suffix = ''): string {
+        if ($stateType === null) {
+            return '<span class="label classification" title="">Unknown</span>' . self::e($suffix);
+        }
+
+        $case = ThreadStateType::tryFrom($stateType);
+        $label = $case !== null ? $case->label() : $stateType;
+        $cssClass = self::STATUS_TYPE_LABEL_CLASS[$stateType] ?? 'label_info';
+
+        return '<span class="label classification ' . $cssClass . '" title="' . self::e($stateType) . '">'
+            . self::e($label . $suffix) . '</span>';
+    }
+
+    private static function renderItemsTable(array $items): string {
+        $html = '<table class="thread-state-items">';
+        $html .= '<thead><tr><th>Asked for</th><th>Status</th><th>Denial basis</th></tr></thead>';
+        $html .= '<tbody>';
+        foreach ($items as $item) {
+            $html .= '<tr>';
+            $html .= '<td>' . self::e($item['asked_for']) . '</td>';
+            $html .= '<td>' . self::renderItemStatus($item['status']) . '</td>';
+            $html .= '<td>' . self::renderDenialBasis($item['denial_basis']) . '</td>';
+            $html .= '</tr>';
+        }
+        $html .= '</tbody></table>';
+
+        return $html;
+    }
+
+    private static function renderItemStatus(string $status): string {
+        $case = ThreadStateItemStatus::tryFrom($status);
+        $label = $case !== null ? $case->label() : $status;
+
+        return '<span title="' . self::e($status) . '">' . self::e($label) . '</span>';
+    }
+
+    private static function renderDenialBasis(?array $denialBasis): string {
+        if ($denialBasis === null) {
+            return '';
+        }
+
+        $parts = [];
+        if (!empty($denialBasis['refs'])) {
+            $parts[] = '<span class="denial-refs">' . self::e(implode(', ', $denialBasis['refs'])) . '</span>';
+        }
+        if (!empty($denialBasis['text'])) {
+            $parts[] = '<span class="denial-text">' . self::e($denialBasis['text']) . '</span>';
+        }
+        foreach ($denialBasis['issues'] ?? [] as $issue) {
+            $label = self::DENIAL_ISSUE_LABELS[$issue] ?? $issue;
+            $parts[] = '<span class="label classification label_warn" title="' . self::e($issue) . '">'
+                . self::e($label) . '</span>';
+        }
+
+        return implode(' ', $parts);
+    }
+
+    private static function renderDatesList(array $dates): string {
+        $html = '<ul class="thread-state-dates">';
+        foreach ($dates as $date) {
+            $html .= '<li>' . self::e($date['date']) . ': ' . self::e($date['what']) . '</li>';
+        }
+        $html .= '</ul>';
+
+        return $html;
+    }
+
+    private static function renderComplaintsTable(array $complaints): string {
+        $html = '<table class="thread-state-complaints">';
+        $html .= '<thead><tr><th>Status</th><th>Items</th><th>Outcome</th></tr></thead>';
+        $html .= '<tbody>';
+        foreach ($complaints as $round) {
+            $label = self::COMPLAINT_STATUS_LABELS[$round['status']] ?? $round['status'];
+            $html .= '<tr>';
+            $html .= '<td><span title="' . self::e($round['status']) . '">' . self::e($label) . '</span></td>';
+            $html .= '<td>' . self::e(implode(', ', $round['item_ids'])) . '</td>';
+            $html .= '<td>' . self::e($round['outcome']) . '</td>';
+            $html .= '</tr>';
+        }
+        $html .= '</tbody></table>';
+
+        return $html;
+    }
+
+    private static function e(string $value): string {
+        return htmlspecialchars($value, ENT_QUOTES);
+    }
+}

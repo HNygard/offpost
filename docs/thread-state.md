@@ -145,3 +145,26 @@ never stored (no classification from timing alone).
 `ThreadExportService::exportThread()` includes `thread_state` (decoded, or `null`),
 `thread_state_type` and `thread_state_source` on every email; see
 [docs/thread-export-api.md](thread-export-api.md).
+
+## Shown in the thread view
+
+`organizer/src/class/ThreadState/ThreadStateView.php` renders the state for everyone who can see
+the thread, in `view-thread.php`:
+
+- A "Thread state" block, just before "Emails in Thread", shown only when an email of the thread
+  has a `thread_state`. It uses the state of the latest such email (`datetime_received`, then
+  `id`): the thread status as a badge (`ThreadStateType` mapped to `label_ok`/`label_warn`/
+  `label_error`/`label_info`) plus whether it is `auto` or `manual`, who we're waiting for,
+  `asks_to_us`, a table of items (asked for, status, denial basis with `issues` as warning
+  badges), case numbers, dates, complaint rounds, and `notes` when not empty. Admins also get a
+  link to the debug page from step 2c change 4b, `/thread-analysis/thread?id=<thread id>`.
+- Per email, in `.email-header`, when that email has a `thread_state`: a small badge with its
+  `thread_state_type`, and a `<details>` toggle with the blob as pretty-printed JSON.
+
+`ThreadStateType::label()` and `ThreadStateItemStatus::label()` give the short Bokmål labels used
+there; the enum value itself is always shown alongside, in a `title` attribute. Bokmål labels for
+`waiting_for`, denial `issues` and complaint `status` live in `ThreadStateView` itself, since those
+are plain string enums rather than PHP enums.
+
+`Thread::mapFromDatabase()` does not copy the `thread_state*` columns onto `ThreadEmail` - the view
+loads them separately with `ThreadStateView::loadEmailStates()`.

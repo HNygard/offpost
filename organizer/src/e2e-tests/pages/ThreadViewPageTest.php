@@ -229,4 +229,80 @@ class ThreadViewPageTest extends E2EPageTestCase {
         );
         $this->assertEquals(0, $userExists, "User should not exist in thread_authorizations table");
     }
+
+    public function testPageShowsThreadStateBlockWhenEmailHasState() {
+        // :: Setup
+        // Cumulative thread state (docs/thread-state.md) is not written by any
+        // code path yet, so it is set directly in the database, on the one
+        // email E2ETestSetup::createTestThread() already creates.
+        $testData = E2ETestSetup::createTestThread();
+        $threadId = $testData['thread']->id;
+        $entityId = $testData['entity_id'];
+        $emailId = $testData['email_id'];
+
+        $threadState = [
+            'schema_version' => 1,
+            'request' => ['summary' => 'Innsyn i valgprotokoll', 'law_basis' => 'offentleglova', 'sent_at' => '2021-01-01'],
+            'items' => [
+                [
+                    'id' => '1',
+                    'asked_for' => 'Valgprotokoll 2021',
+                    'status' => 'PARTLY_RELEASED',
+                    'denial_basis' => [
+                        'refs' => ['offentleglova § 13'],
+                        'text' => 'Delvis unntatt',
+                        'issues' => ['INCOMPLETE_REFERENCE'],
+                    ],
+                    'released_in_email_ids' => [],
+                    'note' => '',
+                ],
+            ],
+            'waiting_for' => 'NOBODY',
+            'asks_to_us' => [],
+            'case_numbers' => ['21/1234'],
+            'dates' => [],
+            'complaints' => [],
+            'notes' => '',
+            'extra' => [],
+        ];
+
+        Database::execute(
+            "UPDATE thread_emails SET thread_state = ?::jsonb, thread_state_type = ?, thread_state_source = ? WHERE id = ?",
+            [json_encode($threadState), 'PARTLY_DENIED_PARTLY_RELEASED', 'auto', $emailId]
+        );
+
+        // :: Act
+        $response = $this->renderPage('/thread-view?entityId=' . $entityId . '&threadId=' . $threadId);
+
+        // :: Assert
+        // The "Thread state" block, built from the latest email's state.
+        $this->assertStringContainsString('<div class="thread-state">', $response->body);
+        $this->assertStringContainsString('<h2>Thread state</h2>', $response->body);
+        $this->assertStringContainsString('Delvis avslått, delvis utlevert', $response->body);
+        $this->assertStringContainsString('title="PARTLY_DENIED_PARTLY_RELEASED"', $response->body);
+        $this->assertStringContainsString('(auto)', $response->body);
+        $this->assertStringContainsString('Valgprotokoll 2021', $response->body);
+        $this->assertStringContainsString('Mangelfull henvisning', $response->body);
+        $this->assertStringContainsString('21/1234', $response->body);
+        // dev-user-id is an admin in the development environment (username-password.php).
+        $this->assertStringContainsString('/thread-analysis/thread?id=' . $threadId, $response->body);
+        // The per-email badge and its folded state, next to today's classification.
+        $this->assertStringContainsString('thread-state-badge', $response->body);
+        $this->assertStringContainsString('Show state', $response->body);
+    }
+
+    public function testPageHasNoThreadStateBlockWithoutState() {
+        // :: Setup
+        // E2ETestSetup::createTestThread() leaves thread_state null on its email.
+        $testData = E2ETestSetup::createTestThread();
+        $threadId = $testData['thread']->id;
+        $entityId = $testData['entity_id'];
+
+        // :: Act
+        $response = $this->renderPage('/thread-view?entityId=' . $entityId . '&threadId=' . $threadId);
+
+        // :: Assert
+        $this->assertStringNotContainsString('<div class="thread-state">', $response->body);
+        $this->assertStringNotContainsString('thread-state-badge', $response->body);
+    }
 }
