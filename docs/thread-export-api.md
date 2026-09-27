@@ -139,7 +139,9 @@ fingerprint changed (all of them with `--full`). Output layout:
 Both files are written via a temp file plus rename, and `index.json` is rewritten after
 *each* successful thread, so an interrupted run resumes cleanly - nothing already downloaded
 is refetched or deleted. A thread that fails to fetch or save is reported on STDERR and
-counted, and the run continues with the rest. The final line is
+counted, and the run continues with the rest. It prints how many threads are listed and
+to fetch, then one progress line per thread (`[3/40] <id> <title> ... 5 emails, 812 KB`).
+The final line is
 `fetched N, unchanged M, failed K`; the process exits 1 if any thread failed or the list
 request itself failed, otherwise 0. Threads that disappear from the list stay on disk.
 

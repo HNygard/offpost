@@ -35,7 +35,8 @@ Options:
   --help              Show this help and exit
 
 Writes <out>/threads/<id>.json and <out>/index.json (id => fingerprint).
-Prints "fetched N, unchanged M, failed K" and exits 1 if any thread failed
+Prints one progress line per thread, then "fetched N, unchanged M, failed K".
+Exits 1 if any thread failed
 or the list request itself failed, else exits 0. Never deletes local files.
 
 HELP;
@@ -150,6 +151,7 @@ if (is_file($indexPath)) {
 
 // -- fetch the list --
 
+echo "Fetching thread list from $baseUrl ...\n";
 [$status, $body, $curlError] = httpGet($baseUrl . '/api/admin/export/threads', $token);
 if ($curlError !== null) {
     fail("Failed to fetch thread list: $curlError");
@@ -168,10 +170,20 @@ $listedThreads = $list['threads'] ?? [];
 
 $plan = ThreadExportSync::planFetch($listedThreads, $localIndex, $full, $limit);
 
+$titlesById = [];
+foreach ($listedThreads as $listed) {
+    $titlesById[$listed['id']] = (string) ($listed['title'] ?? '');
+}
+$total = count($plan['toFetch']);
+echo count($listedThreads) . " threads listed: $total to fetch, {$plan['unchanged']} unchanged\n";
+
 $fetched = 0;
 $failed = 0;
+$position = 0;
 
 foreach ($plan['toFetch'] as $id) {
+    $position++;
+    echo "[$position/$total] $id " . ($titlesById[$id] ?? '') . " ... ";
     $url = $baseUrl . '/api/admin/export/thread?id=' . urlencode($id);
     [$status, $body, $curlError] = httpGet($url, $token);
 
@@ -205,6 +217,7 @@ foreach ($plan['toFetch'] as $id) {
     }
 
     $fetched++;
+    echo count($threadData['emails'] ?? []) . " emails, " . round(strlen($body) / 1024) . " KB\n";
 }
 
 echo ThreadExportSync::summaryLine($fetched, $plan['unchanged'], $failed) . "\n";
