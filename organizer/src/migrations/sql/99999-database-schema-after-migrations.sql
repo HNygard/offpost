@@ -1,6 +1,6 @@
 -- ******************************************************************
 -- AUTOMATICALLY GENERATED FILE - DO NOT MODIFY
--- Generated on: 2026-09-27 10:30:34
+-- Generated on: 2026-09-27 18:10:49
 -- 
 -- This file contains the current database schema after all migrations.
 -- It is NOT meant to be executed as a migration script.
@@ -80,6 +80,90 @@ CREATE INDEX openai_request_log_endpoint_idx ON openai_request_log USING btree (
 CREATE INDEX openai_request_log_extraction_id_idx ON openai_request_log USING btree (extraction_id);
 CREATE INDEX openai_request_log_source_idx ON openai_request_log USING btree (source);
 CREATE INDEX openai_request_log_time_idx ON openai_request_log USING btree ("time");
+
+CREATE TABLE thread_analysis_claude_code_calls (
+    id bigint NOT NULL DEFAULT nextval('thread_analysis_claude_code_calls_id_seq'::regclass),
+    run_id bigint NOT NULL,
+    event_id bigint NOT NULL,
+    attempt integer NOT NULL,
+    input_text text NOT NULL,
+    json_schema jsonb,
+    response jsonb,
+    model character varying(255),
+    model_resolved character varying(255),
+    session_id character varying(255),
+    claude_code_version character varying(50),
+    input_tokens integer,
+    cache_creation_input_tokens integer,
+    cache_read_input_tokens integer,
+    output_tokens integer,
+    thinking_tokens integer,
+    cost_usd numeric,
+    duration_ms integer,
+    duration_api_ms integer,
+    is_error boolean,
+    stop_reason character varying(50),
+    created_at timestamp with time zone NOT NULL DEFAULT CURRENT_TIMESTAMP
+);
+
+ALTER TABLE thread_analysis_claude_code_calls ADD CONSTRAINT thread_analysis_claude_code_calls_pkey PRIMARY KEY (id);
+ALTER TABLE thread_analysis_claude_code_calls ADD CONSTRAINT thread_analysis_claude_code_calls_event_id_fkey FOREIGN KEY (event_id) REFERENCES thread_analysis_events (id);
+ALTER TABLE thread_analysis_claude_code_calls ADD CONSTRAINT thread_analysis_claude_code_calls_run_id_fkey FOREIGN KEY (run_id) REFERENCES thread_analysis_runs (id);
+CREATE INDEX thread_analysis_claude_code_calls_event_id_idx ON thread_analysis_claude_code_calls USING btree (event_id);
+CREATE INDEX thread_analysis_claude_code_calls_run_id_idx ON thread_analysis_claude_code_calls USING btree (run_id);
+
+CREATE TABLE thread_analysis_events (
+    id bigint NOT NULL DEFAULT nextval('thread_analysis_events_id_seq'::regclass),
+    run_id bigint NOT NULL,
+    email_id uuid NOT NULL,
+    position integer NOT NULL,
+    email_type character varying(50),
+    email_note text,
+    email_type_gap text,
+    thread_state jsonb,
+    derived_thread_state_type character varying(50),
+    attempts integer NOT NULL DEFAULT 1,
+    error text,
+    created_at timestamp with time zone NOT NULL DEFAULT CURRENT_TIMESTAMP
+);
+
+ALTER TABLE thread_analysis_events ADD CONSTRAINT thread_analysis_events_pkey PRIMARY KEY (id);
+ALTER TABLE thread_analysis_events ADD CONSTRAINT thread_analysis_events_email_id_fkey FOREIGN KEY (email_id) REFERENCES thread_emails (id);
+ALTER TABLE thread_analysis_events ADD CONSTRAINT thread_analysis_events_run_id_fkey FOREIGN KEY (run_id) REFERENCES thread_analysis_runs (id);
+CREATE INDEX thread_analysis_events_email_id_idx ON thread_analysis_events USING btree (email_id);
+CREATE INDEX thread_analysis_events_run_id_idx ON thread_analysis_events USING btree (run_id);
+CREATE INDEX thread_analysis_events_run_id_position_key ON thread_analysis_events USING btree (run_id, "position");
+
+CREATE TABLE thread_analysis_runs (
+    id bigint NOT NULL DEFAULT nextval('thread_analysis_runs_id_seq'::regclass),
+    thread_id uuid NOT NULL,
+    status character varying(20) NOT NULL DEFAULT 'requested'::character varying,
+    mode character varying(20) NOT NULL,
+    requested_by character varying(255) NOT NULL,
+    requested_at timestamp with time zone NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    claimed_at timestamp with time zone,
+    lease_expires_at timestamp with time zone,
+    worker character varying(255),
+    model character varying(255),
+    system_prompt_sha256 character(64),
+    schema_version integer,
+    finished_at timestamp with time zone,
+    error text
+);
+
+ALTER TABLE thread_analysis_runs ADD CONSTRAINT thread_analysis_runs_pkey PRIMARY KEY (id);
+ALTER TABLE thread_analysis_runs ADD CONSTRAINT thread_analysis_runs_system_prompt_sha256_fkey FOREIGN KEY (system_prompt_sha256) REFERENCES thread_analysis_system_prompts (sha256);
+ALTER TABLE thread_analysis_runs ADD CONSTRAINT thread_analysis_runs_thread_id_fkey FOREIGN KEY (thread_id) REFERENCES threads (id);
+CREATE INDEX thread_analysis_runs_status_requested_at_idx ON thread_analysis_runs USING btree (status, requested_at);
+CREATE INDEX thread_analysis_runs_thread_id_idx ON thread_analysis_runs USING btree (thread_id);
+
+CREATE TABLE thread_analysis_system_prompts (
+    sha256 character(64) NOT NULL,
+    text text NOT NULL,
+    created_at timestamp with time zone NOT NULL DEFAULT CURRENT_TIMESTAMP
+);
+
+ALTER TABLE thread_analysis_system_prompts ADD CONSTRAINT thread_analysis_system_prompts_pkey PRIMARY KEY (sha256);
 
 CREATE TABLE thread_authorizations (
     id integer NOT NULL DEFAULT nextval('thread_authorizations_id_seq'::regclass),

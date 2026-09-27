@@ -76,8 +76,32 @@ Sub-steps, one change at a time:
    - how much of the thread each classification needs as context;
    - which classifications a simple rule can do and which need AI.
 
+### 2c. Analysis stored and shown in prod
+
+The analysis moves from local files into prod, where it is debugged. A
+worker on the owner's machine does the model calls with headless Claude Code
+(on the owner's subscription) and talks to prod with the admin token. Plan:
+`docs/superpowers/plans/2026-09-27-step2c-analysis-in-prod.md`.
+
+1. Store analyses in prod: every run of every thread is kept, with its
+   events, the system prompt, and every Claude Code call (tokens, cost, full
+   input). The latest finished run fills `thread_emails.thread_state`, never
+   over a manual state.
+2. A queue with endpoints: request a thread, claim a job, post the result.
+   On request only for now.
+3. The worker script: claims, analyses, posts; or one given thread.
+4. `/thread-analysis`: progress, cost, results.
+5. The thread view shows the thread state and each email's state.
+6. The norske-postlister thread API passes the thread state on.
+
+Later:
+- Automatic queueing of threads with new events.
+- Analysis of new events in prod itself, with Opus through the API or an
+  OpenAI model, while the backfill stays on the local worker.
+
 ### 2b. Feedback on the analysis, reported to prod
 
+- Built into the GUI from 2c: the dashboard and thread view link to it.
 - A small system where the owner marks the correct labelling of a thread:
   email types, and the state blob at each event.
 - Corrections are reported to prod as manual classifications, so prod gets

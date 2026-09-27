@@ -106,3 +106,55 @@ call's `total_cost_usd` (both attempts, on a retry) and stops **starting** new c
 thread, including ones already in progress - once that sum reaches the budget. Calls already
 running are allowed to finish, and the stop is recorded as `stopped_reason: "budget"` in
 `run.json`. A later run with the same `--run` name picks up exactly where it left off.
+
+## Storage in prod
+
+Step 2c (`docs/superpowers/plans/2026-09-27-step2c-analysis-in-prod.md`) moves analysis from local
+files into the database, so prod can store every run and show it. A worker on the owner's machine
+still makes the model calls with headless Claude Code; prod only stores and applies results.
+`ThreadAnalysisRepository` (`organizer/src/class/ThreadAnalysis/ThreadAnalysisRepository.php`) is
+the only class touching these tables.
+
+Four tables, added in migration `034_add_thread_analysis_tables.sql`:
+
+- **`thread_analysis_runs`** - one analysis of one thread, and also the queue: `status` moves
+  `requested` -> `claimed` (by a worker, with a lease) -> `done`/`failed`/`cancelled`. `mode` is
+  `incremental` (continue after the last analysed email) or `full` (from the start).
+- **`thread_analysis_system_prompts`** - the system prompt text, stored once per version, keyed by
+  its sha256, so runs sharing a prompt don't duplicate it.
+- **`thread_analysis_events`** - the provider-neutral result for one event (email) in a run:
+  `email_type`, `email_note`, `email_type_gap`, the validated `thread_state` blob, and
+  `derived_thread_state_type` - computed by prod with `ThreadStateTypeDeriver`, never trusted from
+  the worker. Unique on (`run_id`, `position`).
+- **`thread_analysis_claude_code_calls`** - everything Anthropic-specific, one row per call
+  (retries included): the full input/response, model/session/version, token usage, cost, duration,
+  and `stop_reason`. `openai_request_log` is unchanged and still used for OpenAI.
+
+### The repository's API
+
+- `requestRun(threadId, mode, requestedBy)` - creates a `requested` run, or returns the id of one
+  already open (`requested`/`claimed`) for that thread.
+- `claimNext(worker, leaseSeconds)` / `claimThread(threadId, worker, leaseSeconds)` - claim the
+  oldest claimable run (`requested`, or `claimed` with an expired lease) for `worker`, using
+  `FOR UPDATE SKIP LOCKED` so two workers never claim the same run.
+- `saveSystemPrompt(text)` - upserts the prompt by its sha256 (idempotent) and returns the sha.
+- `saveResult(runId, worker, result)` - validates and stores a worker's result; see "Applying a
+  run" below.
+- `getRun(runId)`, `getRunsForThread(threadId)`, `getEventsForRun(runId)` - read-only lookups for
+  the endpoints and UI that later changes add.
+
+### Applying a run
+
+`saveResult` runs in one transaction. It checks that the run exists, is `claimed`, and is claimed
+by `worker`; that every event's `email_id` belongs to the run's thread; that positions start at 1
+with no gaps; that each event without an `error` has a `thread_state` that passes
+`ThreadState::fromArray`; that `email_type` is a real `ThreadEmailStatusType` value; and that
+counts/`cost_usd`/`attempt` are the right shape. Any failure throws `InvalidArgumentException`
+with a precise message and writes nothing.
+
+Once validated, it stores the events and calls, sets the run to `done` or `failed`
+(`finished_at`, `model`, `system_prompt_sha256`, `schema_version`, `error`), and - only when the
+run is `done` - applies each event's state onto its email: `thread_emails.thread_state`,
+`thread_state_type` (the derived one, not the worker's), and `thread_state_source = 'auto'`. An
+email whose `thread_state_source` is `manual` is left untouched. A `failed` run applies nothing,
+even though its events and calls up to the failure are still stored.
