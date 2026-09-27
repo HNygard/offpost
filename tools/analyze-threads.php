@@ -18,6 +18,7 @@
 // require_once's the ThreadState/enum classes) is required.
 
 require_once __DIR__ . '/analysis/ThreadEventAnalysis.php';
+require_once __DIR__ . '/analysis/ClaudeCodeEventRunner.php';
 
 function printHelp(): void {
     echo <<<HELP
@@ -108,34 +109,6 @@ class Worker {
     public array $carryUsage = ['input_tokens' => 0, 'output_tokens' => 0, 'cache_read_input_tokens' => 0, 'cache_creation_input_tokens' => 0, 'thinking_tokens' => 0];
 }
 
-function buildClaudeArgv(string $claudeBin, string $model, string $promptFile, string $schemaJson, float $maxBudgetUsd): array {
-    return [
-        $claudeBin, '-p',
-        '--model', $model,
-        '--output-format', 'json',
-        '--tools', '',
-        '--no-session-persistence',
-        '--setting-sources', '',
-        '--strict-mcp-config',
-        '--system-prompt-file', $promptFile,
-        '--json-schema', $schemaJson,
-        '--max-budget-usd', (string) $maxBudgetUsd,
-    ];
-}
-
-function spawnCall(array $argv, string $inputText): array {
-    $descriptors = [0 => ['pipe', 'r'], 1 => ['pipe', 'w'], 2 => ['pipe', 'w']];
-    $proc = proc_open($argv, $descriptors, $pipes);
-    if (!is_resource($proc)) {
-        throw new RuntimeException('Could not start claude process: ' . implode(' ', $argv));
-    }
-    fwrite($pipes[0], $inputText);
-    fclose($pipes[0]);
-    stream_set_blocking($pipes[1], false);
-    stream_set_blocking($pipes[2], false);
-    return [$proc, $pipes[1], $pipes[2]];
-}
-
 function emailForInput(array $email): array {
     return [
         'id' => $email['id'] ?? '',
@@ -157,7 +130,7 @@ function startEventCall(ThreadRun $ctx, array $claudeArgvBase): Worker {
     $worker = new Worker();
     $worker->ctx = $ctx;
     $worker->inputText = $input;
-    [$proc, $stdout, $stderr] = spawnCall($claudeArgvBase, $input);
+    [$proc, $stdout, $stderr] = ClaudeCodeEventRunner::spawnNonBlocking($claudeArgvBase, $input);
     $worker->proc = $proc;
     $worker->stdout = $stdout;
     $worker->stderr = $stderr;
@@ -170,7 +143,7 @@ function startRetryCall(Worker $worker, string $error, array $claudeArgvBase): W
     $worker->inputText = $retryInput;
     $worker->outBuf = '';
     $worker->errBuf = '';
-    [$proc, $stdout, $stderr] = spawnCall($claudeArgvBase, $retryInput);
+    [$proc, $stdout, $stderr] = ClaudeCodeEventRunner::spawnNonBlocking($claudeArgvBase, $retryInput);
     $worker->proc = $proc;
     $worker->stdout = $stdout;
     $worker->stderr = $stderr;
@@ -232,33 +205,6 @@ function finalizeWorker(Worker $w): void {
     proc_close($w->proc);
 }
 
-function usageOf(array $decoded): array {
-    $usage = $decoded['usage'] ?? [];
-    return [
-        'input_tokens' => (int) ($usage['input_tokens'] ?? 0),
-        'output_tokens' => (int) ($usage['output_tokens'] ?? 0),
-        'cache_read_input_tokens' => (int) ($usage['cache_read_input_tokens'] ?? 0),
-        'cache_creation_input_tokens' => (int) ($usage['cache_creation_input_tokens'] ?? 0),
-        'thinking_tokens' => (int) ($usage['output_tokens_details']['thinking_tokens'] ?? 0),
-    ];
-}
-
-function sumUsage(array $a, array $b): array {
-    $out = [];
-    foreach ($a as $key => $value) {
-        $out[$key] = $value + ($b[$key] ?? 0);
-    }
-    return $out;
-}
-
-function modelNameOf(array $decoded, string $fallback): string {
-    $modelUsage = $decoded['modelUsage'] ?? [];
-    if (is_array($modelUsage) && $modelUsage !== []) {
-        return (string) array_key_first($modelUsage);
-    }
-    return $fallback;
-}
-
 /**
  * Interprets one finished worker's claude output, updates its ThreadRun and
  * the run totals, and returns what the scheduler should do next:
@@ -271,34 +217,17 @@ function handleCallResult(Worker $w, array &$runTotals, float $maxBudgetUsd, str
     $email = $ctx->events[$ctx->nextIndex];
     $i = $ctx->nextIndex + 1;
     $k = count($ctx->events);
-    $decoded = json_decode($w->outBuf, true);
-
-    $error = null;
-    $structuredOutput = null;
-    $validation = ['valid' => false, 'error' => null, 'derivedThreadStateType' => null];
-
-    if (!is_array($decoded)) {
-        $error = 'claude did not print a JSON object. stderr: ' . trim(mb_substr($w->errBuf, 0, 2000));
-    }
-    elseif (!empty($decoded['is_error'])) {
-        $error = 'claude reported is_error: ' . json_encode($decoded['result'] ?? null);
-    }
-    elseif (!is_array($decoded['structured_output'] ?? null)) {
-        $error = "claude's answer is missing 'structured_output'";
-    }
-    else {
-        $structuredOutput = $decoded['structured_output'];
-        $validation = ThreadEventAnalysis::validateOutput($structuredOutput);
-        if (!$validation['valid']) {
-            $error = $validation['error'];
-        }
-    }
+    $interpreted = ClaudeCodeEventRunner::interpretOutput($w->outBuf, $w->errBuf);
+    $decoded = $interpreted['decoded'];
+    $structuredOutput = $interpreted['structuredOutput'];
+    $validation = ['valid' => $interpreted['valid'], 'error' => $interpreted['error'], 'derivedThreadStateType' => $interpreted['derivedThreadStateType']];
+    $error = $interpreted['valid'] ? null : $interpreted['error'];
 
     $costUsd = $w->carryCostUsd + (float) ($decoded['total_cost_usd'] ?? 0.0);
-    $usage = sumUsage($w->carryUsage, is_array($decoded) ? usageOf($decoded) : []);
+    $usage = ClaudeCodeEventRunner::sumUsage($w->carryUsage, is_array($decoded) ? ClaudeCodeEventRunner::usageOf($decoded) : []);
     $durationMs = (int) ($decoded['duration_ms'] ?? 0);
     $sessionId = is_array($decoded) ? ($decoded['session_id'] ?? null) : null;
-    $modelUsed = is_array($decoded) ? modelNameOf($decoded, $model) : $model;
+    $modelUsed = is_array($decoded) ? ClaudeCodeEventRunner::modelNameOf($decoded, $model) : $model;
 
     if ($error !== null) {
         if ($w->attempt === 1) {
@@ -515,7 +444,7 @@ if (!is_file($promptFile)) {
 }
 $promptSha256 = hash('sha256', (string) file_get_contents($promptFile));
 $schemaJson = json_encode(ThreadEventAnalysis::buildJsonSchema());
-$claudeArgvBase = buildClaudeArgv($claudeBin, $model, $promptFile, $schemaJson, $maxBudgetUsd);
+$claudeArgvBase = ClaudeCodeEventRunner::buildClaudeArgv($claudeBin, $model, $promptFile, $schemaJson, $maxBudgetUsd);
 
 if ($explicitThreads !== []) {
     $threadIds = $explicitThreads;

@@ -72,6 +72,8 @@ echo json_encode([
     'result' => 'ok',
     'total_cost_usd' => $cost,
     'duration_ms' => 5,
+    'duration_api_ms' => 4,
+    'stop_reason' => 'end_turn',
     'session_id' => 'fake-session',
     // Fixed, nonzero cache/thinking figures (mirroring how headless Claude
     // Code reports almost all input as cache tokens rather than

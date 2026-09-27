@@ -251,9 +251,74 @@ With `false`, `eml_base64` is left out.
   - the whole flow on a thread from `E2ETestSetup`: request, then claim (check `email_ids` and that there is no `eml_base64`), then post a done result with one valid event and call, then check the run is `done` and `thread_emails.thread_state_source` is `auto`;
   - claim returns 204 when nothing is queued. Make that deterministic: cancel or finish any open runs first, or claim with `thread_id`.
 
-## Later changes, direction only
+## Change 3: the worker, `tools/analysis-worker.php`
 
-3. **`tools/analysis-worker.php`:** reuses `ThreadEventAnalysis`, with `--thread`, `--once`, `--background` and a budget cap.
+It runs on the owner's machine: a client of the change 2 endpoints, calling
+headless Claude Code.
+
+```
+php tools/analysis-worker.php --base-url=https://offpost.no --token-file=secrets/admin_api_token
+    [--thread=<id> [--mode=incremental|full]] [--once] [--worker=<name>]
+    [--model=claude-opus-5-5] [--max-budget-usd=20] [--out=thread-analysis]
+    [--claude-bin=claude] [--background] [--help]
+```
+
+- **Base URL:** `ThreadExportSync::isSafeBaseUrl` must accept it (https, or http to localhost), since the token is sent.
+- **`--worker`:** defaults to `gethostname()`.
+- **Loop:**
+  1. Resend pending results (see below).
+  2. Stop if the summed cost of this worker process has reached `--max-budget-usd`.
+  3. Claim. A 204 means stop.
+  4. Analyse the run.
+  5. Save the result locally, then post it.
+  6. Stop after one run with `--once`, else repeat.
+- **`--thread`:** first POSTs `/api/admin/analysis/request` with that thread and `--mode` (default `incremental`), then claims with that `thread_id`. It implies `--once`.
+- **Analysing a run:**
+  - For each id in `email_ids`, in order: build the input with `ThreadEventAnalysis::buildEventInput` from the work item's thread, that email and the previous state (`start_state` for the first). Then call Claude Code, validate, and retry once on an invalid answer, exactly as `tools/analyze-threads.php` does.
+  - Every call, retries included, is recorded in the change 1 call format:
+    - `input_text`, `json_schema`, `response` (the full Claude Code JSON);
+    - `model` and `model_resolved` (from `modelUsage`), `session_id`;
+    - `claude_code_version` (from `claude --version`, once per process);
+    - the tokens, `cost_usd`, `duration_ms`, `duration_api_ms`, `is_error`, `stop_reason`.
+  - If an event fails after two attempts:
+    - the run is `failed` with that error;
+    - the events up to and including the failed one are sent;
+    - the failed event has `error`, a null `thread_state`, and `email_type` null unless the last answer had a valid one.
+  - `system_prompt` is the prompt file's text. `schema_version` is 1.
+- **Pending results:**
+  - Before posting, the full POST body is written to `<out>/worker/pending/<run-id>.json` (atomically).
+  - On a 200, it's moved to `<out>/worker/posted/<run-id>.json`.
+  - On a network error or a 5xx, it stays pending and is resent at the next loop start or the next worker start. The worker then stops, so it doesn't keep claiming while prod is failing.
+  - On a 4xx, it's moved to `<out>/worker/rejected/<run-id>.json`, with the response body saved next to it as `<run-id>.error.txt`. That is logged, and the worker carries on.
+  - So no paid analysis is lost.
+- **Log:**
+  - `<out>/worker/worker.log`, one line per event, in the same format as `analyze-threads.php`, plus claim/post lines.
+  - It's also echoed to a tty.
+  - `--background` relaunches detached like `analyze-threads.php`, with the process output in `<out>/worker/process.log`.
+- **Shared code:**
+  - The Claude Code call, the validation and the retry move out of `tools/analyze-threads.php` into `tools/analysis/ClaudeCodeEventRunner.php`.
+  - It exposes a method that takes the input text, prompt file, schema, model and claude bin. It returns the parsed output, the derived type, the error, the attempts and the call records.
+  - Both tools use it, and `analyze-threads.php` keeps its behaviour and its tests.
+
+### Tests
+
+- **`organizer/src/tests/AnalysisWorkerCliTest.php`** runs the real worker as a subprocess. It uses the existing fake claude (`organizer/src/tests/fixtures/fake-claude.php`) and a fake prod.
+  - The fake prod is `organizer/src/tests/fixtures/fake-analysis-api.php`, a `php -S` router. It keeps its queue in a temp JSON file. It implements request, claim and result, checks the token header, and can be told (through the state file) to answer the next result with a 500 or a 400.
+  - Tests:
+    - draining a queue of two runs posts two done results with the right events and calls;
+    - `--thread` sends a request, then claims that thread;
+    - incremental: the input for the first event contains the `start_state`;
+    - invalid twice gives a failed run posted with the failed event;
+    - a 500 on post leaves the file pending and stops, and the next start resends it;
+    - a 400 moves it to rejected;
+    - the budget stops claiming;
+    - an unsafe `--base-url` is refused;
+    - `--help`.
+- **`organizer/src/tests/ClaudeCodeEventRunnerTest.php`** covers the call records built from a fake response.
+- `AnalyzeThreadsCliTest` must still pass unchanged.
+- No test calls the real `claude` or the real prod.
+
+## Later changes, direction only
 4. **`/thread-analysis`:** the queue, progress, cost per run, thread, model and prompt version, results, disagreements with `status_type`, email-type gaps, and request buttons.
 5. **The thread view:** the thread status, each email's state as foldable JSON, request buttons, and a link to 2b feedback when it exists.
 6. **The norske-postlister thread API:** the thread status and the current state blob.

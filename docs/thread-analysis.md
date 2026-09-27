@@ -199,3 +199,88 @@ chosen by the pure function `ThreadAnalysisWorkItem::selectEmails(array $exportE
   "email_ids": ["…", "…"]
 }
 ```
+
+## Worker
+
+`tools/analysis-worker.php` runs on the owner's machine: a client of the three endpoints above, calling
+headless Claude Code exactly as `tools/analyze-threads.php` does (they share the call/validate/retry
+logic - see "Shared code" below), but posting results to prod instead of writing local files.
+
+```
+php tools/analysis-worker.php --base-url=https://offpost.no --token-file=secrets/admin_api_token
+    [--thread=<id> [--mode=incremental|full]] [--once] [--worker=<name>]
+    [--model=claude-opus-5-5] [--max-budget-usd=20] [--out=thread-analysis]
+    [--claude-bin=claude] [--background] [--help]
+```
+
+| Option | Meaning |
+|---|---|
+| `--base-url=URL` | The Offpost instance. Must be `https`, or plain `http` to `localhost`/`127.0.0.1` (`ThreadExportSync::isSafeBaseUrl`) - the admin token is sent to it. |
+| `--token-file=PATH` | File containing the admin API token, sent as `X-Admin-Api-Token`. |
+| `--thread=ID` | Request (with `--mode`) then claim that thread's run, then stop. Implies `--once`. |
+| `--mode=MODE` | `incremental` (default) or `full`, used with `--thread` only. |
+| `--once` | Stop after at most one claimed run. |
+| `--worker=NAME` | Sent to prod as the claiming worker (default: `gethostname()`). |
+| `--model=NAME` | Model passed to `claude` (default `claude-opus-5-5`). |
+| `--max-budget-usd=N` | Stop claiming a new run once this process's summed cost reaches this (default 20). |
+| `--out=DIR` | Where the worker's own state lives - `<out>/worker/...` (default `thread-analysis`, same default as `tools/analyze-threads.php`, but a different subdirectory so the two never collide). |
+| `--claude-bin=PATH` | Command to invoke instead of `claude` - only for tests, with a fake that never calls the real CLI. |
+| `--background` | Relaunch detached (`nohup ... &`) and exit immediately, like `tools/analyze-threads.php --background`; the process's own stdout/stderr go to `<out>/worker/process.log`. |
+
+### The loop
+
+1. **Resend pending results** left over from a previous run of the worker (see "Pending results"
+   below).
+2. **Stop if the budget is spent:** once this process's summed call cost reaches `--max-budget-usd`.
+3. **Claim:** `POST /api/admin/analysis/claim` with `{worker}` (plus `thread_id` when `--thread` was
+   given - after first `POST`ing `/api/admin/analysis/request` with that thread and `--mode`). A 204
+   response means nothing is claimable, and the worker stops.
+4. **Analyse the run:** for each id in the claim response's `email_ids`, in order, build the input
+   with `ThreadEventAnalysis::buildEventInput()` from the work item's thread export, that email, and
+   the previous state (`start_state` for the first email) - then call Claude Code, validate, and
+   retry once on an invalid answer, exactly as `tools/analyze-threads.php` does. If an event is still
+   invalid after the retry, the run becomes `failed` with that event's error, and no further emails in
+   that run are analysed.
+5. **Save then post:** write the full result body to `<out>/worker/pending/<run-id>.json`, then
+   `POST /api/admin/analysis/result`.
+6. **Repeat**, unless `--once` (or `--thread`, which implies it) - then stop.
+
+### Pending results
+
+No paid analysis call is ever lost because prod happened to reject or miss the post that carries it:
+
+- Before posting, the full result body is written to `<out>/worker/pending/<run-id>.json` (atomically).
+- **200:** moved to `<out>/worker/posted/<run-id>.json`.
+- **4xx:** moved to `<out>/worker/rejected/<run-id>.json`, with the response body saved alongside as
+  `<run-id>.error.txt`. Logged, and the worker carries on to the next run.
+- **Network error or 5xx:** the file stays in `pending/`, to be resent at the next loop start (step 1)
+  or the next time the worker is started. The worker then stops for this run entirely - it does not
+  keep claiming new work while prod is failing.
+
+### Log and background
+
+`<out>/worker/worker.log` gets one line per event (the same shape as `tools/analyze-threads.php`'s
+`run.log`: `[run <id>] <thread_id> event <i>/<k> <direction> <email_type> -> <derived_type> $<cost>
+<duration>s`, or a `FAILED` line), plus a line for each request/claim/post/resend. It is also echoed
+to a tty (a foreground run); with `--background`, stdout instead goes to `<out>/worker/process.log`
+and is not a tty, so nothing duplicates.
+
+### Shared code
+
+The Claude Code call, answer validation, and the retry-once-on-invalid logic live in
+`tools/analysis/ClaudeCodeEventRunner.php`, extracted from `tools/analyze-threads.php` so both tools
+share the exact same behaviour instead of two copies drifting apart:
+
+- **`buildClaudeArgv`, `spawnNonBlocking`, `usageOf`, `sumUsage`, `modelNameOf`, `interpretOutput`,
+  `buildCallRecord`** - the low-level pieces. `tools/analyze-threads.php` still drives its own
+  async, many-threads-at-once loop (multiple `claude` subprocesses pumped with `stream_select`,
+  so `--parallel` still runs real OS-level parallelism across threads); it now calls these instead
+  of keeping its own copies.
+- **`claudeCodeVersion(claudeBin)`** - reads `claude --version` once per process (cached; stdin is
+  always explicitly closed so a test's fake `claude` binary, which reads all of stdin regardless of
+  argv, can never hang it).
+- **`runEvent(inputText, promptFile, schema, model, claudeBin, maxBudgetUsd, claudeCodeVersion)`** -
+  the single blocking call+validate+retry-once method `tools/analysis-worker.php` uses directly
+  (one event at a time, no concurrency needed there): it returns the parsed output, the derived
+  thread-state type, the error (if still invalid after the retry), the attempt count, and every
+  call made, in the "Result format" `calls` shape from "Change 1" above.
