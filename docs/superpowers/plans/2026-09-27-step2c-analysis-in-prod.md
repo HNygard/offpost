@@ -367,6 +367,23 @@ These are admin pages, added to `$adminPages` and linked from the Admin tools in
   - the thread page shows a run, its event and its call, inserted directly into the database;
   - the "Analyse" POST creates a requested run.
 
+## Change 6: thread status in the norske-postlister API
+
+The owner's decision: norske-postlister needs only the thread status, not
+the details.
+
+- `GET /api/np/threads` gets one new field per thread: `"thread_state_type"`.
+  - It is the `thread_state_type` of the thread's latest email with a non-null `thread_state_type`, ordered by `datetime_received`, then `id`, and leaving out ignored emails as the list already does.
+  - It is `null` when no email has one.
+  - The change is additive; nothing else in the response changes.
+- It is loaded with one batch query for all listed threads (next to the existing batch loading in `NpApiService::listNpThreads`), not one query per thread.
+- `docs/np-api.md` documents the field and its values, linking to `docs/thread-state.md`.
+- **Tests,** in the existing NP list tests (`organizer/src/tests/NpApiQueryTest.php` or wherever `listNpThreads` is tested):
+  - an unanalysed thread gives `null`;
+  - the latest email's status is chosen over an earlier one;
+  - an ignored email's status is left out.
+  - The existing tests keep passing, with their expected arrays extended only by the new key.
+
 ## Later changes, direction only
 4. **`/thread-analysis`:** the queue, progress, cost per run, thread, model and prompt version, results, disagreements with `status_type`, email-type gaps, and request buttons.
 5. **The thread view:** the thread status, each email's state as foldable JSON, request buttons, and a link to 2b feedback when it exists.

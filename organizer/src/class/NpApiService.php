@@ -306,6 +306,7 @@ class NpApiService {
             ? ThreadStatusRepository::getAllThreadStatusesEfficient($threadIds, archived: false)
             + ThreadStatusRepository::getAllThreadStatusesEfficient($threadIds, archived: true)
             : [];
+        $stateTypesByThreadId = self::threadStateTypesByThreadId($threadIds);
 
         $threads = [];
         foreach ($rows as $row) {
@@ -374,6 +375,9 @@ class NpApiService {
                 'email_count_in' => $status !== null ? (int)$status->email_count_in : 0,
                 'email_count_out' => $status !== null ? (int)$status->email_count_out : 0,
                 'email_last_activity' => $status !== null ? $status->email_last_activity : null,
+                // See docs/thread-state.md: the thread_state_type of the thread's
+                // latest email that has one, or null when no email does.
+                'thread_state_type' => $stateTypesByThreadId[$row['id']] ?? null,
                 'emails' => $emails,
             ];
         }
@@ -668,6 +672,33 @@ class NpApiService {
             }
         }
         return $sizes;
+    }
+
+    /**
+     * @return array<string,string> thread id -> thread_state_type, for every thread
+     * in $threadIds that has at least one non-ignored email with a thread_state_type.
+     * One batch query for all listed threads, like getAllThreadStatusesEfficient()
+     * does for statuses - see docs/thread-state.md.
+     */
+    private static function threadStateTypesByThreadId(array $threadIds): array {
+        if (count($threadIds) === 0) {
+            return [];
+        }
+        $placeholders = implode(',', array_fill(0, count($threadIds), '?'));
+        $rows = Database::query(
+            "SELECT DISTINCT ON (thread_id) thread_id, thread_state_type
+             FROM thread_emails
+             WHERE thread_id IN ($placeholders)
+               AND thread_state_type IS NOT NULL
+               AND ignore IS NOT TRUE
+             ORDER BY thread_id, datetime_received DESC, id DESC",
+            $threadIds
+        );
+        $stateTypes = [];
+        foreach ($rows as $row) {
+            $stateTypes[$row['thread_id']] = $row['thread_state_type'];
+        }
+        return $stateTypes;
     }
 
     /**

@@ -232,6 +232,85 @@ class NpApiServiceListTest extends TestCase {
         $this->assertEquals('application/octet-stream', $attachmentsByName['a.xyz123']);
     }
 
+    // --- thread_state_type (see docs/thread-state.md) ---
+
+    public function testThreadStateTypeNullWhenNoEmailHasOne(): void {
+        // :: Setup
+        $created = NpApiService::createThread('9999-test-entity-development', 'T', 'B',
+            ['norske_postlister_no', 'document', 'document_id:2033-1-1']);
+        Database::execute(
+            "INSERT INTO thread_emails
+                (thread_id, timestamp_received, datetime_received, email_type, content, imap_headers)
+             VALUES (?, now(), now(), 'IN', ?::bytea, NULL)",
+            [$created['thread_id'], 'content']
+        );
+
+        // :: Act
+        $result = NpApiService::listNpThreads();
+        $threadIds = array_column($result['threads'], 'thread_id');
+        $thread = $result['threads'][array_search($created['thread_id'], $threadIds)];
+
+        // :: Assert
+        $this->assertNull($thread['thread_state_type']);
+    }
+
+    public function testThreadStateTypeUsesLatestEmailByDatetimeReceived(): void {
+        // :: Setup
+        $created = NpApiService::createThread('9999-test-entity-development', 'T', 'B',
+            ['norske_postlister_no', 'document', 'document_id:2033-2-1']);
+        $threadId = $created['thread_id'];
+        Database::execute(
+            "INSERT INTO thread_emails
+                (thread_id, timestamp_received, datetime_received, email_type, content, imap_headers, thread_state_type)
+             VALUES (?, '2033-01-01T10:00:00+00:00', '2033-01-01T10:00:00+00:00', 'IN', ?::bytea, NULL, 'WAITING_FOR_ENTITY')",
+            [$threadId, 'content']
+        );
+        Database::execute(
+            "INSERT INTO thread_emails
+                (thread_id, timestamp_received, datetime_received, email_type, content, imap_headers, thread_state_type)
+             VALUES (?, '2033-02-01T10:00:00+00:00', '2033-02-01T10:00:00+00:00', 'IN', ?::bytea, NULL, 'ANSWERED')",
+            [$threadId, 'content']
+        );
+
+        // :: Act
+        $result = NpApiService::listNpThreads();
+        $threadIds = array_column($result['threads'], 'thread_id');
+        $thread = $result['threads'][array_search($threadId, $threadIds)];
+
+        // :: Assert
+        $this->assertEquals('ANSWERED', $thread['thread_state_type'], 'the later email\'s status must win over the earlier one');
+    }
+
+    public function testThreadStateTypeLeavesOutIgnoredEmail(): void {
+        // :: Setup
+        $created = NpApiService::createThread('9999-test-entity-development', 'T', 'B',
+            ['norske_postlister_no', 'document', 'document_id:2033-3-1']);
+        $threadId = $created['thread_id'];
+        Database::execute(
+            "INSERT INTO thread_emails
+                (thread_id, timestamp_received, datetime_received, email_type, content, imap_headers, thread_state_type)
+             VALUES (?, '2033-01-01T10:00:00+00:00', '2033-01-01T10:00:00+00:00', 'IN', ?::bytea, NULL, 'WAITING_FOR_ENTITY')",
+            [$threadId, 'content']
+        );
+        // Latest email is ignored (e.g. internal forwarding notice) - its
+        // thread_state_type must be left out, as the list already leaves out
+        // ignored emails.
+        Database::execute(
+            "INSERT INTO thread_emails
+                (thread_id, timestamp_received, datetime_received, email_type, content, imap_headers, thread_state_type, ignore)
+             VALUES (?, '2033-02-01T10:00:00+00:00', '2033-02-01T10:00:00+00:00', 'IN', ?::bytea, NULL, 'ANSWERED', true)",
+            [$threadId, 'content']
+        );
+
+        // :: Act
+        $result = NpApiService::listNpThreads();
+        $threadIds = array_column($result['threads'], 'thread_id');
+        $thread = $result['threads'][array_search($threadId, $threadIds)];
+
+        // :: Assert
+        $this->assertEquals('WAITING_FOR_ENTITY', $thread['thread_state_type'], 'the ignored email\'s status must be left out');
+    }
+
     public function testGetNpAttachmentReturnsContent(): void {
         $created = NpApiService::createThread('9999-test-entity-development', 'T', 'B',
             ['norske_postlister_no', 'document', 'document_id:2022-7-1']);

@@ -75,6 +75,7 @@ Response:
       "email_count_in": 1,
       "email_count_out": 1,
       "email_last_activity": 1758362400,
+      "thread_state_type": "ThreadStateType value or null",
       "emails": [
         {
           "email_type": "IN | OUT",
@@ -93,6 +94,11 @@ Response:
 
 Timestamps are unix seconds. `size` is bytes, or `null` when the attachment content was never
 stored. Emails marked *ignore* in Offpost are left out.
+
+`thread_state_type` is the thread's status: the `thread_state_type` of the thread's latest email
+(by `datetime_received`, then id) that has one, or `null` when no email does. Ignored emails are
+left out here too. See [docs/thread-state.md](thread-state.md) for what each value means and how
+it is derived.
 
 ## `POST /api/np/thread`
 

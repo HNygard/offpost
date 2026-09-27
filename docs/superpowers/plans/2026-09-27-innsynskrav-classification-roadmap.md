@@ -83,6 +83,9 @@ worker on the owner's machine does the model calls with headless Claude Code
 (on the owner's subscription) and talks to prod with the admin token. Plan:
 `docs/superpowers/plans/2026-09-27-step2c-analysis-in-prod.md`.
 
+Status: changes 1–6 built (storage, endpoints, worker, debug pages, thread
+view, norske-postlister status). See docs/thread-analysis.md.
+
 1. Store analyses in prod: every run of every thread is kept, with its
    events, the system prompt, and every Claude Code call (tokens, cost, full
    input). The latest finished run fills `thread_emails.thread_state`, never
