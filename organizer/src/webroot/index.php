@@ -32,6 +32,9 @@ try {
         '/update-imap' => '/../update-imap.php', // Temporary while we wait for new imap integration
         '/email-content-debug' => '/../system-pages/email-content-debug.php',
         '/thread-export' => '/../system-pages/thread-export.php',
+        '/thread-analysis' => '/../system-pages/thread-analysis.php',
+        '/thread-analysis/thread' => '/../system-pages/thread-analysis-thread.php',
+        '/thread-analysis/system-prompt' => '/../system-pages/thread-analysis-system-prompt.php',
     ];
 
     // Check if the path is a scheduled system page

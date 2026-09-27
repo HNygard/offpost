@@ -284,3 +284,48 @@ share the exact same behaviour instead of two copies drifting apart:
   (one event at a time, no concurrency needed there): it returns the parsed output, the derived
   thread-state type, the error (if still invalid after the retry), the attempt count, and every
   call made, in the "Result format" `calls` shape from "Change 1" above.
+
+## Debug pages
+
+Three admin-only pages (`$adminPages` in `webroot/index.php`, linked from "Admin tools" in
+`header.php`) let an admin see what the queue and past runs actually did, without querying the
+database by hand. They follow the style of `system-pages/openai-request-log-overview.php`: an
+inline `<style>` block, `summary-box` stats, `label` classes, and fixed `LIMIT`s on anything that
+lists rows. The read-only queries behind them live in
+`organizer/src/class/ThreadAnalysis/ThreadAnalysisStats.php`, plus `getCallsForRun()` added to
+`ThreadAnalysisRepository`.
+
+- **`/thread-analysis`** (`system-pages/thread-analysis.php`) - the overview:
+  - Runs by status, cost/tokens for today/last 7 days/all time, cost per model, and cost per
+    system-prompt version (short sha, linked, with when that version was first used).
+  - **Queue** - runs that are `requested` or `claimed`: thread, mode, requested by/at, worker,
+    lease.
+  - **Recent runs** (up to 100, newest first) - thread (linked to the debug thread page below),
+    status, mode, model, event count, cost, duration (`finished_at - claimed_at`) and error.
+  - **Email-type gaps** (up to 100) - events with a non-empty `email_type_gap`, with the thread and
+    email.
+  - **Disagreements** (up to 100) - for each thread's *latest* `done` run, the events whose
+    `email_type` differs from that email's `thread_emails.status_type`. Prod values that don't mean
+    a real classification (`unknown`, the legacy `info`/`error`/`success` values, and never
+    classified at all) are left out, since a mismatch there isn't a real disagreement. Shows both
+    values and whether prod's value is `manual`, or `algo`/`prompt` (from `auto_classification`,
+    the same distinction `ThreadExportService::classificationSource()` makes for the export).
+- **`/thread-analysis/thread?id=<uuid>`** (`system-pages/thread-analysis-thread.php`) - one
+  thread's full history:
+  - The thread title, linked to `/thread-view`, and two POST buttons - "Analyse" (incremental) and
+    "Analyse from the start" (full) - that call `ThreadAnalysisRepository::requestRun()` with the
+    admin's sub as `requested_by`, then redirect back (avoids a resubmission on refresh).
+  - Every run, newest first, with its fields, and a table of its events (position, the email's
+    date/direction/subject, email type, note, gap, derived status, attempts, error, and a
+    `<details>` with the state blob as pretty JSON), each with its calls (attempt, model,
+    resolved model, Claude Code version, token counts, cost, duration, and `<details>` for the
+    input text and the response JSON).
+  - A malformed `id` is a 400; an unknown thread is a 404 (same style as `view-thread.php`/`file.php`:
+    `is_uuid()` plus a direct `http_response_code()` + `die()`, not a thrown exception - this page
+    must not go through `error.php`'s generic 500 for what are really client errors).
+- **`/thread-analysis/system-prompt?sha=<sha>`** (`system-pages/thread-analysis-system-prompt.php`) -
+  one system-prompt version: its full text, when it was first used (the prompt row's own
+  `created_at`), and how many runs used it. A malformed `sha` (not 64 hex characters) is a 400; an
+  unknown one is a 404.
+
+All three pages escape every value with `htmlspecialchars`.

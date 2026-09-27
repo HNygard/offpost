@@ -486,4 +486,31 @@ class ThreadAnalysisRepository {
         }
         return $events;
     }
+
+    /**
+     * Every call for a run, ordered by its event's position then attempt -
+     * for the debug page (system-pages/thread-analysis-thread.php), which
+     * groups them back onto their event by event_id.
+     *
+     * @return array<int, array> thread_analysis_claude_code_calls rows, with
+     *   json_schema/response decoded.
+     */
+    public static function getCallsForRun(int $runId): array {
+        $calls = Database::query(
+            "SELECT c.* FROM thread_analysis_claude_code_calls c
+             JOIN thread_analysis_events e ON e.id = c.event_id
+             WHERE c.run_id = ?
+             ORDER BY e.\"position\" ASC, c.attempt ASC",
+            [$runId]
+        );
+        foreach ($calls as &$call) {
+            if ($call['json_schema'] !== null) {
+                $call['json_schema'] = json_decode($call['json_schema'], true);
+            }
+            if ($call['response'] !== null) {
+                $call['response'] = json_decode($call['response'], true);
+            }
+        }
+        return $calls;
+    }
 }

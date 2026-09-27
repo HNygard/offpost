@@ -186,6 +186,7 @@ organizer/src/
 - `ThreadEventAnalysis` - Pure logic for `tools/analyze-threads.php`: per-event input text, JSON schema, answer validation, resume planning, totals (docs/thread-analysis.md)
 - `ThreadAnalysisRepository` - Database operations for the analysis queue/runs/events/calls tables; validates and applies a worker's result to `thread_emails` (docs/thread-analysis.md)
 - `ThreadAnalysisWorkItem` - Pure logic choosing which emails a worker should analyse for a claimed run (full/incremental) (docs/thread-analysis.md)
+- `ThreadAnalysisStats` - Read-only queries for the admin debug pages: cost/token totals, per-model and per-prompt cost, the queue, recent runs, email-type gaps and disagreements with `thread_emails.status_type` (docs/thread-analysis.md)
 - `ClaudeCodeEventRunner` - Shared call/validate/retry-once logic for one event against headless Claude Code, used by both `tools/analyze-threads.php` and `tools/analysis-worker.php` (docs/thread-analysis.md)
 
 ### Scheduled Tasks

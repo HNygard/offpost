@@ -318,6 +318,55 @@ php tools/analysis-worker.php --base-url=https://offpost.no --token-file=secrets
 - `AnalyzeThreadsCliTest` must still pass unchanged.
 - No test calls the real `claude` or the real prod.
 
+## Change 4a: the thread view shows the analysis (everyone)
+
+`view-thread.php` shows the analysis to everyone who can see the thread.
+Admins also get links to the debug pages from 4b. The thread list is
+unchanged for now.
+
+- **A "Thread state" block**, just before "Emails in Thread". It is shown only when an email of the thread has a `thread_state`, and uses the state of the latest such email (`datetime_received`, then `id`):
+  - The thread status as a badge (`span.label`, with a mapping from `ThreadStateType` to `label_ok`, `label_warn`, `label_error` and `label_info`), and whether it is `auto` or `manual`.
+  - Who we're waiting for, and what the entity asked of us (`asks_to_us`).
+  - A table of items: asked for, status, and the denial basis (refs, text, and issues as warning badges, since they are complaint grounds).
+  - Case numbers, dates (`date` and `what`), and complaint rounds (status, items, outcome).
+  - `notes`, when not empty.
+  - For admins: a link, "Analysis details", to `/thread-analysis/thread?id=<thread id>`.
+- **Per email**, in `.email-header` next to today's classification, when the email has a `thread_state`:
+  - a small badge with its `thread_state_type` ("after this email");
+  - a `<details>` toggle ("Show state") with the blob as pretty-printed JSON in a `<pre>`, escaped.
+- **Code:**
+  - The block is rendered by a small, testable class, `organizer/src/class/ThreadState/ThreadStateView.php`, with a static method that returns HTML from a state array.
+  - It has its own label mapping. All output is escaped with `htmlspecialchars`.
+  - CSS goes in `webroot/css/style.css`, with the version in `head.php` bumped.
+- **Norwegian labels** for statuses: add a `ThreadStateType::label()` and a `ThreadStateItemStatus::label()` with short Norwegian texts, used in the view. Examples: `WAITING_FOR_ENTITY` → "Venter på offentlig organ", `WAITING_FOR_US` → "Venter på oss", `PARTLY_DENIED_PARTLY_RELEASED` → "Delvis avslått, delvis utlevert", `ANSWERED_IN_TEXT` → "Besvart i e-posten". The enum value is shown next to the label in a `title` attribute.
+- **Tests:**
+  - `ThreadStateViewTest`: exact HTML for a small state (assertEquals); escaping of `<script>` in `asked_for` and in `notes`; issues shown as badges.
+  - E2E, `ThreadViewPageTest`: with a thread whose email has a state (set it directly in the database in the test), the page shows the block and the per-email badge. Without a state, there's no block.
+
+## Change 4b: admin debug pages
+
+These are admin pages, added to `$adminPages` and linked from the Admin tools in `header.php`. They follow the style of `system-pages/openai-request-log-overview.php`: an inline style block, `summary-box` stats, `label` classes and fixed LIMITs.
+
+- **`/thread-analysis`** (`system-pages/thread-analysis.php`):
+  - **Stats:** runs per status; the total cost in USD and tokens (from `thread_analysis_claude_code_calls`) for today, the last 7 days and all time; and cost per model and per system prompt version (short sha, first used).
+  - **Queue:** runs that are `requested` or `claimed`, with the thread, mode, requested by and at, worker and lease.
+  - **Recent runs** (LIMIT 100): thread (linked to the debug thread page), status, mode, model, events, cost, duration (`finished_at − claimed_at`) and error.
+  - **Email-type gaps:** events with a non-empty `email_type_gap` (LIMIT 100), with the thread, the email and the gap.
+  - **Disagreements** (LIMIT 100): the latest done run's events whose `email_type` differs from `thread_emails.status_type`. Leave out prod's `unknown` and legacy values. Show both values, and whether prod's value is manual or automatic.
+- **`/thread-analysis/thread?id=<uuid>`** (`system-pages/thread-analysis-thread.php`):
+  - The thread title, with a link to the thread view.
+  - Two POST buttons, "Analyse" (incremental) and "Analyse from the start" (full). Each calls `ThreadAnalysisRepository::requestRun($id, $mode, <admin sub>)` and redirects back. Follow the POST handling style of the existing admin pages.
+  - Every run, newest first: status, mode, model, system prompt (short sha, linked), worker, times, error and cost.
+  - Per run, its events in a table: position, the email (date, direction, subject), email type, note, gap, derived status, attempts and error. A `<details>` holds the state blob as pretty JSON.
+  - Per event, its calls: attempt, model or resolved model, Claude Code version, tokens (input, cache creation, cache read, output, thinking), cost and duration. A `<details>` holds the input text, and one holds the response JSON.
+  - Everything is escaped. A 400 for a bad uuid, and a 404 for an unknown thread.
+- **`/thread-analysis/system-prompt?sha=<sha>`** (`system-pages/thread-analysis-system-prompt.php`): the prompt text in a `<pre>`, when it was first used, and the runs that used it (count).
+- **Queries** live in `ThreadAnalysisRepository`, or a new `ThreadAnalysisStats` class, with unit tests on the test database: cost sums, the disagreement query, and the gap query.
+- **E2E** (`ThreadAnalysisPagesTest`):
+  - each page renders for an admin, and anonymous users are redirected to login;
+  - the thread page shows a run, its event and its call, inserted directly into the database;
+  - the "Analyse" POST creates a requested run.
+
 ## Later changes, direction only
 4. **`/thread-analysis`:** the queue, progress, cost per run, thread, model and prompt version, results, disagreements with `status_type`, email-type gaps, and request buttons.
 5. **The thread view:** the thread status, each email's state as foldable JSON, request buttons, and a link to 2b feedback when it exists.
