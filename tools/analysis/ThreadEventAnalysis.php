@@ -19,6 +19,12 @@ class ThreadEventAnalysis {
     const BODY_MAX_CHARS = 15000;
     const ATTACHMENT_MAX_CHARS = 8000;
 
+    // The per-event `usage` keys the CLI records (see usageOf() in
+    // tools/analyze-threads.php). Headless Claude Code reports almost all
+    // input as cache tokens (cache_creation/cache_read), not input_tokens,
+    // so totals must sum all of these, not just input/output_tokens.
+    const TOKEN_KEYS = ['input_tokens', 'cache_creation_input_tokens', 'cache_read_input_tokens', 'output_tokens', 'thinking_tokens'];
+
     // Legacy ThreadEmailStatusType values that are not a real email
     // classification and are excluded from what the model may answer with.
     const EXCLUDED_EMAIL_TYPES = ['info', 'error', 'success'];
@@ -318,18 +324,27 @@ class ThreadEventAnalysis {
 
     /**
      * Totals across a thread's recorded events, for its "totals" block and
-     * for the run-wide totals.
+     * for the run-wide totals. Sums every key in TOKEN_KEYS (not just
+     * input/output_tokens), plus 'total_input_tokens' (input +
+     * cache_creation + cache_read) right after them - the figure humans
+     * care about, since headless Claude Code reports almost all input as
+     * cache tokens rather than input_tokens.
      *
-     * @return array{events: int, cost_usd: float, input_tokens: int, output_tokens: int}
+     * @return array{events: int, cost_usd: float, input_tokens: int, cache_creation_input_tokens: int, cache_read_input_tokens: int, output_tokens: int, thinking_tokens: int, total_input_tokens: int}
      */
     public static function computeTotals(array $events): array {
-        $totals = ['events' => 0, 'cost_usd' => 0.0, 'input_tokens' => 0, 'output_tokens' => 0];
+        $totals = ['events' => 0, 'cost_usd' => 0.0];
+        foreach (self::TOKEN_KEYS as $key) {
+            $totals[$key] = 0;
+        }
         foreach ($events as $event) {
             $totals['events']++;
             $totals['cost_usd'] += (float) ($event['cost_usd'] ?? 0.0);
-            $totals['input_tokens'] += (int) ($event['usage']['input_tokens'] ?? 0);
-            $totals['output_tokens'] += (int) ($event['usage']['output_tokens'] ?? 0);
+            foreach (self::TOKEN_KEYS as $key) {
+                $totals[$key] += (int) ($event['usage'][$key] ?? 0);
+            }
         }
+        $totals['total_input_tokens'] = $totals['input_tokens'] + $totals['cache_creation_input_tokens'] + $totals['cache_read_input_tokens'];
         return $totals;
     }
 }

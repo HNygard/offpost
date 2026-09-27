@@ -73,12 +73,15 @@ echo json_encode([
     'total_cost_usd' => $cost,
     'duration_ms' => 5,
     'session_id' => 'fake-session',
+    // Fixed, nonzero cache/thinking figures (mirroring how headless Claude
+    // Code reports almost all input as cache tokens rather than
+    // input_tokens), so tests that sum totals actually exercise those keys.
     'usage' => [
         'input_tokens' => 100,
         'output_tokens' => 20,
-        'cache_read_input_tokens' => 0,
-        'cache_creation_input_tokens' => 0,
-        'output_tokens_details' => ['thinking_tokens' => 0],
+        'cache_read_input_tokens' => 30,
+        'cache_creation_input_tokens' => 50,
+        'output_tokens_details' => ['thinking_tokens' => 5],
     ],
     'modelUsage' => ['claude-opus-5-5' => ['input_tokens' => 100, 'output_tokens' => 20]],
 ]);

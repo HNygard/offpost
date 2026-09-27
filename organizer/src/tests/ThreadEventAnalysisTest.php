@@ -421,20 +421,37 @@ TXT;
         $totals = ThreadEventAnalysis::computeTotals([]);
 
         // :: Assert
-        $this->assertEquals(['events' => 0, 'cost_usd' => 0.0, 'input_tokens' => 0, 'output_tokens' => 0], $totals);
+        $this->assertEquals(
+            [
+                'events' => 0, 'cost_usd' => 0.0,
+                'input_tokens' => 0, 'cache_creation_input_tokens' => 0, 'cache_read_input_tokens' => 0,
+                'output_tokens' => 0, 'thinking_tokens' => 0, 'total_input_tokens' => 0,
+            ],
+            $totals
+        );
     }
 
     public function testComputeTotalsSumsAcrossEvents(): void {
         // :: Setup
+        // Cache/thinking tokens differ per event so the sums (and
+        // total_input_tokens = input + cache_creation + cache_read) are
+        // actually exercised, not just input/output_tokens.
         $events = [
-            ['cost_usd' => 0.12, 'usage' => ['input_tokens' => 100, 'output_tokens' => 10]],
-            ['cost_usd' => 0.08, 'usage' => ['input_tokens' => 200, 'output_tokens' => 20]],
+            ['cost_usd' => 0.12, 'usage' => ['input_tokens' => 100, 'cache_creation_input_tokens' => 5, 'cache_read_input_tokens' => 3, 'output_tokens' => 10, 'thinking_tokens' => 1]],
+            ['cost_usd' => 0.08, 'usage' => ['input_tokens' => 200, 'cache_creation_input_tokens' => 7, 'cache_read_input_tokens' => 4, 'output_tokens' => 20, 'thinking_tokens' => 2]],
         ];
 
         // :: Act
         $totals = ThreadEventAnalysis::computeTotals($events);
 
         // :: Assert
-        $this->assertEquals(['events' => 2, 'cost_usd' => 0.2, 'input_tokens' => 300, 'output_tokens' => 30], $totals);
+        $this->assertEquals(
+            [
+                'events' => 2, 'cost_usd' => 0.2,
+                'input_tokens' => 300, 'cache_creation_input_tokens' => 12, 'cache_read_input_tokens' => 7,
+                'output_tokens' => 30, 'thinking_tokens' => 3, 'total_input_tokens' => 319,
+            ],
+            $totals
+        );
     }
 }

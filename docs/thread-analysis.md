@@ -71,16 +71,30 @@ Rerunning the same `--run` name:
 - `<out>/<run>/run.json` - run name, model, `prompt_sha256` (so runs are comparable across prompt
   edits), the `ThreadState` schema version, the resolved options, `started_at`/`finished_at`,
   `stopped_reason` (`null`, or `"budget"` when the budget stopped new calls), and run-wide totals
-  (`threads`, `events`, `cost_usd`, `input_tokens`, `output_tokens`).
+  (`threads`, plus every `ThreadEventAnalysis::TOKEN_KEYS`/`cost_usd`/`total_input_tokens` field
+  below).
 - `<out>/<run>/threads/<id>.json` - one file per analysed thread: `status`
   (`done`/`failed`/`in_progress`), its `events` (each with the model's `output`, the derived
   thread-state type, usage/cost/duration, and `email_type_actual` - the export's own
   `status_type`, for comparison), and its own `totals`.
 - `<out>/<run>/run.log` - one line per event, e.g.
   `[thread 3/40] <id> event 2/5 IN RESPONSE_TO_REQUEST -> WAITING_FOR_US $0.12 4.1s`, plus retry
-  and failure lines.
+  and failure lines. Also echoed to stdout when it is a tty (a foreground run); with
+  `--background` stdout instead goes to `process.log` and is not a tty, so nothing is duplicated.
 - `<out>/<run>/process.log` - with `--background`, the detached process's own stdout/stderr,
   so a crash leaves a trace. Normally empty.
+
+### Totals
+
+A `totals` block (a thread's own, or a run's run-wide one) is `events`, `cost_usd`, then every key
+in `ThreadEventAnalysis::TOKEN_KEYS` - `input_tokens`, `cache_creation_input_tokens`,
+`cache_read_input_tokens`, `output_tokens`, `thinking_tokens` - and finally
+`total_input_tokens` (`input_tokens + cache_creation_input_tokens + cache_read_input_tokens`).
+Headless Claude Code reports almost all input as cache tokens rather than `input_tokens` (a real
+run: `input_tokens` around 2, `cache_creation_input_tokens` in the thousands,
+`cache_read_input_tokens` in the thousands), so summing only `input_tokens`/`output_tokens` - as
+earlier versions of this tool did - understated the actual input by orders of magnitude.
+`total_input_tokens` is the figure to look at for "how much input did this cost".
 
 `thread-analysis/` (the default `--out`) is gitignored, next to `thread-export/` - both contain
 real email content and must never be committed.

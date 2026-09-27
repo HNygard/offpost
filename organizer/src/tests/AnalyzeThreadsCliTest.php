@@ -140,7 +140,11 @@ class AnalyzeThreadsCliTest extends TestCase {
 
         $runInfo = $this->readJson($this->outDir . '/testrun/run.json');
         $this->assertEquals(
-            ['threads' => 2, 'events' => 3, 'cost_usd' => 0.03, 'input_tokens' => 300, 'output_tokens' => 60],
+            [
+                'threads' => 2, 'events' => 3, 'cost_usd' => 0.03,
+                'input_tokens' => 300, 'cache_creation_input_tokens' => 150, 'cache_read_input_tokens' => 90,
+                'output_tokens' => 60, 'thinking_tokens' => 15, 'total_input_tokens' => 540,
+            ],
             $runInfo['totals'],
             json_encode($runInfo['totals'], JSON_PRETTY_PRINT)
         );
@@ -154,7 +158,14 @@ class AnalyzeThreadsCliTest extends TestCase {
         $this->assertEquals(1, $aaa['events'][0]['attempts']);
         $this->assertEquals('WAITING_FOR_ENTITY', $aaa['events'][0]['derived_thread_state_type']);
         $this->assertNull($aaa['events'][0]['error']);
-        $this->assertEquals(['events' => 2, 'cost_usd' => 0.02, 'input_tokens' => 200, 'output_tokens' => 40], $aaa['totals']);
+        $this->assertEquals(
+            [
+                'events' => 2, 'cost_usd' => 0.02,
+                'input_tokens' => 200, 'cache_creation_input_tokens' => 100, 'cache_read_input_tokens' => 60,
+                'output_tokens' => 40, 'thinking_tokens' => 10, 'total_input_tokens' => 360,
+            ],
+            $aaa['totals']
+        );
 
         $bbb = $this->readJson($this->outDir . '/testrun/threads/bbb.json');
         $this->assertEquals('done', $bbb['status']);
@@ -179,7 +190,11 @@ class AnalyzeThreadsCliTest extends TestCase {
 
         $runInfo = $this->readJson($this->outDir . '/resumerun/run.json');
         $this->assertEquals(
-            ['threads' => 1, 'events' => 1, 'cost_usd' => 0.01, 'input_tokens' => 100, 'output_tokens' => 20],
+            [
+                'threads' => 1, 'events' => 1, 'cost_usd' => 0.01,
+                'input_tokens' => 100, 'cache_creation_input_tokens' => 50, 'cache_read_input_tokens' => 30,
+                'output_tokens' => 20, 'thinking_tokens' => 5, 'total_input_tokens' => 180,
+            ],
             $runInfo['totals'],
             'Totals must not double after a resume that only skips done threads: ' . json_encode($runInfo['totals'], JSON_PRETTY_PRINT)
         );
@@ -260,7 +275,11 @@ class AnalyzeThreadsCliTest extends TestCase {
         $runInfo = $this->readJson($this->outDir . '/budgetrun/run.json');
         $this->assertEquals('budget', $runInfo['stopped_reason']);
         $this->assertEquals(
-            ['threads' => 1, 'events' => 2, 'cost_usd' => 20.0, 'input_tokens' => 200, 'output_tokens' => 40],
+            [
+                'threads' => 1, 'events' => 2, 'cost_usd' => 20.0,
+                'input_tokens' => 200, 'cache_creation_input_tokens' => 100, 'cache_read_input_tokens' => 60,
+                'output_tokens' => 40, 'thinking_tokens' => 10, 'total_input_tokens' => 360,
+            ],
             $runInfo['totals'],
             json_encode($runInfo['totals'], JSON_PRETTY_PRINT)
         );

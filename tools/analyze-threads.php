@@ -326,10 +326,7 @@ function handleCallResult(Worker $w, array &$runTotals, float $maxBudgetUsd, str
         ];
         $ctx->keptEvents[] = $eventRecord;
         writeThreadFile($ctx, 'failed');
-        $runTotals['events']++;
-        $runTotals['cost_usd'] += $costUsd;
-        $runTotals['input_tokens'] += $usage['input_tokens'];
-        $runTotals['output_tokens'] += $usage['output_tokens'];
+        addTotalsInto($runTotals, ThreadEventAnalysis::computeTotals([$eventRecord]));
         logLine($runLogPath, "[thread {$ctx->position}/{$ctx->total}] {$ctx->id} event $i/$k FAILED: $error");
         return ['decision' => 'thread_failed', 'error' => null];
     }
@@ -357,10 +354,7 @@ function handleCallResult(Worker $w, array &$runTotals, float $maxBudgetUsd, str
     $done = $ctx->nextIndex >= count($ctx->events);
     writeThreadFile($ctx, $done ? 'done' : 'in_progress');
 
-    $runTotals['events']++;
-    $runTotals['cost_usd'] += $costUsd;
-    $runTotals['input_tokens'] += $usage['input_tokens'];
-    $runTotals['output_tokens'] += $usage['output_tokens'];
+    addTotalsInto($runTotals, ThreadEventAnalysis::computeTotals([$eventRecord]));
 
     $durationS = round($durationMs / 1000, 1);
     logLine($runLogPath, sprintf(
@@ -396,6 +390,24 @@ function writeThreadFile(ThreadRun $ctx, string $status): void {
 
 function logLine(string $runLogPath, string $line): void {
     file_put_contents($runLogPath, $line . "\n", FILE_APPEND);
+    if (stream_isatty(STDOUT)) {
+        // Foreground runs otherwise print nothing to the terminal. In
+        // background mode stdout goes to process.log and is not a tty, so
+        // nothing is duplicated there.
+        echo $line . "\n";
+    }
+}
+
+/**
+ * Adds every key of $totals (a ThreadEventAnalysis::computeTotals() result,
+ * or one built the same way) into $runTotals, so the run-wide totals share
+ * exactly the same key list as a thread's own totals - no separate,
+ * hand-maintained list of token keys here.
+ */
+function addTotalsInto(array &$runTotals, array $totals): void {
+    foreach ($totals as $key => $value) {
+        $runTotals[$key] = ($runTotals[$key] ?? 0) + $value;
+    }
 }
 
 // -- argv parsing --
@@ -520,7 +532,7 @@ else {
 $startedAt = date('c');
 logLine($runLogPath, "run $runName started: " . count($threadIds) . ' threads, model=' . $model . ', max_budget_usd=' . $maxBudgetUsd);
 
-$runTotals = ['threads' => 0, 'events' => 0, 'cost_usd' => 0.0, 'input_tokens' => 0, 'output_tokens' => 0];
+$runTotals = ['threads' => 0] + ThreadEventAnalysis::computeTotals([]);
 $stoppedReason = null;
 $totalThreads = count($threadIds);
 $queue = [];
@@ -572,10 +584,7 @@ function prepareThreadRun(array $queued, string $export, string $threadsOutDir, 
     if ($plan['skip']) {
         $totals = ThreadEventAnalysis::computeTotals($plan['keptEvents']);
         $runTotals['threads']++;
-        $runTotals['events'] += $totals['events'];
-        $runTotals['cost_usd'] += $totals['cost_usd'];
-        $runTotals['input_tokens'] += $totals['input_tokens'];
-        $runTotals['output_tokens'] += $totals['output_tokens'];
+        addTotalsInto($runTotals, $totals);
         logLine($runLogPath, "[thread $position/$totalThreads] $id already done, skipping");
         return null;
     }
@@ -598,10 +607,7 @@ function prepareThreadRun(array $queued, string $export, string $threadsOutDir, 
         writeThreadFile($ctx, 'done');
         $totals = ThreadEventAnalysis::computeTotals($ctx->keptEvents);
         $runTotals['threads']++;
-        $runTotals['events'] += $totals['events'];
-        $runTotals['cost_usd'] += $totals['cost_usd'];
-        $runTotals['input_tokens'] += $totals['input_tokens'];
-        $runTotals['output_tokens'] += $totals['output_tokens'];
+        addTotalsInto($runTotals, $totals);
         logLine($runLogPath, "[thread $position/$totalThreads] $id already complete, skipping");
         return null;
     }
