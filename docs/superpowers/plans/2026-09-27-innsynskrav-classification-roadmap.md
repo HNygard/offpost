@@ -102,6 +102,25 @@ Later:
 - Analysis of new events in prod itself, with Opus through the API or an
   OpenAI model, while the backfill stays on the local worker.
 
+### 2d. Read the attachments we can't read today
+
+Found in the first prod runs (run 3: two `.TXT` attachments reached the model
+as "no extracted text"). Offpost only extracts text from PDFs with a text
+layer. In a local sample of 110 threads, none of the png, jpg, docx or
+unknown-type attachments had text, and 26 of 191 PDFs had none (likely
+scans).
+
+- Explore which file types come in and how often: txt, docx, xlsx, scanned
+  PDFs, images, and others.
+- Extract text for each type that matters: read txt directly, docx and xlsx
+  with a library, and OCR for scanned PDFs and images (possibly with an
+  OpenAI model).
+- Measure how analyses change once the text is there.
+
+Until then the analysis judges from what it has: when the entity says a
+document is attached or released but we cannot read it, it counts as
+released.
+
 ### 2b. Feedback on the analysis, reported to prod
 
 - Built into the GUI from 2c: the dashboard and thread view link to it.

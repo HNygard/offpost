@@ -50,6 +50,9 @@ If the first event is not our request (the export may start later), build the it
 | `WITHDRAWN` | We withdrew the item or narrowed it away |
 
 - The email body is part of the response, like a document; attachments may come in addition. Judge each item from the body and the attachments together.
+- Judge from what we have. Some attachments reach you without text (`(no extracted text)`): scans, images, and file types we cannot read yet.
+  - If the entity says a document is attached or released, or the attachment's name shows what it is, trust that it is released and set the item's status accordingly.
+  - Mention the unread attachment in the item's `note`, but do not hold the item back because of it.
 - A decision and the delivery may come in different emails: first `WILL_RELEASE_PARTLY`, later `PARTLY_RELEASED`.
 - When documents for an item are attached or linked, add this email's id to the item's `released_in_email_ids`. The item stays `WILL_RELEASE…` until everything for it has come.
 - Forwarding to another entity (videresending) counts as `DENIED` for this thread, with the forwarding described in the item's `note`.
@@ -98,7 +101,7 @@ A new refusal after a complaint can lead to a new round.
 | `RESPONSE_TO_REQUEST` | IN | An answer that is neither a release nor a refusal (e.g. "no documents", a decision to release later) |
 | `REQUEST_REJECTED` | IN | A refusal of all or part of the request |
 | `INFORMATION_RELEASE` | IN | Documents or the information asked for are released: attached, linked, or given in the body |
-| `RESPONSE_UNREADABLE` | IN | The entity answered, but the content cannot be read (empty or unreadable attachment, scan without text) |
+| `RESPONSE_UNREADABLE` | IN | The entity answered, but we cannot tell what the answer is: no readable body says what it is, and the attachments cannot be read. When the body or the attachment names say what was sent, use the matching type instead |
 | `unknown` | either | None of the above fits. Then set `email_type_gap` |
 
 When an email both releases and refuses, use `REQUEST_REJECTED` if something is refused, and describe both in `email_note`. Complaints we send have no type of their own yet: use `unknown`, with `email_type_gap` `COMPLAINT_SENT`.
