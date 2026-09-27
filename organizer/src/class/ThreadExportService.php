@@ -224,7 +224,7 @@ class ThreadExportService {
         $emailRows = Database::query(
             "SELECT id, email_type, datetime_received, timestamp_received, created_at, ignore,
                     status_type, status_text, auto_classification, description, answer,
-                    imap_headers, content
+                    imap_headers, content, thread_state, thread_state_type, thread_state_source
              FROM thread_emails
              WHERE thread_id = ?
              ORDER BY datetime_received, id",
@@ -260,6 +260,9 @@ class ThreadExportService {
                 'classification_source' => self::classificationSource($row['status_type'], $row['auto_classification']),
                 'description' => $row['description'],
                 'answer' => $row['answer'],
+                'thread_state' => $row['thread_state'] !== null ? json_decode($row['thread_state'], true) : null,
+                'thread_state_type' => $row['thread_state_type'],
+                'thread_state_source' => $row['thread_state_source'],
                 'subject' => $imapHeadersRaw !== null ? getEmailSubjectFromImapHeaders($imapHeadersRaw) : null,
                 'from' => $imapHeadersRaw !== null ? getEmailFromAddressFromImapHeaders($imapHeadersRaw) : null,
                 'to' => $imapHeadersRaw !== null ? getEmailToAddressesFromImapHeaders($imapHeadersRaw) : [],

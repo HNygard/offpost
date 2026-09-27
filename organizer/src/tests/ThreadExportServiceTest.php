@@ -56,8 +56,9 @@ class ThreadExportServiceTest extends TestCase {
         return Database::queryValue(
             "INSERT INTO thread_emails
                 (thread_id, timestamp_received, datetime_received, created_at, ignore, email_type,
-                 status_type, status_text, auto_classification, description, answer, content, imap_headers)
-             VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?::bytea, ?) RETURNING id",
+                 status_type, status_text, auto_classification, description, answer, content, imap_headers,
+                 thread_state, thread_state_type, thread_state_source)
+             VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?::bytea, ?, ?::jsonb, ?, ?) RETURNING id",
             [
                 $threadId,
                 $fields['timestamp_received'],
@@ -72,6 +73,9 @@ class ThreadExportServiceTest extends TestCase {
                 $fields['answer'] ?? null,
                 $fields['content'],
                 $fields['imap_headers'] ?? null,
+                $fields['thread_state'] ?? null,
+                $fields['thread_state_type'] ?? null,
+                $fields['thread_state_source'] ?? null,
             ]
         );
     }
@@ -102,6 +106,21 @@ class ThreadExportServiceTest extends TestCase {
             'to' => [['mailbox' => 'recipient', 'host' => 'example.com']],
             'cc' => [['mailbox' => 'cc-person', 'host' => 'example.com']],
         ]);
+        $inThreadState = [
+            'schema_version' => 1,
+            'request' => ['summary' => 'Valgprotokoll', 'law_basis' => 'offentleglova', 'sent_at' => '2026-01-01'],
+            'items' => [
+                ['id' => '1', 'asked_for' => 'Valgprotokoll 2023', 'status' => 'RELEASED',
+                 'denial_basis' => null, 'released_in_email_ids' => [], 'note' => ''],
+            ],
+            'waiting_for' => 'NOBODY',
+            'asks_to_us' => [],
+            'case_numbers' => [],
+            'dates' => [],
+            'complaints' => [],
+            'notes' => '',
+            'extra' => [],
+        ];
         $inEmailId = $this->insertEmail($threadId, [
             'timestamp_received' => '2026-01-02T10:00:00+00:00',
             'datetime_received' => '2026-01-02T10:00:00+00:00',
@@ -114,6 +133,9 @@ class ThreadExportServiceTest extends TestCase {
             'answer' => null,
             'content' => self::IN_EML,
             'imap_headers' => $inImapHeaders,
+            'thread_state' => json_encode($inThreadState),
+            'thread_state_type' => 'ANSWERED',
+            'thread_state_source' => 'auto',
         ]);
 
         $outEmailId = $this->insertEmail($threadId, [
@@ -247,6 +269,9 @@ class ThreadExportServiceTest extends TestCase {
                     'classification_source' => 'manual',
                     'description' => null,
                     'answer' => null,
+                    'thread_state' => null,
+                    'thread_state_type' => null,
+                    'thread_state_source' => null,
                     'subject' => null,
                     'from' => null,
                     'to' => [],
@@ -273,6 +298,9 @@ class ThreadExportServiceTest extends TestCase {
                     'classification_source' => 'manual',
                     'description' => 'Svar med dokumenter',
                     'answer' => null,
+                    'thread_state' => $inThreadState,
+                    'thread_state_type' => 'ANSWERED',
+                    'thread_state_source' => 'auto',
                     'subject' => 'Innsyn i saken',
                     'from' => 'Sender Name <sender@example.com>',
                     'to' => ['recipient@example.com'],

@@ -1,6 +1,6 @@
 -- ******************************************************************
 -- AUTOMATICALLY GENERATED FILE - DO NOT MODIFY
--- Generated on: 2026-02-20 20:40:56
+-- Generated on: 2026-09-27 10:30:34
 -- 
 -- This file contains the current database schema after all migrations.
 -- It is NOT meant to be executed as a migration script.
@@ -224,7 +224,10 @@ CREATE TABLE thread_emails (
     imap_headers jsonb,
     content bytea NOT NULL,
     content_read_status character varying(10) DEFAULT NULL::character varying,
-    auto_classification character varying(50) DEFAULT NULL::character varying
+    auto_classification character varying(50) DEFAULT NULL::character varying,
+    thread_state jsonb,
+    thread_state_type character varying(50) DEFAULT NULL::character varying,
+    thread_state_source character varying(20) DEFAULT NULL::character varying
 );
 
 ALTER TABLE thread_emails ADD CONSTRAINT thread_emails_pkey PRIMARY KEY (id);
@@ -236,6 +239,7 @@ CREATE INDEX thread_emails_ignore_idx ON thread_emails USING btree (ignore);
 CREATE INDEX thread_emails_status_type_idx ON thread_emails USING btree (status_type);
 CREATE INDEX thread_emails_thread_datetime_idx ON thread_emails USING btree (thread_id, datetime_received);
 CREATE INDEX thread_emails_thread_id_idx ON thread_emails USING btree (thread_id);
+CREATE INDEX thread_emails_thread_state_type_idx ON thread_emails USING btree (thread_state_type);
 CREATE INDEX thread_emails_timestamp_received_idx ON thread_emails USING btree (timestamp_received);
 
 CREATE TABLE thread_history (

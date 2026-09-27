@@ -71,6 +71,7 @@ thread-level history. 400 on a non-UUID id, 404 on an unknown thread.
       "status_type", "status_text", "auto_classification",
       "classification_source": "manual|algo|prompt|none",
       "description", "answer",
+      "thread_state": { ... } | null, "thread_state_type", "thread_state_source": "manual|auto|null",
       "subject", "from", "to", "cc", "imap_headers",
       "body_plain", "body_html", "body_parse_error": null | "message",
       "eml_base64",
@@ -92,6 +93,11 @@ Emails are ordered by `datetime_received`, then `id`. The other lists are ordere
 null, otherwise `auto_classification` if set, otherwise `manual`. A body-parsing failure is
 recorded in `body_parse_error` and does not fail the whole thread. JSON is encoded with
 `JSON_INVALID_UTF8_SUBSTITUTE`.
+
+`thread_state` is the cumulative thread-state blob as of this email (decoded JSON), or `null`
+when nothing has been recorded yet. `thread_state_type` is the thread status derived from that
+blob, and `thread_state_source` is `manual` or `auto`, or `null` alongside a `null` blob. See
+[docs/thread-state.md](thread-state.md) for the model.
 
 ### Fingerprint
 
