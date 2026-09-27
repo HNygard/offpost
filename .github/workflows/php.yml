@@ -60,6 +60,11 @@ jobs:
         mkdir -p ./secrets
         echo "ci-placeholder-np-api-token" > ./secrets/np_api_token
 
+    - name: Create admin API token file
+      run: |
+        mkdir -p ./secrets
+        echo "ci-placeholder-admin-api-token" > ./secrets/admin_api_token
+
     - name: Start Docker compose (organizer, postgres, greenmail, auth)
       run: docker compose -f docker-compose.dev.yaml up -d greenmail postgres organizer auth
 

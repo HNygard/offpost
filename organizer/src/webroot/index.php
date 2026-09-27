@@ -31,6 +31,7 @@ try {
         '/openai-request-log-overview' => '/../system-pages/openai-request-log-overview.php',
         '/update-imap' => '/../update-imap.php', // Temporary while we wait for new imap integration
         '/email-content-debug' => '/../system-pages/email-content-debug.php',
+        '/thread-export' => '/../system-pages/thread-export.php',
     ];
 
     // Check if the path is a scheduled system page
@@ -66,6 +67,8 @@ try {
             // only require()'d lazily when a request actually matches the path.
             '/api/np/threads' => '/../api/np/np_threads_list.php',
             '/api/np/attachment' => '/../api/np/np_attachment_get.php',
+            '/api/admin/export/threads' => '/../api/admin/export_threads_list.php',
+            '/api/admin/export/thread' => '/../api/admin/export_thread_get.php',
             '/callback' => '/../callback.php',
             '/logout' => '/../logout.php',
             '/file' => '/../file.php',

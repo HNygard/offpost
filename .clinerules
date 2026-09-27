@@ -179,6 +179,8 @@ organizer/src/
 - `ThreadEmailResponseClassifier` - Pure rules classifying incoming email from subject, AI summary and attachments (docs/np-api.md)
 - `ThreadEmailStatusUpdater` - Applies those rules to thread_emails; never overwrites a manual classification
 - `NpThreadAutoArchiver` - Decides and archives finished norske-postlister threads
+- `ThreadExportService` - Builds the full per-thread export JSON and the export list (docs/thread-export-api.md)
+- `ThreadExportSync` - Pure logic deciding which thread ids the export CLI needs to (re)fetch (docs/thread-export-api.md)
 
 ### Scheduled Tasks
 Located in `system-pages/`, triggered by cron:

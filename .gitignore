@@ -6,6 +6,10 @@ organizer/src/vendor/
 # Secret files
 secrets/openai_api_key
 secrets/np_api_token
+secrets/admin_api_token
+
+# Local thread-export output (email content, kept out of git)
+thread-export/
 
 # Ignore contents of data directory
 data/*
