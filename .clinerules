@@ -183,6 +183,7 @@ organizer/src/
 - `ThreadExportSync` - Pure logic deciding which thread ids the export CLI needs to (re)fetch (docs/thread-export-api.md)
 - `ThreadState` - Value class validating the cumulative thread-state blob recorded per email (docs/thread-state.md)
 - `ThreadStateTypeDeriver` - Pure rules deriving the thread status from a `ThreadState` blob (docs/thread-state.md)
+- `ThreadEventAnalysis` - Pure logic for `tools/analyze-threads.php`: per-event input text, JSON schema, answer validation, resume planning, totals (docs/thread-analysis.md)
 
 ### Scheduled Tasks
 Located in `system-pages/`, triggered by cron:

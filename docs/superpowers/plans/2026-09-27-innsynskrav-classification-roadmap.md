@@ -65,6 +65,9 @@ Sub-steps, one change at a time:
 2. Local analysis with Opus 5.5 through headless Claude Code, run in the
    background: one call per event, token usage stored for every call. This is
    for local evaluation only; prod will use code rules and OpenAI models.
+
+   Status: script built (`tools/analyze-threads.php`, docs/thread-analysis.md);
+   first real runs pending.
 3. A script that generates an HTML dashboard of the analyses and their
    token usage.
 4. From the results, write down:

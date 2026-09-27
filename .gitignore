@@ -11,6 +11,9 @@ secrets/admin_api_token
 # Local thread-export output (email content, kept out of git)
 thread-export/
 
+# Local thread-analysis output (email content, AI answers, kept out of git)
+thread-analysis/
+
 # Ignore contents of data directory
 data/*
 # But don't ignore the data directory itself and threads directory
