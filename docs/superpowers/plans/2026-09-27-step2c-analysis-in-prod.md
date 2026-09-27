@@ -179,12 +179,80 @@ This is the same array the result endpoint in change 2 will receive as JSON.
 
 Each asserts the exact message, and asserts that nothing was written, because it's one transaction.
 
+## Change 2: the endpoints
+
+These are POST only and accept the admin token only: no admin session, so no
+cross-site request can reach them.
+
+| Route | File | Body | Response |
+|---|---|---|---|
+| `POST /api/admin/analysis/request` | `api/admin/analysis_request.php` | `{"thread_id", "mode"}` | `{"run_id"}`: the new run, or the thread's already open run |
+| `POST /api/admin/analysis/claim` | `api/admin/analysis_claim.php` | `{"worker", "thread_id"?}` | 204 with no body if nothing is claimable, else the work item below |
+| `POST /api/admin/analysis/result` | `api/admin/analysis_result.php` | `{"run_id", "worker", …the result from change 1}` | `{"run_id", "status"}` |
+
+- **Auth:** a new `adminApiRequireToken()` in `api/admin/admin-api-auth.php`. It accepts the token only and returns 401 JSON otherwise. Like the export endpoints, it runs first, before anything else.
+- **Errors:**
+  - 405 for anything but POST;
+  - 400 for invalid JSON, a missing field, a non-UUID `thread_id` or a bad `mode`;
+  - 400 with the message for any `InvalidArgumentException` from the repository;
+  - 404 for an unknown thread or run.
+- **Logging:** each successful call is logged with `error_log`, like the export endpoints.
+- **Routes:** added to `$regularPages` in `webroot/index.php`.
+- `requested_by` is `token`.
+- **Claim lease:** 3600 seconds.
+
+### Work item (claim response)
+
+```json
+{
+  "run": { "id": 12, "thread_id": "…", "mode": "incremental", "lease_expires_at": "…" },
+  "thread": { "…": "the thread export (export_version 1) with every email's eml_base64 left out" },
+  "start_state": { } ,
+  "start_after_email_id": "…",
+  "email_ids": ["…", "…"]
+}
+```
+
+Choosing the emails is a pure function,
+`ThreadAnalysisWorkItem::selectEmails(array $exportEmails, string $mode): array`,
+returning `start_state`, `start_after_email_id` and `email_ids`. It works on
+the export's emails, leaves out `ignore = true`, and orders them by
+`datetime_received`, then `id`.
+
+- **`full`:** every such email, `start_state` null, `start_after_email_id` null.
+- **`incremental`:**
+  - find the last email, in that order, whose `thread_state` is not null;
+  - `start_state` is that state, and `start_after_email_id` is its id;
+  - `email_ids` are the emails after it.
+  - With no such email, it behaves like `full`.
+  - With nothing after it, `email_ids` is empty. The worker then posts `done` with no events, and saving a `done` result with an empty `events` list must be accepted.
+
+`ThreadExportService::exportThread()` gets an optional `bool $includeEml = true`.
+With `false`, `eml_base64` is left out.
+
+### Tests
+
+- **Unit, `ThreadAnalysisWorkItemTest`:**
+  - full;
+  - incremental from the middle;
+  - incremental with no earlier state;
+  - incremental with nothing new;
+  - ignored emails left out;
+  - ordering ties broken by `id`.
+- **Unit, `AdminApiAuthTest`:** `adminApiRequireToken`, if it can be tested the way the existing functions are.
+- **Unit, `ThreadAnalysisRepositoryTest`:** a `done` result with no events.
+- **Unit, `ThreadExportServiceTest`:** `includeEml = false` leaves out `eml_base64` and nothing else.
+- **E2E, `AdminAnalysisApiTest`:**
+  - 401 without a token, and 401 with an admin session and no token (for all three);
+  - 401 with the NP token;
+  - 405 on GET;
+  - 400 on invalid JSON and on a bad mode;
+  - 404 on an unknown thread;
+  - the whole flow on a thread from `E2ETestSetup`: request, then claim (check `email_ids` and that there is no `eml_base64`), then post a done result with one valid event and call, then check the run is `done` and `thread_emails.thread_state_source` is `auto`;
+  - claim returns 204 when nothing is queued. Make that deterministic: cancel or finish any open runs first, or claim with `thread_id`.
+
 ## Later changes, direction only
 
-2. **Endpoints** (token only; POST without a session):
-   - request a run;
-   - claim the next run or a given thread's run. The response includes the thread's export data without the raw EML, the events to analyse, and the state to continue from.
-   - post the result.
 3. **`tools/analysis-worker.php`:** reuses `ThreadEventAnalysis`, with `--thread`, `--once`, `--background` and a budget cap.
 4. **`/thread-analysis`:** the queue, progress, cost per run, thread, model and prompt version, results, disagreements with `status_type`, email-type gaps, and request buttons.
 5. **The thread view:** the thread status, each email's state as foldable JSON, request buttons, and a link to 2b feedback when it exists.

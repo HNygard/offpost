@@ -158,3 +158,44 @@ run is `done` - applies each event's state onto its email: `thread_emails.thread
 `thread_state_type` (the derived one, not the worker's), and `thread_state_source = 'auto'`. An
 email whose `thread_state_source` is `manual` is left untouched. A `failed` run applies nothing,
 even though its events and calls up to the failure are still stored.
+
+### The endpoints
+
+Three POST-only admin endpoints let a worker on the owner's machine drive the queue. They accept
+the admin token only (`adminApiRequireToken()` in `api/admin/admin-api-auth.php`) - unlike the GET
+export endpoints, there is no admin-session fallback, since a POST has no CSRF protection from a
+session cookie alone.
+
+| Route | File | Body | Response |
+|---|---|---|---|
+| `POST /api/admin/analysis/request` | `api/admin/analysis_request.php` | `{"thread_id", "mode"}` | `{"run_id"}`: the new run, or the thread's already open run |
+| `POST /api/admin/analysis/claim` | `api/admin/analysis_claim.php` | `{"worker", "thread_id"?}` | 204 with no body if nothing is claimable, else the work item below |
+| `POST /api/admin/analysis/result` | `api/admin/analysis_result.php` | `{"run_id", "worker", …the result format above}` | `{"run_id", "status"}` |
+
+`requested_by` is always `token`. The claim lease is 3600 seconds. Errors: 405 for anything but
+POST, 400 for invalid JSON/a missing field/a non-UUID `thread_id`/a bad `mode` or any
+`InvalidArgumentException` from the repository, and 404 for an unknown thread (`request`) or run
+(`result`). Each successful call is logged with `error_log`, like the export endpoints.
+
+The claim response's `thread` field is the full thread export
+(`ThreadExportService::exportThread($threadId, false)`) with every email's `eml_base64` left out -
+the worker analyses text and metadata, not the raw EML. Which emails the worker should analyse is
+chosen by the pure function `ThreadAnalysisWorkItem::selectEmails(array $exportEmails, string $mode)`
+(`organizer/src/class/ThreadAnalysis/ThreadAnalysisWorkItem.php`): it drops emails with
+`ignore = true`, orders the rest by `datetime_received` then `id`, and then:
+
+- **`full`:** every remaining email; `start_state` and `start_after_email_id` are both null.
+- **`incremental`:** finds the last such email whose `thread_state` is not null. `start_state` is
+  that state and `start_after_email_id` is its id; `email_ids` are the emails after it. With no
+  such email it behaves like `full`; with nothing after it, `email_ids` is empty - the worker then
+  posts a `done` result with no events, which `saveResult` accepts.
+
+```json
+{
+  "run": { "id": 12, "thread_id": "…", "mode": "incremental", "lease_expires_at": "…" },
+  "thread": { "…": "the thread export (export_version 1), every email's eml_base64 left out" },
+  "start_state": { },
+  "start_after_email_id": "…",
+  "email_ids": ["…", "…"]
+}
+```

@@ -398,6 +398,39 @@ class ThreadExportServiceTest extends TestCase {
         $this->assertEquals($expected, $export, json_encode($export, JSON_PRETTY_PRINT));
     }
 
+    public function testIncludeEmlFalseLeavesOutEmlBase64AndNothingElse(): void {
+        // :: Setup
+        $threadId = $this->createFixedThread();
+        $this->insertEmail($threadId, [
+            'timestamp_received' => '2026-01-01T09:00:00+00:00',
+            'datetime_received' => '2026-01-01T09:00:00+00:00',
+            'created_at' => '2026-01-01T09:05:00+00:00',
+            'email_type' => 'OUT',
+            'status_type' => 'OUR_REQUEST',
+            'status_text' => 'Sent',
+            'content' => self::OUT_EML,
+            'imap_headers' => null,
+        ]);
+
+        // :: Act
+        $withEml = ThreadExportService::exportThread($threadId);
+        $withoutEml = ThreadExportService::exportThread($threadId, false);
+
+        // :: Assert
+        $this->assertArrayHasKey('eml_base64', $withEml['emails'][0], json_encode($withEml['emails'][0], JSON_PRETTY_PRINT));
+        $this->assertArrayNotHasKey('eml_base64', $withoutEml['emails'][0], json_encode($withoutEml['emails'][0], JSON_PRETTY_PRINT));
+
+        // 'exported_at' is the current time at each call and may legitimately
+        // differ between the two calls above - excluded from both sides so
+        // this assertion stays deterministic. Everything else must match
+        // exactly, proving eml_base64 is the only difference.
+        $expected = $withEml;
+        unset($expected['exported_at'], $expected['emails'][0]['eml_base64']);
+        $actual = $withoutEml;
+        unset($actual['exported_at']);
+        $this->assertEquals($expected, $actual, json_encode($actual, JSON_PRETTY_PRINT));
+    }
+
     public function testClassificationSourceForAllFourCases(): void {
         // :: Setup
         $threadId = $this->createFixedThread();

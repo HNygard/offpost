@@ -162,8 +162,13 @@ class ThreadExportService {
 
     /**
      * Full export of one thread, or null when the id does not exist.
+     *
+     * @param bool $includeEml With false, every email's 'eml_base64' is left
+     *   out - used by the analysis claim endpoint, which sends the export to
+     *   a worker that has no use for the raw EML and would otherwise pay for
+     *   transferring it (organizer/src/api/admin/analysis_claim.php).
      */
-    public static function exportThread(string $threadId): ?array {
+    public static function exportThread(string $threadId, bool $includeEml = true): ?array {
         $threadRow = Database::queryOneOrNone(
             "SELECT t.*, COALESCE(array_to_json(t.labels)::text, '[]') AS labels_json, "
                 . self::fingerprintIngredientsSelectSql() . "
@@ -214,13 +219,13 @@ class ThreadExportService {
                 'updated_at' => self::isoTimestamp($threadRow['updated_at']),
             ],
             'entity' => $entity,
-            'emails' => self::exportEmails($threadId),
+            'emails' => self::exportEmails($threadId, $includeEml),
             'sendings' => self::exportSendings($threadId),
             'history' => self::exportThreadHistory($threadId),
         ];
     }
 
-    private static function exportEmails(string $threadId): array {
+    private static function exportEmails(string $threadId, bool $includeEml = true): array {
         $emailRows = Database::query(
             "SELECT id, email_type, datetime_received, timestamp_received, created_at, ignore,
                     status_type, status_text, auto_classification, description, answer,
@@ -247,7 +252,7 @@ class ThreadExportService {
                 $bodyParseError = $e->getMessage();
             }
 
-            $emails[] = [
+            $email = [
                 'id' => $row['id'],
                 'email_type' => $row['email_type'],
                 'datetime_received' => self::isoTimestamp($row['datetime_received']),
@@ -271,11 +276,14 @@ class ThreadExportService {
                 'body_plain' => $bodyPlain,
                 'body_html' => $bodyHtml,
                 'body_parse_error' => $bodyParseError,
-                'eml_base64' => base64_encode($rawEml),
-                'extractions' => self::exportExtractions(emailId: $row['id'], attachmentId: null),
-                'attachments' => self::exportAttachments($row['id']),
-                'history' => self::exportEmailHistory($threadId, $row['id']),
             ];
+            if ($includeEml) {
+                $email['eml_base64'] = base64_encode($rawEml);
+            }
+            $email['extractions'] = self::exportExtractions(emailId: $row['id'], attachmentId: null);
+            $email['attachments'] = self::exportAttachments($row['id']);
+            $email['history'] = self::exportEmailHistory($threadId, $row['id']);
+            $emails[] = $email;
         }
         return $emails;
     }

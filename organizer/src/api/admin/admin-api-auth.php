@@ -47,3 +47,20 @@ function adminApiRequireTokenOrAdminSession(): string {
     echo json_encode(['error' => 'Invalid or missing X-Admin-Api-Token']);
     exit;
 }
+
+// POST endpoints only (the analysis queue API): token only, no admin-session
+// fallback - these are POST, so no admin session cookie can be relied on to
+// resist cross-site requests the way it can for a GET a link merely loads.
+// Returns 'token' on success; denies with a 401 JSON body and exit()s
+// otherwise - callers must invoke this before parsing any other input or
+// touching the database.
+function adminApiRequireToken(): string {
+    $provided = $_SERVER['HTTP_X_ADMIN_API_TOKEN'] ?? null;
+    if (adminApiCheckToken($provided)) {
+        return 'token';
+    }
+    http_response_code(401);
+    header('Content-Type: application/json');
+    echo json_encode(['error' => 'Invalid or missing X-Admin-Api-Token']);
+    exit;
+}

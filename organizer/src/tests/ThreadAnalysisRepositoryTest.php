@@ -335,6 +335,29 @@ class ThreadAnalysisRepositoryTest extends TestCase {
         $this->assertEquals('end_turn', $call['stop_reason']);
     }
 
+    public function testSaveResultDoneWithNoEventsIsAccepted(): void {
+        // :: Setup
+        $threadId = $this->createFixedThread();
+        $runId = $this->insertRun($threadId, 'claimed', '2026-01-01T08:00:00+00:00', [
+            'claimed_at' => '2026-01-01T08:01:00+00:00',
+            'lease_expires_at' => '2026-01-01T08:31:00+00:00',
+            'worker' => 'worker-1',
+        ]);
+        $result = [
+            'status' => 'done', 'error' => null, 'model' => 'claude-opus-5-5',
+            'system_prompt' => 'prompt', 'schema_version' => 1, 'events' => [],
+        ];
+
+        // :: Act
+        ThreadAnalysisRepository::saveResult($runId, 'worker-1', $result);
+
+        // :: Assert
+        $run = ThreadAnalysisRepository::getRun($runId);
+        $this->assertEquals('done', $run['status'], json_encode($run, JSON_PRETTY_PRINT));
+        $events = ThreadAnalysisRepository::getEventsForRun($runId);
+        $this->assertCount(0, $events, json_encode($events, JSON_PRETTY_PRINT));
+    }
+
     public function testSaveResultDoneIgnoresWorkerSuppliedDerivedThreadStateType(): void {
         // :: Setup
         $threadId = $this->createFixedThread();

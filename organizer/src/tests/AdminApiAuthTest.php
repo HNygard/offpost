@@ -136,4 +136,19 @@ class AdminApiAuthTest extends TestCase {
         $_SESSION['user'] = ['sub' => 'dev-user-id'];
         $this->assertTrue(npApiIsAdminSession());
     }
+
+    // --- adminApiRequireToken(): only the non-exiting (allow) branch can be
+    // unit-tested directly, since the deny branch calls exit(). The deny
+    // branch - including that an admin session with no token is rejected,
+    // unlike adminApiRequireTokenOrAdminSession() above - is covered by
+    // e2e-tests/pages/AdminAnalysisApiTest.php. ---
+
+    public function testRequireTokenReturnsTokenWhenTokenValid(): void {
+        $_SERVER['HTTP_X_ADMIN_API_TOKEN'] = 'admin-secret-token';
+        try {
+            $this->assertEquals('token', adminApiRequireToken());
+        } finally {
+            unset($_SERVER['HTTP_X_ADMIN_API_TOKEN']);
+        }
+    }
 }
