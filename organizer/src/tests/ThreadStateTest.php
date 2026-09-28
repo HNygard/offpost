@@ -142,6 +142,18 @@ class ThreadStateTest extends TestCase {
         $this->assertEquals($blob, $state->toArray(), json_encode($state->toArray(), JSON_PRETTY_PRINT));
     }
 
+    public function testNotMachineReadableDenialIssueIsAccepted(): void {
+        // :: Setup
+        $blob = $this->validBlob();
+        $blob['items'][0]['denial_basis']['issues'] = ['NOT_MACHINE_READABLE'];
+
+        // :: Act
+        $state = ThreadState::fromArray($blob);
+
+        // :: Assert
+        $this->assertEquals($blob, $state->toArray(), json_encode($state->toArray(), JSON_PRETTY_PRINT));
+    }
+
     public function testDenialBasisNullIsAcceptedOnDenied(): void {
         // :: Setup
         $blob = $this->validBlob();

@@ -224,7 +224,7 @@ TXT;
                                         'properties' => [
                                             'refs' => ['type' => 'array', 'items' => ['type' => 'string']],
                                             'text' => ['type' => 'string'],
-                                            'issues' => ['type' => 'array', 'items' => ['type' => 'string', 'enum' => ['NO_REASON_GIVEN', 'NO_LEGAL_REFERENCE', 'INCOMPLETE_REFERENCE']]],
+                                            'issues' => ['type' => 'array', 'items' => ['type' => 'string', 'enum' => ['NO_REASON_GIVEN', 'NO_LEGAL_REFERENCE', 'INCOMPLETE_REFERENCE', 'NOT_MACHINE_READABLE']]],
                                         ],
                                     ],
                                     'released_in_email_ids' => ['type' => 'array', 'items' => ['type' => 'string']],

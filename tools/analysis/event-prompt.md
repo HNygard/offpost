@@ -53,6 +53,10 @@ If the first event is not our request (the export may start later), build the it
 - Judge from what we have. Some attachments reach you without text (`(no extracted text)`): scans, images, and file types we cannot read yet.
   - If the entity says a document is attached or released, or the attachment's name shows what it is, trust that it is released and set the item's status accordingly.
   - Mention the unread attachment in the item's `note`, but do not hold the item back because of it.
+  - **Exception: machine-readable format.** When the request asks for a machine-readable format (e.g. "maskinlesbart", "som regneark", xlsx/csv, "søkbar pdf"), what arrives must be machine-readable. Judge that by the file type, not by whether we could read it:
+    - xlsx, xls, ods, csv, json, xml, docx, odt, txt, and a pdf with extracted text are machine-readable, even when we have no text for them (that is our gap, not the entity's).
+    - A pdf without extracted text (a scan) or an image (png, jpg, tif) is not.
+  - Not getting a machine-readable format when we asked for one is a partial refusal. Set the item to `PARTLY_RELEASED`, or `WILL_RELEASE_PARTLY` if it is decided but not yet sent, with `denial_basis.issues` including `NOT_MACHINE_READABLE`. Put the entity's reason for the format, if any, in `refs` and `text`.
 - A decision and the delivery may come in different emails: first `WILL_RELEASE_PARTLY`, later `PARTLY_RELEASED`.
 - When documents for an item are attached or linked, add this email's id to the item's `released_in_email_ids`. The item stays `WILL_RELEASE…` until everything for it has come.
 - Forwarding to another entity (videresending) counts as `DENIED` for this thread, with the forwarding described in the item's `note`.
@@ -66,6 +70,7 @@ On `WILL_RELEASE_PARTLY`, `PARTLY_RELEASED` and `DENIED`, set `denial_basis`:
   - `NO_REASON_GIVEN`: no reason at all is given.
   - `NO_LEGAL_REFERENCE`: a reason, but no legal provision.
   - `INCOMPLETE_REFERENCE`: a provision that requires a further reference, without that reference. For example, offentleglova § 13 without the provision that establishes the duty of confidentiality (taushetsplikt).
+  - `NOT_MACHINE_READABLE`: we asked for a machine-readable format and got something that is not (a scan or an image). See "Judge from what we have" above.
 
 A refusal with nothing stated has empty `refs` and `text` and `issues: ["NO_REASON_GIVEN"]`. Use `null` on items that are not refused.
 

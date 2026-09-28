@@ -34,6 +34,7 @@ class ThreadStateView {
         'NO_REASON_GIVEN' => 'Ingen grunn oppgitt',
         'NO_LEGAL_REFERENCE' => 'Ingen lovhenvisning',
         'INCOMPLETE_REFERENCE' => 'Mangelfull henvisning',
+        'NOT_MACHINE_READABLE' => 'Ikke maskinlesbart',
     ];
 
     // Bokmål labels for a complaint round's `status`.

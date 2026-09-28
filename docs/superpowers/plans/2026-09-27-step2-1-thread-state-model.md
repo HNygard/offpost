@@ -79,7 +79,7 @@ Item statuses:
 
 - `refs`: a list of strings, e.g. `offentleglova § 13`.
 - `text`: a string.
-- `issues`: a list of `NO_REASON_GIVEN`, `NO_LEGAL_REFERENCE` or `INCOMPLETE_REFERENCE`. These are complaint grounds, for example § 13 without the confidentiality rule it relies on.
+- `issues`: a list of `NO_REASON_GIVEN`, `NO_LEGAL_REFERENCE`, `INCOMPLETE_REFERENCE` or `NOT_MACHINE_READABLE`. These are complaint grounds, for example § 13 without the confidentiality rule it relies on. `NOT_MACHINE_READABLE` covers asking for a machine-readable format and getting a scan or an image instead.
 
 Forwarding to another entity is modelled as a refusal plus a new thread.
 

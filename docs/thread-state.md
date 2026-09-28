@@ -94,8 +94,11 @@ any basis. When it is present, it has three fields:
 
 - `refs`: a list of strings, e.g. `offentleglova § 13`.
 - `text`: a string.
-- `issues`: a list of `NO_REASON_GIVEN`, `NO_LEGAL_REFERENCE` or `INCOMPLETE_REFERENCE`. These are
-  complaint grounds, for example § 13 without the confidentiality rule it relies on.
+- `issues`: a list of `NO_REASON_GIVEN`, `NO_LEGAL_REFERENCE`, `INCOMPLETE_REFERENCE` or
+  `NOT_MACHINE_READABLE`. These are complaint grounds, for example § 13 without the confidentiality
+  rule it relies on. `NOT_MACHINE_READABLE` means we asked for a machine-readable format and the
+  entity sent a scan or an image instead: a partial refusal, recorded on the item as
+  `PARTLY_RELEASED` (or `WILL_RELEASE_PARTLY` when decided but not yet sent).
 
 Forwarding to another entity is modelled as a refusal plus a new thread.
 

@@ -14,9 +14,11 @@ The cumulative thread state from
 `docs/superpowers/plans/2026-09-27-innsynskrav-classification-roadmap.md`
 (step 2). Each requested item has a status and, when refused, a
 `denial_basis` with `refs`, `text` and `issues`. The issues
-(`NO_REASON_GIVEN`, `NO_LEGAL_REFERENCE`, `INCOMPLETE_REFERENCE`) are
-complaint grounds on their own: a refusal without a proper legal basis is not
-a proper refusal. The thread statuses already cover the path:
+(`NO_REASON_GIVEN`, `NO_LEGAL_REFERENCE`, `INCOMPLETE_REFERENCE`,
+`NOT_MACHINE_READABLE`) are complaint grounds on their own: a refusal without
+a proper legal basis is not a proper refusal, and neither is sending a scan
+or an image when a machine-readable format was asked for. The thread
+statuses already cover the path:
 `COMPLAINT_SENT`, `COMPLAINT_FORWARDED`, `COMPLAINT_DECIDED`,
 `OMBUD_COMPLAINT_SENT`.
 

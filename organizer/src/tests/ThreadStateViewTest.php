@@ -126,6 +126,21 @@ class ThreadStateViewTest extends TestCase {
         $this->assertEquals($expected, $html);
     }
 
+    public function testRenderBlockShowsNotMachineReadableBadge(): void {
+        // :: Setup
+        $state = $this->smallState();
+        $state['items'][0]['denial_basis']['issues'] = ['NOT_MACHINE_READABLE'];
+
+        // :: Act
+        $html = ThreadStateView::renderBlock($state, 'PARTLY_DENIED_PARTLY_RELEASED', 'auto', false, 'thread-1');
+
+        // :: Assert
+        $this->assertStringContainsString(
+            '<span class="label classification label_warn" title="NOT_MACHINE_READABLE">Ikke maskinlesbart</span>',
+            $html
+        );
+    }
+
     public function testRenderBlockEscapesScriptInAskedForAndNotes(): void {
         // :: Setup
         $state = [
