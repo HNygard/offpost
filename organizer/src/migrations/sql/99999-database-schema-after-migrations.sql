@@ -1,6 +1,6 @@
 -- ******************************************************************
 -- AUTOMATICALLY GENERATED FILE - DO NOT MODIFY
--- Generated on: 2026-09-27 18:10:49
+-- Generated on: 2026-09-28 20:31:09
 -- 
 -- This file contains the current database schema after all migrations.
 -- It is NOT meant to be executed as a migration script.
@@ -148,12 +148,17 @@ CREATE TABLE thread_analysis_runs (
     system_prompt_sha256 character(64),
     schema_version integer,
     finished_at timestamp with time zone,
-    error text
+    error text,
+    review_status character varying(20) NOT NULL DEFAULT 'NOT_REVIEWED'::character varying,
+    review_notes text,
+    reviewed_by character varying(255),
+    reviewed_at timestamp with time zone
 );
 
 ALTER TABLE thread_analysis_runs ADD CONSTRAINT thread_analysis_runs_pkey PRIMARY KEY (id);
 ALTER TABLE thread_analysis_runs ADD CONSTRAINT thread_analysis_runs_system_prompt_sha256_fkey FOREIGN KEY (system_prompt_sha256) REFERENCES thread_analysis_system_prompts (sha256);
 ALTER TABLE thread_analysis_runs ADD CONSTRAINT thread_analysis_runs_thread_id_fkey FOREIGN KEY (thread_id) REFERENCES threads (id);
+CREATE INDEX thread_analysis_runs_review_status_idx ON thread_analysis_runs USING btree (review_status);
 CREATE INDEX thread_analysis_runs_status_requested_at_idx ON thread_analysis_runs USING btree (status, requested_at);
 CREATE INDEX thread_analysis_runs_thread_id_idx ON thread_analysis_runs USING btree (thread_id);
 

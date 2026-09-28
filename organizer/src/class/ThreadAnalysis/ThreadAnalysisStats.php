@@ -41,6 +41,21 @@ class ThreadAnalysisStats {
     }
 
     /**
+     * @return array<string, int> review_status => count, for every run ever
+     *   created (step 2c "Change 9: review status and notes per run").
+     */
+    public static function getRunCountsByReviewStatus(): array {
+        $rows = Database::query(
+            "SELECT review_status, COUNT(*) AS count FROM thread_analysis_runs GROUP BY review_status"
+        );
+        $counts = [];
+        foreach ($rows as $row) {
+            $counts[$row['review_status']] = (int) $row['count'];
+        }
+        return $counts;
+    }
+
+    /**
      * Cost and token sums from thread_analysis_claude_code_calls for three
      * periods: today, the last 7 days, and all time.
      *

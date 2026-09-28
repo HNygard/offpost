@@ -43,6 +43,9 @@ Options:
   --out=DIR            Where worker state (pending/posted/rejected results, worker.log) is kept (default: thread-analysis)
   --claude-bin=PATH    Command to invoke instead of "claude" (for tests)
   --background         Relaunch detached and exit; see <out>/worker/worker.log
+  --reviews            Print reviewed runs with issues (GET /api/admin/analysis/reviews) and exit;
+                       cannot be combined with --thread or --next-np
+  --status=LIST        Comma-separated review statuses for --reviews (default: MINOR_ISSUES,WRONG)
   --help               Show this help and exit
 
 Loop: resend any pending results left from a previous run, stop if the
@@ -56,6 +59,12 @@ With --next-np, the loop is different: resend pending, then up to --limit
 times, POST request-next (kind=np), claim that thread, analyse and post -
 stopping early on a 204 ("no more NP threads to analyse"), the budget, or a
 post that can't be delivered. It never touches the general queue.
+
+With --reviews, nothing is claimed or analysed: it fetches
+GET /api/admin/analysis/reviews?status=... and prints one block per run (the
+thread, review status, notes, system prompt sha, and the /thread-analysis/thread
+URL) - meant to be pasted into a local AI session for the fix loop in
+docs/thread-analysis.md, "Change 9".
 
 HELP;
 }
@@ -112,6 +121,43 @@ function httpPostJson(string $url, string $token, array $body): array {
     curl_close($ch);
     $decoded = $respBody === '' ? null : json_decode($respBody, true);
     return ['status' => $status, 'body' => is_array($decoded) ? $decoded : null, 'raw' => $respBody, 'error' => null];
+}
+
+/** @return array{status:int, body:?array, raw:?string, error:?string} */
+function httpGetJson(string $url, string $token): array {
+    $ch = curl_init($url);
+    curl_setopt_array($ch, [
+        CURLOPT_RETURNTRANSFER => true,
+        CURLOPT_HTTPHEADER => ['X-Admin-Api-Token: ' . $token],
+        CURLOPT_TIMEOUT => 60,
+    ]);
+    $respBody = curl_exec($ch);
+    if ($respBody === false) {
+        $error = curl_error($ch);
+        curl_close($ch);
+        return ['status' => 0, 'body' => null, 'raw' => null, 'error' => $error];
+    }
+    $status = curl_getinfo($ch, CURLINFO_HTTP_CODE);
+    curl_close($ch);
+    $decoded = $respBody === '' ? null : json_decode($respBody, true);
+    return ['status' => $status, 'body' => is_array($decoded) ? $decoded : null, 'raw' => $respBody, 'error' => null];
+}
+
+/**
+ * Prints one block per run for --reviews: the thread, review status, notes,
+ * system prompt sha, and the /thread-analysis/thread URL - meant to be
+ * pasted into a local AI session for the fix loop (docs/thread-analysis.md,
+ * "Change 9: review status and notes per run").
+ */
+function printReviews(array $reviews, string $baseUrl): void {
+    foreach ($reviews as $review) {
+        echo "Thread: {$review['thread_id']} ({$review['thread_title']})\n";
+        echo "Review status: {$review['review_status']}\n";
+        echo "Notes: " . ($review['review_notes'] ?? '') . "\n";
+        echo "System prompt: " . substr((string) ($review['system_prompt_sha256'] ?? ''), 0, 8) . "\n";
+        echo "URL: $baseUrl/thread-analysis/thread?id={$review['thread_id']}\n";
+        echo "\n";
+    }
 }
 
 function logLine(string $logPath, string $line): void {
@@ -342,6 +388,8 @@ $maxBudgetUsd = 20.0;
 $out = 'thread-analysis';
 $claudeBin = 'claude';
 $background = false;
+$reviewsMode = false;
+$reviewsStatus = 'MINOR_ISSUES,WRONG';
 
 foreach ($args as $arg) {
     if (str_starts_with($arg, '--base-url=')) {
@@ -383,6 +431,12 @@ foreach ($args as $arg) {
     elseif ($arg === '--background') {
         $background = true;
     }
+    elseif ($arg === '--reviews') {
+        $reviewsMode = true;
+    }
+    elseif (str_starts_with($arg, '--status=')) {
+        $reviewsStatus = substr($arg, strlen('--status='));
+    }
     else {
         fail("Unknown argument: $arg\n\nRun with --help for usage.");
     }
@@ -399,6 +453,9 @@ if ($mode !== 'incremental' && $mode !== 'full') {
 }
 if ($nextNp && $explicitThread !== null) {
     fail("--next-np cannot be combined with --thread");
+}
+if ($reviewsMode && ($nextNp || $explicitThread !== null)) {
+    fail("--reviews cannot be combined with --thread or --next-np");
 }
 if ($explicitThread !== null) {
     $once = true;
@@ -417,6 +474,18 @@ if ($token === '') {
 }
 if ($workerName === null || $workerName === '') {
     $workerName = (string) gethostname();
+}
+
+// -- --reviews: just fetch and print, no claiming/analysing, no worker dirs --
+
+if ($reviewsMode) {
+    $query = $reviewsStatus !== '' ? ('?status=' . rawurlencode($reviewsStatus)) : '';
+    $resp = httpGetJson($baseUrl . '/api/admin/analysis/reviews' . $query, $token);
+    if ($resp['status'] !== 200) {
+        fail("Failed to fetch reviews: HTTP {$resp['status']} {$resp['raw']}");
+    }
+    printReviews($resp['body']['reviews'] ?? [], $baseUrl);
+    exit(0);
 }
 
 $workerDir = $out . '/worker';

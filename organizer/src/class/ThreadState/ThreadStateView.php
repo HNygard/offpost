@@ -46,6 +46,16 @@ class ThreadStateView {
         'OMBUD_DECIDED' => 'Avgjort av Sivilombudet',
     ];
 
+    // Maps each review status (thread_analysis_runs.review_status, step 2c
+    // "Change 9") to one of the badge styles in webroot/css/style.css
+    // (span.label.label_*).
+    const REVIEW_STATUS_LABEL_CLASS = [
+        'NOT_REVIEWED' => 'label_pending',
+        'CORRECT' => 'label_ok',
+        'MINOR_ISSUES' => 'label_warn',
+        'WRONG' => 'label_error',
+    ];
+
     // Maps each ThreadStateType to one of the four badge styles in
     // webroot/css/style.css (span.label.classification.label_*).
     const STATUS_TYPE_LABEL_CLASS = [
@@ -96,8 +106,19 @@ class ThreadStateView {
      * @param array $state a validated ThreadState blob (ThreadState::toArray())
      * @param string|null $stateType the derived ThreadStateType value
      * @param string|null $stateSource 'auto' or 'manual'
+     * @param string|null $latestRunReviewStatus the thread's latest analysis
+     *   run's review_status (step 2c "Change 9"), shown next to the
+     *   "Analysis details" link for admins only; null when there is no run
+     *   to show a review status for.
      */
-    public static function renderBlock(array $state, ?string $stateType, ?string $stateSource, bool $isAdmin, string $threadId): string {
+    public static function renderBlock(
+        array $state,
+        ?string $stateType,
+        ?string $stateSource,
+        bool $isAdmin,
+        string $threadId,
+        ?string $latestRunReviewStatus = null
+    ): string {
         $html = '<div class="thread-state">';
         $html .= '<h2>Thread state</h2>';
 
@@ -137,7 +158,11 @@ class ThreadStateView {
 
         if ($isAdmin) {
             $html .= '<p class="thread-state-admin-link"><a href="/thread-analysis/thread?id='
-                . self::e($threadId) . '">Analysis details</a></p>';
+                . self::e($threadId) . '">Analysis details</a>';
+            if ($latestRunReviewStatus !== null) {
+                $html .= ' ' . self::renderReviewStatusBadge($latestRunReviewStatus);
+            }
+            $html .= '</p>';
         }
 
         $html .= '</div>';
@@ -161,6 +186,15 @@ class ThreadStateView {
             . self::e(json_encode($state, JSON_PRETTY_PRINT | JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE)) . '</pre></template>';
 
         return $html;
+    }
+
+    /**
+     * The small badge next to "Analysis details" showing the thread's latest
+     * analysis run's review status - step 2c "Change 9".
+     */
+    private static function renderReviewStatusBadge(string $reviewStatus): string {
+        $cssClass = self::REVIEW_STATUS_LABEL_CLASS[$reviewStatus] ?? 'label_pending';
+        return '<span class="label ' . $cssClass . '" title="review status">' . self::e($reviewStatus) . '</span>';
     }
 
     private static function renderStatusBadge(?string $stateType, string $suffix = ''): string {

@@ -21,6 +21,7 @@ use App\Enums\ThreadEmailStatusType;
  */
 class ThreadAnalysisRepository {
     const OPEN_STATUSES = ['requested', 'claimed'];
+    const REVIEW_STATUSES = ['NOT_REVIEWED', 'CORRECT', 'MINOR_ISSUES', 'WRONG'];
 
     /**
      * Requests a new analysis run for a thread. If the thread already has an
@@ -519,6 +520,65 @@ class ThreadAnalysisRepository {
         }
 
         return $validated;
+    }
+
+    /**
+     * Saves an admin's review of a finished run - step 2c, "Change 9: review
+     * status and notes per run (step 2b, first part)". Only a 'done' or
+     * 'failed' run can be reviewed, since a run still queued or claimed has
+     * nothing to review yet.
+     */
+    public static function saveReview(int $runId, string $status, ?string $notes, string $reviewedBy): void {
+        if (!in_array($status, self::REVIEW_STATUSES, true)) {
+            throw new InvalidArgumentException(
+                "saveReview: 'status' must be one of " . implode(', ', self::REVIEW_STATUSES) . ", got " . json_encode($status)
+            );
+        }
+
+        $run = Database::queryOneOrNone("SELECT status FROM thread_analysis_runs WHERE id = ?", [$runId]);
+        if ($run === null) {
+            throw new InvalidArgumentException("saveReview: run $runId does not exist");
+        }
+        if (!in_array($run['status'], ['done', 'failed'], true)) {
+            throw new InvalidArgumentException("saveReview: run $runId is not done or failed (status: '{$run['status']}')");
+        }
+
+        Database::execute(
+            "UPDATE thread_analysis_runs
+             SET review_status = ?, review_notes = ?, reviewed_by = ?, reviewed_at = CURRENT_TIMESTAMP
+             WHERE id = ?",
+            [$status, $notes, $reviewedBy, $runId]
+        );
+    }
+
+    /**
+     * Runs with their review fields, plus thread id/title, model,
+     * system_prompt_sha256, finished_at and cost (summed over the run's
+     * calls) - for the "Runs with issues" table and the
+     * GET /api/admin/analysis/reviews endpoint that feeds the local fix loop
+     * (tools/analysis-worker.php --reviews). Filtered to $statuses when
+     * non-empty; unfiltered otherwise. Ordered by reviewed_at desc, with
+     * never-reviewed runs (reviewed_at is null) last.
+     */
+    public static function getReviews(array $statuses, int $limit): array {
+        $sql = "SELECT r.*, t.title AS thread_title,
+                    (SELECT COALESCE(SUM(c.cost_usd), 0) FROM thread_analysis_claude_code_calls c WHERE c.run_id = r.id) AS cost_usd
+                 FROM thread_analysis_runs r
+                 JOIN threads t ON t.id = r.thread_id";
+        $params = [];
+        if (!empty($statuses)) {
+            $placeholders = implode(', ', array_fill(0, count($statuses), '?'));
+            $sql .= " WHERE r.review_status IN ($placeholders)";
+            $params = $statuses;
+        }
+        $sql .= " ORDER BY r.reviewed_at DESC NULLS LAST LIMIT ?";
+        $params[] = $limit;
+
+        $rows = Database::query($sql, $params);
+        foreach ($rows as &$row) {
+            $row['cost_usd'] = (float) $row['cost_usd'];
+        }
+        return $rows;
     }
 
     public static function getRun(int $runId): ?array {

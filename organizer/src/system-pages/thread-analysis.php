@@ -5,6 +5,7 @@
 // See docs/thread-analysis.md, "Debug pages".
 require_once __DIR__ . '/../auth.php';
 require_once __DIR__ . '/../class/ThreadAnalysis/ThreadAnalysisStats.php';
+require_once __DIR__ . '/../class/ThreadAnalysis/ThreadAnalysisRepository.php';
 
 // Require authentication
 requireAuth();
@@ -12,6 +13,8 @@ requireAuth();
 // GET only, read-only page - no form handling.
 
 $runCountsByStatus = ThreadAnalysisStats::getRunCountsByStatus();
+$runCountsByReviewStatus = ThreadAnalysisStats::getRunCountsByReviewStatus();
+$runsWithIssues = ThreadAnalysisRepository::getReviews(['MINOR_ISSUES', 'WRONG'], 100);
 $usageTotals = ThreadAnalysisStats::getUsageTotals();
 $costByModel = ThreadAnalysisStats::getCostByModel();
 $costBySystemPrompt = ThreadAnalysisStats::getCostBySystemPrompt();
@@ -30,6 +33,17 @@ function formatRunStatusBadge($status) {
         'failed' => 'label_error',
         'requested', 'claimed' => 'label_pending',
         'cancelled' => 'label_disabled',
+        default => 'label_pending',
+    };
+    return '<span class="label ' . $class . '"><a href="#" onclick="return false;">' . htmlspecialchars($status) . '</a></span>';
+}
+
+function formatReviewStatusBadge($status) {
+    $class = match ($status) {
+        'CORRECT' => 'label_ok',
+        'MINOR_ISSUES' => 'label_warn',
+        'WRONG' => 'label_error',
+        'NOT_REVIEWED' => 'label_pending',
         default => 'label_pending',
     };
     return '<span class="label ' . $class . '"><a href="#" onclick="return false;">' . htmlspecialchars($status) . '</a></span>';
@@ -105,6 +119,22 @@ function formatRunDuration($claimedAt, $finishedAt) {
                 </div>
             <?php endif; ?>
             <?php foreach ($runCountsByStatus as $status => $count): ?>
+                <div class="summary-item">
+                    <div class="summary-count"><?= (int) $count ?></div>
+                    <div class="summary-label"><?= htmlspecialchars($status) ?></div>
+                </div>
+            <?php endforeach; ?>
+        </div>
+
+        <h2>Runs by review status</h2>
+        <div class="summary-box">
+            <?php if (empty($runCountsByReviewStatus)): ?>
+                <div class="summary-item">
+                    <div class="summary-count">0</div>
+                    <div class="summary-label">No runs yet</div>
+                </div>
+            <?php endif; ?>
+            <?php foreach ($runCountsByReviewStatus as $status => $count): ?>
                 <div class="summary-item">
                     <div class="summary-count"><?= (int) $count ?></div>
                     <div class="summary-label"><?= htmlspecialchars($status) ?></div>
@@ -281,6 +311,37 @@ function formatRunDuration($claimedAt, $finishedAt) {
             <?php endforeach; ?>
             <?php if (empty($disagreements)): ?>
                 <tr><td colspan="5" style="text-align: center;">No disagreements found</td></tr>
+            <?php endif; ?>
+        </table>
+
+        <h2>Runs with issues (up to 100)</h2>
+        <p>Runs an admin reviewed as <code>MINOR_ISSUES</code> or <code>WRONG</code> - see "Change 9" in
+            <code>docs/thread-analysis.md</code> for the local fix loop.</p>
+        <table>
+            <tr>
+                <th>Thread</th>
+                <th>Review status</th>
+                <th>Notes</th>
+                <th>System prompt</th>
+                <th>Reviewed by</th>
+            </tr>
+            <?php foreach ($runsWithIssues as $run): ?>
+                <tr>
+                    <td><a href="<?= htmlspecialchars('/thread-analysis/thread?id=' . $run['thread_id']) ?>"><?= htmlspecialchars((string) ($run['thread_title'] ?? $run['thread_id'])) ?></a></td>
+                    <td><?= formatReviewStatusBadge($run['review_status']) ?></td>
+                    <td><?= htmlspecialchars((string) ($run['review_notes'] ?? '')) ?></td>
+                    <td>
+                        <?php if (!empty($run['system_prompt_sha256'])): ?>
+                            <a href="<?= htmlspecialchars('/thread-analysis/system-prompt?sha=' . $run['system_prompt_sha256']) ?>">
+                                <?= htmlspecialchars(shortSha($run['system_prompt_sha256'])) ?>
+                            </a>
+                        <?php endif; ?>
+                    </td>
+                    <td><?= htmlspecialchars((string) ($run['reviewed_by'] ?? '')) ?></td>
+                </tr>
+            <?php endforeach; ?>
+            <?php if (empty($runsWithIssues)): ?>
+                <tr><td colspan="5" style="text-align: center;">No runs with issues</td></tr>
             <?php endif; ?>
         </table>
     </div>

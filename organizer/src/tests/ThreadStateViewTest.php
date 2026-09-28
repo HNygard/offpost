@@ -206,6 +206,37 @@ class ThreadStateViewTest extends TestCase {
         $this->assertStringNotContainsString('thread-analysis', $htmlForNonAdmin);
     }
 
+    public function testRenderBlockShowsLatestRunReviewStatusForAdminsOnly(): void {
+        // :: Setup
+        $state = $this->smallState();
+
+        // :: Act
+        $htmlForAdmin = ThreadStateView::renderBlock($state, 'ANSWERED', 'manual', true, 'thread-42', 'MINOR_ISSUES');
+        $htmlForNonAdmin = ThreadStateView::renderBlock($state, 'ANSWERED', 'manual', false, 'thread-42', 'MINOR_ISSUES');
+
+        // :: Assert
+        $this->assertStringContainsString(
+            '<a href="/thread-analysis/thread?id=thread-42">Analysis details</a> '
+            . '<span class="label label_warn" title="review status">MINOR_ISSUES</span></p>',
+            $htmlForAdmin
+        );
+        $this->assertStringNotContainsString('MINOR_ISSUES', $htmlForNonAdmin);
+    }
+
+    public function testRenderBlockOmitsReviewStatusBadgeWhenNull(): void {
+        // :: Setup
+        $state = $this->smallState();
+
+        // :: Act
+        $html = ThreadStateView::renderBlock($state, 'ANSWERED', 'manual', true, 'thread-42', null);
+
+        // :: Assert
+        $this->assertStringContainsString(
+            '<p class="thread-state-admin-link"><a href="/thread-analysis/thread?id=thread-42">Analysis details</a></p>',
+            $html
+        );
+    }
+
     public function testStatusTypeLabelClassCoversEveryThreadStateType(): void {
         // :: Setup
         $allowed = ['label_ok', 'label_warn', 'label_error', 'label_info'];

@@ -146,6 +146,41 @@ Four tables, added in migration `034_add_thread_analysis_tables.sql`:
   run" below.
 - `getRun(runId)`, `getRunsForThread(threadId)`, `getEventsForRun(runId)` - read-only lookups for
   the endpoints and UI that later changes add.
+- `saveReview(runId, status, notes, reviewedBy)` / `getReviews(statuses, limit)` - see "Review
+  status and notes per run" below.
+
+### Review status and notes per run
+
+Migration `035_add_review_to_thread_analysis_runs.sql` adds four columns to `thread_analysis_runs`
+for the owner's manual review of a finished run (step 2c "Change 9", the first part of step 2b -
+issues found this way are fixed by changing the prompt or script and rerunning, preferred, or by a
+manual edit done locally with AI, later):
+
+- `review_status` - `NOT_REVIEWED` (the default, so every existing run gets one with no backfill),
+  `CORRECT`, `MINOR_ISSUES` or `WRONG`.
+- `review_notes` - free text describing any issues found.
+- `reviewed_by`, `reviewed_at` - who reviewed it and when.
+
+`ThreadAnalysisRepository::saveReview(runId, status, notes, reviewedBy)` validates `status` and
+sets `reviewed_at` to now; only a `done` or `failed` run can be reviewed (a run still queued or
+claimed throws `InvalidArgumentException`). `getReviews(statuses, limit)` returns runs with their
+review fields plus thread id/title, model, `system_prompt_sha256`, `finished_at` and cost
+(summed over the run's calls), filtered to `statuses` when given (unfiltered otherwise), ordered by
+`reviewed_at` desc with never-reviewed runs last.
+
+On `/thread-analysis/thread`, every `done`/`failed` run gets a small form (a status `<select>`, a
+notes `<textarea>`, and Save) handled the same way as the "Analyse" buttons - an admin-session POST
+with `action=review`, `reviewed_by` set to the admin's sub, redirecting back. The saved review is
+shown next to the run: a status badge, the notes, who and when. On `/thread-analysis`, a summary box
+shows runs per review status, and a "Runs with issues" table (`MINOR_ISSUES`/`WRONG`, up to 100)
+lists thread, status, notes, prompt sha and reviewer. On the thread view (`view-thread.php`),
+admins see the latest run's review status next to the "Analysis details" link
+(`ThreadStateView::renderBlock()`'s `$latestRunReviewStatus` parameter).
+
+For the local fix loop, `GET /api/admin/analysis/reviews?status=MINOR_ISSUES,WRONG&limit=100`
+(token or admin session, like the export endpoints) returns `{"reviews": [...]}` - see "The
+endpoints" below - and `tools/analysis-worker.php --reviews [--status=...]` prints them, one block
+per run, to paste into a local AI session - see "Worker" below.
 
 ### Applying a run
 
@@ -176,11 +211,16 @@ session cookie alone.
 | `POST /api/admin/analysis/claim` | `api/admin/analysis_claim.php` | `{"worker", "thread_id"?}` | 204 with no body if nothing is claimable, else the work item below |
 | `POST /api/admin/analysis/result` | `api/admin/analysis_result.php` | `{"run_id", "worker", …the result format above}` | `{"run_id", "status"}` |
 | `POST /api/admin/analysis/request-next` | `api/admin/analysis_request_next.php` | `{"kind": "np", "mode"?}` | `{"run_id", "thread_id"}`, or 204 with no body when nothing is left |
+| `GET /api/admin/analysis/reviews?status=...&limit=...` | `api/admin/analysis_reviews.php` | - | `{"reviews": [...]}` - see "Review status and notes per run" above |
 
 `requested_by` is always `token`. The claim lease is 3600 seconds. Errors: 405 for anything but
-POST, 400 for invalid JSON/a missing field/a non-UUID `thread_id`/a bad `mode` or any
-`InvalidArgumentException` from the repository, and 404 for an unknown thread (`request`) or run
-(`result`). Each successful call is logged with `error_log`, like the export endpoints.
+POST (or, for `reviews`, anything but GET), 400 for invalid JSON/a missing field/a non-UUID
+`thread_id`/a bad `mode`/an unknown review status or any `InvalidArgumentException` from the
+repository, and 404 for an unknown thread (`request`) or run (`result`). Each successful call is
+logged with `error_log`, like the export endpoints. Unlike the three POST-only endpoints, `reviews`
+accepts the admin token *or* an admin session (`adminApiRequireTokenOrAdminSession()`), the same as
+the GET export endpoints - it's a GET with no side effects, so a session cookie is not a CSRF risk
+here the way it would be for the POST endpoints.
 
 ### Picking the next norske-postlister.no thread
 
@@ -252,6 +292,8 @@ php tools/analysis-worker.php --base-url=https://offpost.no --token-file=secrets
 | `--out=DIR` | Where the worker's own state lives - `<out>/worker/...` (default `thread-analysis`, same default as `tools/analyze-threads.php`, but a different subdirectory so the two never collide). |
 | `--claude-bin=PATH` | Command to invoke instead of `claude` - only for tests, with a fake that never calls the real CLI. |
 | `--background` | Relaunch detached (`nohup ... &`) and exit immediately, like `tools/analyze-threads.php --background`; the process's own stdout/stderr go to `<out>/worker/process.log`. |
+| `--reviews` | Print reviewed runs with issues and exit - see "`--reviews`" below. Cannot be combined with `--thread` or `--next-np`. |
+| `--status=LIST` | Comma-separated review statuses for `--reviews` (default `MINOR_ISSUES,WRONG`). |
 
 ### The loop
 
@@ -309,6 +351,15 @@ No paid analysis call is ever lost because prod happened to reject or miss the p
 to a tty (a foreground run); with `--background`, stdout instead goes to `<out>/worker/process.log`
 and is not a tty, so nothing duplicates.
 
+### `--reviews`: printing runs with issues
+
+`--reviews [--status=MINOR_ISSUES,WRONG]` skips the queue entirely: it makes one
+`GET /api/admin/analysis/reviews?status=...` call and prints one block per run to stdout - the
+thread id and title, review status, notes, the system prompt's short sha, and the
+`/thread-analysis/thread` URL - then exits. Meant to be pasted straight into a local AI session
+that fixes the prompt or script per "Review status and notes per run" above. It touches none of
+`<out>/worker/...` and makes no Claude Code calls.
+
 ### Shared code
 
 The Claude Code call, answer validation, and the retry-once-on-invalid logic live in
@@ -340,8 +391,9 @@ lists rows. The read-only queries behind them live in
 `ThreadAnalysisRepository`.
 
 - **`/thread-analysis`** (`system-pages/thread-analysis.php`) - the overview:
-  - Runs by status, cost/tokens for today/last 7 days/all time, cost per model, and cost per
-    system-prompt version (short sha, linked, with when that version was first used).
+  - Runs by status, runs by review status, cost/tokens for today/last 7 days/all time, cost per
+    model, and cost per system-prompt version (short sha, linked, with when that version was
+    first used).
   - **Queue** - runs that are `requested` or `claimed`: thread, mode, requested by/at, worker,
     lease.
   - **Recent runs** (up to 100, newest first) - thread (linked to the debug thread page below),
@@ -354,17 +406,23 @@ lists rows. The read-only queries behind them live in
     classified at all) are left out, since a mismatch there isn't a real disagreement. Shows both
     values and whether prod's value is `manual`, or `algo`/`prompt` (from `auto_classification`,
     the same distinction `ThreadExportService::classificationSource()` makes for the export).
+  - **Runs with issues** (up to 100) - runs reviewed `MINOR_ISSUES` or `WRONG`
+    (`ThreadAnalysisRepository::getReviews()`), with thread, review status, notes, system-prompt
+    sha and reviewer - see "Review status and notes per run" above.
 - **`/thread-analysis/thread?id=<uuid>`** (`system-pages/thread-analysis-thread.php`) - one
   thread's full history:
   - The thread title, linked to `/thread-view`, and two POST buttons - "Analyse" (incremental) and
     "Analyse from the start" (full) - that call `ThreadAnalysisRepository::requestRun()` with the
     admin's sub as `requested_by`, then redirect back (avoids a resubmission on refresh).
-  - Every run, newest first, with its fields, and a table of its events (position, the email's
-    date/direction/subject, email type, note, gap, derived status, attempts, error, and a
-    "Show state" link opening the state blob as pretty JSON in the shared `ContentDialog` modal -
-    see "Shown in the thread view" in [docs/thread-state.md](thread-state.md)), each with its
-    calls (attempt, model, resolved model, Claude Code version, token counts, cost, duration, and
-    "Show input"/"Show response" links opening the input text and the response JSON the same way).
+  - Every run, newest first, with its fields, a review form for every `done`/`failed` run (status
+    `<select>`, notes `<textarea>`, Save - `action=review`, same POST-and-redirect style, saving
+    with `ThreadAnalysisRepository::saveReview()`) and the saved review (badge, notes, who and
+    when), and a table of its events (position, the email's date/direction/subject, email type,
+    note, gap, derived status, attempts, error, and a "Show state" link opening the state blob as
+    pretty JSON in the shared `ContentDialog` modal - see "Shown in the thread view" in
+    [docs/thread-state.md](thread-state.md)), each with its calls (attempt, model, resolved model,
+    Claude Code version, token counts, cost, duration, and "Show input"/"Show response" links
+    opening the input text and the response JSON the same way).
   - A malformed `id` is a 400; an unknown thread is a 404 (same style as `view-thread.php`/`file.php`:
     `is_uuid()` plus a direct `http_response_code()` + `die()`, not a thrown exception - this page
     must not go through `error.php`'s generic 500 for what are really client errors).

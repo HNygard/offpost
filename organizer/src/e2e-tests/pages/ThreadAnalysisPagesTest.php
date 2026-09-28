@@ -43,6 +43,7 @@ class ThreadAnalysisPagesTest extends E2EPageTestCase {
         // :: Assert
         $this->assertStringContainsString('<h1>Thread Analysis</h1>', $response->body);
         $this->assertStringContainsString('<h2>Runs by status</h2>', $response->body);
+        $this->assertStringContainsString('<h2>Runs by review status</h2>', $response->body);
         $this->assertStringContainsString('<h2>Cost and tokens</h2>', $response->body);
         $this->assertStringContainsString('<h2>Cost per model</h2>', $response->body);
         $this->assertStringContainsString('<h2>Cost per system prompt version</h2>', $response->body);
@@ -50,6 +51,7 @@ class ThreadAnalysisPagesTest extends E2EPageTestCase {
         $this->assertStringContainsString('Recent runs (up to 100)', $response->body);
         $this->assertStringContainsString('Email-type gaps (up to 100)', $response->body);
         $this->assertStringContainsString("Disagreements with prod's classification", $response->body);
+        $this->assertStringContainsString('Runs with issues (up to 100)', $response->body);
     }
 
     public function testOverviewPageNotLoggedIn() {
@@ -174,6 +176,50 @@ class ThreadAnalysisPagesTest extends E2EPageTestCase {
             $this->assertEquals('requested', $runs[0]['status']);
             $this->assertEquals('incremental', $runs[0]['mode']);
             $this->assertEquals('dev-user-id', $runs[0]['requested_by']);
+        } finally {
+            $this->cleanupAnalysisRows($threadId);
+            E2ETestSetup::cleanupTestThread($threadId, $created['entity_id']);
+        }
+    }
+
+    // --- The review form (step 2c "Change 9: review status and notes per
+    // run") saves and shows. ---
+
+    public function testReviewFormSavesAndShows() {
+        // :: Setup
+        $created = E2ETestSetup::createTestThread();
+        $threadId = $created['thread']->id;
+        try {
+            $runId = Database::queryValue(
+                "INSERT INTO thread_analysis_runs
+                    (thread_id, status, mode, requested_by, requested_at, finished_at, worker, model)
+                 VALUES (?, 'done', 'full', 'test-user', '2026-01-01T08:00:00+00:00', '2026-01-01T08:00:20+00:00',
+                         'worker-1', 'claude-opus-5-5')
+                 RETURNING id",
+                [$threadId]
+            );
+
+            // :: Act
+            $postResponse = $this->renderPage(
+                '/thread-analysis/thread?id=' . $threadId,
+                'dev-user-id',
+                'POST',
+                '302 Found',
+                ['action' => 'review', 'run_id' => (string) $runId, 'review_status' => 'MINOR_ISSUES', 'review_notes' => 'Missed a case number.']
+            );
+            $getResponse = $this->renderPage('/thread-analysis/thread?id=' . $threadId);
+
+            // :: Assert
+            $this->assertStringContainsString('Location:', $postResponse->headers);
+            $run = Database::queryOne("SELECT * FROM thread_analysis_runs WHERE id = ?", [$runId]);
+            $this->assertEquals('MINOR_ISSUES', $run['review_status'], json_encode($run, JSON_PRETTY_PRINT));
+            $this->assertEquals('Missed a case number.', $run['review_notes']);
+            $this->assertEquals('dev-user-id', $run['reviewed_by']);
+            $this->assertNotNull($run['reviewed_at']);
+
+            $this->assertStringContainsString('Missed a case number.', $getResponse->body);
+            $this->assertStringContainsString('MINOR_ISSUES', $getResponse->body);
+            $this->assertStringContainsString('dev-user-id', $getResponse->body);
         } finally {
             $this->cleanupAnalysisRows($threadId);
             E2ETestSetup::cleanupTestThread($threadId, $created['entity_id']);

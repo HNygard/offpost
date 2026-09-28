@@ -31,6 +31,25 @@ if ($threadRow === null) {
 // POST handling style of system-pages/email-sending-overview.php.
 if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action'])) {
     $action = $_POST['action'];
+
+    if ($action === 'review') {
+        $runId = (int) ($_POST['run_id'] ?? 0);
+        $reviewStatus = (string) ($_POST['review_status'] ?? '');
+        $reviewNotes = trim((string) ($_POST['review_notes'] ?? ''));
+        $reviewedBy = $_SESSION['user']['sub'];
+        try {
+            ThreadAnalysisRepository::saveReview($runId, $reviewStatus, $reviewNotes === '' ? null : $reviewNotes, $reviewedBy);
+        } catch (InvalidArgumentException $e) {
+            http_response_code(400);
+            header('Content-Type: text/plain');
+            die($e->getMessage());
+        }
+
+        http_response_code(302);
+        header('Location: /thread-analysis/thread?id=' . urlencode($threadId));
+        exit;
+    }
+
     $mode = $action === 'analyse_full' ? 'full' : ($action === 'analyse_incremental' ? 'incremental' : null);
     if ($mode === null) {
         http_response_code(400);
@@ -73,6 +92,17 @@ function formatRunStatusBadge($status) {
         'failed' => 'label_error',
         'requested', 'claimed' => 'label_pending',
         'cancelled' => 'label_disabled',
+        default => 'label_pending',
+    };
+    return '<span class="label ' . $class . '"><a href="#" onclick="return false;">' . htmlspecialchars($status) . '</a></span>';
+}
+
+function formatReviewStatusBadge($status) {
+    $class = match ($status) {
+        'CORRECT' => 'label_ok',
+        'MINOR_ISSUES' => 'label_warn',
+        'WRONG' => 'label_error',
+        'NOT_REVIEWED' => 'label_pending',
         default => 'label_pending',
     };
     return '<span class="label ' . $class . '"><a href="#" onclick="return false;">' . htmlspecialchars($status) . '</a></span>';
@@ -209,6 +239,41 @@ function isTrueBool($value) {
                         <td><?= htmlspecialchars((string) ($run['error'] ?? '')) ?></td>
                     </tr>
                 </table>
+
+                <?php if (in_array($run['status'], ['done', 'failed'], true)): ?>
+                    <div class="review-block">
+                        <form method="post">
+                            <input type="hidden" name="action" value="review">
+                            <input type="hidden" name="run_id" value="<?= (int) $run['id'] ?>">
+                            <label>
+                                Review status:
+                                <select name="review_status">
+                                    <?php foreach (ThreadAnalysisRepository::REVIEW_STATUSES as $statusOption): ?>
+                                        <option value="<?= htmlspecialchars($statusOption) ?>" <?= $run['review_status'] === $statusOption ? 'selected' : '' ?>>
+                                            <?= htmlspecialchars($statusOption) ?>
+                                        </option>
+                                    <?php endforeach; ?>
+                                </select>
+                            </label>
+                            <br>
+                            <label>
+                                Notes:<br>
+                                <textarea name="review_notes" rows="3" cols="60"><?= htmlspecialchars((string) ($run['review_notes'] ?? '')) ?></textarea>
+                            </label>
+                            <br>
+                            <button type="submit">Save review</button>
+                        </form>
+                        <p class="review-saved">
+                            <?= formatReviewStatusBadge($run['review_status']) ?>
+                            <?php if (!empty($run['review_notes'])): ?>
+                                <?= htmlspecialchars($run['review_notes']) ?>
+                            <?php endif; ?>
+                            <?php if (!empty($run['reviewed_by']) && !empty($run['reviewed_at'])): ?>
+                                <em>by <?= htmlspecialchars($run['reviewed_by']) ?> at <?= htmlspecialchars((string) $run['reviewed_at']) ?></em>
+                            <?php endif; ?>
+                        </p>
+                    </div>
+                <?php endif; ?>
 
                 <table>
                     <tr>

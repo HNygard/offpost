@@ -523,4 +523,67 @@ class AnalysisWorkerCliTest extends TestCase {
         $this->assertEquals(1, $result['exitCode'], $result['output']);
         $this->assertStringContainsString('--next-np cannot be combined with --thread', $result['output']);
     }
+
+    // -- --reviews (step 2c "Change 9: review status and notes per run") --
+
+    public function testReviewsPrintsReviewedRunsFromFakeProd(): void {
+        // :: Setup
+        $this->seedThread('rev1', 'Review test thread', [
+            ['id' => 'rev-em1', 'direction' => 'OUT', 'datetime_received' => '2023-09-12T10:00:00+02:00', 'subject' => 'Innsynskrav', 'body_plain' => 'Vi ber om valgprotokoll.'],
+        ]);
+        $state = $this->readState();
+        $state['runs']['1'] = [
+            'id' => 1, 'thread_id' => 'rev1', 'mode' => 'incremental', 'status' => 'done',
+            'worker' => 'test-worker', 'lease_expires_at' => null,
+            'review_status' => 'WRONG', 'review_notes' => 'Missed the denial basis.',
+            'reviewed_by' => 'admin-user', 'reviewed_at' => '2026-01-05T10:00:00+00:00',
+            'model' => 'claude-opus-5-5', 'system_prompt_sha256' => str_repeat('a', 64),
+            'finished_at' => '2026-01-05T09:00:00+00:00',
+        ];
+        $state['next_run_id'] = 2;
+        $this->writeState($state);
+
+        // :: Act
+        $result = $this->runWorker(['--reviews']);
+
+        // :: Assert
+        $this->assertEquals(0, $result['exitCode'], $result['output']);
+        $this->assertStringContainsString('Thread: rev1 (Review test thread)', $result['output']);
+        $this->assertStringContainsString('Review status: WRONG', $result['output']);
+        $this->assertStringContainsString('Notes: Missed the denial basis.', $result['output']);
+        $this->assertStringContainsString('System prompt: aaaaaaaa', $result['output']);
+        $this->assertStringContainsString($this->baseUrl . '/thread-analysis/thread?id=rev1', $result['output']);
+    }
+
+    public function testReviewsFiltersByStatusOption(): void {
+        // :: Setup
+        $this->seedThread('rev2', 'Correct thread', [
+            ['id' => 'rev-em2', 'direction' => 'OUT', 'datetime_received' => '2023-09-12T10:00:00+02:00', 'subject' => 'Innsynskrav', 'body_plain' => 'Vi ber om valgprotokoll.'],
+        ]);
+        $state = $this->readState();
+        $state['runs']['1'] = [
+            'id' => 1, 'thread_id' => 'rev2', 'mode' => 'incremental', 'status' => 'done',
+            'worker' => 'test-worker', 'lease_expires_at' => null,
+            'review_status' => 'CORRECT', 'review_notes' => null,
+            'reviewed_by' => 'admin-user', 'reviewed_at' => '2026-01-05T10:00:00+00:00',
+        ];
+        $state['next_run_id'] = 2;
+        $this->writeState($state);
+
+        // :: Act
+        $result = $this->runWorker(['--reviews', '--status=WRONG,MINOR_ISSUES']);
+
+        // :: Assert
+        $this->assertEquals(0, $result['exitCode'], $result['output']);
+        $this->assertStringNotContainsString('Correct thread', $result['output']);
+    }
+
+    public function testReviewsWithNextNpIsRefused(): void {
+        // :: Act
+        $result = $this->runWorker(['--reviews', '--next-np']);
+
+        // :: Assert
+        $this->assertEquals(1, $result['exitCode'], $result['output']);
+        $this->assertStringContainsString('--reviews cannot be combined with --thread or --next-np', $result['output']);
+    }
 }

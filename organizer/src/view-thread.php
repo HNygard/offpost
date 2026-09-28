@@ -10,6 +10,7 @@ require_once __DIR__ . '/class/Extraction/ThreadEmailExtractionService.php';
 require_once __DIR__ . '/class/ThreadUtils.php';
 require_once __DIR__ . '/class/SuggestedReplyGenerator.php';
 require_once __DIR__ . '/class/ThreadState/ThreadStateView.php';
+require_once __DIR__ . '/class/ThreadAnalysis/ThreadAnalysisRepository.php';
 
 // Require authentication
 requireAuth();
@@ -170,6 +171,16 @@ $threadStates = ThreadStateView::loadEmailStates($thread->id);
 $latestThreadState = !empty($threadStates) ? end($threadStates) : null;
 $threadStatesByEmailId = array_column($threadStates, null, 'id');
 $isAdminForThreadState = isset($_SESSION['user']['sub']) && in_array($_SESSION['user']['sub'], $admins);
+
+// For admins only: the thread's latest analysis run's review status (step
+// 2c "Change 9"), shown next to the "Analysis details" link.
+$latestRunReviewStatus = null;
+if ($isAdminForThreadState) {
+    $threadAnalysisRuns = ThreadAnalysisRepository::getRunsForThread($thread->id);
+    if (!empty($threadAnalysisRuns)) {
+        $latestRunReviewStatus = end($threadAnalysisRuns)['review_status'] ?? null;
+    }
+}
 
 // Function to get icon class based on file type
 function getIconClass($filetype) {
@@ -426,7 +437,8 @@ function print_extraction ($extraction) {
                 $latestThreadState['thread_state_type'],
                 $latestThreadState['thread_state_source'],
                 $isAdminForThreadState,
-                $thread->id
+                $thread->id,
+                $latestRunReviewStatus
             ) ?>
         <?php endif; ?>
 

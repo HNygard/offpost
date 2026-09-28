@@ -76,6 +76,7 @@ try {
             '/api/admin/analysis/claim' => '/../api/admin/analysis_claim.php',
             '/api/admin/analysis/result' => '/../api/admin/analysis_result.php',
             '/api/admin/analysis/request-next' => '/../api/admin/analysis_request_next.php',
+            '/api/admin/analysis/reviews' => '/../api/admin/analysis_reviews.php',
             '/callback' => '/../callback.php',
             '/logout' => '/../logout.php',
             '/file' => '/../file.php',

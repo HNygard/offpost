@@ -95,11 +95,63 @@ if ($expectedToken === '' || $providedToken === null || !hash_equals($expectedTo
     fakeApiRespond(401, ['error' => 'Invalid or missing X-Admin-Api-Token']);
 }
 
+$path = parse_url($_SERVER['REQUEST_URI'], PHP_URL_PATH);
+
+// GET /api/admin/analysis/reviews - the only GET route (step 2c "Change 9",
+// tools/analysis-worker.php --reviews). Every other route is POST only, so
+// this is handled before the generic "POST only" check below.
+if ($path === '/api/admin/analysis/reviews') {
+    if ($_SERVER['REQUEST_METHOD'] !== 'GET') {
+        fakeApiRespond(405, ['error' => 'GET only']);
+    }
+    $statusParam = $_GET['status'] ?? '';
+    $statuses = $statusParam === '' ? [] : explode(',', $statusParam);
+    $limit = isset($_GET['limit']) ? (int) $_GET['limit'] : 100;
+
+    $outcome = fakeApiWithState(function (array &$state) use ($statuses, $limit): array {
+        $reviews = [];
+        foreach ($state['runs'] as $run) {
+            $reviewStatus = $run['review_status'] ?? 'NOT_REVIEWED';
+            if (!empty($statuses) && !in_array($reviewStatus, $statuses, true)) {
+                continue;
+            }
+            $reviews[] = [
+                'id' => $run['id'],
+                'thread_id' => $run['thread_id'],
+                'thread_title' => $state['threads'][$run['thread_id']]['thread']['title'] ?? $run['thread_id'],
+                'review_status' => $reviewStatus,
+                'review_notes' => $run['review_notes'] ?? null,
+                'reviewed_by' => $run['reviewed_by'] ?? null,
+                'reviewed_at' => $run['reviewed_at'] ?? null,
+                'model' => $run['model'] ?? null,
+                'system_prompt_sha256' => $run['system_prompt_sha256'] ?? null,
+                'finished_at' => $run['finished_at'] ?? null,
+                'cost_usd' => 0,
+            ];
+        }
+        // Mirrors ThreadAnalysisRepository::getReviews()'s
+        // ORDER BY reviewed_at DESC NULLS LAST.
+        usort($reviews, function (array $a, array $b): int {
+            if ($a['reviewed_at'] === $b['reviewed_at']) {
+                return 0;
+            }
+            if ($a['reviewed_at'] === null) {
+                return 1;
+            }
+            if ($b['reviewed_at'] === null) {
+                return -1;
+            }
+            return strcmp($b['reviewed_at'], $a['reviewed_at']);
+        });
+        return ['status' => 200, 'body' => ['reviews' => array_slice($reviews, 0, $limit)]];
+    });
+    fakeApiRespond($outcome['status'], $outcome['body']);
+}
+
 if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
     fakeApiRespond(405, ['error' => 'POST only']);
 }
 
-$path = parse_url($_SERVER['REQUEST_URI'], PHP_URL_PATH);
 $body = fakeApiReadJsonBody();
 
 // -- routes --

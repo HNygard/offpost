@@ -809,4 +809,82 @@ class ThreadAnalysisRepositoryTest extends TestCase {
         }
         $this->assertEquals($eventsBefore, $this->countRows('thread_analysis_events'));
     }
+
+    // :: Reviews (Change 9: review status and notes per run)
+
+    public function testSaveReviewSavesAndReadsBack(): void {
+        // :: Setup
+        $threadId = $this->createFixedThread();
+        $runId = $this->insertRun($threadId, 'done', '2026-01-01T08:00:00+00:00');
+
+        // :: Act
+        ThreadAnalysisRepository::saveReview($runId, 'MINOR_ISSUES', 'Missed a case number.', 'admin-user');
+
+        // :: Assert
+        $run = ThreadAnalysisRepository::getRun($runId);
+        $this->assertEquals('MINOR_ISSUES', $run['review_status'], json_encode($run, JSON_PRETTY_PRINT));
+        $this->assertEquals('Missed a case number.', $run['review_notes']);
+        $this->assertEquals('admin-user', $run['reviewed_by']);
+        $this->assertNotNull($run['reviewed_at']);
+    }
+
+    public function testSaveReviewThrowsOnInvalidStatus(): void {
+        // :: Setup
+        $threadId = $this->createFixedThread();
+        $runId = $this->insertRun($threadId, 'done', '2026-01-01T08:00:00+00:00');
+
+        // :: Act
+        try {
+            ThreadAnalysisRepository::saveReview($runId, 'NOT_A_REAL_STATUS', null, 'admin-user');
+            $this->fail('Expected InvalidArgumentException');
+        } catch (InvalidArgumentException $e) {
+            // :: Assert
+            $this->assertEquals(
+                "saveReview: 'status' must be one of NOT_REVIEWED, CORRECT, MINOR_ISSUES, WRONG, got \"NOT_A_REAL_STATUS\"",
+                $e->getMessage()
+            );
+        }
+        $run = ThreadAnalysisRepository::getRun($runId);
+        $this->assertEquals('NOT_REVIEWED', $run['review_status'], json_encode($run, JSON_PRETTY_PRINT));
+    }
+
+    public function testSaveReviewRefusesReviewingAClaimedRun(): void {
+        // :: Setup
+        $threadId = $this->createFixedThread();
+        $runId = $this->insertRun($threadId, 'claimed', '2026-01-01T08:00:00+00:00', [
+            'claimed_at' => '2026-01-01T08:01:00+00:00', 'lease_expires_at' => '2026-01-01T08:31:00+00:00', 'worker' => 'worker-1',
+        ]);
+
+        // :: Act
+        try {
+            ThreadAnalysisRepository::saveReview($runId, 'CORRECT', null, 'admin-user');
+            $this->fail('Expected InvalidArgumentException');
+        } catch (InvalidArgumentException $e) {
+            // :: Assert
+            $this->assertEquals("saveReview: run $runId is not done or failed (status: 'claimed')", $e->getMessage());
+        }
+        $run = ThreadAnalysisRepository::getRun($runId);
+        $this->assertEquals('NOT_REVIEWED', $run['review_status'], json_encode($run, JSON_PRETTY_PRINT));
+    }
+
+    public function testGetReviewsFiltersByStatus(): void {
+        // :: Setup
+        $threadId = $this->createFixedThread();
+        $correctRunId = $this->insertRun($threadId, 'done', '2026-01-01T08:00:00+00:00');
+        ThreadAnalysisRepository::saveReview($correctRunId, 'CORRECT', null, 'admin-user');
+        $wrongThreadId = $this->createFixedThread();
+        $wrongRunId = $this->insertRun($wrongThreadId, 'done', '2026-01-01T08:00:00+00:00');
+        ThreadAnalysisRepository::saveReview($wrongRunId, 'WRONG', 'Missed the denial basis.', 'admin-user');
+
+        // :: Act
+        $reviews = ThreadAnalysisRepository::getReviews(['WRONG'], 100);
+
+        // :: Assert
+        $matching = array_values(array_filter($reviews, fn(array $row): bool => (int) $row['id'] === $wrongRunId || (int) $row['id'] === $correctRunId));
+        $this->assertCount(1, $matching, json_encode($reviews, JSON_PRETTY_PRINT));
+        $this->assertEquals($wrongRunId, (int) $matching[0]['id']);
+        $this->assertEquals('WRONG', $matching[0]['review_status']);
+        $this->assertEquals('Missed the denial basis.', $matching[0]['review_notes']);
+        $this->assertEquals($wrongThreadId, $matching[0]['thread_id']);
+    }
 }

@@ -450,4 +450,44 @@ class AdminAnalysisApiTest extends TestCase {
             E2ETestSetup::cleanupTestThread($threadId, $created['entity_id']);
         }
     }
+
+    // --- GET /api/admin/analysis/reviews (step 2c "Change 9: review status
+    // and notes per run") ---
+
+    public function testReviewsWithoutAuthGives401(): void {
+        $resp = $this->get('/api/admin/analysis/reviews');
+        $this->assertEquals(401, $resp['status']);
+        $this->assertArrayHasKey('error', $resp['json']);
+    }
+
+    public function testReviewsWithAdminTokenGives200WithAFilter(): void {
+        $created = E2ETestSetup::createTestThread();
+        $threadId = $created['thread']->id;
+        try {
+            $runId = Database::queryValue(
+                "INSERT INTO thread_analysis_runs
+                    (thread_id, status, mode, requested_by, requested_at, finished_at, review_status, review_notes, reviewed_by, reviewed_at)
+                 VALUES (?, 'done', 'full', 'test-user', '2026-01-01T08:00:00+00:00', '2026-01-01T08:00:20+00:00',
+                         'WRONG', 'e2e reviews test note', 'admin-user', '2026-01-01T09:00:00+00:00')
+                 RETURNING id",
+                [$threadId]
+            );
+
+            $resp = $this->get(
+                '/api/admin/analysis/reviews?status=WRONG,MINOR_ISSUES&limit=100',
+                ['X-Admin-Api-Token: ' . $this->adminToken()]
+            );
+
+            $this->assertEquals(200, $resp['status'], $resp['body']);
+            $this->assertArrayHasKey('reviews', $resp['json'], $resp['body']);
+            $matching = array_values(array_filter($resp['json']['reviews'], fn(array $row): bool => (int) $row['id'] === $runId));
+            $this->assertCount(1, $matching, $resp['body']);
+            $this->assertEquals('WRONG', $matching[0]['review_status']);
+            $this->assertEquals('e2e reviews test note', $matching[0]['review_notes']);
+            $this->assertEquals($threadId, $matching[0]['thread_id']);
+        } finally {
+            $this->cleanupAnalysisRows($threadId);
+            E2ETestSetup::cleanupTestThread($threadId, $created['entity_id']);
+        }
+    }
 }
