@@ -419,6 +419,47 @@ itself, instead of being given a thread id.
   - **Worker (`AnalysisWorkerCliTest`):** `--next-np --limit=2` analyses two threads in order, then a third call gives 204 and stops; `--next-np` together with `--thread` is refused.
 - **Docs:** the endpoint and the worker mode in `docs/thread-analysis.md`.
 
+## Change 8: say why an attachment has no text
+
+`ThreadEventAnalysis` tells the model why an attachment has no text:
+- no text layer (a scan);
+- extraction failed;
+- not extracted yet;
+- a file type Offpost can't read yet.
+
+Only the scan case counts as not machine-readable. The prompt matches these
+exact strings.
+
+## Change 9: review status and notes per run (step 2b, first part)
+
+The owner's design: each run gets a review status plus notes describing the
+issues. Issues are fixed by changing the prompt or script and rerunning
+(preferred), or by a manual edit done locally with AI (later).
+
+- **Migration `035_add_review_to_thread_analysis_runs.sql`** adds to `thread_analysis_runs`:
+  - `review_status`: varchar, NOT NULL, default `NOT_REVIEWED`, CHECK in `NOT_REVIEWED`, `CORRECT`, `MINOR_ISSUES`, `WRONG`;
+  - `review_notes`: text;
+  - `reviewed_by`: varchar;
+  - `reviewed_at`: timestamptz.
+  - Plus an index on `review_status`.
+  - The regenerated schema dump must be produced by `migrate.php` and proven on a fresh database (all migrations from empty), as for 034.
+- **Repository:**
+  - `ThreadAnalysisRepository::saveReview(int $runId, string $status, ?string $notes, string $reviewedBy): void` validates the status. Only `done` or `failed` runs can be reviewed; anything else throws `InvalidArgumentException`.
+  - `getReviews(array $statuses, int $limit): array` returns runs with their review fields, plus thread id and title, model, `system_prompt_sha256`, `finished_at` and cost. It's ordered by `reviewed_at` desc.
+- **`/thread-analysis/thread`:** each finished run gets a small form: a status `<select>`, a notes `<textarea>` and Save. It's an admin-session POST, handled like the "Analyse" buttons, with `reviewed_by` set to the admin sub. The saved review shows next to the run: a status badge, the notes, who and when.
+- **`/thread-analysis`:**
+  - a summary box with runs per review status;
+  - a "Runs with issues" table (`MINOR_ISSUES` and `WRONG`, LIMIT 100) with thread, status, notes, prompt sha and reviewer.
+- **The thread view:** in the "Thread state" block, admins see the latest run's review status next to the "Analysis details" link.
+- **For the local fix loop:**
+  - `GET /api/admin/analysis/reviews?status=MINOR_ISSUES,WRONG&limit=100` accepts the token or an admin session, like the export endpoints. It returns `{"reviews": [ … as getReviews … ]}`.
+  - `tools/analysis-worker.php --reviews [--status=…]` prints them, one block per run: the thread, status, notes, prompt sha and the `/thread-analysis/thread` URL. It's something you can paste into a local AI session.
+- **Tests:**
+  - **Repository:** save and read; an invalid status; reviewing a claimed run is refused; the filter by status.
+  - **Page e2e:** the form saves and shows.
+  - **Endpoint e2e:** 401, and 200 with a filter.
+  - **Worker:** `--reviews` against the fake prod.
+
 ## Later changes, direction only
 4. **`/thread-analysis`:** the queue, progress, cost per run, thread, model and prompt version, results, disagreements with `status_type`, email-type gaps, and request buttons.
 5. **The thread view:** the thread status, each email's state as foldable JSON, request buttons, and a link to 2b feedback when it exists.

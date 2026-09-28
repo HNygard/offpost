@@ -157,7 +157,7 @@ TXT;
         $this->assertStringContainsString(str_repeat('A', 8000) . "\n[CUT, original length: 8005 chars]", $input);
     }
 
-    public function testBuildEventInputAttachmentWithNoExtractedText(): void {
+    public function testBuildEventInputAttachmentPdfWithNoExtractionAtAllIsNotExtractedYet(): void {
         // :: Setup
         $thread = ['id' => 't1', 'title' => 'X', 'entity_name' => 'Y', 'entity_id' => 'e1', 'initial_request' => null];
         $email = ['id' => 'em5', 'direction' => 'IN', 'datetime_received' => '2023-01-01', 'from' => '', 'to' => [], 'cc' => [], 'subject' => ''];
@@ -167,7 +167,128 @@ TXT;
         $input = ThreadEventAnalysis::buildEventInput($thread, null, $email, $attachments);
 
         // :: Assert
-        $this->assertStringContainsString("## scan.pdf (application/pdf)\n(no extracted text)", $input);
+        $this->assertStringContainsString("## scan.pdf (application/pdf)\n(no text: not extracted yet)", $input);
+    }
+
+    public function testBuildEventInputAttachmentPdfWithSuccessfulEmptyExtractionIsScan(): void {
+        // :: Setup
+        // Mirrors ThreadEmailExtractorAttachmentPdf::extractTextFromPdf(): pdftotext
+        // ran, found nothing, so extracted_text is '' (not null) and error_message is
+        // null (see ThreadEmailExtractionService::updateExtractionResults()).
+        $thread = ['id' => 't1', 'title' => 'X', 'entity_name' => 'Y', 'entity_id' => 'e1', 'initial_request' => null];
+        $email = ['id' => 'em6', 'direction' => 'IN', 'datetime_received' => '2023-01-01', 'from' => '', 'to' => [], 'cc' => [], 'subject' => ''];
+        $attachments = [[
+            'filename' => 'scan.pdf',
+            'filetype' => 'pdf',
+            'extractions' => [
+                ['prompt_service' => 'code', 'prompt_text' => 'attachment_pdf', 'extracted_text' => '', 'error_message' => null],
+            ],
+        ]];
+
+        // :: Act
+        $input = ThreadEventAnalysis::buildEventInput($thread, null, $email, $attachments);
+
+        // :: Assert
+        $this->assertStringContainsString("## scan.pdf (pdf)\n(no text: PDF has no text layer, likely a scan)", $input);
+    }
+
+    public function testBuildEventInputAttachmentPdfWithFailedExtractionShowsError(): void {
+        // :: Setup
+        $thread = ['id' => 't1', 'title' => 'X', 'entity_name' => 'Y', 'entity_id' => 'e1', 'initial_request' => null];
+        $email = ['id' => 'em7', 'direction' => 'IN', 'datetime_received' => '2023-01-01', 'from' => '', 'to' => [], 'cc' => [], 'subject' => ''];
+        $attachments = [[
+            'filename' => 'vedtak.pdf',
+            'filetype' => 'pdf',
+            'extractions' => [
+                [
+                    'prompt_service' => 'code',
+                    'prompt_text' => 'attachment_pdf',
+                    'extracted_text' => null,
+                    'error_message' => "pdftotext command failed with code 2: some detail\nsecond line",
+                ],
+            ],
+        ]];
+
+        // :: Act
+        $input = ThreadEventAnalysis::buildEventInput($thread, null, $email, $attachments);
+
+        // :: Assert
+        $this->assertStringContainsString(
+            "## vedtak.pdf (pdf)\n(no text: text extraction failed: pdftotext command failed with code 2: some detail)",
+            $input
+        );
+    }
+
+    public function testBuildEventInputAttachmentPdfFailedErrorIsCutTo200Chars(): void {
+        // :: Setup
+        $thread = ['id' => 't1', 'title' => 'X', 'entity_name' => 'Y', 'entity_id' => 'e1', 'initial_request' => null];
+        $email = ['id' => 'em8', 'direction' => 'IN', 'datetime_received' => '2023-01-01', 'from' => '', 'to' => [], 'cc' => [], 'subject' => ''];
+        $longError = str_repeat('E', 250);
+        $attachments = [[
+            'filename' => 'vedtak.pdf',
+            'filetype' => 'pdf',
+            'extractions' => [
+                ['prompt_service' => 'code', 'prompt_text' => 'attachment_pdf', 'extracted_text' => null, 'error_message' => $longError],
+            ],
+        ]];
+
+        // :: Act
+        $input = ThreadEventAnalysis::buildEventInput($thread, null, $email, $attachments);
+
+        // :: Assert
+        $expectedError = str_repeat('E', 200);
+        $this->assertStringContainsString(
+            "## vedtak.pdf (pdf)\n(no text: text extraction failed: $expectedError)",
+            $input
+        );
+    }
+
+    public function testBuildEventInputAttachmentPdfSuccessfulExtractionWinsOverEarlierFailedOne(): void {
+        // :: Setup
+        // A retried attachment: the first attempt errored, a later one ran fine and
+        // just found no text layer. The scan message wins, not the stale error.
+        $thread = ['id' => 't1', 'title' => 'X', 'entity_name' => 'Y', 'entity_id' => 'e1', 'initial_request' => null];
+        $email = ['id' => 'em9', 'direction' => 'IN', 'datetime_received' => '2023-01-01', 'from' => '', 'to' => [], 'cc' => [], 'subject' => ''];
+        $attachments = [[
+            'filename' => 'scan.pdf',
+            'filetype' => 'pdf',
+            'extractions' => [
+                ['prompt_service' => 'code', 'prompt_text' => 'attachment_pdf', 'extracted_text' => null, 'error_message' => 'temporary failure'],
+                ['prompt_service' => 'code', 'prompt_text' => 'attachment_pdf', 'extracted_text' => '', 'error_message' => null],
+            ],
+        ]];
+
+        // :: Act
+        $input = ThreadEventAnalysis::buildEventInput($thread, null, $email, $attachments);
+
+        // :: Assert
+        $this->assertStringContainsString("## scan.pdf (pdf)\n(no text: PDF has no text layer, likely a scan)", $input);
+    }
+
+    public function testBuildEventInputAttachmentNonPdfWithoutTextNamesTheExtension(): void {
+        // :: Setup
+        $thread = ['id' => 't1', 'title' => 'X', 'entity_name' => 'Y', 'entity_id' => 'e1', 'initial_request' => null];
+        $email = ['id' => 'em10', 'direction' => 'IN', 'datetime_received' => '2023-01-01', 'from' => '', 'to' => [], 'cc' => [], 'subject' => ''];
+        $attachments = [['filename' => 'kopi.docx', 'filetype' => 'docx', 'extractions' => []]];
+
+        // :: Act
+        $input = ThreadEventAnalysis::buildEventInput($thread, null, $email, $attachments);
+
+        // :: Assert
+        $this->assertStringContainsString("## kopi.docx (docx)\n(no text: Offpost cannot read .docx files yet)", $input);
+    }
+
+    public function testBuildEventInputAttachmentNonPdfWithoutFilenameOrFiletypeUsesGenericMessage(): void {
+        // :: Setup
+        $thread = ['id' => 't1', 'title' => 'X', 'entity_name' => 'Y', 'entity_id' => 'e1', 'initial_request' => null];
+        $email = ['id' => 'em11', 'direction' => 'IN', 'datetime_received' => '2023-01-01', 'from' => '', 'to' => [], 'cc' => [], 'subject' => ''];
+        $attachments = [['filename' => null, 'filetype' => null, 'extractions' => []]];
+
+        // :: Act
+        $input = ThreadEventAnalysis::buildEventInput($thread, null, $email, $attachments);
+
+        // :: Assert
+        $this->assertStringContainsString("\n(no text: Offpost cannot read this file type yet)", $input);
     }
 
     // -- buildJsonSchema --

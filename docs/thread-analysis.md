@@ -48,7 +48,11 @@ The thread's events are its emails ordered by `datetime_received` then `id`, wit
 dropped; threads with no emails at all are skipped. For each event, in order:
 
 1. Build the input text (thread, previous state or `null`, the email, its attachments' extracted
-   text - long fields cut and marked `[CUT, original length: N chars]`).
+   text - long fields cut and marked `[CUT, original length: N chars]`). An attachment with no
+   extracted text gets one of four `(no text: ...)` sentinels instead (`ThreadEventAnalysis::
+   attachmentText()`), so the model can tell a PDF scan apart from a failed or missing
+   extraction and an unsupported file type - see `tools/analysis/event-prompt.md`'s "Judge from
+   what we have".
 2. Call `claude -p --model ... --output-format json --json-schema <schema> --system-prompt-file
    tools/analysis/event-prompt.md ...` with the input on stdin. The schema is built from the
    `ThreadState`/`ThreadEmailStatusType` enums.

@@ -48,7 +48,7 @@ class ThreadEventAnalysis {
      * @param array $thread ['id','title','entity_name','entity_id','initial_request']
      * @param array|null $previousState The previous thread_state blob (array), or null for the first event.
      * @param array $email ['id','direction','datetime_received','from','to','cc','subject','body_plain','body_html']
-     * @param array $attachments List of ['filename','filetype','extractions' => [['extracted_text' => ?string], ...]]
+     * @param array $attachments List of ['filename','filetype','extractions' => [['extracted_text' => ?string, 'error_message' => ?string], ...]]
      */
     public static function buildEventInput(array $thread, ?array $previousState, array $email, array $attachments): string {
         $lines = [];
@@ -126,20 +126,111 @@ class ThreadEventAnalysis {
         return trim(html_entity_decode(strip_tags($html), ENT_QUOTES | ENT_HTML5));
     }
 
+    /**
+     * The text to show for one attachment: the first extraction with
+     * non-empty extracted_text, or one of four sentinels explaining why
+     * there is none (see docs/thread-analysis.md and event-prompt.md's
+     * "Judge from what we have", which these strings must match exactly).
+     *
+     * Order: a non-empty extracted_text always wins. Otherwise, for a PDF:
+     * a successful extraction (no error_message) with no text means the PDF
+     * has no text layer, and that wins over a failed extraction that may
+     * also be present (e.g. a retried attachment: one failed attempt, then
+     * a successful one that just found nothing). Only when there is no
+     * successful extraction does a failed one's error show; only when there
+     * is no extraction at all does "not extracted yet" show. A non-PDF
+     * attachment always gets the "cannot read this file type" sentinel,
+     * regardless of any extraction rows, since nothing in this codebase
+     * extracts text from non-PDF attachments today.
+     */
     private static function attachmentText(array $attachment): string {
-        foreach ($attachment['extractions'] ?? [] as $extraction) {
+        $extractions = $attachment['extractions'] ?? [];
+
+        foreach ($extractions as $extraction) {
             $text = $extraction['extracted_text'] ?? null;
             if (is_string($text) && trim($text) !== '') {
                 return $text;
             }
         }
-        return '(no extracted text)';
+
+        if (!self::isPdfAttachment($attachment)) {
+            $ext = self::fileExtension($attachment);
+            return $ext !== null
+                ? "(no text: Offpost cannot read .$ext files yet)"
+                : '(no text: Offpost cannot read this file type yet)';
+        }
+
+        $failedError = null;
+        $hasSuccessfulExtraction = false;
+        foreach ($extractions as $extraction) {
+            $error = $extraction['error_message'] ?? null;
+            if (is_string($error) && trim($error) !== '') {
+                if ($failedError === null) {
+                    $failedError = $error;
+                }
+                continue;
+            }
+            $hasSuccessfulExtraction = true;
+        }
+
+        if ($hasSuccessfulExtraction) {
+            return '(no text: PDF has no text layer, likely a scan)';
+        }
+        if ($failedError !== null) {
+            return '(no text: text extraction failed: ' . self::truncateErrorMessage($failedError) . ')';
+        }
+        return '(no text: not extracted yet)';
+    }
+
+    /**
+     * Whether $attachment is a PDF, by filetype or filename extension.
+     * thread_email_attachments.filetype is not reliably a MIME type (see
+     * NpApiService::attachmentContentType()): it is usually a bare
+     * extension like 'pdf', but some legacy rows hold 'application/pdf'.
+     */
+    private static function isPdfAttachment(array $attachment): bool {
+        return self::fileExtension($attachment) === 'pdf';
+    }
+
+    /**
+     * The lowercase file extension for $attachment, from its filename, or
+     * from filetype as a fallback (itself either a bare extension or a
+     * MIME type, e.g. 'application/pdf'). Null when neither gives one.
+     */
+    private static function fileExtension(array $attachment): ?string {
+        $filename = $attachment['filename'] ?? null;
+        if (is_string($filename) && $filename !== '') {
+            $ext = pathinfo($filename, PATHINFO_EXTENSION);
+            if ($ext !== '') {
+                return strtolower($ext);
+            }
+        }
+        $filetype = $attachment['filetype'] ?? null;
+        if (is_string($filetype) && $filetype !== '') {
+            if (str_contains($filetype, '/')) {
+                $parts = explode('/', $filetype);
+                return strtolower(end($parts));
+            }
+            return strtolower($filetype);
+        }
+        return null;
+    }
+
+    /**
+     * $error's first line, trimmed and cut to 200 chars, for the
+     * "text extraction failed: <error>" sentinel.
+     */
+    private static function truncateErrorMessage(string $error): string {
+        $lines = preg_split('/\r\n|\r|\n/', trim($error));
+        $firstLine = trim($lines[0] ?? '');
+        return mb_strlen($firstLine) > 200 ? mb_substr($firstLine, 0, 200) : $firstLine;
     }
 
     /**
      * Cuts $text to $maxChars, appending a [CUT] marker with the original
-     * length when it was cut. Text that already reads "(no extracted text)"
-     * or is empty is never marked as cut.
+     * length when it was cut. The "(no text: ...)" sentinels from
+     * attachmentText() are all far shorter than any $maxChars used, so they
+     * are never marked as cut.
      */
     private static function cut(string $text, int $maxChars): string {
         $length = mb_strlen($text);

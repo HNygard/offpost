@@ -50,12 +50,18 @@ If the first event is not our request (the export may start later), build the it
 | `WITHDRAWN` | We withdrew the item or narrowed it away |
 
 - The email body is part of the response, like a document; attachments may come in addition. Judge each item from the body and the attachments together.
-- Judge from what we have. Some attachments reach you without text (`(no extracted text)`): scans, images, and file types we cannot read yet.
+- Judge from what we have. Some attachments reach you without text. The line after the attachment says why:
+  - `(no text: PDF has no text layer, likely a scan)`: the PDF was read and holds no text, so it is a scan.
+  - `(no text: text extraction failed: …)`: we tried and failed. We don't know what it holds.
+  - `(no text: not extracted yet)`: we haven't tried yet. We don't know what it holds.
+  - `(no text: Offpost cannot read .xyz files yet)`: we can't read this file type yet. That is our gap, not the entity's.
   - If the entity says a document is attached or released, or the attachment's name shows what it is, trust that it is released and set the item's status accordingly.
   - Mention the unread attachment in the item's `note`, but do not hold the item back because of it.
   - **Exception: machine-readable format.** When the request asks for a machine-readable format (e.g. "maskinlesbart", "som regneark", xlsx/csv, "søkbar pdf"), what arrives must be machine-readable. Judge that by the file type, not by whether we could read it:
-    - xlsx, xls, ods, csv, json, xml, docx, odt, txt, and a pdf with extracted text are machine-readable, even when we have no text for them (that is our gap, not the entity's).
-    - A pdf without extracted text (a scan) or an image (png, jpg, tif) is not.
+    - xlsx, xls, ods, csv, json, xml, docx, odt and txt are machine-readable, even when we have no text for them. That is our gap, not the entity's.
+    - A PDF is machine-readable when it has text. It is not when it says `(no text: PDF has no text layer, likely a scan)`.
+    - An image (png, jpg, tif) is not.
+    - When extraction failed or hasn't run, we don't know. Do not set `NOT_MACHINE_READABLE` on a guess; mention the uncertainty in the item's `note`.
   - Not getting a machine-readable format when we asked for one is a partial refusal. Set the item to `PARTLY_RELEASED`, or `WILL_RELEASE_PARTLY` if it is decided but not yet sent, with `denial_basis.issues` including `NOT_MACHINE_READABLE`. Put the entity's reason for the format, if any, in `refs` and `text`.
 - A decision and the delivery may come in different emails: first `WILL_RELEASE_PARTLY`, later `PARTLY_RELEASED`.
 - When documents for an item are attached or linked, add this email's id to the item's `released_in_email_ids`. The item stays `WILL_RELEASE…` until everything for it has come.
