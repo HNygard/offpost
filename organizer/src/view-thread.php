@@ -266,6 +266,8 @@ function print_extraction ($extraction) {
     ?>
     <link href="/css/extractionDialog.css" rel="stylesheet">
     <script src="/js/extractionDialog.js"></script>
+    <link href="/css/contentDialog.css" rel="stylesheet">
+    <script src="/js/contentDialog.js"></script>
 </head>
 <body>
     <div class="container">
@@ -459,7 +461,8 @@ function print_extraction ($extraction) {
                         if (isset($threadStatesByEmailId[$email->id])) {
                             echo ThreadStateView::renderEmailBadge(
                                 $threadStatesByEmailId[$email->id]['thread_state'],
-                                $threadStatesByEmailId[$email->id]['thread_state_type']
+                                $threadStatesByEmailId[$email->id]['thread_state_type'],
+                                $email->id
                             );
                         }
                         ?>

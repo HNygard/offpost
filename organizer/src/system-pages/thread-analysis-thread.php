@@ -105,6 +105,9 @@ function isTrueBool($value) {
     $pageTitle = 'Thread Analysis - ' . ($threadRow['title'] ?? $threadId) . ' - Offpost';
     include __DIR__ . '/../head.php';
     ?>
+    <link href="/css/extractionDialog.css" rel="stylesheet">
+    <link href="/css/contentDialog.css" rel="stylesheet">
+    <script src="/js/contentDialog.js"></script>
     <style>
         h2 {
             margin-top: 2em;
@@ -243,10 +246,9 @@ function isTrueBool($value) {
                             <td><?= htmlspecialchars((string) ($event['error'] ?? '')) ?></td>
                             <td>
                                 <?php if ($event['thread_state'] !== null): ?>
-                                    <details>
-                                        <summary>Show state</summary>
-                                        <pre><?= htmlspecialchars(json_encode($event['thread_state'], JSON_PRETTY_PRINT)) ?></pre>
-                                    </details>
+                                    <?php $stateTemplateId = 'analysis-state-' . htmlspecialchars((string) $event['id']); ?>
+                                    <a href="#" class="content-dialog-link" data-dialog-title="State after this event" data-dialog-template="<?= $stateTemplateId ?>">Show state</a>
+                                    <template id="<?= $stateTemplateId ?>"><pre><?= htmlspecialchars(json_encode($event['thread_state'], JSON_PRETTY_PRINT)) ?></pre></template>
                                 <?php endif; ?>
                             </td>
                         </tr>
@@ -289,17 +291,15 @@ function isTrueBool($value) {
                                                 <td><?= isTrueBool($call['is_error']) ? 'yes' : 'no' ?></td>
                                                 <td><?= htmlspecialchars((string) ($call['stop_reason'] ?? '')) ?></td>
                                                 <td>
-                                                    <details>
-                                                        <summary>Show input</summary>
-                                                        <pre><?= htmlspecialchars((string) $call['input_text']) ?></pre>
-                                                    </details>
+                                                    <?php $inputTemplateId = 'analysis-input-' . htmlspecialchars((string) $call['id']); ?>
+                                                    <a href="#" class="content-dialog-link" data-dialog-title="Call input text" data-dialog-template="<?= $inputTemplateId ?>">Show input</a>
+                                                    <template id="<?= $inputTemplateId ?>"><pre><?= htmlspecialchars((string) $call['input_text']) ?></pre></template>
                                                 </td>
                                                 <td>
                                                     <?php if ($call['response'] !== null): ?>
-                                                        <details>
-                                                            <summary>Show response</summary>
-                                                            <pre><?= htmlspecialchars(json_encode($call['response'], JSON_PRETTY_PRINT)) ?></pre>
-                                                        </details>
+                                                        <?php $responseTemplateId = 'analysis-response-' . htmlspecialchars((string) $call['id']); ?>
+                                                        <a href="#" class="content-dialog-link" data-dialog-title="Call response" data-dialog-template="<?= $responseTemplateId ?>">Show response</a>
+                                                        <template id="<?= $responseTemplateId ?>"><pre><?= htmlspecialchars(json_encode($call['response'], JSON_PRETTY_PRINT)) ?></pre></template>
                                                     <?php endif; ?>
                                                 </td>
                                             </tr>

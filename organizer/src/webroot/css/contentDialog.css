@@ -1,0 +1,15 @@
+/* Content Dialog styles - on top of the shared extraction-modal* classes
+ * from extractionDialog.css. Only what ContentDialog needs and
+ * extractionDialog.css doesn't already provide. */
+
+#content-modal .extraction-modal-body pre {
+    max-width: 100%;
+    overflow-x: auto;
+    background-color: #f8f9fa;
+    border: 1px solid #eee;
+    border-radius: 4px;
+    padding: 8px;
+    font-size: 0.9em;
+    white-space: pre-wrap;
+    word-wrap: break-word;
+}

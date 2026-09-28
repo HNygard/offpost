@@ -218,15 +218,17 @@ class ThreadStateViewTest extends TestCase {
         $state = $this->smallState();
 
         // :: Act
-        $html = ThreadStateView::renderEmailBadge($state, 'WAITING_FOR_ENTITY');
+        $html = ThreadStateView::renderEmailBadge($state, 'WAITING_FOR_ENTITY', 'email-1');
 
         // :: Assert
         $expected = '<span class="thread-state-badge">'
             . '<span class="label classification label_info" title="WAITING_FOR_ENTITY">Venter på offentlig organ (after this email)</span>'
             . '</span>'
-            . ' <details class="thread-state-details"><summary>Show state</summary><pre>'
+            . ' <a href="#" class="content-dialog-link" data-dialog-title="Thread state after this email"'
+            . ' data-dialog-template="thread-state-email-1">Show state</a>'
+            . '<template id="thread-state-email-1"><pre>'
             . htmlspecialchars(json_encode($state, JSON_PRETTY_PRINT | JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE), ENT_QUOTES)
-            . '</pre></details>';
+            . '</pre></template>';
         $this->assertEquals($expected, $html);
     }
 
@@ -235,11 +237,27 @@ class ThreadStateViewTest extends TestCase {
         $state = $this->smallState('<script>alert(3)</script>');
 
         // :: Act
-        $html = ThreadStateView::renderEmailBadge($state, 'ANSWERED');
+        $html = ThreadStateView::renderEmailBadge($state, 'ANSWERED', 'email-1');
 
         // :: Assert
         $this->assertStringNotContainsString('<script>alert(3)</script>', $html);
         $this->assertStringContainsString('&lt;script&gt;alert(3)&lt;/script&gt;', $html);
+    }
+
+    public function testRenderEmailBadgeEscapesScriptInsideTheTemplate(): void {
+        // A <script> inside the state must stay escaped inside the hidden
+        // <template> too - the dialog only ever reads the template's own
+        // cloned DOM, never raw HTML, so nothing here may execute.
+        // :: Setup
+        $state = $this->smallState('<script>alert(4)</script>');
+
+        // :: Act
+        $html = ThreadStateView::renderEmailBadge($state, 'ANSWERED', 'email-2');
+
+        // :: Assert
+        $this->assertStringContainsString('<template id="thread-state-email-2">', $html);
+        $this->assertStringNotContainsString('<script>alert(4)</script>', $html);
+        $this->assertStringContainsString('&lt;script&gt;alert(4)&lt;/script&gt;', $html);
     }
 
     public function testLoadEmailStatesReturnsOnlyEmailsWithStateOrderedOldestFirst(): void {

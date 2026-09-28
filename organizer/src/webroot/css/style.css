@@ -525,23 +525,8 @@ span.label.classification.label_info {
 }
 
 .email-header .thread-state-badge,
-.email-header .thread-state-details {
+.email-header .content-dialog-link {
     font-size: 0.85em;
-}
-
-.email-header .thread-state-details summary {
-    cursor: pointer;
-    color: #666;
-}
-
-.email-header .thread-state-details pre {
-    max-width: 100%;
-    overflow-x: auto;
-    background-color: #f8f9fa;
-    border: 1px solid #eee;
-    border-radius: 4px;
-    padding: 8px;
-    font-size: 0.9em;
 }
 
 /*

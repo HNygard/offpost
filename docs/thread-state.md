@@ -159,7 +159,9 @@ the thread, in `view-thread.php`:
   badges), case numbers, dates, complaint rounds, and `notes` when not empty. Admins also get a
   link to the debug page from step 2c change 4b, `/thread-analysis/thread?id=<thread id>`.
 - Per email, in `.email-header`, when that email has a `thread_state`: a small badge with its
-  `thread_state_type`, and a `<details>` toggle with the blob as pretty-printed JSON.
+  `thread_state_type`, and a "Show state" link that opens the blob as pretty-printed JSON in the
+  shared `ContentDialog` modal (`webroot/js/contentDialog.js`) - a hidden `<template>` per email,
+  cloned into the dialog on click, the same look and behaviour as `ExtractionDialog`.
 
 `ThreadStateType::label()` and `ThreadStateItemStatus::label()` give the short Bokmål labels used
 there; the enum value itself is always shown alongside, in a `title` attribute. Bokmål labels for

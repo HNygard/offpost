@@ -145,13 +145,19 @@ class ThreadStateView {
     }
 
     /**
-     * The small per-email badge and "Show state" toggle in .email-header,
-     * shown when the email has a thread_state.
+     * The small per-email badge and "Show state" dialog trigger in
+     * .email-header, shown when the email has a thread_state. Opens in the
+     * shared ContentDialog (webroot/js/contentDialog.js) via a hidden
+     * <template>, unique per email id.
      */
-    public static function renderEmailBadge(array $state, ?string $stateType): string {
+    public static function renderEmailBadge(array $state, ?string $stateType, string $emailId): string {
+        $templateId = 'thread-state-' . self::e($emailId);
+
         $html = '<span class="thread-state-badge">' . self::renderStatusBadge($stateType, ' (after this email)') . '</span>';
-        $html .= ' <details class="thread-state-details"><summary>Show state</summary><pre>'
-            . self::e(json_encode($state, JSON_PRETTY_PRINT | JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE)) . '</pre></details>';
+        $html .= ' <a href="#" class="content-dialog-link" data-dialog-title="Thread state after this email"'
+            . ' data-dialog-template="' . $templateId . '">Show state</a>';
+        $html .= '<template id="' . $templateId . '"><pre>'
+            . self::e(json_encode($state, JSON_PRETTY_PRINT | JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE)) . '</pre></template>';
 
         return $html;
     }

@@ -317,9 +317,10 @@ lists rows. The read-only queries behind them live in
     admin's sub as `requested_by`, then redirect back (avoids a resubmission on refresh).
   - Every run, newest first, with its fields, and a table of its events (position, the email's
     date/direction/subject, email type, note, gap, derived status, attempts, error, and a
-    `<details>` with the state blob as pretty JSON), each with its calls (attempt, model,
-    resolved model, Claude Code version, token counts, cost, duration, and `<details>` for the
-    input text and the response JSON).
+    "Show state" link opening the state blob as pretty JSON in the shared `ContentDialog` modal -
+    see "Shown in the thread view" in [docs/thread-state.md](thread-state.md)), each with its
+    calls (attempt, model, resolved model, Claude Code version, token counts, cost, duration, and
+    "Show input"/"Show response" links opening the input text and the response JSON the same way).
   - A malformed `id` is a 400; an unknown thread is a 404 (same style as `view-thread.php`/`file.php`:
     `is_uuid()` plus a direct `http_response_code()` + `die()`, not a thrown exception - this page
     must not go through `error.php`'s generic 500 for what are really client errors).
