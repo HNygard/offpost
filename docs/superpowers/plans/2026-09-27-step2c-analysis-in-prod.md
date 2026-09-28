@@ -384,6 +384,41 @@ the details.
   - an ignored email's status is left out.
   - The existing tests keep passing, with their expected arrays extended only by the new key.
 
+## Change 7: "process next" for norske-postlister threads
+
+The owner wants the worker to take the next norske-postlister thread by
+itself, instead of being given a thread id.
+
+- **Endpoint:** `POST /api/admin/analysis/request-next`, file `api/admin/analysis_request_next.php`.
+  - Token only (`adminApiRequireToken`), POST only, error style as the other analysis endpoints.
+  - Body: `{"kind": "np", "mode"?: "incremental"|"full"}`. `kind` is required and only `np` exists for now; anything else gives a 400. `mode` defaults to `incremental`.
+  - Picks the next NP thread:
+    - it has the label `norske_postlister_no` (in `threads.labels`), archived or not;
+    - it has at least one non-ignored email;
+    - it has **no** row in `thread_analysis_runs`, in any status.
+    - It is ordered by the latest `datetime_received` of its non-ignored emails, newest first, then by thread id.
+  - Queues the thread with `ThreadAnalysisRepository::requestRun(<thread>, <mode>, 'token')`.
+  - Returns `{"run_id", "thread_id"}`, or a 204 with no body when no thread is left.
+- **Repository:** `ThreadAnalysisRepository::requestNextNpThread(string $mode, string $requestedBy): ?array` does the pick and the request in one transaction and returns `['run_id' => …, 'thread_id' => …]` or null. The endpoint is a thin wrapper around it.
+- **Worker:** `tools/analysis-worker.php --next-np [--limit=N] [--mode=…]`.
+  - Repeats up to `--limit` times (default 1): POST request-next, then claim with that `thread_id`, analyse, and post the result (with the same pending, posted and rejected handling).
+  - Stops early on a 204 ("no more NP threads to analyse"), on the budget, or on a post it can't deliver.
+  - `--next-np` cannot be combined with `--thread`, which gives an error. `--once` is implied per iteration: after `--limit` threads it stops, and it doesn't drain the general queue.
+  - Log lines: `request-next: np -> run <id> thread <id>` and `request-next: np -> none left`.
+- **Fake prod** (`organizer/src/tests/fixtures/fake-analysis-api.php`): supports request-next from a list of candidate NP thread ids in its state file.
+- **Tests:**
+  - **Unit (`ThreadAnalysisRepositoryTest`):**
+    - only NP-labelled threads are picked;
+    - a thread with any run (even a failed or done one) is skipped;
+    - a thread with no non-ignored emails is skipped;
+    - the newest latest email wins;
+    - ties are broken by id;
+    - null when none is left;
+    - the run is created with the given mode.
+  - **E2E (`AdminAnalysisApiTest`):** 401 without a token, 405 on GET, 400 for a bad kind, 200 with `run_id` and `thread_id`. The test setup must control which NP threads exist and are unanalysed, or assert only on a thread it created and that is newest.
+  - **Worker (`AnalysisWorkerCliTest`):** `--next-np --limit=2` analyses two threads in order, then a third call gives 204 and stops; `--next-np` together with `--thread` is refused.
+- **Docs:** the endpoint and the worker mode in `docs/thread-analysis.md`.
+
 ## Later changes, direction only
 4. **`/thread-analysis`:** the queue, progress, cost per run, thread, model and prompt version, results, disagreements with `status_type`, email-type gaps, and request buttons.
 5. **The thread view:** the thread status, each email's state as foldable JSON, request buttons, and a link to 2b feedback when it exists.

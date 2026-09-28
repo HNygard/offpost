@@ -16,13 +16,13 @@ class ThreadAnalysisRepositoryTest extends TestCase {
 
     private int $threadCounter = 0;
 
-    private function createFixedThread(): string {
+    private function createFixedThread(array $labels = []): string {
         $this->threadCounter++;
         $thread = new Thread();
         $thread->title = 'Analysis test thread';
         $thread->my_name = 'Test Person';
         $thread->my_email = "test-person-{$this->threadCounter}@example.com";
-        $thread->labels = [];
+        $thread->labels = $labels;
         $thread->sent = false;
         $thread->archived = false;
         $thread->public = true;
@@ -39,11 +39,16 @@ class ThreadAnalysisRepositoryTest extends TestCase {
         return $created->id;
     }
 
-    private function insertEmail(string $threadId, string $timestampReceived, ?string $threadStateSource = null): string {
+    /** A thread carrying NpApiService::NP_LABEL, for requestNextNpThread() tests. */
+    private function createNpThread(): string {
+        return $this->createFixedThread([NpApiService::NP_LABEL]);
+    }
+
+    private function insertEmail(string $threadId, string $timestampReceived, ?string $threadStateSource = null, bool $ignore = false): string {
         return Database::queryValue(
-            "INSERT INTO thread_emails (thread_id, timestamp_received, datetime_received, content, thread_state_source)
-             VALUES (?, ?, ?, ?::bytea, ?) RETURNING id",
-            [$threadId, $timestampReceived, $timestampReceived, 'Body text', $threadStateSource]
+            "INSERT INTO thread_emails (thread_id, timestamp_received, datetime_received, content, thread_state_source, ignore)
+             VALUES (?, ?, ?, ?::bytea, ?, ?) RETURNING id",
+            [$threadId, $timestampReceived, $timestampReceived, 'Body text', $threadStateSource, $ignore ? 't' : 'f']
         );
     }
 
@@ -235,6 +240,142 @@ class ThreadAnalysisRepositoryTest extends TestCase {
         $this->assertNotNull($claimed);
         $this->assertEquals($runIdB, (int) $claimed['id'], json_encode($claimed, JSON_PRETTY_PRINT));
         $this->assertEquals($threadIdB, $claimed['thread_id']);
+    }
+
+    // :: requestNextNpThread (Change 7: "process next" for norske-postlister threads)
+
+    public function testRequestNextNpThreadOnlyPicksNpLabelledThreads(): void {
+        // :: Setup
+        $npThreadId = $this->createNpThread();
+        $this->insertEmail($npThreadId, '2026-02-01T09:00:00+00:00');
+        $otherThreadId = $this->createFixedThread(['some-other-label']);
+        // The non-NP thread has the newer email but must never be picked.
+        $this->insertEmail($otherThreadId, '2026-02-02T09:00:00+00:00');
+
+        // :: Act
+        $picked = ThreadAnalysisRepository::requestNextNpThread('incremental', 'token');
+
+        // :: Assert
+        $this->assertNotNull($picked);
+        $this->assertEquals($npThreadId, $picked['thread_id'], json_encode($picked, JSON_PRETTY_PRINT));
+    }
+
+    public function testRequestNextNpThreadSkipsThreadWithAnyRunRegardlessOfStatus(): void {
+        // :: Setup
+        $threadDone = $this->createNpThread();
+        $this->insertEmail($threadDone, '2026-02-10T09:00:00+00:00');
+        $this->insertRun($threadDone, 'done', '2026-01-01T08:00:00+00:00');
+
+        $threadFailed = $this->createNpThread();
+        $this->insertEmail($threadFailed, '2026-02-09T09:00:00+00:00');
+        $this->insertRun($threadFailed, 'failed', '2026-01-01T08:00:00+00:00');
+
+        $threadNone = $this->createNpThread();
+        // Its only non-ignored email is older than the two above, but they
+        // are excluded outright for already having a run.
+        $this->insertEmail($threadNone, '2026-02-01T09:00:00+00:00');
+
+        // :: Act
+        $picked = ThreadAnalysisRepository::requestNextNpThread('incremental', 'token');
+
+        // :: Assert
+        $this->assertNotNull($picked);
+        $this->assertEquals($threadNone, $picked['thread_id'], json_encode($picked, JSON_PRETTY_PRINT));
+    }
+
+    public function testRequestNextNpThreadSkipsThreadWithNoNonIgnoredEmails(): void {
+        // :: Setup
+        $threadAllIgnored = $this->createNpThread();
+        $this->insertEmail($threadAllIgnored, '2026-02-15T09:00:00+00:00', null, true);
+        $threadWithEmail = $this->createNpThread();
+        $this->insertEmail($threadWithEmail, '2026-02-01T09:00:00+00:00');
+
+        // :: Act
+        $picked = ThreadAnalysisRepository::requestNextNpThread('incremental', 'token');
+
+        // :: Assert
+        $this->assertNotNull($picked);
+        $this->assertEquals($threadWithEmail, $picked['thread_id'], json_encode($picked, JSON_PRETTY_PRINT));
+    }
+
+    public function testRequestNextNpThreadUsesLatestNonIgnoredEmailPerThread(): void {
+        // :: Setup
+        $threadA = $this->createNpThread();
+        $this->insertEmail($threadA, '2026-02-01T09:00:00+00:00');
+        // A later email on the same thread, but ignored - must not count
+        // towards its "latest" datetime_received.
+        $this->insertEmail($threadA, '2026-02-20T09:00:00+00:00', null, true);
+        $threadB = $this->createNpThread();
+        $this->insertEmail($threadB, '2026-02-05T09:00:00+00:00');
+
+        // :: Act
+        $picked = ThreadAnalysisRepository::requestNextNpThread('incremental', 'token');
+
+        // :: Assert
+        $this->assertNotNull($picked);
+        $this->assertEquals($threadB, $picked['thread_id'], json_encode($picked, JSON_PRETTY_PRINT));
+    }
+
+    public function testRequestNextNpThreadPicksNewestLatestEmailFirst(): void {
+        // :: Setup
+        $older = $this->createNpThread();
+        $this->insertEmail($older, '2026-02-01T09:00:00+00:00');
+        $newer = $this->createNpThread();
+        $this->insertEmail($newer, '2026-02-10T09:00:00+00:00');
+
+        // :: Act
+        $picked = ThreadAnalysisRepository::requestNextNpThread('incremental', 'token');
+
+        // :: Assert
+        $this->assertNotNull($picked);
+        $this->assertEquals($newer, $picked['thread_id'], json_encode($picked, JSON_PRETTY_PRINT));
+    }
+
+    public function testRequestNextNpThreadBreaksTiesByThreadId(): void {
+        // :: Setup
+        $threadA = $this->createNpThread();
+        $this->insertEmail($threadA, '2026-02-01T09:00:00+00:00');
+        $threadB = $this->createNpThread();
+        $this->insertEmail($threadB, '2026-02-01T09:00:00+00:00');
+        $expected = strcmp($threadA, $threadB) > 0 ? $threadA : $threadB;
+
+        // :: Act
+        $picked = ThreadAnalysisRepository::requestNextNpThread('incremental', 'token');
+
+        // :: Assert
+        $this->assertNotNull($picked);
+        $this->assertEquals($expected, $picked['thread_id'], json_encode($picked, JSON_PRETTY_PRINT));
+    }
+
+    public function testRequestNextNpThreadReturnsNullWhenNoneLeft(): void {
+        // :: Setup
+        $threadId = $this->createNpThread();
+        $this->insertEmail($threadId, '2026-02-01T09:00:00+00:00');
+        $this->insertRun($threadId, 'requested', '2026-01-01T08:00:00+00:00');
+
+        // :: Act
+        $picked = ThreadAnalysisRepository::requestNextNpThread('incremental', 'token');
+
+        // :: Assert
+        $this->assertNull($picked);
+    }
+
+    public function testRequestNextNpThreadCreatesRunWithGivenMode(): void {
+        // :: Setup
+        $threadId = $this->createNpThread();
+        $this->insertEmail($threadId, '2026-02-01T09:00:00+00:00');
+
+        // :: Act
+        $picked = ThreadAnalysisRepository::requestNextNpThread('full', 'token');
+
+        // :: Assert
+        $this->assertNotNull($picked);
+        $run = ThreadAnalysisRepository::getRun($picked['run_id']);
+        $this->assertEquals('full', $run['mode'], json_encode($run, JSON_PRETTY_PRINT));
+        $this->assertEquals('requested', $run['status']);
+        $this->assertEquals('token', $run['requested_by']);
+        $this->assertEquals($threadId, $run['thread_id']);
+        $this->assertEquals($threadId, $picked['thread_id']);
     }
 
     // :: saveSystemPrompt

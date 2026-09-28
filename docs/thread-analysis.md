@@ -171,11 +171,31 @@ session cookie alone.
 | `POST /api/admin/analysis/request` | `api/admin/analysis_request.php` | `{"thread_id", "mode"}` | `{"run_id"}`: the new run, or the thread's already open run |
 | `POST /api/admin/analysis/claim` | `api/admin/analysis_claim.php` | `{"worker", "thread_id"?}` | 204 with no body if nothing is claimable, else the work item below |
 | `POST /api/admin/analysis/result` | `api/admin/analysis_result.php` | `{"run_id", "worker", …the result format above}` | `{"run_id", "status"}` |
+| `POST /api/admin/analysis/request-next` | `api/admin/analysis_request_next.php` | `{"kind": "np", "mode"?}` | `{"run_id", "thread_id"}`, or 204 with no body when nothing is left |
 
 `requested_by` is always `token`. The claim lease is 3600 seconds. Errors: 405 for anything but
 POST, 400 for invalid JSON/a missing field/a non-UUID `thread_id`/a bad `mode` or any
 `InvalidArgumentException` from the repository, and 404 for an unknown thread (`request`) or run
 (`result`). Each successful call is logged with `error_log`, like the export endpoints.
+
+### Picking the next norske-postlister.no thread
+
+`/api/admin/analysis/request-next` lets a worker take the next work item by itself instead of
+being given a thread id. `kind` is required and only `"np"` exists so far (anything else is a 400);
+`mode` defaults to `incremental`. It is a thin wrapper around
+`ThreadAnalysisRepository::requestNextNpThread(mode, requestedBy)`, which does the pick and the
+`requestRun()` call in one transaction:
+
+- the thread carries the label `NpApiService::NP_LABEL` (`norske_postlister_no`) in `threads.labels`
+  - archived or not;
+- it has at least one email with `ignore` not true;
+- it has **no** row at all in `thread_analysis_runs`, in any status - once a thread has been queued
+  once, even if that run failed, it is never picked again here (a fresh look at it goes through the
+  normal `request`/admin debug page instead);
+- ordered by the latest `datetime_received` of its non-ignored emails, newest first, then by
+  thread id.
+
+Null (204) once every norske-postlister.no thread has been queued at least once.
 
 The claim response's `thread` field is the full thread export
 (`ThreadExportService::exportThread($threadId, false)`) with every email's `eml_base64` left out -
@@ -209,8 +229,8 @@ logic - see "Shared code" below), but posting results to prod instead of writing
 ```
 php tools/analysis-worker.php --base-url=https://offpost.no --token-file=secrets/admin_api_token
     [--thread=<id> [--mode=incremental|full]] [--once] [--worker=<name>]
-    [--model=claude-opus-5-5] [--max-budget-usd=20] [--out=thread-analysis]
-    [--claude-bin=claude] [--background] [--help]
+    [--next-np [--limit=N]] [--model=claude-opus-5-5] [--max-budget-usd=20]
+    [--out=thread-analysis] [--claude-bin=claude] [--background] [--help]
 ```
 
 | Option | Meaning |
@@ -218,8 +238,10 @@ php tools/analysis-worker.php --base-url=https://offpost.no --token-file=secrets
 | `--base-url=URL` | The Offpost instance. Must be `https`, or plain `http` to `localhost`/`127.0.0.1` (`ThreadExportSync::isSafeBaseUrl`) - the admin token is sent to it. |
 | `--token-file=PATH` | File containing the admin API token, sent as `X-Admin-Api-Token`. |
 | `--thread=ID` | Request (with `--mode`) then claim that thread's run, then stop. Implies `--once`. |
-| `--mode=MODE` | `incremental` (default) or `full`, used with `--thread` only. |
+| `--mode=MODE` | `incremental` (default) or `full`, used with `--thread` and `--next-np`. |
 | `--once` | Stop after at most one claimed run. |
+| `--next-np` | Pick the next norske-postlister.no thread itself, up to `--limit` times, instead of draining the general queue (see "`--next-np`: picking norske-postlister.no threads" below). Cannot be combined with `--thread`. |
+| `--limit=N` | Max threads to process with `--next-np` (default 1). |
 | `--worker=NAME` | Sent to prod as the claiming worker (default: `gethostname()`). |
 | `--model=NAME` | Model passed to `claude` (default `claude-opus-5-5`). |
 | `--max-budget-usd=N` | Stop claiming a new run once this process's summed cost reaches this (default 20). |
@@ -244,6 +266,24 @@ php tools/analysis-worker.php --base-url=https://offpost.no --token-file=secrets
 5. **Save then post:** write the full result body to `<out>/worker/pending/<run-id>.json`, then
    `POST /api/admin/analysis/result`.
 6. **Repeat**, unless `--once` (or `--thread`, which implies it) - then stop.
+
+### `--next-np`: picking norske-postlister.no threads
+
+With `--next-np`, the worker runs a separate loop that never touches the general queue:
+
+1. Resend pending results, same as step 1 above.
+2. Up to `--limit` times (default 1):
+   1. Stop if the budget is spent (same check as the general loop).
+   2. `POST /api/admin/analysis/request-next` with `{"kind": "np", "mode"}`. A 204 means no
+      norske-postlister.no thread is left to queue (logged as `request-next: np -> none left`) -
+      the worker stops.
+   3. `POST /api/admin/analysis/claim` with `{worker, thread_id}` for the thread it just got.
+   4. Analyse and post exactly as steps 4-5 above (same pending/posted/rejected handling); a post
+      that can't be delivered stops the worker here too.
+3. Stop after `--limit` threads (or earlier, per the above) - it does not drain the general queue
+   afterwards.
+
+Log line per pick: `request-next: np -> run <id> thread <id>`.
 
 ### Pending results
 

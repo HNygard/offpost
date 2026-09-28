@@ -31,8 +31,12 @@ Required:
 
 Options:
   --thread=ID          Request (mode --mode) and claim this thread's run, then stop; implies --once
-  --mode=MODE          incremental|full, used with --thread only (default: incremental)
+  --mode=MODE          incremental|full, used with --thread and --next-np (default: incremental)
   --once               Process at most one run, then stop
+  --next-np            Pick the next norske-postlister.no thread (POST request-next) instead of
+                       draining the general queue; repeats up to --limit times, then stops. Cannot
+                       be combined with --thread.
+  --limit=N            Max threads to process with --next-np (default: 1)
   --worker=NAME        Worker name sent to prod (default: this machine's hostname)
   --model=NAME         Model to pass to claude (default: claude-opus-5-5)
   --max-budget-usd=N   Stop claiming new runs once this process's summed cost reaches this (default: 20)
@@ -47,6 +51,11 @@ save the result to <out>/worker/pending/<run-id>.json, then post it - moving
 that file to posted/ on success, rejected/ on a 4xx, or leaving it pending
 (and stopping) on a network error or a 5xx. See docs/thread-analysis.md,
 "Worker".
+
+With --next-np, the loop is different: resend pending, then up to --limit
+times, POST request-next (kind=np), claim that thread, analyse and post -
+stopping early on a 204 ("no more NP threads to analyse"), the budget, or a
+post that can't be delivered. It never touches the general queue.
 
 HELP;
 }
@@ -325,6 +334,8 @@ $tokenFile = null;
 $explicitThread = null;
 $mode = 'incremental';
 $once = false;
+$nextNp = false;
+$limit = 1;
 $workerName = null;
 $model = 'claude-opus-5-5';
 $maxBudgetUsd = 20.0;
@@ -347,6 +358,12 @@ foreach ($args as $arg) {
     }
     elseif ($arg === '--once') {
         $once = true;
+    }
+    elseif ($arg === '--next-np') {
+        $nextNp = true;
+    }
+    elseif (str_starts_with($arg, '--limit=')) {
+        $limit = (int) substr($arg, strlen('--limit='));
     }
     elseif (str_starts_with($arg, '--worker=')) {
         $workerName = substr($arg, strlen('--worker='));
@@ -379,6 +396,9 @@ if ($tokenFile === null || $tokenFile === '') {
 }
 if ($mode !== 'incremental' && $mode !== 'full') {
     fail("--mode must be 'incremental' or 'full', got '$mode'");
+}
+if ($nextNp && $explicitThread !== null) {
+    fail("--next-np cannot be combined with --thread");
 }
 if ($explicitThread !== null) {
     $once = true;
@@ -452,6 +472,62 @@ logLine($logPath, "worker $workerName started: base_url=$baseUrl model=$model ma
 
 $requestedExplicitThread = false;
 $totalCostUsd = 0.0;
+
+// -- --next-np: pick norske-postlister.no threads by itself, up to --limit,
+// never touching the general queue. See docs/thread-analysis.md, "Worker".
+if ($nextNp) {
+    if (resendPending($pendingDir, $postedDir, $rejectedDir, $baseUrl, $token, $logPath)) {
+        logLine($logPath, 'worker stopping: a pending result could not be posted');
+        exit(0);
+    }
+
+    for ($i = 0; $i < $limit; $i++) {
+        if ($totalCostUsd >= $maxBudgetUsd) {
+            logLine($logPath, "worker stopping: max-budget-usd $maxBudgetUsd reached (spent \$" . round($totalCostUsd, 2) . ' this process)');
+            break;
+        }
+
+        $nextResp = httpPostJson($baseUrl . '/api/admin/analysis/request-next', $token, ['kind' => 'np', 'mode' => $mode]);
+        if ($nextResp['status'] === 204) {
+            logLine($logPath, 'request-next: np -> none left');
+            break;
+        }
+        if ($nextResp['status'] !== 200) {
+            fail("Failed to request-next: HTTP {$nextResp['status']} {$nextResp['raw']}");
+        }
+        $nextRunId = $nextResp['body']['run_id'];
+        $nextThreadId = $nextResp['body']['thread_id'];
+        logLine($logPath, "request-next: np -> run $nextRunId thread $nextThreadId");
+
+        $claimResp = httpPostJson($baseUrl . '/api/admin/analysis/claim', $token, ['worker' => $workerName, 'thread_id' => $nextThreadId]);
+        if ($claimResp['status'] === 204) {
+            logLine($logPath, 'claim: nothing to claim, stopping');
+            break;
+        }
+        if ($claimResp['status'] !== 200) {
+            fail("Failed to claim: HTTP {$claimResp['status']} {$claimResp['raw']}");
+        }
+
+        $claimJson = $claimResp['body'];
+        $run = $claimJson['run'];
+        logLine($logPath, "claim: run {$run['id']} thread {$run['thread_id']} mode={$run['mode']}, " . count($claimJson['email_ids']) . ' emails');
+
+        ['result' => $resultBody, 'costUsd' => $runCostUsd] = analyseRun(
+            $claimJson, $workerName, $model, $claudeBin, $maxBudgetUsd,
+            $promptFile, $systemPromptText, $schema, $claudeCodeVersion, $logPath
+        );
+        $totalCostUsd += $runCostUsd;
+
+        $pendingPath = $pendingDir . '/' . $run['id'] . '.json';
+        writeJsonFileAtomically($pendingPath, $resultBody);
+
+        if (postPendingFile((string) $run['id'], $resultBody, $pendingPath, $postedDir, $rejectedDir, $baseUrl, $token, $logPath) === 'stopped') {
+            break;
+        }
+    }
+
+    exit(0);
+}
 
 while (true) {
     if (resendPending($pendingDir, $postedDir, $rejectedDir, $baseUrl, $token, $logPath)) {

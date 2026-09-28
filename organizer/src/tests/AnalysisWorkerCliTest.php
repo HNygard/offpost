@@ -190,6 +190,17 @@ class AnalysisWorkerCliTest extends TestCase {
         $this->writeState($state);
     }
 
+    /**
+     * Seeds the candidate NP thread ids /api/admin/analysis/request-next
+     * picks from, in this order (see fixtures/fake-analysis-api.php, which
+     * queues the first one with no run yet).
+     */
+    private function seedNpCandidates(array $threadIds): void {
+        $state = $this->readState();
+        $state['np_candidate_thread_ids'] = $threadIds;
+        $this->writeState($state);
+    }
+
     private function setNextResultResponse(int $status, ?array $body = null): void {
         $state = $this->readState();
         $state['next_result_response'] = ['status' => $status, 'body' => $body];
@@ -445,5 +456,71 @@ class AnalysisWorkerCliTest extends TestCase {
         $this->assertEquals('done', $state['runs']['2']['status']);
         $this->assertEquals('requested', $state['runs']['3']['status'], 'The third run must never have been claimed once the budget was reached: ' . json_encode($state['runs'], JSON_PRETTY_PRINT));
         $this->assertCount(2, $state['posted_results'], json_encode($state['posted_results'], JSON_PRETTY_PRINT));
+    }
+
+    // -- --next-np (Change 7: "process next" for norske-postlister threads) --
+
+    public function testNextNpProcessesCandidatesInOrderThenGives204AndStops(): void {
+        // :: Setup
+        $this->seedThread('np1', 'NP thread 1', [
+            ['id' => 'np-em1', 'direction' => 'OUT', 'datetime_received' => '2023-09-12T10:00:00+02:00', 'subject' => 'Innsynskrav', 'body_plain' => 'Vi ber om valgprotokoll.'],
+        ]);
+        $this->seedThread('np2', 'NP thread 2', [
+            ['id' => 'np-em2', 'direction' => 'OUT', 'datetime_received' => '2023-10-01T10:00:00+02:00', 'subject' => 'Innsynskrav 2', 'body_plain' => 'Vi ber om moetebok.'],
+        ]);
+        $this->seedNpCandidates(['np1', 'np2']);
+
+        // :: Act
+        // --limit=3 with only two candidates: the third request-next call
+        // must find nothing left and stop cleanly.
+        $result = $this->runWorker(['--next-np', '--limit=3']);
+
+        // :: Assert
+        $this->assertEquals(0, $result['exitCode'], $result['output']);
+        $log = $this->workerLog();
+        $this->assertStringContainsString('request-next: np -> run 1 thread np1', $log);
+        $this->assertStringContainsString('request-next: np -> run 2 thread np2', $log);
+        $this->assertStringContainsString('request-next: np -> none left', $log);
+        $this->assertFileExists($this->outDir . '/worker/posted/1.json');
+        $this->assertFileExists($this->outDir . '/worker/posted/2.json');
+
+        $state = $this->readState();
+        $this->assertEquals('done', $state['runs']['1']['status'], json_encode($state['runs'], JSON_PRETTY_PRINT));
+        $this->assertEquals('np1', $state['runs']['1']['thread_id']);
+        $this->assertEquals('done', $state['runs']['2']['status'], json_encode($state['runs'], JSON_PRETTY_PRINT));
+        $this->assertEquals('np2', $state['runs']['2']['thread_id']);
+    }
+
+    public function testNextNpDefaultLimitProcessesOnlyOneThread(): void {
+        // :: Setup
+        $this->seedThread('np3', 'NP thread 3', [
+            ['id' => 'np-em3', 'direction' => 'OUT', 'datetime_received' => '2023-11-01T10:00:00+02:00', 'subject' => 'Innsynskrav', 'body_plain' => 'Vi ber om noe.'],
+        ]);
+        $this->seedThread('np4', 'NP thread 4', [
+            ['id' => 'np-em4', 'direction' => 'OUT', 'datetime_received' => '2023-11-02T10:00:00+02:00', 'subject' => 'Innsynskrav', 'body_plain' => 'Vi ber om noe annet.'],
+        ]);
+        $this->seedNpCandidates(['np3', 'np4']);
+
+        // :: Act
+        $result = $this->runWorker(['--next-np']);
+
+        // :: Assert
+        $this->assertEquals(0, $result['exitCode'], $result['output']);
+        $this->assertFileExists($this->outDir . '/worker/posted/1.json');
+        $this->assertFileDoesNotExist($this->outDir . '/worker/posted/2.json');
+
+        $state = $this->readState();
+        $this->assertEquals('done', $state['runs']['1']['status'], json_encode($state['runs'], JSON_PRETTY_PRINT));
+        $this->assertEquals('np3', $state['runs']['1']['thread_id']);
+        $this->assertArrayNotHasKey('2', $state['runs'], json_encode($state['runs'], JSON_PRETTY_PRINT));
+    }
+
+    public function testNextNpWithThreadIsRefused(): void {
+        // :: Act
+        $result = $this->runWorker(['--next-np', '--thread=np1']);
+
+        // :: Assert
+        $this->assertEquals(1, $result['exitCode'], $result['output']);
+        $this->assertStringContainsString('--next-np cannot be combined with --thread', $result['output']);
     }
 }

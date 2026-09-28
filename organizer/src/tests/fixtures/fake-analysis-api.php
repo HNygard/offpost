@@ -50,7 +50,16 @@ function fakeApiWithState(callable $mutator) {
     if (!is_array($state)) {
         $state = [];
     }
-    $state += ['token' => '', 'next_run_id' => 1, 'threads' => [], 'runs' => [], 'next_result_response' => null, 'posted_results' => []];
+    $state += [
+        'token' => '', 'next_run_id' => 1, 'threads' => [], 'runs' => [],
+        'next_result_response' => null, 'posted_results' => [],
+        // Change 7 ("process next" for norske-postlister threads): candidate
+        // NP thread ids, oldest-picked-first as the test seeds them, consumed
+        // (removed) by /api/admin/analysis/request-next as each is queued -
+        // mirrors ThreadAnalysisRepository::requestNextNpThread() picking the
+        // next thread with no run at all, without reimplementing its SQL.
+        'np_candidate_thread_ids' => [],
+    ];
 
     $result = $mutator($state);
 
@@ -117,6 +126,46 @@ if ($path === '/api/admin/analysis/request') {
             'status' => 'requested', 'worker' => null, 'lease_expires_at' => null,
         ];
         return ['status' => 200, 'body' => ['run_id' => $runId]];
+    });
+    fakeApiRespond($outcome['status'], $outcome['body']);
+}
+
+if ($path === '/api/admin/analysis/request-next') {
+    $kind = $body['kind'] ?? null;
+    if ($kind !== 'np') {
+        fakeApiRespond(400, ['error' => "kind must be 'np', got " . json_encode($kind)]);
+    }
+    $mode = $body['mode'] ?? 'incremental';
+
+    $outcome = fakeApiWithState(function (array &$state) use ($mode): array {
+        // Mirrors ThreadAnalysisRepository::requestNextNpThread(): pick the
+        // next candidate NP thread id (test-seeded order = pick order) that
+        // has no run at all yet, and queue it - or 204 when the list is
+        // exhausted of unqueued candidates.
+        $threadId = null;
+        foreach ($state['np_candidate_thread_ids'] as $index => $candidateId) {
+            $hasRun = false;
+            foreach ($state['runs'] as $run) {
+                if ($run['thread_id'] === $candidateId) {
+                    $hasRun = true;
+                    break;
+                }
+            }
+            if (!$hasRun) {
+                $threadId = $candidateId;
+                break;
+            }
+        }
+        if ($threadId === null) {
+            return ['status' => 204, 'body' => null];
+        }
+
+        $runId = $state['next_run_id']++;
+        $state['runs'][(string) $runId] = [
+            'id' => $runId, 'thread_id' => $threadId, 'mode' => $mode,
+            'status' => 'requested', 'worker' => null, 'lease_expires_at' => null,
+        ];
+        return ['status' => 200, 'body' => ['run_id' => $runId, 'thread_id' => $threadId]];
     });
     fakeApiRespond($outcome['status'], $outcome['body']);
 }

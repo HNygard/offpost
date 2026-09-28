@@ -15,6 +15,7 @@ use PHPUnit\Framework\TestCase;
 
 require_once __DIR__ . '/../../tests/bootstrap.php';
 require_once __DIR__ . '/../../class/Database.php';
+require_once __DIR__ . '/../../class/NpApiService.php';
 require_once __DIR__ . '/common/E2ETestSetup.php';
 
 class AdminAnalysisApiTest extends TestCase {
@@ -116,6 +117,30 @@ class AdminAnalysisApiTest extends TestCase {
      * these up itself before E2ETestSetup::cleanupTestThread() deletes the
      * thread and its emails, or that delete fails on the foreign keys.
      */
+    /**
+     * A norske-postlister.no thread with one email at $datetimeReceived, for
+     * /api/admin/analysis/request-next tests (Change 7). Use a far-future
+     * datetime so it sorts newest-first ahead of any other unanalysed NP
+     * thread already sitting in this shared database.
+     */
+    private function createNpThreadWithEmail(string $datetimeReceived): array {
+        $thread = new Thread();
+        $thread->title = 'AdminAnalysisApiTest NP thread ' . uniqid();
+        $thread->my_name = 'Test Person';
+        $thread->my_email = 'np-request-next-' . uniqid() . '@example.com';
+        $thread->labels = [NpApiService::NP_LABEL];
+        $thread->sent = false;
+        $thread->archived = false;
+        $thread->public = true;
+        $created = createThread('000000000-test-entity-development', $thread);
+        Database::execute(
+            "INSERT INTO thread_emails (thread_id, timestamp_received, datetime_received, content)
+             VALUES (?, ?, ?, ?::bytea)",
+            [$created->id, $datetimeReceived, $datetimeReceived, 'Body text']
+        );
+        return ['thread_id' => $created->id, 'entity_id' => '000000000-test-entity-development'];
+    }
+
     private function cleanupAnalysisRows(string $threadId): void {
         Database::execute(
             "DELETE FROM thread_analysis_claude_code_calls
@@ -373,6 +398,53 @@ class AdminAnalysisApiTest extends TestCase {
             );
             $this->assertEquals(204, $resp['status']);
             $this->assertEquals('', $resp['body']);
+        } finally {
+            $this->cleanupAnalysisRows($threadId);
+            E2ETestSetup::cleanupTestThread($threadId, $created['entity_id']);
+        }
+    }
+
+    // --- request-next (Change 7: "process next" for norske-postlister
+    // threads) ---
+
+    public function testRequestNextWithoutAuthGives401(): void {
+        $resp = $this->post('/api/admin/analysis/request-next', ['kind' => 'np']);
+        $this->assertEquals(401, $resp['status']);
+        $this->assertArrayHasKey('error', $resp['json']);
+    }
+
+    public function testRequestNextGetGives405(): void {
+        $resp = $this->get('/api/admin/analysis/request-next', ['X-Admin-Api-Token: ' . $this->adminToken()]);
+        $this->assertEquals(405, $resp['status']);
+    }
+
+    public function testRequestNextBadKindGives400(): void {
+        $resp = $this->post(
+            '/api/admin/analysis/request-next',
+            ['kind' => 'not-np'],
+            ['X-Admin-Api-Token: ' . $this->adminToken()]
+        );
+        $this->assertEquals(400, $resp['status']);
+        $this->assertArrayHasKey('error', $resp['json']);
+    }
+
+    public function testRequestNextGivesRunIdAndThreadId(): void {
+        $created = $this->createNpThreadWithEmail('2099-01-01 10:00:00+00');
+        $threadId = $created['thread_id'];
+        try {
+            $resp = $this->post(
+                '/api/admin/analysis/request-next',
+                ['kind' => 'np', 'mode' => 'full'],
+                ['X-Admin-Api-Token: ' . $this->adminToken()]
+            );
+            $this->assertEquals(200, $resp['status'], $resp['body']);
+            $this->assertArrayHasKey('run_id', $resp['json'], $resp['body']);
+            $this->assertEquals($threadId, $resp['json']['thread_id'], $resp['body']);
+
+            $run = Database::queryOne("SELECT * FROM thread_analysis_runs WHERE id = ?", [$resp['json']['run_id']]);
+            $this->assertEquals('full', $run['mode'], json_encode($run, JSON_PRETTY_PRINT));
+            $this->assertEquals($threadId, $run['thread_id']);
+            $this->assertEquals('requested', $run['status']);
         } finally {
             $this->cleanupAnalysisRows($threadId);
             E2ETestSetup::cleanupTestThread($threadId, $created['entity_id']);

@@ -5,6 +5,7 @@ require_once __DIR__ . '/../Database.php';
 require_once __DIR__ . '/../ThreadState/ThreadState.php';
 require_once __DIR__ . '/../ThreadState/ThreadStateTypeDeriver.php';
 require_once __DIR__ . '/../Enums/ThreadEmailStatusType.php';
+require_once __DIR__ . '/../NpApiService.php'; // NpApiService::NP_LABEL, for requestNextNpThread()
 
 use App\Enums\ThreadEmailStatusType;
 
@@ -111,6 +112,63 @@ class ThreadAnalysisRepository {
                 Database::commit();
             }
             return $updated;
+        } catch (Throwable $e) {
+            if ($ownsTransaction) {
+                Database::rollBack();
+            }
+            throw $e;
+        }
+    }
+
+    /**
+     * Picks the next norske-postlister.no thread ("Change 7" in
+     * docs/superpowers/plans/2026-09-27-step2c-analysis-in-prod.md) - one
+     * carrying NpApiService::NP_LABEL, with at least one non-ignored email,
+     * and with no row at all in thread_analysis_runs (in any status - a
+     * thread that has already been queued, even if that run failed or is
+     * done, is never picked again here) - and requests a run for it, in one
+     * transaction. Candidates are ordered by the latest datetime_received of
+     * their non-ignored emails, newest first, then by thread id. Null when
+     * there is nothing left to pick.
+     *
+     * @return array{run_id:int, thread_id:string}|null
+     */
+    public static function requestNextNpThread(string $mode, string $requestedBy): ?array {
+        $ownsTransaction = !Database::getInstance()->inTransaction();
+        if ($ownsTransaction) {
+            Database::beginTransaction();
+        }
+        try {
+            $thread = Database::queryOneOrNone(
+                "SELECT t.id
+                 FROM threads t
+                 JOIN (
+                     SELECT thread_id, MAX(datetime_received) AS latest_received
+                     FROM thread_emails
+                     WHERE ignore IS NOT TRUE
+                     GROUP BY thread_id
+                 ) te ON te.thread_id = t.id
+                 WHERE ? = ANY(t.labels)
+                   AND NOT EXISTS (SELECT 1 FROM thread_analysis_runs r WHERE r.thread_id = t.id)
+                 ORDER BY te.latest_received DESC, t.id DESC
+                 LIMIT 1
+                 FOR UPDATE OF t SKIP LOCKED",
+                [NpApiService::NP_LABEL]
+            );
+            if ($thread === null) {
+                if ($ownsTransaction) {
+                    Database::commit();
+                }
+                return null;
+            }
+
+            $threadId = $thread['id'];
+            $runId = self::requestRun($threadId, $mode, $requestedBy);
+
+            if ($ownsTransaction) {
+                Database::commit();
+            }
+            return ['run_id' => $runId, 'thread_id' => $threadId];
         } catch (Throwable $e) {
             if ($ownsTransaction) {
                 Database::rollBack();
