@@ -49,6 +49,7 @@ class ThreadAnalysisPagesTest extends E2EPageTestCase {
         $this->assertStringContainsString('<h2>Cost per system prompt version</h2>', $response->body);
         $this->assertStringContainsString('Queue (', $response->body);
         $this->assertStringContainsString('Recent runs (up to 100)', $response->body);
+        $this->assertStringContainsString('<th>Review</th>', $response->body);
         $this->assertStringContainsString('Email-type gaps (up to 100)', $response->body);
         $this->assertStringContainsString("Disagreements with prod's classification", $response->body);
         $this->assertStringContainsString('Runs with issues (up to 100)', $response->body);
@@ -234,6 +235,32 @@ class ThreadAnalysisPagesTest extends E2EPageTestCase {
             $this->assertStringContainsString('Missed a case number.', $getResponse->body);
             $this->assertStringContainsString('MINOR_ISSUES', $getResponse->body);
             $this->assertStringContainsString('dev-user-id', $getResponse->body);
+        } finally {
+            $this->cleanupAnalysisRows($threadId);
+            E2ETestSetup::cleanupTestThread($threadId, $created['entity_id']);
+        }
+    }
+
+    public function testOverviewRecentRunsShowsReviewBadgeWithReviewerInTitle() {
+        // :: Setup
+        $created = E2ETestSetup::createTestThread();
+        $threadId = $created['thread']->id;
+        try {
+            Database::execute(
+                "INSERT INTO thread_analysis_runs
+                    (thread_id, status, mode, requested_by, requested_at, finished_at, worker, model,
+                     review_status, reviewed_by, reviewed_at)
+                 VALUES (?, 'done', 'full', 'test-user', '2026-01-01T08:00:00+00:00', '2026-01-01T08:00:20+00:00',
+                         'worker-1', 'claude-opus-5-5', 'MINOR_ISSUES', 'reviewer-1', '2026-01-02T09:00:00+00:00')",
+                [$threadId]
+            );
+
+            // :: Act
+            $response = $this->renderPage('/thread-analysis');
+
+            // :: Assert
+            $this->assertStringContainsString('<th>Review</th>', $response->body);
+            $this->assertStringContainsString('label_warn" title="by reviewer-1, at 2026-01-02', $response->body);
         } finally {
             $this->cleanupAnalysisRows($threadId);
             E2ETestSetup::cleanupTestThread($threadId, $created['entity_id']);

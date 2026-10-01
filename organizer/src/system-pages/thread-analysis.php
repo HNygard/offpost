@@ -38,7 +38,7 @@ function formatRunStatusBadge($status) {
     return '<span class="label ' . $class . '"><a href="#" onclick="return false;">' . htmlspecialchars($status) . '</a></span>';
 }
 
-function formatReviewStatusBadge($status) {
+function formatReviewStatusBadge($status, $title = '') {
     $class = match ($status) {
         'CORRECT' => 'label_ok',
         'MINOR_ISSUES' => 'label_warn',
@@ -46,7 +46,8 @@ function formatReviewStatusBadge($status) {
         'NOT_REVIEWED' => 'label_pending',
         default => 'label_pending',
     };
-    return '<span class="label ' . $class . '"><a href="#" onclick="return false;">' . htmlspecialchars($status) . '</a></span>';
+    $titleAttr = $title !== '' ? ' title="' . htmlspecialchars($title) . '"' : '';
+    return '<span class="label ' . $class . '"' . $titleAttr . '><a href="#" onclick="return false;">' . htmlspecialchars($status) . '</a></span>';
 }
 
 function shortSha($sha) {
@@ -246,6 +247,7 @@ function formatRunDuration($claimedAt, $finishedAt) {
                 <th>Events</th>
                 <th>Cost (USD)</th>
                 <th>Duration</th>
+                <th>Review</th>
                 <th>Error</th>
             </tr>
             <?php foreach ($recentRuns as $run): ?>
@@ -257,11 +259,12 @@ function formatRunDuration($claimedAt, $finishedAt) {
                     <td><?= (int) $run['event_count'] ?></td>
                     <td><?= formatCostUsd($run['cost_usd']) ?></td>
                     <td><?= htmlspecialchars(formatRunDuration($run['claimed_at'], $run['finished_at'])) ?></td>
+                    <td><?= formatReviewStatusBadge($run['review_status'], !empty($run['reviewed_at']) ? 'by ' . ($run['reviewed_by'] ?? '') . ', at ' . $run['reviewed_at'] : '') ?></td>
                     <td><?= htmlspecialchars((string) ($run['error'] ?? '')) ?></td>
                 </tr>
             <?php endforeach; ?>
             <?php if (empty($recentRuns)): ?>
-                <tr><td colspan="8" style="text-align: center;">No runs yet</td></tr>
+                <tr><td colspan="9" style="text-align: center;">No runs yet</td></tr>
             <?php endif; ?>
         </table>
 

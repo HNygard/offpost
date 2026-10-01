@@ -250,6 +250,36 @@ class ThreadAnalysisStatsTest extends TestCase {
         $this->assertEquals('requested', $matching[0]['status']);
     }
 
+    // :: getRecentRuns - review fields
+
+    public function testGetRecentRunsReturnsReviewFieldsForReviewedAndUnreviewedRuns(): void {
+        // :: Setup
+        $threadId = $this->createFixedThread();
+        $unreviewedId = $this->insertRun($threadId, 'done', '2026-01-01T07:00:00+00:00');
+        $reviewedId = $this->insertRun($threadId, 'done', '2026-01-01T08:00:00+00:00');
+        Database::execute(
+            "UPDATE thread_analysis_runs
+             SET review_status = 'WRONG', reviewed_by = 'reviewer-1', reviewed_at = '2026-01-02T09:00:00+00:00'
+             WHERE id = ?",
+            [$reviewedId]
+        );
+
+        // :: Act
+        $runs = ThreadAnalysisStats::getRecentRuns(1000);
+
+        // :: Assert
+        $byId = [];
+        foreach ($runs as $run) {
+            $byId[(int) $run['id']] = $run;
+        }
+        $this->assertEquals('WRONG', $byId[$reviewedId]['review_status'], json_encode($runs, JSON_PRETTY_PRINT));
+        $this->assertEquals('reviewer-1', $byId[$reviewedId]['reviewed_by']);
+        $this->assertNotNull($byId[$reviewedId]['reviewed_at']);
+        $this->assertEquals('NOT_REVIEWED', $byId[$unreviewedId]['review_status']);
+        $this->assertNull($byId[$unreviewedId]['reviewed_by']);
+        $this->assertNull($byId[$unreviewedId]['reviewed_at']);
+    }
+
     // :: getEmailTypeGaps - the gap query
 
     public function testGetEmailTypeGapsFindsEventsWithANonEmptyGap(): void {

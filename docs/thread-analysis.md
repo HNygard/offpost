@@ -398,6 +398,8 @@ lists rows. The read-only queries behind them live in
     lease.
   - **Recent runs** (up to 100, newest first) - thread (linked to the debug thread page below),
     status, mode, model, event count, cost, duration (`finished_at - claimed_at`) and error.
+    A "Review" column shows the run's review status as a badge (`NOT_REVIEWED` muted); when
+    reviewed, the badge title says by whom and when.
   - **Email-type gaps** (up to 100) - events with a non-empty `email_type_gap`, with the thread and
     email.
   - **Disagreements** (up to 100) - for each thread's *latest* `done` run, the events whose
