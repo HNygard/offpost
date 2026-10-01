@@ -14,7 +14,10 @@ function displayErrorPage($error) {
         exit;
     }
     header('Content-Type: text/html');
-    
+
+    require_once(__DIR__ . '/class/GitVersion.php');
+    $gitSha = GitVersion::getSha();
+
     echo '<html><head><title>Error - Offpost</title>';
     echo '<link rel="stylesheet" type="text/css" href="/css/error.css">';
     echo '<script>
@@ -48,10 +51,16 @@ function displayErrorPage($error) {
     echo '<div class="nav-back"><a href="/">← Back to application</a></div>';
     echo '<p>An error occurred while processing your request. Please report this issue on our GitHub page:</p>';
     echo '<p><a href="https://github.com/HNygard/offpost/issues">https://github.com/HNygard/offpost/issues</a></p>';
+    if ($gitSha !== null) {
+        echo '<p>Version: <a href="' . htmlescape(GitVersion::commitUrl($gitSha)) . '">'
+            . htmlescape(GitVersion::shortSha($gitSha)) . '</a></p>';
+    }
     echo '<p>Error details:</p>';
     echo '<div class="error-details">';
     echo '<button class="copy-button">Copy error</button>';
+    // Version is inside <pre> so "Copy error" includes it in the report
     echo '<pre contenteditable="true">'
+        . ($gitSha !== null ? 'Version: ' . htmlescape($gitSha) . "\n\n" : '')
         . htmlescape(jTraceEx($error))
         . '</pre>';
     echo '</div>';

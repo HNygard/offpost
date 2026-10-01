@@ -30,4 +30,5 @@ Production servers are pulling updates from Github and deploying them to the ser
 
 Every run of `deploy-cronjob.sh` writes `git rev-parse HEAD` to `organizer/src/git-sha.txt`
 (gitignored). The page header shows the short SHA under "Logout", linked to the commit on
-GitHub. If it is missing, the cronjob has not run since the file was introduced.
+GitHub. The error page shows it too, and puts the full SHA at the top of the copyable error
+details so bug reports include it. If it is missing, the cronjob has not run since the file was introduced.
