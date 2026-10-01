@@ -197,7 +197,9 @@ class ThreadStateView {
         return '<span class="label ' . $cssClass . '" title="review status">' . self::e($reviewStatus) . '</span>';
     }
 
-    private static function renderStatusBadge(?string $stateType, string $suffix = ''): string {
+    // Public so system-pages/thread-analysis-thread.php can show the same
+    // badge for an analysis event's derived_thread_state_type.
+    public static function renderStatusBadge(?string $stateType, string $suffix = ''): string {
         if ($stateType === null) {
             return '<span class="label classification" title="">Unknown</span>' . self::e($suffix);
         }

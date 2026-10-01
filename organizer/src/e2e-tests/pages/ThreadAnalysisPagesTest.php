@@ -82,8 +82,8 @@ class ThreadAnalysisPagesTest extends E2EPageTestCase {
             );
             $eventId = Database::queryValue(
                 "INSERT INTO thread_analysis_events
-                    (run_id, email_id, \"position\", email_type, email_note, email_type_gap, attempts, error)
-                 VALUES (?, ?, 1, 'INFORMATION_RELEASE', 'a test note', '', 1, NULL)
+                    (run_id, email_id, \"position\", email_type, email_note, email_type_gap, derived_thread_state_type, attempts, error)
+                 VALUES (?, ?, 1, 'INFORMATION_RELEASE', 'a test note', '', 'ANSWERED', 1, NULL)
                  RETURNING id",
                 [$runId, $emailId]
             );
@@ -102,11 +102,25 @@ class ThreadAnalysisPagesTest extends E2EPageTestCase {
             // :: Assert
             $this->assertStringContainsString(htmlspecialchars($created['thread']->title), $response->body);
             $this->assertStringContainsString('Run #' . $runId, $response->body);
-            $this->assertStringContainsString('claude-opus-5-5', $response->body);
             $this->assertStringContainsString('a test note', $response->body);
-            $this->assertStringContainsString('the test input text', $response->body);
-            $this->assertStringContainsString('2.1.283', $response->body);
             $this->assertStringContainsString('INFORMATION_RELEASE', $response->body);
+
+            // The derived-status badge (ThreadStateView::renderStatusBadge(),
+            // like the thread view) shows the Bokmål label, with the raw
+            // ThreadStateType value in its title attribute.
+            $this->assertStringContainsString('title="ANSWERED"', $response->body);
+            $this->assertStringContainsString('Besvart', $response->body);
+
+            // The per-event calls table was replaced by a single "Show model
+            // runs" dialog trigger (only one call here, so no "(N)" suffix) -
+            // the technical call details (model, Claude Code version, token
+            // counts, the input text) live only in its <template>, not the
+            // row.
+            $this->assertStringContainsString('>Show model runs<', $response->body);
+            $this->assertMatchesRegularExpression(
+                '/<template id="analysis-calls-' . $eventId . '">.*claude-opus-5-5.*2\.1\.283.*the test input text.*<\/template>/s',
+                $response->body
+            );
         } finally {
             $this->cleanupAnalysisRows($threadId);
             E2ETestSetup::cleanupTestThread($threadId, $created['entity_id']);

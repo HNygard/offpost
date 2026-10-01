@@ -414,15 +414,24 @@ lists rows. The read-only queries behind them live in
   - The thread title, linked to `/thread-view`, and two POST buttons - "Analyse" (incremental) and
     "Analyse from the start" (full) - that call `ThreadAnalysisRepository::requestRun()` with the
     admin's sub as `requested_by`, then redirect back (avoids a resubmission on refresh).
-  - Every run, newest first, with its fields, a review form for every `done`/`failed` run (status
-    `<select>`, notes `<textarea>`, Save - `action=review`, same POST-and-redirect style, saving
-    with `ThreadAnalysisRepository::saveReview()`) and the saved review (badge, notes, who and
-    when), and a table of its events (position, the email's date/direction/subject, email type,
-    note, gap, derived status, attempts, error, and a "Show state" link opening the state blob as
-    pretty JSON in the shared `ContentDialog` modal - see "Shown in the thread view" in
-    [docs/thread-state.md](thread-state.md)), each with its calls (attempt, model, resolved model,
-    Claude Code version, token counts, cost, duration, and "Show input"/"Show response" links
-    opening the input text and the response JSON the same way).
+  - Every run, newest first, with its fields (mode, model, system prompt link, worker, times,
+    cost, error), a review form for every `done`/`failed` run (status `<select>`, notes
+    `<textarea>`, Save - `action=review`, same POST-and-redirect style, saving with
+    `ThreadAnalysisRepository::saveReview()`) and the saved review (badge, notes, who and when),
+    and a data-overview table of its events: position, the email's date/direction/subject, email
+    type, note, email-type gap (shown only when non-empty), the derived status as a badge
+    (`ThreadStateView::renderStatusBadge()` - the same Bokmål-label-with-raw-value-in-`title`
+    badge as the thread view), a "Show state" link opening the state blob as pretty JSON in the
+    shared `ContentDialog` modal (see "Shown in the thread view" in
+    [docs/thread-state.md](thread-state.md)), attempts (shown only when > 1) and error (shown only
+    when present), and the event's total cost (summed over its calls).
+  - The technical, per-call detail that used to sit in a nested table under each event - attempt,
+    model/resolved model, Claude Code version, token counts, cost, duration, `is_error`/
+    `stop_reason`, and the full input text and response JSON - is debugging detail for the
+    implementation, not the data, so it is moved out of the row into a "Show model runs" (or
+    "Show model runs (N)" for N > 1) `ContentDialog` link, one per event, with a `<template
+    id="analysis-calls-<event id>">` holding all of that event's calls as `<pre>` blocks (scrollable
+    via `max-height` in `webroot/css/contentDialog.css`) rather than nested dialog triggers.
   - A malformed `id` is a 400; an unknown thread is a 404 (same style as `view-thread.php`/`file.php`:
     `is_uuid()` plus a direct `http_response_code()` + `die()`, not a thrown exception - this page
     must not go through `error.php`'s generic 500 for what are really client errors).

@@ -8,6 +8,7 @@ require_once __DIR__ . '/../class/common.php';
 require_once __DIR__ . '/../class/Database.php';
 require_once __DIR__ . '/../class/ThreadUtils.php';
 require_once __DIR__ . '/../class/ThreadAnalysis/ThreadAnalysisRepository.php';
+require_once __DIR__ . '/../class/ThreadState/ThreadStateView.php';
 
 // Require authentication
 requireAuth();
@@ -282,14 +283,21 @@ function isTrueBool($value) {
                         <th>Email type</th>
                         <th>Note</th>
                         <th>Gap</th>
-                        <th>Derived status</th>
+                        <th>Status</th>
+                        <th>State</th>
                         <th>Attempts</th>
                         <th>Error</th>
-                        <th>State</th>
+                        <th>Cost (USD)</th>
+                        <th>Model runs</th>
                     </tr>
                     <?php foreach ($events as $event): ?>
                         <?php
                         $emailInfo = $emailsById[$event['email_id']] ?? null;
+                        $eventCalls = $callsByEventId[$event['id']] ?? [];
+                        $eventCost = 0.0;
+                        foreach ($eventCalls as $call) {
+                            $eventCost += (float) ($call['cost_usd'] ?? 0);
+                        }
                         ?>
                         <tr>
                             <td><?= (int) $event['position'] ?></td>
@@ -305,10 +313,8 @@ function isTrueBool($value) {
                             </td>
                             <td><?= htmlspecialchars((string) ($event['email_type'] ?? '')) ?></td>
                             <td><?= htmlspecialchars((string) ($event['email_note'] ?? '')) ?></td>
-                            <td><?= htmlspecialchars((string) ($event['email_type_gap'] ?? '')) ?></td>
-                            <td><?= htmlspecialchars((string) ($event['derived_thread_state_type'] ?? '')) ?></td>
-                            <td><?= (int) $event['attempts'] ?></td>
-                            <td><?= htmlspecialchars((string) ($event['error'] ?? '')) ?></td>
+                            <td><?= !empty($event['email_type_gap']) ? htmlspecialchars((string) $event['email_type_gap']) : '' ?></td>
+                            <td><?= ThreadStateView::renderStatusBadge($event['derived_thread_state_type']) ?></td>
                             <td>
                                 <?php if ($event['thread_state'] !== null): ?>
                                     <?php $stateTemplateId = 'analysis-state-' . htmlspecialchars((string) $event['id']); ?>
@@ -316,66 +322,54 @@ function isTrueBool($value) {
                                     <template id="<?= $stateTemplateId ?>"><pre><?= htmlspecialchars(json_encode($event['thread_state'], JSON_PRETTY_PRINT)) ?></pre></template>
                                 <?php endif; ?>
                             </td>
-                        </tr>
-                        <?php $eventCalls = $callsByEventId[$event['id']] ?? []; ?>
-                        <?php if (!empty($eventCalls)): ?>
-                            <tr>
-                                <td></td>
-                                <td colspan="8">
-                                    <table>
-                                        <tr>
-                                            <th>Attempt</th>
-                                            <th>Model</th>
-                                            <th>Model resolved</th>
-                                            <th>Claude Code version</th>
-                                            <th>Input</th>
-                                            <th>Cache creation</th>
-                                            <th>Cache read</th>
-                                            <th>Output</th>
-                                            <th>Thinking</th>
-                                            <th>Cost (USD)</th>
-                                            <th>Duration</th>
-                                            <th>Is error</th>
-                                            <th>Stop reason</th>
-                                            <th>Input text</th>
-                                            <th>Response</th>
-                                        </tr>
+                            <td><?= ((int) $event['attempts']) > 1 ? (int) $event['attempts'] : '' ?></td>
+                            <td><?= !empty($event['error']) ? htmlspecialchars((string) $event['error']) : '' ?></td>
+                            <td><?= formatCostUsd($eventCost) ?></td>
+                            <td>
+                                <?php if (!empty($eventCalls)): ?>
+                                    <?php
+                                    $callsTemplateId = 'analysis-calls-' . htmlspecialchars((string) $event['id']);
+                                    $callCount = count($eventCalls);
+                                    $modelRunsLinkText = 'Show model runs' . ($callCount > 1 ? ' (' . $callCount . ')' : '');
+                                    ?>
+                                    <a href="#" class="content-dialog-link" data-dialog-title="Model runs for event <?= (int) $event['position'] ?>" data-dialog-template="<?= $callsTemplateId ?>"><?= htmlspecialchars($modelRunsLinkText) ?></a>
+                                    <template id="<?= $callsTemplateId ?>">
                                         <?php foreach ($eventCalls as $call): ?>
-                                            <tr class="call-block">
-                                                <td><?= (int) $call['attempt'] ?></td>
-                                                <td><?= htmlspecialchars((string) ($call['model'] ?? '')) ?></td>
-                                                <td><?= htmlspecialchars((string) ($call['model_resolved'] ?? '')) ?></td>
-                                                <td><?= htmlspecialchars((string) ($call['claude_code_version'] ?? '')) ?></td>
-                                                <td><?= number_format((int) ($call['input_tokens'] ?? 0)) ?></td>
-                                                <td><?= number_format((int) ($call['cache_creation_input_tokens'] ?? 0)) ?></td>
-                                                <td><?= number_format((int) ($call['cache_read_input_tokens'] ?? 0)) ?></td>
-                                                <td><?= number_format((int) ($call['output_tokens'] ?? 0)) ?></td>
-                                                <td><?= number_format((int) ($call['thinking_tokens'] ?? 0)) ?></td>
-                                                <td><?= formatCostUsd($call['cost_usd'] ?? 0) ?></td>
-                                                <td><?= $call['duration_ms'] !== null ? number_format((int) $call['duration_ms']) . 'ms' : '' ?></td>
-                                                <td><?= isTrueBool($call['is_error']) ? 'yes' : 'no' ?></td>
-                                                <td><?= htmlspecialchars((string) ($call['stop_reason'] ?? '')) ?></td>
-                                                <td>
-                                                    <?php $inputTemplateId = 'analysis-input-' . htmlspecialchars((string) $call['id']); ?>
-                                                    <a href="#" class="content-dialog-link" data-dialog-title="Call input text" data-dialog-template="<?= $inputTemplateId ?>">Show input</a>
-                                                    <template id="<?= $inputTemplateId ?>"><pre><?= htmlspecialchars((string) $call['input_text']) ?></pre></template>
-                                                </td>
-                                                <td>
-                                                    <?php if ($call['response'] !== null): ?>
-                                                        <?php $responseTemplateId = 'analysis-response-' . htmlspecialchars((string) $call['id']); ?>
-                                                        <a href="#" class="content-dialog-link" data-dialog-title="Call response" data-dialog-template="<?= $responseTemplateId ?>">Show response</a>
-                                                        <template id="<?= $responseTemplateId ?>"><pre><?= htmlspecialchars(json_encode($call['response'], JSON_PRETTY_PRINT)) ?></pre></template>
-                                                    <?php endif; ?>
-                                                </td>
-                                            </tr>
+                                            <div class="call-block">
+                                                <p><strong>Attempt <?= (int) $call['attempt'] ?></strong></p>
+                                                <p>
+                                                    Model: <?= htmlspecialchars((string) ($call['model'] ?? '')) ?>
+                                                    / resolved: <?= htmlspecialchars((string) ($call['model_resolved'] ?? '')) ?>
+                                                    (Claude Code <?= htmlspecialchars((string) ($call['claude_code_version'] ?? '')) ?>)
+                                                </p>
+                                                <p>
+                                                    Input tokens: <?= number_format((int) ($call['input_tokens'] ?? 0)) ?>,
+                                                    cache creation: <?= number_format((int) ($call['cache_creation_input_tokens'] ?? 0)) ?>,
+                                                    cache read: <?= number_format((int) ($call['cache_read_input_tokens'] ?? 0)) ?>,
+                                                    output: <?= number_format((int) ($call['output_tokens'] ?? 0)) ?>,
+                                                    thinking: <?= number_format((int) ($call['thinking_tokens'] ?? 0)) ?>
+                                                </p>
+                                                <p>
+                                                    Cost: <?= formatCostUsd($call['cost_usd'] ?? 0) ?>,
+                                                    duration: <?= $call['duration_ms'] !== null ? number_format((int) $call['duration_ms']) . 'ms' : 'N/A' ?>,
+                                                    is_error: <?= isTrueBool($call['is_error']) ? 'yes' : 'no' ?>,
+                                                    stop_reason: <?= htmlspecialchars((string) ($call['stop_reason'] ?? '')) ?>
+                                                </p>
+                                                <p>Input text:</p>
+                                                <pre><?= htmlspecialchars((string) $call['input_text']) ?></pre>
+                                                <?php if ($call['response'] !== null): ?>
+                                                    <p>Response:</p>
+                                                    <pre><?= htmlspecialchars(json_encode($call['response'], JSON_PRETTY_PRINT)) ?></pre>
+                                                <?php endif; ?>
+                                            </div>
                                         <?php endforeach; ?>
-                                    </table>
-                                </td>
-                            </tr>
-                        <?php endif; ?>
+                                    </template>
+                                <?php endif; ?>
+                            </td>
+                        </tr>
                     <?php endforeach; ?>
                     <?php if (empty($events)): ?>
-                        <tr><td colspan="9" style="text-align: center;">No events for this run</td></tr>
+                        <tr><td colspan="11" style="text-align: center;">No events for this run</td></tr>
                     <?php endif; ?>
                 </table>
             </div>
