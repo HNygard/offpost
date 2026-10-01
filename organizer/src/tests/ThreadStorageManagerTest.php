@@ -32,10 +32,11 @@ class ThreadStorageManagerTest extends PHPUnit\Framework\TestCase {
         $testContent = 'test-content-data';
         
         // Create test attachment in database
-        Database::execute(
+        $testAttachmentId = Database::queryValue(
             "INSERT INTO thread_email_attachments (
                 email_id, name, filename, filetype, location, status_type, status_text, content
-            ) VALUES (?, ?, ?, ?, ?, ?, ?, ?::bytea)",
+            ) VALUES (?, ?, ?, ?, ?, ?, ?, ?::bytea)
+            RETURNING id",
             [
                 $testEmailId,
                 'test.pdf',
@@ -53,7 +54,7 @@ class ThreadStorageManagerTest extends PHPUnit\Framework\TestCase {
         $thread->id = $testThreadId;
 
         // :: Act
-        $attachment = ThreadStorageManager::getInstance()->getThreadEmailAttachment($thread, $testLocation);
+        $attachment = ThreadStorageManager::getInstance()->getThreadEmailAttachment($thread, $testAttachmentId);
 
         // :: Assert
         $this->assertInstanceOf(ThreadEmailAttachment::class, $attachment, 'Should return ThreadEmailAttachment instance');
@@ -66,6 +67,43 @@ class ThreadStorageManagerTest extends PHPUnit\Framework\TestCase {
         $this->assertEquals($testContent, $attachment->content, 'Should have correct content');
     }
 
+    public function testGetThreadEmailAttachmentWithDuplicateLocationInThread() {
+        // :: Setup
+        // Location is "<Y-m-d_His> - <direction> - att N-md5(name).ext", so two emails
+        // received the same second (e.g. a duplicated email) share attachment locations.
+        $testThreadId = Database::queryValue(
+            "INSERT INTO threads (id, entity_id, title, my_name, my_email)
+             VALUES (gen_random_uuid(), '000000000-test-entity-development', 'Test Thread', 'Test User', 'duplicate-location-test@example.com')
+             RETURNING id"
+        );
+        $sharedLocation = '2026-10-01_101955 - IN - att 1-0123456789abcdef0123456789abcdef.pdf';
+        $attachmentIds = [];
+        foreach (['first-copy', 'second-copy'] as $content) {
+            $emailId = Database::queryValue(
+                "INSERT INTO thread_emails (id, thread_id, timestamp_received, content)
+                 VALUES (gen_random_uuid(), ?, NOW(), 'test content')
+                 RETURNING id",
+                [$testThreadId]
+            );
+            $attachmentIds[$content] = Database::queryValue(
+                "INSERT INTO thread_email_attachments (
+                    email_id, name, filename, filetype, location, status_type, status_text, content
+                ) VALUES (?, 'letter.pdf', 'letter.pdf', 'pdf', ?, 'unknown', 'uklassifisert-dok', ?::bytea)
+                RETURNING id",
+                [$emailId, $sharedLocation, $content]
+            );
+        }
+
+        $thread = new Thread();
+        $thread->id = $testThreadId;
+
+        // :: Act
+        $attachment = ThreadStorageManager::getInstance()->getThreadEmailAttachment($thread, $attachmentIds['second-copy']);
+
+        // :: Assert
+        $this->assertEquals('second-copy', $attachment->content, 'Should return the requested attachment, not the other one sharing its location');
+    }
+
     public function testGetThreadEmailAttachmentNotFound() {
         // :: Setup
         $thread = new Thread();
@@ -76,6 +114,6 @@ class ThreadStorageManagerTest extends PHPUnit\Framework\TestCase {
         $this->expectExceptionMessage("Expected 1 row, got 0");
 
         // :: Act
-        ThreadStorageManager::getInstance()->getThreadEmailAttachment($thread, 'non-existent');
+        ThreadStorageManager::getInstance()->getThreadEmailAttachment($thread, '00000000-0000-0000-0000-000000000000');
     }
 }

@@ -54,19 +54,21 @@ class ThreadStorageManager {
 
         return stream_get_contents($content);
     }
-    public function getThreadEmailAttachment(Thread $thread, $attachment_location) {
-        // Get attachment from database
+    public function getThreadEmailAttachment(Thread $thread, $attachment_id) {
+        // Look up by id, not location: location is built from the email's
+        // timestamp and direction, so it is not unique within a thread when
+        // two emails share the same second (e.g. a duplicated email).
         $rows = Database::queryOne(
             "SELECT tea.name, tea.filename, tea.filetype, tea.location, tea.status_type, tea.status_text, 
                     tea.content
              FROM thread_email_attachments tea
              JOIN thread_emails te ON tea.email_id = te.id
-             WHERE te.thread_id = ? AND tea.location = ?",
-            [$thread->id, $attachment_location]
+             WHERE te.thread_id = ? AND tea.id = ?",
+            [$thread->id, $attachment_id]
         );
         
         if (empty($rows)) {
-            throw new Exception("Thread Email Attachment not found [thread_id=$thread->id, attachment_id=$attachment_location]");
+            throw new Exception("Thread Email Attachment not found [thread_id=$thread->id, attachment_id=$attachment_id]");
         }
         
         $attachment = new ThreadEmailAttachment();

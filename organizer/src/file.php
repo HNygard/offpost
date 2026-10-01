@@ -109,7 +109,7 @@ foreach ($thread->emails as $email) {
                     // New format of location
                     $filename = $att->location;
                 }
-                $att = ThreadStorageManager::getInstance()->getThreadEmailAttachment($thread, $att->location);
+                $att = ThreadStorageManager::getInstance()->getThreadEmailAttachment($thread, $att->id);
                 if (empty($att->content)) {
                     throw new Exception("Attachment content empty: threadId={$threadId}, attachmentId={$att->attachment_id}", 404);
                 }
