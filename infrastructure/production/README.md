@@ -25,3 +25,9 @@ Production servers are pulling updates from Github and deploying them to the ser
     # See deploy-cronjob.sh for the cronjob command
     crontab -e
     ```
+
+## Deployed version
+
+Every run of `deploy-cronjob.sh` writes `git rev-parse HEAD` to `organizer/src/git-sha.txt`
+(gitignored). The page header shows the short SHA under "Logout", linked to the commit on
+GitHub. If it is missing, the cronjob has not run since the file was introduced.

@@ -2,6 +2,8 @@
 if (!isset($_SESSION)) {
     session_start();
 }
+require_once __DIR__ . '/class/GitVersion.php';
+$gitSha = GitVersion::getSha();
 ?>
 <div class="header-logo">
     <a href="/" style="text-decoration: none; color: inherit; display: flex; align-items: center;">
@@ -28,6 +30,10 @@ if (!isset($_SESSION)) {
         </span>
         <br>
         <a href="/logout">Logout</a>
+        <?php if ($gitSha !== null): ?>
+            <br>
+            <a href="<?= htmlspecialchars(GitVersion::commitUrl($gitSha)) ?>" title="Deployed commit <?= htmlspecialchars($gitSha) ?>" style="font-size: 0.8em; color: #888; font-family: monospace;"><?= htmlspecialchars(GitVersion::shortSha($gitSha)) ?></a>
+        <?php endif; ?>
     </div>
 </div>
 

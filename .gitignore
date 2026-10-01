@@ -3,6 +3,9 @@
 # Composer vendor directory
 organizer/src/vendor/
 
+# Deployed commit, written by infrastructure/production/deploy-cronjob.sh
+organizer/src/git-sha.txt
+
 # Secret files
 secrets/openai_api_key
 secrets/np_api_token

@@ -36,3 +36,9 @@ if [ "$LOCAL_HASH" != "$REMOTE_HASH" ]; then
 
   echo "[$(date)] Deployment completed."
 fi
+
+# Record the deployed commit so the web app can show it (organizer/src/class/GitVersion.php).
+# organizer/src is bind-mounted into the container, so no rebuild is needed to pick it up.
+# Runs on every invocation, not only on deploy, so the file also appears on the first run
+# after this line was added (the deploy that pulled it still ran the old script).
+git rev-parse HEAD > organizer/src/git-sha.txt
