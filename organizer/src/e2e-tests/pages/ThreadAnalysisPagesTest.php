@@ -52,6 +52,7 @@ class ThreadAnalysisPagesTest extends E2EPageTestCase {
         $this->assertStringContainsString('<th>Review</th>', $response->body);
         $this->assertStringContainsString('Email-type gaps (up to 100)', $response->body);
         $this->assertStringContainsString("Disagreements with prod's classification", $response->body);
+        $this->assertStringContainsString('<h2>Attachments by file type and year</h2>', $response->body);
         $this->assertStringContainsString('Runs with issues (up to 100)', $response->body);
     }
 

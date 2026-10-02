@@ -389,4 +389,59 @@ class ThreadAnalysisStatsTest extends TestCase {
         $matching = array_values(array_filter($rows, fn(array $row): bool => $row['thread_id'] === $threadId));
         $this->assertCount(0, $matching, json_encode($rows, JSON_PRETTY_PRINT));
     }
+
+    private function insertAttachment(string $emailId, string $name, int $size): string {
+        return Database::queryValue(
+            "INSERT INTO thread_email_attachments (email_id, name, filename, filetype, location, size)
+             VALUES (?, ?, ?, 'testsurveytype', 'loc', ?) RETURNING id",
+            [$emailId, $name, 'file.bin', $size]
+        );
+    }
+
+    private function insertExtraction(string $emailId, string $attachmentId, ?string $text, ?string $error): void {
+        Database::execute(
+            "INSERT INTO thread_email_extractions (email_id, prompt_id, prompt_text, prompt_service, extracted_text, error_message, attachment_id)
+             VALUES (?, 'p', 'prompt', 'test', ?, ?, ?)",
+            [$emailId, $text, $error, $attachmentId]
+        );
+    }
+
+    public function testGetAttachmentTypeStatsCountsEachAttachmentInOneCategory(): void {
+        // :: Setup
+        $threadId = $this->createFixedThread();
+        $email2020 = $this->insertEmail($threadId, '2020-05-01 10:00:00');
+        $email2021 = $this->insertEmail($threadId, '2021-05-01 10:00:00');
+
+        // With text: two extractions, one blank and one with text.
+        $withText = $this->insertAttachment($email2020, 'a.pdf', 1000);
+        $this->insertExtraction($email2020, $withText, '  ', null);
+        $this->insertExtraction($email2020, $withText, 'Some text', null);
+        // No text: extraction ran, blank result, no error. Also has an empty name.
+        $noText = $this->insertAttachment($email2020, '', 3000);
+        $this->insertExtraction($email2020, $noText, null, null);
+        // Failed: only extractions with errors.
+        $failed = $this->insertAttachment($email2020, 'c.pdf', 2000);
+        $this->insertExtraction($email2020, $failed, null, 'Boom');
+        // Not extracted: no extraction at all.
+        $this->insertAttachment($email2020, 'd.pdf', 2000);
+        // Other year.
+        $other = $this->insertAttachment($email2021, 'e.pdf', 500);
+        $this->insertExtraction($email2021, $other, 'Text', null);
+
+        // :: Act
+        $rows = ThreadAnalysisStats::getAttachmentTypeStats();
+
+        // :: Assert
+        $mine = array_values(array_filter($rows, fn(array $row): bool => $row['filetype'] === 'testsurveytype'));
+        $this->assertEquals([
+            [
+                'filetype' => 'testsurveytype', 'year' => 2021, 'count' => 1, 'with_text' => 1,
+                'no_text' => 0, 'failed' => 0, 'not_extracted' => 0, 'empty_name' => 0, 'avg_size_bytes' => 500,
+            ],
+            [
+                'filetype' => 'testsurveytype', 'year' => 2020, 'count' => 4, 'with_text' => 1,
+                'no_text' => 1, 'failed' => 1, 'not_extracted' => 1, 'empty_name' => 1, 'avg_size_bytes' => 2000,
+            ],
+        ], $mine, json_encode($rows, JSON_PRETTY_PRINT));
+    }
 }

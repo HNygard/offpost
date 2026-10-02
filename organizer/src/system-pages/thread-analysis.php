@@ -22,6 +22,7 @@ $queue = ThreadAnalysisStats::getQueue();
 $recentRuns = ThreadAnalysisStats::getRecentRuns(100);
 $emailTypeGaps = ThreadAnalysisStats::getEmailTypeGaps(100);
 $disagreements = ThreadAnalysisStats::getDisagreements(100);
+$attachmentTypeStats = ThreadAnalysisStats::getAttachmentTypeStats();
 
 function formatCostUsd($costUsd) {
     return '$' . number_format((float) $costUsd, 4);
@@ -314,6 +315,38 @@ function formatRunDuration($claimedAt, $finishedAt) {
             <?php endforeach; ?>
             <?php if (empty($disagreements)): ?>
                 <tr><td colspan="5" style="text-align: center;">No disagreements found</td></tr>
+            <?php endif; ?>
+        </table>
+
+        <h2>Attachments by file type and year</h2>
+        <p>Text = any extraction with text. No text = extraction ran but gave no text (for PDFs: likely a scan).</p>
+        <table>
+            <tr>
+                <th>File type</th>
+                <th>Year</th>
+                <th>Attachments</th>
+                <th>Text</th>
+                <th>No text</th>
+                <th>Failed</th>
+                <th>Not extracted</th>
+                <th>Empty name</th>
+                <th>Avg size (KB)</th>
+            </tr>
+            <?php foreach ($attachmentTypeStats as $row): ?>
+                <tr>
+                    <td><?= htmlspecialchars($row['filetype']) ?></td>
+                    <td><?= htmlspecialchars((string) $row['year']) ?></td>
+                    <td><?= (int) $row['count'] ?></td>
+                    <td><?= (int) $row['with_text'] ?></td>
+                    <td><?= (int) $row['no_text'] ?></td>
+                    <td><?= (int) $row['failed'] ?></td>
+                    <td><?= (int) $row['not_extracted'] ?></td>
+                    <td><?= (int) $row['empty_name'] ?></td>
+                    <td><?= htmlspecialchars(number_format($row['avg_size_bytes'] / 1024, 1)) ?></td>
+                </tr>
+            <?php endforeach; ?>
+            <?php if (empty($attachmentTypeStats)): ?>
+                <tr><td colspan="9" style="text-align: center;">No attachments found</td></tr>
             <?php endif; ?>
         </table>
 

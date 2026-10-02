@@ -408,6 +408,13 @@ lists rows. The read-only queries behind them live in
     classified at all) are left out, since a mismatch there isn't a real disagreement. Shows both
     values and whether prod's value is `manual`, or `algo`/`prompt` (from `auto_classification`,
     the same distinction `ThreadExportService::classificationSource()` makes for the export).
+  - **Attachments by file type and year** - a read-only survey (step 2d change 1) of
+    `thread_email_attachments` per `filetype` and year received: how many have extracted text, an
+    extraction that gave no text (for PDFs: likely a scan), only failed extractions, or no extraction
+    at all, plus how many have an empty name and the average size
+    (`ThreadAnalysisStats::getAttachmentTypeStats()`). Each attachment counts once; an attachment
+    with both a blank and an errored extraction counts as "no text". It decides the order of the
+    extraction changes.
   - **Runs with issues** (up to 100) - runs reviewed `MINOR_ISSUES` or `WRONG`
     (`ThreadAnalysisRepository::getReviews()`), with thread, review status, notes, system-prompt
     sha and reviewer - see "Review status and notes per run" above.
