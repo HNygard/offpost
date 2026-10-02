@@ -121,6 +121,11 @@ Until then the analysis judges from what it has: when the entity says a
 document is attached or released but we cannot read it, it counts as
 released.
 
+Started 2026-10-01: `docs/superpowers/plans/2026-10-01-step2d-read-attachments.md`.
+OCR of scanned PDFs uses OpenAI. OCR text is still not machine-readable:
+when the request asks for a machine-readable format, a scan is a partial
+denial.
+
 ### 2b. Feedback on the analysis, reported to prod
 
 - Built into the GUI from 2c: the dashboard and thread view link to it.
