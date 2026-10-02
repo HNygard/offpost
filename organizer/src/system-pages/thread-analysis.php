@@ -6,6 +6,8 @@
 require_once __DIR__ . '/../auth.php';
 require_once __DIR__ . '/../class/ThreadAnalysis/ThreadAnalysisStats.php';
 require_once __DIR__ . '/../class/ThreadAnalysis/ThreadAnalysisRepository.php';
+require_once __DIR__ . '/../class/ThreadState/ThreadStateView.php';
+require_once __DIR__ . '/../class/Enums/ThreadStateType.php';
 
 // Require authentication
 requireAuth();
@@ -19,7 +21,11 @@ $usageTotals = ThreadAnalysisStats::getUsageTotals();
 $costByModel = ThreadAnalysisStats::getCostByModel();
 $costBySystemPrompt = ThreadAnalysisStats::getCostBySystemPrompt();
 $queue = ThreadAnalysisStats::getQueue();
-$recentRuns = ThreadAnalysisStats::getRecentRuns(100);
+$onlyDenials = ($_GET['runs'] ?? '') === 'denied';
+$recentRuns = ThreadAnalysisStats::getRecentRuns(
+    100,
+    $onlyDenials ? [\App\Enums\ThreadStateType::DENIED->value, \App\Enums\ThreadStateType::PARTLY_DENIED_PARTLY_RELEASED->value] : null
+);
 $emailTypeGaps = ThreadAnalysisStats::getEmailTypeGaps(100);
 $disagreements = ThreadAnalysisStats::getDisagreements(100);
 $attachmentTypeStats = ThreadAnalysisStats::getAttachmentTypeStats();
@@ -238,7 +244,12 @@ function formatRunDuration($claimedAt, $finishedAt) {
             <?php endif; ?>
         </table>
 
-        <h2>Recent runs (up to 100)</h2>
+        <h2><?= $onlyDenials ? 'Recent runs ending in a denial (up to 100)' : 'Recent runs (up to 100)' ?></h2>
+        <p>
+            <?= $onlyDenials ? '<a href="/thread-analysis">All runs</a>' : '<strong>All runs</strong>' ?>
+            |
+            <?= $onlyDenials ? '<strong>Only denials</strong>' : '<a href="/thread-analysis?runs=denied">Only denials</a>' ?>
+        </p>
         <table>
             <tr>
                 <th>Thread</th>
@@ -254,7 +265,7 @@ function formatRunDuration($claimedAt, $finishedAt) {
             <?php foreach ($recentRuns as $run): ?>
                 <tr>
                     <td><a href="<?= htmlspecialchars('/thread-analysis/thread?id=' . $run['thread_id']) ?>"><?= htmlspecialchars((string) ($run['thread_title'] ?? $run['thread_id'])) ?></a></td>
-                    <td><?= formatRunStatusBadge($run['status']) ?></td>
+                    <td><?= formatRunStatusBadge($run['status']) ?><?php if (!empty($run['final_thread_state_type'])): ?><br><?= ThreadStateView::renderStatusBadge($run['final_thread_state_type']) ?><?php endif; ?></td>
                     <td><?= htmlspecialchars($run['mode']) ?></td>
                     <td><?= htmlspecialchars((string) ($run['model'] ?? '')) ?></td>
                     <td><?= (int) $run['event_count'] ?></td>
@@ -265,7 +276,7 @@ function formatRunDuration($claimedAt, $finishedAt) {
                 </tr>
             <?php endforeach; ?>
             <?php if (empty($recentRuns)): ?>
-                <tr><td colspan="9" style="text-align: center;">No runs yet</td></tr>
+                <tr><td colspan="9" style="text-align: center;"><?= $onlyDenials ? 'No runs ending in a denial' : 'No runs yet' ?></td></tr>
             <?php endif; ?>
         </table>
 

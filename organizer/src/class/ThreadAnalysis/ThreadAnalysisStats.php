@@ -158,19 +158,41 @@ class ThreadAnalysisStats {
     /**
      * The most recent runs of any status, newest first.
      *
+     * @param ?array<int, string> $finalStateTypes When given, only runs whose
+     *   final_thread_state_type is one of these ThreadStateType values are
+     *   returned (the limit applies after the filter).
      * @return array<int, array> thread_analysis_runs rows plus thread_title,
-     *   event_count and cost_usd (summed over the run's calls).
+     *   event_count, cost_usd (summed over the run's calls) and
+     *   final_thread_state_type (the derived_thread_state_type of the run's
+     *   event with the highest position; null when the run has no events or
+     *   that event has none).
      */
-    public static function getRecentRuns(int $limit = 100): array {
+    public static function getRecentRuns(int $limit = 100, ?array $finalStateTypes = null): array {
+        $params = [];
+        $where = '';
+        if ($finalStateTypes !== null) {
+            if (empty($finalStateTypes)) {
+                return [];
+            }
+            $where = 'WHERE x.final_thread_state_type IN (' . implode(', ', array_fill(0, count($finalStateTypes), '?')) . ')';
+            $params = array_values($finalStateTypes);
+        }
+        $params[] = $limit;
         $rows = Database::query(
-            "SELECT r.*, t.title AS thread_title,
+            "SELECT x.*
+             FROM (
+                SELECT r.*, t.title AS thread_title,
                     (SELECT COUNT(*) FROM thread_analysis_events e WHERE e.run_id = r.id) AS event_count,
-                    (SELECT COALESCE(SUM(c.cost_usd), 0) FROM thread_analysis_claude_code_calls c WHERE c.run_id = r.id) AS cost_usd
-             FROM thread_analysis_runs r
-             JOIN threads t ON t.id = r.thread_id
-             ORDER BY r.requested_at DESC
+                    (SELECT COALESCE(SUM(c.cost_usd), 0) FROM thread_analysis_claude_code_calls c WHERE c.run_id = r.id) AS cost_usd,
+                    (SELECT e.derived_thread_state_type FROM thread_analysis_events e WHERE e.run_id = r.id
+                      ORDER BY e.\"position\" DESC LIMIT 1) AS final_thread_state_type
+                FROM thread_analysis_runs r
+                JOIN threads t ON t.id = r.thread_id
+             ) x
+             $where
+             ORDER BY x.requested_at DESC
              LIMIT ?",
-            [$limit]
+            $params
         );
         foreach ($rows as &$row) {
             $row['event_count'] = (int) $row['event_count'];

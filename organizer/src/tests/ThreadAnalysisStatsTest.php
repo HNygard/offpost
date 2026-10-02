@@ -280,6 +280,77 @@ class ThreadAnalysisStatsTest extends TestCase {
         $this->assertNull($byId[$unreviewedId]['reviewed_at']);
     }
 
+    // :: getRecentRuns - final_thread_state_type and its filter
+
+    public function testGetRecentRunsFinalThreadStateTypeIsFromTheLastPositionAndNullWithoutEvents(): void {
+        // :: Setup
+        $threadId = $this->createFixedThread();
+        $emailId = $this->insertEmail($threadId, '2026-01-01T09:00:00+00:00');
+        $withEventsId = $this->insertRun($threadId, 'done', '2026-01-01T08:00:00+00:00');
+        $this->insertEvent($withEventsId, $emailId, 2, ['derived_thread_state_type' => 'DENIED']);
+        $this->insertEvent($withEventsId, $emailId, 3, ['derived_thread_state_type' => 'ANSWERED']);
+        $this->insertEvent($withEventsId, $emailId, 1, ['derived_thread_state_type' => 'WAITING_FOR_ENTITY']);
+        $withoutEventsId = $this->insertRun($threadId, 'requested', '2026-01-01T07:00:00+00:00');
+        $nullStateId = $this->insertRun($threadId, 'done', '2026-01-01T06:00:00+00:00');
+        $this->insertEvent($nullStateId, $emailId, 1, ['derived_thread_state_type' => 'DENIED']);
+        $this->insertEvent($nullStateId, $emailId, 2, ['derived_thread_state_type' => null]);
+
+        // :: Act
+        $runs = ThreadAnalysisStats::getRecentRuns(1000);
+
+        // :: Assert
+        $byId = [];
+        foreach ($runs as $run) {
+            $byId[(int) $run['id']] = $run['final_thread_state_type'];
+        }
+        $this->assertEquals('ANSWERED', $byId[$withEventsId], json_encode($byId, JSON_PRETTY_PRINT));
+        $this->assertNull($byId[$withoutEventsId]);
+        $this->assertNull($byId[$nullStateId]);
+    }
+
+    public function testGetRecentRunsFilterReturnsOnlyRunsWithAMatchingFinalStateNewestFirst(): void {
+        // :: Setup
+        $threadId = $this->createFixedThread();
+        $emailId = $this->insertEmail($threadId, '2026-01-01T09:00:00+00:00');
+        $deniedOldId = $this->insertRun($threadId, 'done', '2026-01-01T05:00:00+00:00');
+        $this->insertEvent($deniedOldId, $emailId, 1, ['derived_thread_state_type' => 'DENIED']);
+        $partlyId = $this->insertRun($threadId, 'done', '2026-01-01T06:00:00+00:00');
+        $this->insertEvent($partlyId, $emailId, 1, ['derived_thread_state_type' => 'PARTLY_DENIED_PARTLY_RELEASED']);
+        $answeredId = $this->insertRun($threadId, 'done', '2026-01-01T07:00:00+00:00');
+        $this->insertEvent($answeredId, $emailId, 1, ['derived_thread_state_type' => 'ANSWERED']);
+        $deniedThenAnsweredId = $this->insertRun($threadId, 'done', '2026-01-01T08:00:00+00:00');
+        $this->insertEvent($deniedThenAnsweredId, $emailId, 1, ['derived_thread_state_type' => 'DENIED']);
+        $this->insertEvent($deniedThenAnsweredId, $emailId, 2, ['derived_thread_state_type' => 'ANSWERED']);
+        $noEventsId = $this->insertRun($threadId, 'requested', '2026-01-01T09:00:00+00:00');
+        $mine = [$deniedOldId, $partlyId, $answeredId, $deniedThenAnsweredId, $noEventsId];
+
+        // :: Act
+        $runs = ThreadAnalysisStats::getRecentRuns(1000, ['DENIED', 'PARTLY_DENIED_PARTLY_RELEASED']);
+
+        // :: Assert
+        $mineReturned = array_values(array_filter(
+            array_map(fn(array $row): int => (int) $row['id'], $runs),
+            fn(int $id): bool => in_array($id, $mine, true)
+        ));
+        $this->assertEquals([$partlyId, $deniedOldId], $mineReturned, json_encode($runs, JSON_PRETTY_PRINT));
+    }
+
+    public function testGetRecentRunsFilterAppliesTheLimitAfterFiltering(): void {
+        // :: Setup
+        $threadId = $this->createFixedThread();
+        $emailId = $this->insertEmail($threadId, '2026-01-01T09:00:00+00:00');
+        $deniedId = $this->insertRun($threadId, 'done', '2099-01-01T05:00:00+00:00');
+        $this->insertEvent($deniedId, $emailId, 1, ['derived_thread_state_type' => 'DENIED']);
+        $newerAnsweredId = $this->insertRun($threadId, 'done', '2099-01-01T06:00:00+00:00');
+        $this->insertEvent($newerAnsweredId, $emailId, 1, ['derived_thread_state_type' => 'ANSWERED']);
+
+        // :: Act
+        $runs = ThreadAnalysisStats::getRecentRuns(1, ['DENIED']);
+
+        // :: Assert
+        $this->assertEquals([$deniedId], array_map(fn(array $row): int => (int) $row['id'], $runs), json_encode($runs, JSON_PRETTY_PRINT));
+    }
+
     // :: getEmailTypeGaps - the gap query
 
     public function testGetEmailTypeGapsFindsEventsWithANonEmptyGap(): void {

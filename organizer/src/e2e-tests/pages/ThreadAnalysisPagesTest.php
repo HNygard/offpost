@@ -56,6 +56,45 @@ class ThreadAnalysisPagesTest extends E2EPageTestCase {
         $this->assertStringContainsString('Runs with issues (up to 100)', $response->body);
     }
 
+    public function testOverviewPageDeniedFilterShowsFilteredHeadingAndStatusBadge() {
+        // :: Setup
+        $created = E2ETestSetup::createTestThread();
+        $threadId = $created['thread']->id;
+        try {
+            $runId = Database::queryValue(
+                "INSERT INTO thread_analysis_runs
+                    (thread_id, status, mode, requested_by, requested_at, claimed_at, finished_at, worker, model)
+                 VALUES (?, 'done', 'full', 'test-user', '2099-01-01T08:00:00+00:00', '2099-01-01T08:00:10+00:00',
+                         '2099-01-01T08:00:20+00:00', 'worker-1', 'claude-opus-5-5')
+                 RETURNING id",
+                [$threadId]
+            );
+            Database::execute(
+                "INSERT INTO thread_analysis_events
+                    (run_id, email_id, \"position\", email_type, email_note, email_type_gap, derived_thread_state_type, attempts, error)
+                 VALUES (?, ?, 1, 'REQUEST_REJECTED', '', '', 'DENIED', 1, NULL)",
+                [$runId, $created['email_id']]
+            );
+
+            // :: Act
+            $filtered = $this->renderPage('/thread-analysis?runs=denied');
+            $all = $this->renderPage('/thread-analysis');
+
+            // :: Assert
+            $this->assertStringContainsString('Recent runs ending in a denial (up to 100)', $filtered->body);
+            $this->assertStringContainsString('<strong>Only denials</strong>', $filtered->body);
+            $this->assertStringContainsString('<a href="/thread-analysis">All runs</a>', $filtered->body);
+            $this->assertStringContainsString('title="DENIED"', $filtered->body);
+            $this->assertStringContainsString(htmlspecialchars($created['thread']->title), $filtered->body);
+            $this->assertStringContainsString('<h2>Recent runs (up to 100)</h2>', $all->body);
+            $this->assertStringContainsString('<strong>All runs</strong>', $all->body);
+            $this->assertStringContainsString('<a href="/thread-analysis?runs=denied">Only denials</a>', $all->body);
+        } finally {
+            $this->cleanupAnalysisRows($threadId);
+            E2ETestSetup::cleanupTestThread($threadId, $created['entity_id']);
+        }
+    }
+
     public function testOverviewPageNotLoggedIn() {
         // :: Setup
 
