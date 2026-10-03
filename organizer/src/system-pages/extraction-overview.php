@@ -3,6 +3,7 @@ require_once __DIR__ . '/../class/Enums/ThreadEmailStatusType.php';
 require_once __DIR__ . '/../auth.php';
 require_once __DIR__ . '/../class/Extraction/ThreadEmailExtraction.php';
 require_once __DIR__ . '/../class/Extraction/ThreadEmailExtractionService.php';
+require_once __DIR__ . '/../class/Extraction/AttachmentExtractionStats.php';
 require_once __DIR__ . '/../class/Extraction/ThreadEmailExtractorEmailBody.php';
 require_once __DIR__ . '/../class/Extraction/ThreadEmailExtractorAttachmentPdf.php';
 require_once __DIR__ . '/../class/Extraction/ThreadEmailExtractorPromptSaksnummer.php';
@@ -109,6 +110,8 @@ $unclassifiedAttachmentsQuery = "
     LIMIT 100
 ";
 $unclassifiedAttachments = Database::query($unclassifiedAttachmentsQuery, []);
+
+$attachmentTypeStats = AttachmentExtractionStats::getAttachmentTypeStats();
 
 // Combine all extractions for display
 $allExtractions = array_merge($unclassifiedEmails, $unclassifiedAttachments);
@@ -499,6 +502,38 @@ function getExtractionType($extraction) {
                 <tr>
                     <td colspan="7" style="text-align: center;">No unclassified email extractions found</td>
                 </tr>
+            <?php endif; ?>
+        </table>
+
+        <h2>Attachments by file type and year</h2>
+        <p>Text = any extraction with text. No text = extraction ran but gave no text (for PDFs: likely a scan).</p>
+        <table>
+            <tr>
+                <th>File type</th>
+                <th>Year</th>
+                <th>Attachments</th>
+                <th>Text</th>
+                <th>No text</th>
+                <th>Failed</th>
+                <th>Not extracted</th>
+                <th>Empty name</th>
+                <th>Avg size (KB)</th>
+            </tr>
+            <?php foreach ($attachmentTypeStats as $row): ?>
+                <tr>
+                    <td><?= htmlspecialchars($row['filetype']) ?></td>
+                    <td><?= htmlspecialchars((string) $row['year']) ?></td>
+                    <td><?= (int) $row['count'] ?></td>
+                    <td><?= (int) $row['with_text'] ?></td>
+                    <td><?= (int) $row['no_text'] ?></td>
+                    <td><?= (int) $row['failed'] ?></td>
+                    <td><?= (int) $row['not_extracted'] ?></td>
+                    <td><?= (int) $row['empty_name'] ?></td>
+                    <td><?= htmlspecialchars(number_format($row['avg_size_bytes'] / 1024, 1)) ?></td>
+                </tr>
+            <?php endforeach; ?>
+            <?php if (empty($attachmentTypeStats)): ?>
+                <tr><td colspan="9" style="text-align: center;">No attachments found</td></tr>
             <?php endif; ?>
         </table>
     </div>

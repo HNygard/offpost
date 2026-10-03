@@ -85,6 +85,9 @@ class ExtractionOverviewPageTest extends E2EPageTestCase {
         $this->assertStringContainsString('<div class="summary-label">Unclassified Emails</div>', $response->body);
         $this->assertStringContainsString('<div class="summary-label">Unclassified Attachments</div>', $response->body);
         
+        // Assert the attachment file-type survey
+        $this->assertStringContainsString('<h2>Attachments by file type and year</h2>', $response->body);
+
         // Assert that the table headers are present
         $this->assertStringContainsString('<th class="id-col">ID</th>', $response->body);
         $this->assertStringContainsString('<th class="thread-col">Thread / Email</th>', $response->body);

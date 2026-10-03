@@ -27,6 +27,7 @@ runs in prod.
 
 ## Decisions, agreed with the owner
 
+- **Extraction is not part of the thread analysis.** Reading attachments belongs to Offpost's extraction pipeline (`class/Extraction/`, `scheduled-email-extraction`, `thread_email_extractions`), so all of Offpost gets the text: summaries, classification, the thread view and the NP API. The analysis only reads the stored extractions; its one change is labelling OCR text as coming from a scan.
 - **OCR uses OpenAI**, for PDFs without a text layer. Offpost already sends
   email content to OpenAI for summaries, so no new kind of data leaves.
 - **OCR text is not machine-readable.** A PDF that needed OCR is a scan. When
@@ -38,15 +39,15 @@ runs in prod.
 
 ## Changes
 
-1. **File-type survey in prod.** A read-only section on `/thread-analysis`:
+1. **File-type survey in prod.** A read-only section on `/extraction-overview` (not the thread analysis):
    attachments per file type and year of `datetime_received`, with columns
    for count, with text, no text (extraction ran, empty text), failed, not
    extracted, and average size. UNKNOWN rows also counted by whether `name`
    is empty. This decides the order and the size threshold of changes 3-5.
-   - `ThreadAnalysisStats::getAttachmentTypeStats()`: one SQL query over
+   - `AttachmentExtractionStats::getAttachmentTypeStats()`: one SQL query over
      `thread_email_attachments` joined to `thread_emails` and the
      extractions of each attachment (any `prompt_service`/`prompt_text`).
-   - Rendered as a table on `/thread-analysis`, admin only like the page.
+   - Rendered as a table on `/extraction-overview`, admin only like the page.
    - Tests: stats query against fixed rows; page renders the section.
 2. **Lost PDF filenames.** Check whether the current import still loses
    them (the 2021 emails fold the `filename=` parameter onto the next line).

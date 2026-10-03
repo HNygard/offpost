@@ -188,6 +188,7 @@ organizer/src/
 - `ThreadAnalysisWorkItem` - Pure logic choosing which emails a worker should analyse for a claimed run (full/incremental) (docs/thread-analysis.md)
 - `ThreadAnalysisStats` - Read-only queries for the admin debug pages: cost/token totals, per-model and per-prompt cost, the queue, recent runs, email-type gaps and disagreements with `thread_emails.status_type` (docs/thread-analysis.md)
 - `ClaudeCodeEventRunner` - Shared call/validate/retry-once logic for one event against headless Claude Code, used by both `tools/analyze-threads.php` and `tools/analysis-worker.php` (docs/thread-analysis.md)
+- `AttachmentExtractionStats` - Read-only attachment file-type survey (text / no text / failed / not extracted per type and year) for /extraction-overview
 
 ### Scheduled Tasks
 Located in `system-pages/`, triggered by cron:

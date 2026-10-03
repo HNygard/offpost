@@ -194,6 +194,17 @@ No rule is based on timing alone: the entity may reply just as we send something
 To apply improved rules to old data: `php bin/backfill-email-classification-from-summaries.php
 --include-auto [--dry-run]` in the organizer container.
 
+## Attachment extraction survey
+
+`/extraction-overview` ends with a read-only survey, "Attachments by file type and year"
+(`AttachmentExtractionStats::getAttachmentTypeStats()`, step 2d change 1): per `filetype` of
+`thread_email_attachments` and year received, how many attachments have extracted text, an
+extraction that gave no text (for PDFs: likely a scan), only failed extractions, or no extraction
+at all, plus how many have an empty name and the average size. Each attachment counts once; an
+attachment with both a blank and an errored extraction counts as "no text". It decides the order
+of the extraction changes. Reading attachments is part of the extraction pipeline, not of the
+thread analysis, which only reads the stored extractions.
+
 ## Automatic archiving
 
 `scheduled-np-thread-archiving` (`NpThreadAutoArchiver`) archives `norske_postlister_no`
