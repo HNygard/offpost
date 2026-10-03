@@ -237,6 +237,116 @@ class ThreadStateViewTest extends TestCase {
         );
     }
 
+    private function stateWithComplaintDeadline(string $deadline): array {
+        $state = $this->smallState();
+        $state['dates'] = [
+            ['date' => '2026-08-31', 'what' => 'Avslag mottatt', 'email_id' => null],
+            ['date' => $deadline, 'what' => 'Klagefrist (tre uker fra mottak av avslaget)', 'email_id' => null],
+        ];
+        return $state;
+    }
+
+    public function testRenderBlockShowsOverdueComplaintDeadlineAsCalloutUnderStatus(): void {
+        // :: Setup
+        $state = $this->stateWithComplaintDeadline('2026-09-21');
+
+        // :: Act
+        $html = ThreadStateView::renderBlock($state, 'DENIED', 'auto', false, 'thread-1', null, '2026-10-03');
+
+        // :: Assert
+        $expected = '<div class="thread-state">'
+            . '<h2>Thread state</h2>'
+            . '<p class="thread-state-status">'
+            . '<span class="label classification label_error" title="DENIED">Avslått</span>'
+            . ' <span class="thread-state-source">(auto)</span>'
+            . '</p>'
+            . '<div class="thread-state-complaint-deadline thread-state-complaint-deadline-overdue">'
+            . '<strong>Klagefrist: 2026-09-21</strong>'
+            . ' <span class="thread-state-complaint-deadline-countdown">(utløpt for 12 dager siden)</span>'
+            . '<div class="thread-state-complaint-deadline-what">Klagefrist (tre uker fra mottak av avslaget)</div>'
+            . '</div>'
+            . '<p class="thread-state-waiting-for"><strong>Waiting for:</strong> Ingen venter</p>'
+            . '<table class="thread-state-items">'
+            . '<thead><tr><th>Asked for</th><th>Status</th><th>Denial basis</th></tr></thead>'
+            . '<tbody>'
+            . '<tr>'
+            . '<td>Valgprotokoll 2023</td>'
+            . '<td><span title="PARTLY_RELEASED">Delvis utlevert</span></td>'
+            . '<td>'
+            . '<span class="denial-refs">offentleglova § 13</span>'
+            . ' <span class="denial-text">Delvis unntatt</span>'
+            . ' <span class="label classification label_warn" title="INCOMPLETE_REFERENCE">Mangelfull henvisning</span>'
+            . '</td>'
+            . '</tr>'
+            . '</tbody></table>'
+            . '<p class="thread-state-case-numbers"><strong>Case numbers:</strong> 23/1234</p>'
+            . '<ul class="thread-state-dates"><li>2026-08-31: Avslag mottatt</li></ul>'
+            . '</div>';
+        $this->assertEquals($expected, $html, 'The deadline is moved out of the dates list; other dates stay there');
+    }
+
+    public static function complaintDeadlineCountdownProvider(): array {
+        return [
+            'one day overdue' => ['2026-10-02', 'overdue', 'utløpt for 1 dag siden'],
+            'today' => ['2026-10-03', 'soon', 'utløper i dag'],
+            'tomorrow' => ['2026-10-04', 'soon', '1 dag igjen'],
+            'within a week' => ['2026-10-10', 'soon', '7 dager igjen'],
+            'more than a week' => ['2026-10-11', 'upcoming', '8 dager igjen'],
+        ];
+    }
+
+    /**
+     * @dataProvider complaintDeadlineCountdownProvider
+     */
+    public function testRenderBlockComplaintDeadlineCountdown(string $deadline, string $modifier, string $countdown): void {
+        // :: Setup
+        $state = $this->stateWithComplaintDeadline($deadline);
+
+        // :: Act
+        $html = ThreadStateView::renderBlock($state, 'DENIED', 'auto', false, 'thread-1', null, '2026-10-03');
+
+        // :: Assert
+        $this->assertStringContainsString(
+            '<div class="thread-state-complaint-deadline thread-state-complaint-deadline-' . $modifier . '">'
+            . '<strong>Klagefrist: ' . $deadline . '</strong>'
+            . ' <span class="thread-state-complaint-deadline-countdown">(' . $countdown . ')</span>',
+            $html
+        );
+    }
+
+    public function testRenderBlockComplaintDeadlineIsMutedOnceComplaintSent(): void {
+        // :: Setup
+        $state = $this->stateWithComplaintDeadline('2026-09-21');
+        $state['complaints'] = [['status' => 'SENT', 'item_ids' => ['1'], 'outcome' => '']];
+
+        // :: Act
+        $html = ThreadStateView::renderBlock($state, 'COMPLAINT_SENT', 'auto', false, 'thread-1', null, '2026-10-03');
+
+        // :: Assert
+        $this->assertStringContainsString(
+            '<div class="thread-state-complaint-deadline thread-state-complaint-deadline-done">'
+            . '<strong>Klagefrist: 2026-09-21</strong>'
+            . ' <span class="thread-state-complaint-deadline-countdown">(klage sendt)</span>',
+            $html
+        );
+    }
+
+    public function testRenderBlockComplaintDeadlineWithUnparseableDateHasNoCountdown(): void {
+        // :: Setup
+        $state = $this->stateWithComplaintDeadline('ukjent');
+
+        // :: Act
+        $html = ThreadStateView::renderBlock($state, 'DENIED', 'auto', false, 'thread-1', null, '2026-10-03');
+
+        // :: Assert
+        $this->assertStringContainsString(
+            '<div class="thread-state-complaint-deadline thread-state-complaint-deadline-upcoming">'
+            . '<strong>Klagefrist: ukjent</strong>'
+            . '<div class="thread-state-complaint-deadline-what">',
+            $html
+        );
+    }
+
     public function testStatusTypeLabelClassCoversEveryThreadStateType(): void {
         // :: Setup
         $allowed = ['label_ok', 'label_warn', 'label_error', 'label_info'];

@@ -110,6 +110,8 @@ class ThreadStateView {
      *   run's review_status (step 2c "Change 9"), shown next to the
      *   "Analysis details" link for admins only; null when there is no run
      *   to show a review status for.
+     * @param string|null $today 'Y-m-d' used to count days to a complaint
+     *   deadline; null means the current date. Tests pass a fixed date.
      */
     public static function renderBlock(
         array $state,
@@ -117,7 +119,8 @@ class ThreadStateView {
         ?string $stateSource,
         bool $isAdmin,
         string $threadId,
-        ?string $latestRunReviewStatus = null
+        ?string $latestRunReviewStatus = null,
+        ?string $today = null
     ): string {
         $html = '<div class="thread-state">';
         $html .= '<h2>Thread state</h2>';
@@ -127,6 +130,14 @@ class ThreadStateView {
             $html .= ' <span class="thread-state-source">(' . self::e($stateSource) . ')</span>';
         }
         $html .= '</p>';
+
+        // Complaint deadlines get a callout of their own, right under the
+        // status, instead of a line in the dates list further down.
+        $complaintDeadlines = array_values(array_filter($state['dates'], [self::class, 'isComplaintDeadline']));
+        $otherDates = array_values(array_filter($state['dates'], fn($date) => !self::isComplaintDeadline($date)));
+        foreach ($complaintDeadlines as $deadline) {
+            $html .= self::renderComplaintDeadline($deadline, !empty($state['complaints']), $today ?? date('Y-m-d'));
+        }
 
         $html .= '<p class="thread-state-waiting-for"><strong>Waiting for:</strong> '
             . self::e(self::WAITING_FOR_LABELS[$state['waiting_for']] ?? $state['waiting_for'])
@@ -144,8 +155,8 @@ class ThreadStateView {
                 . self::e(implode(', ', $state['case_numbers'])) . '</p>';
         }
 
-        if (!empty($state['dates'])) {
-            $html .= self::renderDatesList($state['dates']);
+        if (!empty($otherDates)) {
+            $html .= self::renderDatesList($otherDates);
         }
 
         if (!empty($state['complaints'])) {
@@ -254,6 +265,56 @@ class ThreadStateView {
         }
 
         return implode(' ', $parts);
+    }
+
+    /**
+     * `dates` has no type field, so a complaint deadline is recognised by
+     * "klagefrist" in its free-text `what`.
+     */
+    private static function isComplaintDeadline(array $date): bool {
+        return mb_stripos($date['what'], 'klagefrist') !== false;
+    }
+
+    /**
+     * Prominent box for one complaint deadline: the date, how many days are
+     * left (or how long ago it ran out), and the `what` text. Once a complaint
+     * has been sent the countdown no longer matters, so it is shown muted.
+     */
+    private static function renderComplaintDeadline(array $deadline, bool $complaintSent, string $today): string {
+        $deadlineDate = DateTimeImmutable::createFromFormat('!Y-m-d', $deadline['date']);
+        $todayDate = DateTimeImmutable::createFromFormat('!Y-m-d', $today);
+
+        $modifier = 'upcoming';
+        $countdown = '';
+        if ($complaintSent) {
+            $modifier = 'done';
+            $countdown = 'klage sendt';
+        }
+        elseif ($deadlineDate !== false && $todayDate !== false) {
+            $days = (int)$todayDate->diff($deadlineDate)->format('%r%a');
+            if ($days < 0) {
+                $modifier = 'overdue';
+                $countdown = 'utløpt for ' . (-$days) . ($days === -1 ? ' dag' : ' dager') . ' siden';
+            }
+            elseif ($days === 0) {
+                $modifier = 'soon';
+                $countdown = 'utløper i dag';
+            }
+            else {
+                $modifier = $days <= 7 ? 'soon' : 'upcoming';
+                $countdown = $days . ($days === 1 ? ' dag' : ' dager') . ' igjen';
+            }
+        }
+
+        $html = '<div class="thread-state-complaint-deadline thread-state-complaint-deadline-' . $modifier . '">';
+        $html .= '<strong>Klagefrist: ' . self::e($deadline['date']) . '</strong>';
+        if ($countdown !== '') {
+            $html .= ' <span class="thread-state-complaint-deadline-countdown">(' . self::e($countdown) . ')</span>';
+        }
+        $html .= '<div class="thread-state-complaint-deadline-what">' . self::e($deadline['what']) . '</div>';
+        $html .= '</div>';
+
+        return $html;
     }
 
     private static function renderDatesList(array $dates): string {

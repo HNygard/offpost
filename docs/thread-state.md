@@ -161,6 +161,13 @@ the thread, in `view-thread.php`:
   `asks_to_us`, a table of items (asked for, status, denial basis with `issues` as warning
   badges), case numbers, dates, complaint rounds, and `notes` when not empty. Admins also get a
   link to the debug page from step 2c change 4b, `/thread-analysis/thread?id=<thread id>`.
+- A complaint deadline - a `dates` entry whose `what` contains "klagefrist" (case-insensitive;
+  `dates` has no type field) - is lifted out of the dates list into a callout right under the
+  status badge: "Klagefrist: <date>", the days left or how long ago it ran out, and the `what`
+  text. Its colour follows urgency: more than 7 days left, 7 days or less (including today),
+  overdue, and muted grey with "klage sendt" once `complaints` is not empty. A date that is not
+  `YYYY-MM-DD` gets no countdown. Like "overdue" above, this is worked out when rendering and
+  never stored.
 - Per email, in `.email-header`, when that email has a `thread_state`: a small badge with its
   `thread_state_type`, and a "Show state" link that opens the blob as pretty-printed JSON in the
   shared `ContentDialog` modal (`webroot/js/contentDialog.js`) - a hidden `<template>` per email,

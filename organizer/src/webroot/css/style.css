@@ -561,6 +561,37 @@ span.label.classification.label_info {
     padding-left: 20px;
 }
 
+/* Complaint deadline callout: colour follows how close the deadline is. */
+.thread-state-complaint-deadline {
+    margin: 10px 0;
+    padding: 10px 14px;
+    border-left: 6px solid #f0ad4e;
+    border-radius: 4px;
+    background-color: #fff8e1;
+    font-size: 1.15em;
+}
+
+.thread-state-complaint-deadline-soon {
+    border-left-color: #e67e22;
+    background-color: #fdebd0;
+}
+
+.thread-state-complaint-deadline-overdue {
+    border-left-color: #c0392b;
+    background-color: #fadbd8;
+}
+
+.thread-state-complaint-deadline-done {
+    border-left-color: #adb5bd;
+    background-color: #f1f3f5;
+    color: #6c757d;
+}
+
+.thread-state-complaint-deadline-what {
+    margin-top: 4px;
+    font-size: 0.8em;
+}
+
 .thread-state-source {
     color: #6c757d;
     font-size: 0.9em;
