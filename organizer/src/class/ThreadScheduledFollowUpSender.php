@@ -135,14 +135,12 @@ class ThreadScheduledFollowUpSender {
 
             $thread = Thread::loadFromDatabase($thread_status->thread_id);
 
-            $sendings = ThreadEmailSending::getByThreadId($thread->id);
-            foreach ($sendings as $sending) {
-                if ($sending->status == ThreadEmailSending::STATUS_SENT) {
-                    continue;
+            // No follow-up while any sending is unresolved: not sent yet, or
+            // sent but its copy not yet synced into the thread as an OUT email.
+            foreach (ThreadEmailSending::getByThreadId($thread->id) as $sending) {
+                if (self::isSendingPending($sending, $thread->emails)) {
+                    continue 2;
                 }
-
-                // Skip threads that already have some email in progress
-                continue 2;
             }
 
             // Just an extra check that the thread is not archived.
@@ -156,6 +154,29 @@ class ThreadScheduledFollowUpSender {
         return null;
     }
     
+    /**
+     * A sending is resolved once it is SENT and its copy (BCC to the thread's
+     * own address) has been synced into the thread: an OUT email dated at or
+     * after the sending was created. Sendings carry no Message-ID, so the
+     * match is by time.
+     *
+     * @param ThreadEmailSending $sending
+     * @param ThreadEmail[] $emails The thread's emails
+     */
+    public static function isSendingPending(ThreadEmailSending $sending, array $emails): bool {
+        if ($sending->status !== ThreadEmailSending::STATUS_SENT) {
+            return true;
+        }
+        $createdAt = strtotime($sending->created_at);
+        foreach ($emails as $email) {
+            $ts = is_int($email->timestamp_received) ? $email->timestamp_received : strtotime($email->timestamp_received);
+            if ($email->email_type === 'OUT' && $ts >= $createdAt) {
+                return false;
+            }
+        }
+        return true;
+    }
+
     /**
      * Create follow-up email content
      * 
@@ -252,9 +273,9 @@ class ThreadScheduledFollowUpSender {
      * a healthy status (EMAIL_SENT_NOTHING_RECEIVED or STATUS_OK - an ERROR_*
      * status means the mailbox is not synced, so an answer may be sitting
      * unseen, and NOT_SENT means there is nothing to remind about yet).
-     * Threads with a sending still in flight are skipped: the previous
-     * reminder or reply has not left yet, or has not been synced back as an
-     * OUT email.
+     * Threads with a pending sending are skipped (isSendingPending): the
+     * previous reminder or reply has not left yet, or has not been synced back
+     * as an OUT email.
      *
      * @return ?array{thread: Thread, decision: PostlisteFollowUpDecision}
      */
@@ -281,20 +302,16 @@ class ThreadScheduledFollowUpSender {
                 continue;
             }
 
-            $inFlight = false;
-            foreach (ThreadEmailSending::getByThreadId($threadId) as $sending) {
-                if ($sending->status !== ThreadEmailSending::STATUS_SENT) {
-                    $inFlight = true;
-                    break;
-                }
-            }
-            if ($inFlight) {
-                continue;
-            }
-
             $thread = Thread::loadFromDatabase($threadId);
             if ($thread->archived) {
                 continue;
+            }
+
+            // No follow-up while any sending is unresolved (see isSendingPending)
+            foreach (ThreadEmailSending::getByThreadId($threadId) as $sending) {
+                if (self::isSendingPending($sending, $thread->emails)) {
+                    continue 2;
+                }
             }
 
             $history = Database::query(

@@ -93,9 +93,9 @@ class ThreadStatusRepository {
         }
         
         $query .= "
-                GROUP BY 
+                GROUP BY
                     t.id
-            )
+            ), statuses AS (
             SELECT
                 thread_id,
                 entity_id,
@@ -126,32 +126,18 @@ class ThreadStatusRepository {
                 email_last_activity,
                 email_last_received,
                 email_last_sent
-            FROM 
+            FROM
                 thread_data
+            )
+            SELECT * FROM statuses
         ";
-        
-        // Add status filter if provided
+
+        // Add status filter if provided. Filters on the computed status so the
+        // two can never disagree (a copied CASE here once lacked the
+        // ERROR_OLD_SYNC_REQUESTED_UPDATE line).
         if ($status !== null) {
             $query .= "
-            WHERE
-                CASE
-                    -- Technical checks for this thread
-                    WHEN folder_count = 0 THEN 'ERROR_NO_FOLDER_FOUND'
-                    WHEN folder_count > 1 THEN 'ERROR_MULTIPLE_FOLDERS'
-                    WHEN last_checked_at IS NULL THEN 'ERROR_NO_SYNC'
-
-                    -- Check status for sync of inbox and sent folders
-                    WHEN last_checked_at_inbox IS NULL THEN 'ERROR_INBOX_SYNC'
-                    WHEN last_checked_at_sent IS NULL THEN 'ERROR_SENT_SYNC'
-                    WHEN last_checked_at_inbox < NOW() - INTERVAL '10 minutes' THEN 'ERROR_INBOX_SYNC'
-                    WHEN last_checked_at_sent < NOW() - INTERVAL '10 minutes' THEN 'ERROR_SENT_SYNC'
-                    
-                    -- Up-to-date checks for this thread
-                    WHEN last_checked_at < NOW() - INTERVAL '6 hours' THEN 'ERROR_OLD_SYNC'
-                    WHEN email_count_out = 0 AND email_count_in = 0 THEN 'NOT_SENT'
-                    WHEN email_count_out = 1 AND email_count_in = 0 THEN 'EMAIL_SENT_NOTHING_RECEIVED'
-                    ELSE 'STATUS_OK'
-                END = ?
+            WHERE status = ?
             ";
             $params[] = $status;
         }

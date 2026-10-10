@@ -227,6 +227,16 @@ visible to this API or the attachment is unknown or has no stored content.
 | `slow` | same, after 14 days | staged; a human releases it |
 | `postliste` | day 10 and day 20, see below | queued `READY_FOR_SENDING`, no human release |
 
+No plan creates a follow-up while the thread has unresolved activity:
+
+- **The thread must be in sync.** Any `ERROR_*` thread status skips it, including
+  `ERROR_OLD_SYNC_REQUESTED_UPDATE` (sending an email requests a sync of the thread's folder).
+- **No sending may be pending** (`ThreadScheduledFollowUpSender::isSendingPending`). A sending is
+  pending until it is `SENT` *and* its copy (BCC to the thread's own address) has been synced
+  into the thread as an `OUT` email dated at or after the sending was created. Sendings carry
+  no Message-ID, so the match is by time. Without this, a sent reminder whose copy had not
+  arrived yet left the thread looking unanswered and got a second reminder.
+
 ### Plan `postliste`
 
 For postjournal requests (law basis `offentleglova`). Decision rules live in
@@ -251,7 +261,8 @@ A thread is skipped (no reminder) when:
 
 - it has no `OUT` email yet, or its status is not `EMAIL_SENT_NOTHING_RECEIVED` / `STATUS_OK`
   (an `ERROR_*` status means the mailbox is not synced, so an answer may be sitting unseen);
-- any `thread_email_sendings` row is not yet `SENT` (a reminder or reply in flight);
+- any `thread_email_sendings` row is pending: not yet `SENT`, or sent but its copy not yet
+  synced into the thread (see the rule above the table);
 - it is archived;
 - any non-ignored `IN` email is classified `REQUEST_REJECTED` (permanent stop);
 - a non-ignored `IN` email received after the anchor is not classified `REQUEST_RECEIPT`,

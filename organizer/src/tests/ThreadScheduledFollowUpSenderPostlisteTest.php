@@ -42,8 +42,12 @@ class ThreadScheduledFollowUpSenderPostlisteTest extends TestCase {
             ['postliste', 'postliste:' . $period], $plan
         );
         $threadId = $created['thread_id'];
-        // The initial request has left the building.
-        Database::execute("UPDATE thread_email_sendings SET status = 'SENT' WHERE thread_id = ?", [$threadId]);
+        // The initial request has left the building. Its sending row was created
+        // just before the request went out, as in production.
+        Database::execute(
+            "UPDATE thread_email_sendings SET status = 'SENT', created_at = ?::timestamptz - INTERVAL '1 minute' WHERE thread_id = ?",
+            [self::REQUEST_SENT, $threadId]
+        );
         ImapFolderStatus::createOrUpdate('INBOX.test-postliste-' . $period, $threadId, updateLastChecked: true);
         $this->insertEmail($threadId, 'OUT', self::REQUEST_SENT, 'OUR_REQUEST');
         return $threadId;
@@ -67,6 +71,18 @@ class ThreadScheduledFollowUpSenderPostlisteTest extends TestCase {
 
     private function markAllSent(string $threadId): void {
         Database::execute("UPDATE thread_email_sendings SET status = 'SENT' WHERE thread_id = ?", [$threadId]);
+    }
+
+    /**
+     * The unsent sendings went out at $sentAt: SENT, created just before. The
+     * copy is not in the thread until insertEmail(..., 'OUT', ...) adds it.
+     */
+    private function markSent(string $threadId, string $sentAt): void {
+        Database::execute(
+            "UPDATE thread_email_sendings SET status = 'SENT', created_at = ?::timestamptz - INTERVAL '1 minute'
+             WHERE thread_id = ? AND status <> 'SENT'",
+            [$sentAt, $threadId]
+        );
     }
 
     public function testBothRemindersAreQueuedOnTimeAndThenNothing(): void {
@@ -123,11 +139,18 @@ class ThreadScheduledFollowUpSenderPostlisteTest extends TestCase {
         $this->assertCount(2, ThreadEmailSending::getByThreadId($threadId));
 
         // :: Setup - reminder 1 went out on day 10
-        $this->markAllSent($threadId);
+        $this->markSent($threadId, '2026-09-11T08:05:00+00:00');
         Database::execute(
             "UPDATE thread_history SET created_at = '2026-09-11T08:05:00+00:00' WHERE thread_id = ? AND action = ?",
             [$threadId, ThreadScheduledFollowUpSender::HISTORY_ACTION_POSTLISTE_REMINDER]
         );
+
+        // :: Act - day 20, but the copy of reminder 1 has not reached the thread
+        $this->sender->now = $this->at('2026-09-21T08:00:00+00:00');
+        $this->assertFalse($this->sender->sendNextFollowUpEmail()['success'], 'a sent email whose copy is not synced blocks reminders');
+
+        // :: Setup - the copy of reminder 1 is synced
+        $this->insertEmail($threadId, 'OUT', '2026-09-11T08:05:00+00:00', null);
 
         // :: Act - day 19: not due
         $this->sender->now = $this->at('2026-09-20T08:00:00+00:00');
@@ -202,8 +225,9 @@ class ThreadScheduledFollowUpSenderPostlisteTest extends TestCase {
         $result = $this->sender->sendNextFollowUpEmail();
         $this->assertFalse($result['success'], 'NP reply in flight blocks reminders');
 
-        // :: Act - reply sent; day 10 after the request but only day 5 after the reply
-        $this->markAllSent($threadId);
+        // :: Act - reply sent and synced; day 10 after the request but only day 5 after the reply
+        $this->markSent($threadId, '2026-09-06T08:00:00+00:00');
+        $this->insertEmail($threadId, 'OUT', '2026-09-06T08:00:00+00:00', null);
         $result = $this->sender->sendNextFollowUpEmail();
         $this->assertFalse($result['success'], 'count restarts from the NP reply: ' . json_encode($result));
 
@@ -282,13 +306,72 @@ class ThreadScheduledFollowUpSenderPostlisteTest extends TestCase {
 
         // :: Act - once sent, the thread has two OUT emails and leaves
         // EMAIL_SENT_NOTHING_RECEIVED, so no second reminder.
-        $this->markAllSent($threadId);
+        $this->markSent($threadId, '2026-09-06T08:05:00+00:00');
         $this->insertEmail($threadId, 'OUT', '2026-09-06T08:05:00+00:00', null);
         $this->sender->now = $this->at('2026-10-01T08:00:00+00:00');
         $result = $this->sender->sendNextFollowUpEmail();
 
         // :: Assert
         $this->assertFalse($result['success'], json_encode($result));
+        $this->assertCount(2, ThreadEmailSending::getByThreadId($threadId));
+    }
+
+    public function testSpeedyReminderIsNotRepeatedBeforeItsCopyIsSynced(): void {
+        // A sent reminder only shows up as an OUT email once the IMAP sync has
+        // picked up its copy. Until then the thread still looks like "one OUT,
+        // nothing received"; the sending row itself must stop a second reminder.
+
+        // :: Setup
+        $threadId = $this->createSyncedPostlisteThread('2026-W36', Thread::REQUEST_FOLLOW_UP_PLAN_SPEEDY);
+        $this->sender->now = $this->at('2026-09-06T08:00:01+00:00');
+        $first = $this->sender->sendNextFollowUpEmail();
+        $this->markSent($threadId, '2026-09-06T08:05:00+00:00');
+
+        // :: Act - a week later, the copy of the reminder is still not in the thread
+        $this->sender->now = $this->at('2026-09-13T08:00:00+00:00');
+        $result = $this->sender->sendNextFollowUpEmail();
+
+        // :: Assert
+        $this->assertTrue($first['success'], json_encode($first));
+        $this->assertFalse($result['success'], json_encode($result));
+        $sendings = ThreadEmailSending::getByThreadId($threadId);
+        $this->assertCount(2, $sendings, 'request and one reminder: ' . json_encode($sendings, JSON_PRETTY_PRINT));
+    }
+
+    public function testNoSpeedyReminderWhileThreadSyncIsRequested(): void {
+        // Sending an email requests a sync of the thread's folder. Until that
+        // sync has run the thread is not in sync, whatever its email count says.
+
+        // :: Setup
+        $threadId = $this->createSyncedPostlisteThread('2026-W37', Thread::REQUEST_FOLLOW_UP_PLAN_SPEEDY);
+        ImapFolderStatus::createOrUpdate('INBOX.test-postliste-2026-W37', requestUpdate: true);
+        $this->sender->now = $this->at('2026-09-06T08:00:01+00:00');
+
+        // :: Act
+        $result = $this->sender->sendNextFollowUpEmail();
+
+        // :: Assert
+        $this->assertFalse($result['success'], json_encode($result));
+        $this->assertCount(1, ThreadEmailSending::getByThreadId($threadId), 'only the initial request');
+    }
+
+    public function testSentSendingWithItsCopyInTheThreadIsNotPending(): void {
+        // The request's own copy is the thread's single OUT email: that sending
+        // is finished, so the thread gets its reminder.
+
+        // :: Setup
+        $threadId = $this->createSyncedPostlisteThread('2026-W38', Thread::REQUEST_FOLLOW_UP_PLAN_SPEEDY);
+        Database::execute(
+            "UPDATE thread_email_sendings SET created_at = ?::timestamptz WHERE thread_id = ?",
+            [self::REQUEST_SENT, $threadId]
+        );
+        $this->sender->now = $this->at('2026-09-06T08:00:01+00:00');
+
+        // :: Act
+        $result = $this->sender->sendNextFollowUpEmail();
+
+        // :: Assert
+        $this->assertTrue($result['success'], json_encode($result));
         $this->assertCount(2, ThreadEmailSending::getByThreadId($threadId));
     }
 
