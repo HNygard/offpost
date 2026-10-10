@@ -36,6 +36,8 @@ class ThreadDatabaseOperations {
                     t.my_email,
                     t.sending_status,
                     t.initial_request,
+                    t.request_law_basis,
+                    t.request_follow_up_plan,
                     t.sent,
                     t.archived,
                     t.labels,
@@ -105,6 +107,8 @@ class ThreadDatabaseOperations {
                 $currentThread->my_email = $row['my_email'];
                 $currentThread->sending_status = $row['sending_status'];
                 $currentThread->initial_request = $row['initial_request'];
+                $currentThread->request_law_basis = $row['request_law_basis'];
+                $currentThread->request_follow_up_plan = $row['request_follow_up_plan'];
                 $currentThread->sent = (bool)$row['sent'];
                 $currentThread->archived = (bool)$row['archived'];
                 $currentThread->public = (bool)$row['public'];
@@ -194,6 +198,10 @@ class ThreadDatabaseOperations {
                     t.title,
                     t.my_name,
                     t.my_email,
+                    t.sending_status,
+                    t.initial_request,
+                    t.request_law_basis,
+                    t.request_follow_up_plan,
                     t.sent,
                     t.archived,
                     t.labels,
@@ -239,6 +247,10 @@ class ThreadDatabaseOperations {
                 $currentThread->title = $row['title'];
                 $currentThread->my_name = $row['my_name'];
                 $currentThread->my_email = $row['my_email'];
+                $currentThread->sending_status = $row['sending_status'];
+                $currentThread->initial_request = $row['initial_request'];
+                $currentThread->request_law_basis = $row['request_law_basis'];
+                $currentThread->request_follow_up_plan = $row['request_follow_up_plan'];
                 $currentThread->sent = (bool)$row['sent'];
                 $currentThread->archived = (bool)$row['archived'];
                 $currentThread->public = (bool)$row['public'];

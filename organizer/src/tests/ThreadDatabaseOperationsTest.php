@@ -317,4 +317,66 @@ class ThreadDatabaseOperationsTest extends PHPUnit\Framework\TestCase {
         $this->assertNotEmpty($allThreads, "Should retrieve threads");
         $this->assertIsArray($allThreads, "Should return an array of threads");
     }
+
+    private function createThreadWithFollowUpPlan(): Thread {
+        $thread = new Thread();
+        $thread->title = "Thread with follow-up plan";
+        $thread->my_name = "Test User";
+        $thread->my_email = "follow-up-plan-test@example.com";
+        $thread->sent = false;
+        $thread->archived = false;
+        $thread->labels = ["test"];
+        $thread->sending_status = Thread::SENDING_STATUS_SENT;
+        $thread->initial_request = "Initial request text";
+        $thread->request_law_basis = Thread::REQUEST_LAW_BASIS_OFFENTLEGLOVA;
+        $thread->request_follow_up_plan = Thread::REQUEST_FOLLOW_UP_PLAN_SPEEDY;
+        return $this->threadDbOps->createThread('000000000-test-entity-development', $thread, 'test-user');
+    }
+
+    private function findThread(array $allThreads, string $threadId): Thread {
+        foreach ($allThreads as $threads) {
+            foreach ($threads->threads as $t) {
+                if ($t->id === $threadId) {
+                    return $t;
+                }
+            }
+        }
+        $this->fail("Thread $threadId not returned by getThreads()");
+    }
+
+    public function testThreadListsLoadRequestFields() {
+        // :: Setup
+        $created = $this->createThreadWithFollowUpPlan();
+
+        // :: Act
+        $fromAll = $this->findThread($this->threadDbOps->getThreads(), $created->id);
+        $fromEntity = $this->threadDbOps->getThreadsForEntity('000000000-test-entity-development')->threads[0];
+
+        // :: Assert
+        foreach (['getThreads' => $fromAll, 'getThreadsForEntity' => $fromEntity] as $loader => $thread) {
+            $this->assertEquals(Thread::REQUEST_LAW_BASIS_OFFENTLEGLOVA, $thread->request_law_basis, $loader);
+            $this->assertEquals(Thread::REQUEST_FOLLOW_UP_PLAN_SPEEDY, $thread->request_follow_up_plan, $loader);
+            $this->assertEquals(Thread::SENDING_STATUS_SENT, $thread->sending_status, $loader);
+            $this->assertEquals("Initial request text", $thread->initial_request, $loader);
+        }
+    }
+
+    public function testSavingAThreadFromTheThreadListKeepsItsFollowUpPlan() {
+        // The thread page and the bulk actions load threads through getThreads()
+        // and save them with updateThread(), which writes every column back.
+
+        // :: Setup
+        $created = $this->createThreadWithFollowUpPlan();
+        $thread = $this->findThread($this->threadDbOps->getThreads(), $created->id);
+
+        // :: Act
+        $thread->public = true;
+        $this->threadDbOps->updateThread($thread, 'test-user');
+
+        // :: Assert
+        $saved = Thread::loadFromDatabase($created->id);
+        $this->assertTrue($saved->public);
+        $this->assertEquals(Thread::REQUEST_LAW_BASIS_OFFENTLEGLOVA, $saved->request_law_basis);
+        $this->assertEquals(Thread::REQUEST_FOLLOW_UP_PLAN_SPEEDY, $saved->request_follow_up_plan);
+    }
 }
