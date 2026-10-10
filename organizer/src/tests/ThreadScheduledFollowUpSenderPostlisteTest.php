@@ -234,23 +234,77 @@ class ThreadScheduledFollowUpSenderPostlisteTest extends TestCase {
         // :: Act
         $result = $this->sender->sendNextFollowUpEmail();
 
-        // :: Assert - the speedy thread is handled by the legacy plan, exactly as
-        // before: one STAGING reminder; the postliste stop conditions hold.
+        // :: Assert - the speedy thread is handled by the legacy plan: one
+        // reminder queued for sending; the postliste stop conditions hold.
         $this->assertTrue($result['success'], json_encode($result));
         $this->assertEquals('Follow-up email scheduled for sending', $result['message']);
         $this->assertEquals($speedyOverdue, $result['thread_id']);
         $speedySendings = ThreadEmailSending::getByThreadId($speedyOverdue);
         $this->assertCount(2, $speedySendings);
-        $this->assertEquals(ThreadEmailSending::STATUS_STAGING, $speedySendings[1]->status);
+        $this->assertEquals(ThreadEmailSending::STATUS_READY_FOR_SENDING, $speedySendings[1]->status);
 
-        // The staged legacy reminder stays in flight (a human releases it), so
-        // the legacy plan now skips that thread and the postliste plan gets its turn.
+        // The queued legacy reminder stays in flight until it is sent, so the
+        // legacy plan now skips that thread and the postliste plan gets its turn.
         $result = $this->sender->sendNextFollowUpEmail();
         $this->assertFalse($result['success'], json_encode($result));
         $this->assertCount(1, ThreadEmailSending::getByThreadId($rejected), 'REQUEST_REJECTED stops reminders');
         $this->assertCount(1, ThreadEmailSending::getByThreadId($archived), 'archived threads get no reminders');
         $this->assertEquals([], $this->reminderHistory($rejected));
         $this->assertEquals([], $this->reminderHistory($archived));
+    }
+
+    // --- plans `speedy` / `slow` ---
+
+    public function testSpeedyReminderIsQueuedForSendingOnDay5AndOnlyOnce(): void {
+        // :: Setup
+        $threadId = $this->createSyncedPostlisteThread('2026-W34', Thread::REQUEST_FOLLOW_UP_PLAN_SPEEDY);
+
+        // :: Act - day 4: not due
+        $this->sender->now = $this->at('2026-09-05T08:00:00+00:00');
+        $result = $this->sender->sendNextFollowUpEmail();
+
+        // :: Assert
+        $this->assertFalse($result['success'], json_encode($result));
+        $this->assertCount(1, ThreadEmailSending::getByThreadId($threadId), 'only the initial request');
+
+        // :: Act - day 5: the reminder goes straight to the sending queue
+        $this->sender->now = $this->at('2026-09-06T08:00:01+00:00');
+        $result = $this->sender->sendNextFollowUpEmail();
+
+        // :: Assert
+        $this->assertTrue($result['success'], json_encode($result));
+        $this->assertEquals($threadId, $result['thread_id']);
+        $sendings = ThreadEmailSending::getByThreadId($threadId);
+        $this->assertCount(2, $sendings, json_encode($sendings, JSON_PRETTY_PRINT));
+        $this->assertEquals(ThreadEmailSending::STATUS_READY_FOR_SENDING, $sendings[1]->status, 'no human release needed');
+        $this->assertEquals('Purring - Innsyn i offentlig journal', $sendings[1]->email_subject);
+        $this->assertEquals(self::ENTITY_EMAIL, $sendings[1]->email_to);
+
+        // :: Act - once sent, the thread has two OUT emails and leaves
+        // EMAIL_SENT_NOTHING_RECEIVED, so no second reminder.
+        $this->markAllSent($threadId);
+        $this->insertEmail($threadId, 'OUT', '2026-09-06T08:05:00+00:00', null);
+        $this->sender->now = $this->at('2026-10-01T08:00:00+00:00');
+        $result = $this->sender->sendNextFollowUpEmail();
+
+        // :: Assert
+        $this->assertFalse($result['success'], json_encode($result));
+        $this->assertCount(2, ThreadEmailSending::getByThreadId($threadId));
+    }
+
+    public function testSlowReminderStaysStagedForAHuman(): void {
+        // :: Setup
+        $threadId = $this->createSyncedPostlisteThread('2026-W35', Thread::REQUEST_FOLLOW_UP_PLAN_SLOW);
+        $this->sender->now = $this->at('2026-09-15T08:00:01+00:00');
+
+        // :: Act
+        $result = $this->sender->sendNextFollowUpEmail();
+
+        // :: Assert
+        $this->assertTrue($result['success'], json_encode($result));
+        $sendings = ThreadEmailSending::getByThreadId($threadId);
+        $this->assertCount(2, $sendings, json_encode($sendings, JSON_PRETTY_PRINT));
+        $this->assertEquals(ThreadEmailSending::STATUS_STAGING, $sendings[1]->status);
     }
 
     public function testPostlisteThreadDoesNotBreakLegacyLoop(): void {

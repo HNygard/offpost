@@ -14,7 +14,8 @@ require_once __DIR__ . '/Database.php';
  *
  * Two families of plans:
  *  - `speedy` / `slow`: one reminder after 5 / 14 days, only for threads with
- *    exactly one OUT email and nothing received, left in STAGING for a human.
+ *    exactly one OUT email and nothing received. `speedy` reminders are queued
+ *    READY_FOR_SENDING with no human release; `slow` ones are left in STAGING.
  *  - `postliste`: postjournal requests from norske-postlister.no. Reminders on
  *    day 10 and 20, queued READY_FOR_SENDING with no human release, working on
  *    threads with any number of emails. Decision rules in PostlisteFollowUpPlanner.
@@ -56,7 +57,8 @@ class ThreadScheduledFollowUpSender {
         $subject = "Purring - " . $thread->title;
         $content = $this->createFollowUpEmailContent($thread);
         
-        // Create email sending record
+        // Create email sending record. Speedy reminders go straight to the
+        // sending queue; slow (complex) requests wait for a human.
         $emailSending = ThreadEmailSending::create(
             $thread->id,
             $content,
@@ -64,7 +66,9 @@ class ThreadScheduledFollowUpSender {
             $entity->email,
             $thread->my_email,
             $thread->my_name,
-            ThreadEmailSending::STATUS_STAGING
+            $thread->request_follow_up_plan == Thread::REQUEST_FOLLOW_UP_PLAN_SPEEDY
+                ? ThreadEmailSending::STATUS_READY_FOR_SENDING
+                : ThreadEmailSending::STATUS_STAGING
         );
         
         if (!$emailSending) {
@@ -124,7 +128,7 @@ class ThreadScheduledFollowUpSender {
                 throw new Exception("Unknown follow-up plan: " . $thread_status->request_follow_up_plan);
             }
 
-            if ($thread_status->email_last_activity + ($days * 86400) > time()) {
+            if ($thread_status->email_last_activity + ($days * 86400) > ($this->now ?? time())) {
                 // Skip threads that are not due for follow-up
                 continue;
             }

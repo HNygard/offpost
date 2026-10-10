@@ -171,17 +171,6 @@ class ThreadScheduledFollowUpSenderTest extends TestCase {
         $method->invoke($sender, $thread);
     }
     
-    /**
-     * Test sendNextFollowUpEmail with a successful email creation
-     * 
-     * @group database-independent
-     */
-    public function testSendNextFollowUpEmailSuccess() {
-        // :: Setup
-        // Skip this test if we can't mock static methods properly
-        $this->markTestSkipped('This test requires proper static method mocking which is not available in this environment.');
-    }
-
     // --- plan `postliste`: reminder templates ---
 
     private function postlisteThread(array $labels): Thread {

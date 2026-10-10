@@ -223,7 +223,7 @@ visible to this API or the attachment is unknown or has no stored content.
 
 | Plan | Reminders | Release |
 |---|---|---|
-| `speedy` | one reminder 5 days after the request, only for threads with exactly one OUT email and nothing received | staged; a human releases it |
+| `speedy` | one reminder 5 days after the request, only for threads with exactly one OUT email and nothing received | queued `READY_FOR_SENDING`, no human release |
 | `slow` | same, after 14 days | staged; a human releases it |
 | `postliste` | day 10 and day 20, see below | queued `READY_FOR_SENDING`, no human release |
 
