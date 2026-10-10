@@ -1,6 +1,7 @@
 <?php
 
 require_once __DIR__ . '/Database.php';
+require_once __DIR__ . '/ThreadHistory.php';
 
 /**
  * Class representing an email to be sent for a thread
@@ -11,7 +12,10 @@ class ThreadEmailSending {
     const STATUS_READY_FOR_SENDING = 'READY_FOR_SENDING';
     const STATUS_SENDING = 'SENDING';
     const STATUS_SENT = 'SENT';
-    
+
+    // thread_history action written when a staged email is deleted
+    const HISTORY_ACTION_DELETED = 'email_sending_deleted';
+
     var $id;
     var $thread_id;
     var $email_content;
@@ -157,6 +161,34 @@ class ThreadEmailSending {
         return $result > 0;
     }
     
+    /**
+     * Delete an email that is still in STAGING (e.g. a reminder the thread no
+     * longer needs). The status check is part of the DELETE, so an email that
+     * was released for sending in the meantime is never removed. Logged in
+     * thread_history, since the content is gone afterwards.
+     *
+     * @param int $id The record ID
+     * @param string $userId Who deleted it
+     * @return bool True if a staged email was deleted
+     */
+    public static function deleteStaged($id, $userId) {
+        $row = Database::queryOneOrNone(
+            "DELETE FROM thread_email_sendings WHERE id = ? AND status = ?
+             RETURNING id, thread_id, email_subject, email_to",
+            [$id, self::STATUS_STAGING]
+        );
+        if (!$row) {
+            return false;
+        }
+
+        (new ThreadHistory())->logAction($row['thread_id'], self::HISTORY_ACTION_DELETED, $userId, [
+            'email_sending_id' => (int)$row['id'],
+            'email_subject' => $row['email_subject'],
+            'email_to' => $row['email_to'],
+        ]);
+        return true;
+    }
+
     /**
      * Get a ThreadEmailSending record by ID
      * 

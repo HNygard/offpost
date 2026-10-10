@@ -92,6 +92,38 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action'])) {
         header('Location: ' . $_SERVER['REQUEST_URI'] . '?success_bulk_action_staging='. $processedCount . '&error_bulk_action_staging='. $errorCount);
         exit;
     }
+    elseif ($action === 'delete_staging') {
+        if (!is_array($emailIds) || empty($emailIds)) {
+            throw new Exception("Invalid request: No email IDs provided.");
+        }
+
+        foreach ($emailIds as $emailId) {
+            // Validate email ID is numeric and exists
+            if (!is_numeric($emailId)) {
+                throw new Exception("Invalid email. Not numeric.");
+            }
+
+            // Get the email to verify it exists
+            $email = ThreadEmailSending::getById($emailId);
+            if (!$email) {
+                throw new Exception("Invalid email. Does not exist.");
+            }
+        }
+
+        foreach ($emailIds as $emailId) {
+            // Only deletes emails still in STAGING; anything else is counted as an error
+            if (ThreadEmailSending::deleteStaged($emailId, $_SESSION['user']['sub'])) {
+                $processedCount++;
+            } else {
+                $errorCount++;
+            }
+        }
+
+        // Redirect to prevent form resubmission
+        http_response_code(302);
+        header('Location: ' . $_SERVER['REQUEST_URI'] . '?success_bulk_action_delete='. $processedCount . '&error_bulk_action_delete='. $errorCount);
+        exit;
+    }
     else {
         // Invalid action.
         throw new Exception("Invalid action.");
@@ -278,6 +310,19 @@ function formatStatus($status) {
         }
         
         /* Bulk Actions styling */
+        .delete-staged-form {
+            display: inline;
+        }
+
+        .delete-staged-button {
+            background-color: #c0392b;
+            color: white;
+            border: none;
+            border-radius: 3px;
+            padding: 3px 8px;
+            cursor: pointer;
+        }
+
         .bulk-actions-container {
             margin-bottom: 15px;
             padding: 10px;
@@ -334,6 +379,18 @@ function formatStatus($status) {
                 . ' email(s) back to "Staging".'
                 . '</div>';
         }
+        if (isset($_GET['success_bulk_action_delete']) && $_GET['success_bulk_action_delete'] != '0') {
+            echo '<div class="alert alert-success">'
+                . 'Deleted ' . htmlspecialchars((int)$_GET['success_bulk_action_delete'])
+                . ' staged email(s).'
+                . '</div>';
+        }
+        if (isset($_GET['error_bulk_action_delete']) && $_GET['error_bulk_action_delete'] != '0') {
+            echo '<div class="alert alert-error">'
+                . 'Failed to delete ' . htmlspecialchars((int)$_GET['error_bulk_action_delete'])
+                . ' email(s). Only emails in "Staging" can be deleted.'
+                . '</div>';
+        }
         ?>
 
         <div class="summary-box">
@@ -366,6 +423,7 @@ function formatStatus($status) {
                     <option value="">-- Select Action --</option>
                     <option value="set_ready_for_sending">Set ready for sending</option>
                     <option value="set_staging">Set back to staging</option>
+                    <option value="delete_staging">Delete (staging only)</option>
                 </select>
                 <button type="submit" id="bulk-action-button" disabled>Apply to Selected</button>
                 <div class="selected-count-container" id="selected-count-container">
@@ -415,6 +473,13 @@ function formatStatus($status) {
                         }
                     ?></td>
                     <td class="actions-col">
+                        <?php if ($email['status'] === ThreadEmailSending::STATUS_STAGING): ?>
+                            <form method="post" class="delete-staged-form" onsubmit="return confirm('Delete staged email <?= (int)$email['id'] ?>? This cannot be undone.');">
+                                <input type="hidden" name="action" value="delete_staging">
+                                <input type="hidden" name="email_ids[]" value="<?= (int)$email['id'] ?>">
+                                <button type="submit" class="delete-staged-button">Delete</button>
+                            </form>
+                        <?php endif; ?>
                         <?php if ($email['smtp_response'] || $email['smtp_debug'] || $email['error_message']): ?>
                             <a href="#" class="toggle-response" data-id="<?= $email['id'] ?>">Show Details</a>
                             <dialog id="response-<?= $email['id'] ?>" class="smtp-response">
@@ -440,7 +505,7 @@ function formatStatus($status) {
                                 ?>
                                 </div>
                             </dialog>
-                        <?php else: ?>
+                        <?php elseif ($email['status'] !== ThreadEmailSending::STATUS_STAGING): ?>
                             -
                         <?php endif; ?>
                     </td>
@@ -500,6 +565,16 @@ function formatStatus($status) {
             
             // Handle bulk action select change
             bulkActionSelect.addEventListener('change', updateBulkActionState);
+
+            // Deleting cannot be undone: ask first
+            document.getElementById('bulk-actions-form').addEventListener('submit', function(e) {
+                if (bulkActionSelect.value === 'delete_staging') {
+                    const count = document.querySelectorAll('.email-checkbox:checked').length;
+                    if (!confirm('Delete ' + count + ' email(s)? Only staged emails are deleted. This cannot be undone.')) {
+                        e.preventDefault();
+                    }
+                }
+            });
             
             // Initialize the state
             updateBulkActionState();

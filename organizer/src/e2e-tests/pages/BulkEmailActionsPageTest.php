@@ -360,6 +360,77 @@ class BulkEmailActionsPageTest extends E2EPageTestCase {
         );
     }
     
+    public function testDeleteOnlyRemovesStagedEmails() {
+        // :: Setup
+        $readyEmail = ThreadEmailSending::create(
+            $this->testThreadIds[0],
+            "Ready email content",
+            "Ready Email Subject",
+            "ready-test@example.com",
+            "sender@example.com",
+            "Test Sender",
+            ThreadEmailSending::STATUS_READY_FOR_SENDING
+        );
+        $emailIds = [];
+        foreach ($this->testEmails as $email) {
+            $emailIds[] = $email->id;
+        }
+        $emailIds[] = $readyEmail->id; // Not staged: must survive
+
+        // :: Act
+        $response = $this->renderPage(
+            '/email-sending-overview',
+            'dev-user-id',
+            'POST',
+            '302 Found',
+            [
+                'action' => 'delete_staging',
+                'email_ids' => $emailIds
+            ]
+        );
+        preg_match('/Location: ([^\r\n]+)/', $response->headers, $matches);
+        $redirectUrl = trim($matches[1]);
+        $page = $this->renderPage($redirectUrl);
+
+        // :: Assert
+        $this->assertEquals('/email-sending-overview?success_bulk_action_delete=3&error_bulk_action_delete=1', $redirectUrl);
+        foreach ($this->testEmails as $email) {
+            $this->assertNull(ThreadEmailSending::getById($email->id), "Staged email {$email->id} should be deleted");
+        }
+        $this->assertEquals(
+            ThreadEmailSending::STATUS_READY_FOR_SENDING,
+            ThreadEmailSending::getById($readyEmail->id)->status,
+            "Email ready for sending should not be deleted"
+        );
+        $this->assertStringContainsString('Deleted 3 staged email(s).', $page->body);
+        $this->assertStringContainsString('Failed to delete 1 email(s). Only emails in "Staging" can be deleted.', $page->body);
+    }
+
+    public function testDeleteButtonOnlyOnStagedRows() {
+        // :: Setup
+        ThreadEmailSending::updateStatus($this->testEmails[1]->id, ThreadEmailSending::STATUS_READY_FOR_SENDING);
+
+        // :: Act
+        $response = $this->renderPage('/email-sending-overview');
+
+        // :: Assert
+        $this->assertStringContainsString(
+            "confirm('Delete staged email " . $this->testEmails[0]->id . "?",
+            $response->body,
+            "Staged email should have a delete button"
+        );
+        $this->assertStringNotContainsString(
+            "confirm('Delete staged email " . $this->testEmails[1]->id . "?",
+            $response->body,
+            "Email ready for sending should not have a delete button"
+        );
+        $this->assertStringContainsString(
+            'value="delete_staging">Delete (staging only)</option>',
+            $response->body,
+            "Delete should be available as a bulk action"
+        );
+    }
+
     public function testCheckboxesVisibleForReadyForSendingEmails() {
         // :: Setup
         // Set some emails to READY_FOR_SENDING status
