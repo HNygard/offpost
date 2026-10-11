@@ -152,14 +152,23 @@ class ThreadScheduledEmailReceiver {
             // Get the debug output even if there was an error
             $debugOutput = $this->getOutputBuffer();
             
-            // Update the log entry with the error
-            ImapFolderLog::updateLog(
-                $logId, 
-                'error', 
-                "Error processing folder: {$nextFolder['folder_name']}. " . 
-                $e->getMessage() . "\n\nDebug log:\n$debugOutput"
-            );
-            
+            // Update the log entry with the error. If the database connection is
+            // what failed, this throws too - don't let that mask the original error.
+            $logUpdateError = null;
+            try {
+                ImapFolderLog::updateLog(
+                    $logId,
+                    'error',
+                    "Error processing folder: {$nextFolder['folder_name']}. " .
+                    $e->getMessage() . "\n\nDebug log:\n$debugOutput"
+                );
+            } catch (Exception $logException) {
+                $logUpdateError = $logException->getMessage();
+                if (!defined('PHPUNIT_RUNNING')) {
+                    echo "Could not update imap_folder_log $logId: $logUpdateError\n";
+                }
+            }
+
             return [
                 'success' => false,
                 'message' => "Error processing folder: {$nextFolder['folder_name']}. " . $e->getMessage(),
@@ -167,7 +176,8 @@ class ThreadScheduledEmailReceiver {
                 'thread_id' => $nextFolder['thread_id'],
                 'error' => $e->getMessage(),
                 'debug' => $debugOutput,
-                'stack_trace' => jTraceEx($e)
+                'stack_trace' => jTraceEx($e),
+                'log_update_error' => $logUpdateError
             ];
         }
     }

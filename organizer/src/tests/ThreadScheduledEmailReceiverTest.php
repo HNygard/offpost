@@ -213,7 +213,72 @@ class ThreadScheduledEmailReceiverTest extends TestCase {
         $this->assertEquals('test-thread-id', $result['thread_id'], 'Should return the thread ID');
         $this->assertEquals('Test exception', $result['error'], 'Should return the exception message');
     }
-    
+
+    /**
+     * When the database connection dies during processing, writing the error to
+     * imap_folder_log fails too. That second failure must not replace the original
+     * error, which is what the admin needs to see.
+     */
+    public function testProcessNextFolderKeepsOriginalErrorWhenDatabaseConnectionIsLost() {
+        // :: Setup
+        $folder = [
+            'folder_name' => 'INBOX.test',
+            'thread_id' => 'test-thread-id',
+            'thread_title' => 'Test Thread',
+            'entity_id' => 'test-entity-id'
+        ];
+
+        $this->mockEmailDbSaver->method('saveThreadEmails')
+            ->with('INBOX.test')
+            ->willReturnCallback(function () {
+                // Kill our own backend, like a postgres restart would
+                try {
+                    Database::query('SELECT pg_terminate_backend(pg_backend_pid())');
+                } catch (PDOException $e) {
+                    // The backend may die before answering
+                }
+                throw new Exception('Original processing error');
+            });
+
+        $this->receiver = $this->getMockBuilder(ThreadScheduledEmailReceiver::class)
+            ->setConstructorArgs([
+                $this->mockConnection,
+                $this->mockEmailProcessor,
+                $this->mockAttachmentHandler
+            ])
+            ->onlyMethods(['findNextFolderForProcessing', 'startOutputBuffer', 'getOutputBuffer'])
+            ->getMock();
+
+        $this->receiver->method('findNextFolderForProcessing')->willReturn($folder);
+        $this->receiver->method('startOutputBuffer')->willReturn(null);
+        $this->receiver->method('getOutputBuffer')->willReturn('Test output');
+
+        $reflection = new ReflectionClass(ThreadScheduledEmailReceiver::class);
+        $property = $reflection->getProperty('emailDbSaver');
+        $property->setAccessible(true);
+        $property->setValue($this->receiver, $this->mockEmailDbSaver);
+
+        try {
+            // :: Act
+            $result = $this->receiver->processNextFolder();
+        } finally {
+            // Drop the dead connection so later tests get a fresh one
+            $instance = new ReflectionProperty(Database::class, 'instance');
+            $instance->setAccessible(true);
+            $instance->setValue(null, null);
+        }
+
+        // :: Assert
+        $this->assertFalse($result['success'], 'Should return success=false when an exception occurs');
+        $this->assertEquals('Original processing error', $result['error'], 'The original error must not be masked by the failed log update');
+        $this->assertStringStartsWith(
+            'Error processing folder: INBOX.test. Original processing error',
+            $result['message']
+        );
+        $this->assertStringContainsString('no connection to the server', $result['log_update_error'],
+            'The failed log update should be reported alongside the original error');
+    }
+
     /**
      * Test that findNextFolderForProcessing excludes spam and trash folders
      * This test uses reflection to access the protected method
