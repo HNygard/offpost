@@ -48,7 +48,7 @@ services:
 
   # :: Organizer service with PostgreSQL backend ::
   postgres:
-    image: postgres:15
+    image: postgres:15.19  # Pinned: a floating tag restarts the db on any deploy that pulls a new patch release
     networks:
       - app-network
     environment:
