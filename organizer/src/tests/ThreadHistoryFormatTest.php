@@ -4,6 +4,7 @@ use PHPUnit\Framework\TestCase;
 
 require_once(__DIR__ . '/bootstrap.php');
 require_once(__DIR__ . '/../class/ThreadHistory.php');
+require_once(__DIR__ . '/../class/ThreadEmailSending.php');
 
 class ThreadHistoryFormatTest extends TestCase {
     private $threadHistory;
@@ -57,6 +58,47 @@ class ThreadHistoryFormatTest extends TestCase {
             'user' => 'test-user',
             'date' => $now->format('Y-m-d H:i:s')
         ], $result);
+    }
+
+    public function testFormatDeletedEmailHistoryEntry() {
+        // :: Setup
+        $entry = [
+            'action' => ThreadEmailSending::HISTORY_ACTION_DELETED,
+            'details' => json_encode([
+                'email_sending_id' => 42,
+                'email_subject' => 'Reminder',
+                'email_to' => 'recipient@example.com',
+            ]),
+            'user_id' => 'test-user',
+            'created_at' => '2026-10-15 12:00:00',
+        ];
+
+        // :: Act
+        $result = $this->threadHistory->formatHistoryEntry($entry);
+
+        // :: Assert
+        $this->assertEquals([
+            'action' => 'Deleted staged email [42] to [recipient@example.com] with subject [Reminder]',
+            'user' => 'test-user',
+            'date' => '2026-10-15 12:00:00',
+        ], $result);
+    }
+
+    public function testFormatDeletedEmailWithMissingDetails() {
+        // :: Setup
+        $testCases = [null, '{}', '{"email_sending_id":null,"email_subject":null,"email_to":null}', 'invalid JSON'];
+
+        foreach ($testCases as $details) {
+            // :: Act
+            $result = $this->threadHistory->formatActionForDisplay(ThreadEmailSending::HISTORY_ACTION_DELETED, $details);
+
+            // :: Assert
+            $this->assertEquals(
+                'Deleted staged email [?] to [Unknown recipient] with subject [No subject]',
+                $result,
+                'Deletion history details: ' . var_export($details, true)
+            );
+        }
     }
 
     public function testFormatHistoryEntryWithMissingData() {
