@@ -82,6 +82,11 @@ recipients']) : 'Unknown recipients';
                 return 'Reply draft saved'
                     . ' to [' . $recipients . ']'
                     . ' with subject [' . ($details['subject'] ?? 'No subject') . ']';
+            case 'email_sending_deleted':
+                $details = json_decode($details ?? '{}', true);
+                return 'Deleted staged email [' . ($details['email_sending_id'] ?? '?') . ']'
+                    . ' to [' . ($details['email_to'] ?? 'Unknown recipient') . ']'
+                    . ' with subject [' . ($details['email_subject'] ?? 'No subject') . ']';
             // Written by NpApiService (HISTORY_ACTION_EMAIL_CLASSIFIED /
             // HISTORY_ACTION_REPLY); literal here to avoid a require cycle.
             case 'np_api_email_classified':
