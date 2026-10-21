@@ -22,6 +22,7 @@ based on the to/from addresses that matches the profile of the thread.
 
 ### Organizer
 - Main program that provides client, API and JSON storage for email threads
+- Runs on PHP 8.2.35; see [PHP security updates and deployment verification](infrastructure/production/README.md#php-version).
 - Creates threads and "identities" in Roundcube
 - Sorts email using IMAP folders directly on the server
 - Reports missing IMAP UIDs to administrators with recent operation history and before/after mailbox diagnostics; see [diagnostic interpretation](docs/superpowers/specs/2026-08-01-one-off-processing-error-alert-design.md#missing-imap-uid-diagnostics).
