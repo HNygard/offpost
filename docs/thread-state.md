@@ -161,6 +161,11 @@ the thread, in `view-thread.php`:
   `asks_to_us`, a table of items (asked for, status, denial basis with `issues` as warning
   badges), case numbers, dates, complaint rounds, and `notes` when not empty. Admins also get a
   link to the debug page from step 2c change 4b, `/thread-analysis/thread?id=<thread id>`.
+- When the thread has newer emails than the one the state belongs to (not counting `ignore`d
+  emails, which analysis skips too - `ThreadStateView::countEmailsAfter()`), the state is outdated:
+  the block gets the `thread-state-outdated` class (dimmed) and an "Outdated: N newer emails have
+  not been analysed yet" warning right under the heading. The state itself is still shown, since
+  it is usually still mostly right and is the best we have until the next analysis run.
 - A complaint deadline - a `dates` entry whose `what` contains "klagefrist" (case-insensitive;
   `dates` has no type field) - is lifted out of the dates list into a callout right under the
   status badge: "Klagefrist: <date>", the days left or how long ago it ran out, and the `what`
