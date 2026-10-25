@@ -1,0 +1,79 @@
+Return-Path: <dmarc-noreply@bedsys.net>
+Delivered-To: innsyn@offpost.no
+Received: from mx3.pub.mailpod9-cph3.one.com ([10.27.39.13])
+        by mailstorage28.cst.mailpod9-cph3.one.com with LMTP
+        id YJlcJ3/YW2GpUQAA2cVM6w
+        (envelope-from <dmarc-noreply@bedsys.net>)
+        for <innsyn@offpost.no>; Tue, 05 Oct 2021 04:45:51 +0000
+DKIM-Signature: v=1; a=rsa-sha256; c=relaxed/relaxed;
+        d=custmx.one.com; s=20201015;
+        h=content-type:content-transfer-encoding:mime-version:subject:date:to:from:
+         x-halone-refid:x-halone-sa:from:x-halone-sa:x-halone-refid;
+        bh=UdjLPnQ7GrwHT6MYLfAg2+iK0YBAPRK3WzBlZAw7ZY0=;
+        b=BTwQwgNn67cEYC/7Er/rHlWoR9S5nYus+xDySreNrCt6pbT0PonckXncZFp0a5tG0Xai0gfNKP4cw
+         0lD3U7NU5N+rIVUlJ8LspAgV7bJzNj+x2YxDSeFuA3v1nYZuQUP5IDU9/EB+4CsDYjqI6cgS8e+o/R
+         oWEOd8a9/K6eRd6I3F87vzliZDPGojzijNQzfYf2nqWgnNamcf4cIckpHmM48WdML+mm/Dh9TymJ8k
+         WvswQ6m98Er/JY+/znCI/xkQHkHiGtBLFM1A11SttnsjF1aWQAVX/GFbJV85TNphzBAFhagTUpeOdD
+         HNp4XIeJewRkr6Cu2XqH//bL5txycNA==
+X-HalOne-SA: 0.4
+X-HalOne-RefID: str=0001.0A682F2A.615BD87F.000F:SCFSTAT65338266,ss=1,re=-4.000,recu=0.000,reip=0.000,vtr=str,vl=0,cl=1,cld=1,fgs=0
+X-HalOne-ID: 1d606d06-2597-11ec-9798-b8599f058594
+X-Forwarded-for: dmarc@offpost.no
+Received: from mail.bedsys.net (mx.osl.bedsys.net [80.65.51.35])
+        by mx3.pub.mailpod9-cph3.one.com (Halon) with ESMTPS
+        id 1d606d06-2597-11ec-9798-b8599f058594;
+        Tue, 05 Oct 2021 04:45:51 +0000 (UTC)
+DKIM-Signature: v=1; a=rsa-sha1; c=relaxed; d=bedsys.net; h=from:to:date
+        :subject:mime-version:content-transfer-encoding:content-type; s=
+        key2; bh=NdMxAN7V7gS0DwZDhZDseQ3YOGM=; b=qi9GGZ78hkceYMMpYRrJHEf
+        nwTtWmV+IDPZfL1No7NNwHKmO0I/cbCDMwY2gv0PCCygOw3AQ2VRH9KOgUQJqvqk
+        Pbz/frIIdJizibeoQaqFNuLdFnyGhBFG+2hT4pcMthvOSXAF28v1KcS050KpOvjU
+        Se7hot3AAeHi5Lf91Ij8=
+From: dmarc-noreply@bedsys.net
+To: dmarc@offpost.no
+Date: Tue, 05 Oct 2021 06:45:50 W. Europe Daylight Time
+Subject: Report Domain: offpost.no Submitter: bedsys.net
+ Report-ID:2021.10.05.76731
+MIME-Version: 1.0
+Content-Transfer-Encoding: 7bit
+Content-Type: multipart/mixed; boundary="16334091500.8aC90aAf.6072"
+
+
+--16334091500.8aC90aAf.6072
+Date: Tue, 5 Oct 2021 06:45:50 +0200
+MIME-Version: 1.0
+Content-Type: text/plain; charset="US-ASCII"
+Content-Disposition: inline
+
+
+This is a DMARC aggregate report for offpost.no
+
+1 records.
+1 passed.
+0 failed.
+
+Submitted by Bedriftssystemer as
+Generated with Mail::DMARC 1.20180125
+
+
+--16334091500.8aC90aAf.6072
+Date: Tue, 5 Oct 2021 06:45:50 +0200
+MIME-Version: 1.0
+Content-Type: application/gzip;
+ name="bedsys.net!offpost.no!1633305600!1633391999!76731.xml.gz"
+Content-Disposition: inline;
+ filename="bedsys.net!offpost.no!1633305600!1633391999!76731.xml.gz"
+Content-Transfer-Encoding: base64
+
+H4sIAH3YW2EADn1U227jIBB9Tr+i6vuauO4mcsXS1f6IRfA4RuUmwGnz9zuA49pt1TfmnGHmnGEE
+fXnX6v4CPkhr/jzU1f7hhd3RAaA/cfHK7nZ0JhlylNwCxD0462OnIfKeR47Qjlp/7gzXwP5B7+UQ
+Q7iGCBr8PQ+ULGxKBc2lYr3mXvwyFoup698T9HihMhApKXzOfI+ed8KayEXspBksG2N04ZmQ2wVL
+SiFnlRRXvPz1Sqo0S5Y9Ox6OTU3JB5BotAGd5+acFe7oCc4SfR+aptn/PuzRfkEyCaYvVFu3bYst
+TSlCNlWWFqsx0aKyc9NJyTDC3NyiYcPsMDgbIlrCSgVKrGPGGqDE5SjcwlBiJyKrk750SAD6xSi7
+RvBrO5yEsL409vatOAp28gI66Vj91FbHx6o5VnX7hF0WIucJOxnsR0k5ZGzuAReuJvSfKydTMqAb
+GdPKFMVrZM55lZo5HnBB8rGgwQ0zmE65B/muCQ646KeyBxPlIHFDby90AWUddNGyNxnHEVRfpV1I
+j/VBbXMHbzUD/Xio22r9FtuEfGcE3oMvwDp1jWeFn5RRPsWx8xAmFWepK+M/7kEaDCgQ0XoW8AWW
+oHCl5jy3OSjMOGluug2/gcqAFxn0NvRFzzcj2coSOBymk2mUlYOfNS0PS8mneaS0sp24wstH9B/Q
+DZ5cqgQAAA==
+
+--16334091500.8aC90aAf.6072--

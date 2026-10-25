@@ -1,0 +1,9 @@
+{
+    "subject": "Error getting subject - Failed to parse email due to problematic header on line 2\nHeader name: To\nException type: Laminas\\Mail\\Exception\\InvalidArgumentException\nOriginal error: The input is not a valid email address. Use the basic format local-part@hostname\nNew error: The input is not a valid email address. Use the basic format local-part@hostname\nProblematic line: To: not-a-valid-address\nProblematic line (hex): 546f3a206e6f742d612d76616c69642d61646472657373\n\nPartial EML up to this header:\nFrom: sender@example.com\nTo: not-a-valid-address",
+    "x_forwarded_for": [
+        "exception-during-getting-x-forwarded-for (failed to parse email due to problematic header on line 2\nheader name: to\nexception type: laminas\\mail\\exception\\invalidargumentexception\noriginal error: the input is not a valid email address. use the basic format local-part@hostname\nnew error: the input is not a valid email address. use the basic format local-part@hostname\nproblematic line: to: not-a-valid-address\nproblematic line (hex): 546f3a206e6f742d612d76616c69642d61646472657373\n\npartial eml up to this header:\nfrom: sender@example.com\nto: not-a-valid-address)"
+    ],
+    "plain_text": null,
+    "html": null,
+    "parse_error": "Exception: Failed to parse email due to problematic header on line 2"
+}

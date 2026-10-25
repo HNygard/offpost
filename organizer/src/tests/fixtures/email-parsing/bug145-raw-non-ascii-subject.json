@@ -1,0 +1,7 @@
+{
+    "subject": "Test =?UTF-8?Q?=C8?= Subject",
+    "x_forwarded_for": [],
+    "plain_text": "This is a test email body",
+    "html": null,
+    "parse_error": null
+}

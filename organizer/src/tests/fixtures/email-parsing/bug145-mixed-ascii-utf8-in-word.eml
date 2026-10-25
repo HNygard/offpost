@@ -1,0 +1,7 @@
+From: sender@example.com
+To: recipient@example.com
+X-Municipality: Lødingen Kommune
+Subject: Test
+Content-Type: text/plain
+
+Test body

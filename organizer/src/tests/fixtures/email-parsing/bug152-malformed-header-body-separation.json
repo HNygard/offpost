@@ -1,0 +1,9 @@
+{
+    "subject": "Error getting subject - Failed to parse email, but couldn't isolate problematic header.\nException type: Laminas\\Mail\\Exception\\RuntimeException\nOriginal error: Line \"Eën®sÚ¶h²Ù¨¶Ö¤·)ìzÙ(k§zzzX¯z·N\" does not match header format!\nTotal lines in email: 5\nEmail size: 146 bytes",
+    "x_forwarded_for": [
+        "exception-during-getting-x-forwarded-for (failed to parse email, but couldn't isolate problematic header.\nexception type: laminas\\mail\\exception\\runtimeexception\noriginal error: line \"eën®sÚ¶h²Ù¨¶Ö¤·)ìzÙ(k§zzzx¯z·n\" does not match header format!\ntotal lines in email: 5\nemail size: 146 bytes)"
+    ],
+    "plain_text": null,
+    "html": null,
+    "parse_error": "Exception: Failed to parse email, but couldn't isolate problematic header."
+}

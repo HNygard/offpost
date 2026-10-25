@@ -1,0 +1,9 @@
+{
+    "subject": "Komma i visningsnavn",
+    "x_forwarded_for": [
+        "\"doe, jane\" <jane@offpost.no>, plain@offpost.no"
+    ],
+    "plain_text": "Innhold.",
+    "html": null,
+    "parse_error": null
+}

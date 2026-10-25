@@ -1,0 +1,7 @@
+{
+    "subject": "Mottak",
+    "x_forwarded_for": [],
+    "plain_text": "Store bokstaver i content-type. Æ Ø Å",
+    "html": "Store bokstaver æøå\n\n",
+    "parse_error": null
+}

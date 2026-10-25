@@ -1,0 +1,7 @@
+{
+    "subject": "Undelivered Mail Returned to Sender",
+    "x_forwarded_for": [],
+    "plain_text": "This is the mail system at host mx.testkommune.no.\n\nI'm sorry to have to inform you that your message could not be delivered.\n\n<postmottak@testkommune.no>: host mx said: 550 5.1.1 User unknown",
+    "html": "",
+    "parse_error": null
+}

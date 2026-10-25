@@ -276,7 +276,7 @@ class ThreadEmailExtractorEmailBody extends ThreadEmailExtractor {
      * @param string $html HTML content
      * @return string Plain text
      */
-    protected static function convertHtmlToText($html) {
+    public static function convertHtmlToText($html) {
         // Remove scripts, styles, and comments
         $html = preg_replace('/<script\b[^>]*>(.*?)<\/script>/is', '', $html);
         $html = preg_replace('/<style\b[^>]*>(.*?)<\/style>/is', '', $html);
@@ -304,7 +304,7 @@ class ThreadEmailExtractorEmailBody extends ThreadEmailExtractor {
      * @param string $text Text to clean
      * @return string Cleaned text
      */
-    protected static function cleanText($text) {
+    public static function cleanText($text) {
         // Normalize line endings
         $text = str_replace("\r\n", "\n", $text);
         $text = str_replace("\r", "\n", $text);
@@ -332,7 +332,7 @@ class ThreadEmailExtractorEmailBody extends ThreadEmailExtractor {
      *        truncated away - the caller must then drop that header's continuation lines
      * @return string Fixed header line
      */
-    private static function fixMalformedEncodedWords($headerLine, &$truncatedGluedHeader = false) {
+    public static function fixMalformedEncodedWords($headerLine, &$truncatedGluedHeader = false) {
         $truncatedGluedHeader = false;
 
         // Pattern components for readability
@@ -382,9 +382,10 @@ class ThreadEmailExtractorEmailBody extends ThreadEmailExtractor {
         // Step 4: fix nested encoded-words: an encoded-word that is not closed before a new
         // encoded-word starts inside its content, e.g.
         // =?iso-8859-1?Q?Postmottak_BYR_-_=?UTF-8?Q?Byr=C3=A5dsavdelingene?=?
-        // Close the outer word before the nested one starts. Cannot match well-formed
-        // sequences since encoded-word content can never contain a raw ? character.
-        $nestedPattern = "/({$encodedWordStart}{$encoding}\?{$encodedContent})(=\?)/";
+        // Close the outer word before the nested one starts. The nested start must be a
+        // full =?charset?B|Q? - base64 padding before the closing ("...ZA==?=") also
+        // reads as "=?", and splitting there lost the rest of the subject.
+        $nestedPattern = "/({$encodedWordStart}{$encoding}\?{$encodedContent})(=\?)(?=[^?\s]+\?{$encoding}\?)/";
         if (preg_match($nestedPattern, $headerLine)) {
             $headerLine = preg_replace($nestedPattern, '$1?= $2', $headerLine);
             // Remove the stray ? left over from the outer word's mangled closing
@@ -415,7 +416,7 @@ class ThreadEmailExtractorEmailBody extends ThreadEmailExtractor {
      * @param string $eml Raw email content
      * @return string Fixed email content
      */
-    private static function fixCharsetMismatchInEncodedWords($eml) {
+    public static function fixCharsetMismatchInEncodedWords($eml) {
         // Pattern to match encoded-words with potential charset issues
         // Format: =?charset?encoding?content?=
         // We focus on iso-8859-1 and closely related Western single-byte encodings with Q encoding (quoted-printable)

@@ -1,0 +1,21 @@
+From: Postmottak Testkommune <postmottak@testkommune.no>
+To: Ola Nordmann <ola.nordmann@offpost.no>
+Date: Mon, 14 Apr 2025 12:16:03 +0000
+Message-ID: <fixture@testkommune.no>
+MIME-Version: 1.0
+Subject: Mottak
+Content-Type: multipart/alternative; boundary="p1"
+
+This is a multi-part message in MIME format.
+
+--p1
+Content-Type: text/plain; charset=utf-8
+
+Innholdet er her.
+--p1
+Content-Type: text/html; charset=utf-8
+
+<p>Innholdet er her.</p>
+--p1--
+
+Epilogue text that should not be shown.

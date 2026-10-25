@@ -1,0 +1,10 @@
+Return-Path: <test@example.com>
+From: Test Sender <test@example.com>
+To: recipient@example.com
+Subject: This is a very long subject line that spans
+ multiple lines in the email header
+Date: Mon, 14 Apr 2025 12:16:03 +0000
+Message-ID: <test123@example.com>
+Content-Type: text/plain
+
+This is the email body.

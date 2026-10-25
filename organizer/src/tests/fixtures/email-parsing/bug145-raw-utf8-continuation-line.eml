@@ -1,0 +1,9 @@
+From: sender@example.com
+To: recipient@example.com
+Received: from mail.example.com
+	by server with Lødingen SMTP;
+	Mon, 4 Oct 2021 12:16:33 +0200
+Subject: Test
+Content-Type: text/plain
+
+Test body

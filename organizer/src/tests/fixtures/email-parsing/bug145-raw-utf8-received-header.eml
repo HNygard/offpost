@@ -1,0 +1,9 @@
+Return-Path: <sender@example.com>
+Delivered-To: recipient@example.com
+Received: from [(192.0.2.1)] by lo-spam with Lødingen Kommune SMTP; Mon, 4 Oct 2021 12:16:33 +0200 (CEST)
+From: sender@example.com
+To: recipient@example.com
+Subject: Test Email
+Content-Type: text/plain
+
+This is a test email body

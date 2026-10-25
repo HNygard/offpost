@@ -1,0 +1,9 @@
+{
+    "subject": "To adresser i en header",
+    "x_forwarded_for": [
+        "a@offpost.no, b@offpost.no"
+    ],
+    "plain_text": "Innhold.",
+    "html": null,
+    "parse_error": null
+}

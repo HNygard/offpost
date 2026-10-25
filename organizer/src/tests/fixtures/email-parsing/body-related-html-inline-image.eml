@@ -1,0 +1,27 @@
+From: Postmottak Testkommune <postmottak@testkommune.no>
+To: Ola Nordmann <ola.nordmann@offpost.no>
+Date: Mon, 14 Apr 2025 12:16:03 +0000
+Message-ID: <fixture@testkommune.no>
+MIME-Version: 1.0
+Subject: Svar med logo
+Content-Type: multipart/alternative; boundary="a3"
+
+--a3
+Content-Type: text/plain; charset=utf-8
+
+Svar på innsynskravet.
+--a3
+Content-Type: multipart/related; boundary="r3"
+
+--r3
+Content-Type: text/html; charset=utf-8
+
+<p>Svar på <b>innsynskravet</b>.</p><img src="cid:logo">
+--r3
+Content-Type: image/png
+Content-ID: <logo>
+Content-Transfer-Encoding: base64
+
+iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mNkYPhfDwAChwGA60e6kgAAAABJRU5ErkJggg==
+--r3--
+--a3--
