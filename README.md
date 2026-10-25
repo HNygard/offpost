@@ -7,7 +7,6 @@ Tjenesten baserer seg på at man lager en forespørsel til en myndighet. Denne f
 Offpost was internally known as "email-engine". From 06.12.2024, this project have been written by AI tools.
 
 ## Architecture
-(kept in sync with CLAUDE.md in the root directory)
 
 Offpost is mainly a PHP application running on a web server. It revolves around email threads sent to public entities.
 
@@ -18,7 +17,6 @@ It uses IMAP to get emails from a mail server and store them in local storage. T
 based on the to/from addresses that matches the profile of the thread.
 
 ## Components
-(kept in sync with CLAUDE.md in the root directory)
 
 ### Organizer
 - Main program that provides client, API and JSON storage for email threads
