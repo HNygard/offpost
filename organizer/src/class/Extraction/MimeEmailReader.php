@@ -36,7 +36,8 @@ class MimeEmailReader {
     public static function xForwardedFor(string $eml): array {
         $addresses = [];
         foreach (self::parse($eml)->getAllHeadersByName('X-Forwarded-For') as $header) {
-            foreach (explode(',', $header->getRawValue()) as $value) {
+            // Split on commas outside double quotes: "Doe, Jane" <jane@x> is one address
+            foreach (preg_split('/,(?=(?:[^"]*"[^"]*")*[^"]*$)/', $header->getRawValue()) as $value) {
                 // Accept both "a@b.no" and "Name <a@b.no>"
                 if (preg_match('/<([^>]+)>/', $value, $matches)) {
                     $value = $matches[1];
@@ -78,22 +79,28 @@ class MimeEmailReader {
     /**
      * Transfer-decoded part content converted to UTF-8.
      *
-     * Valid UTF-8 is kept as is even when another charset is declared: mail
-     * labelled iso-8859-1 but sent as UTF-8 is common, and real 8-bit text is
-     * practically never valid UTF-8 by accident. Otherwise the declared charset
-     * is used, and Windows-1252 (a superset of ISO-8859-1 for printable
-     * characters) when none is declared.
+     * With no charset or a single-byte one declared, valid UTF-8 is kept as is:
+     * mail labelled iso-8859-1 but sent as UTF-8 is common, and real 8-bit text
+     * is practically never valid UTF-8 by accident. Other declared charsets
+     * (UTF-16, ISO-2022-JP, ...) are always decoded - their bytes can pass as
+     * UTF-8 without being the text. Windows-1252 (a superset of ISO-8859-1 for
+     * printable characters) is the fallback.
      */
     private static function partTextAsUtf8(IMessagePart $part): string {
         $stream = $part->getBinaryContentStream();
         $bytes = $stream ? $stream->getContents() : '';
-        if (mb_check_encoding($bytes, 'UTF-8')) {
-            return $bytes;
-        }
         $declared = $part instanceof \ZBateson\MailMimeParser\Message\IMimePart
             ? $part->getHeaderParameter('Content-Type', 'charset')
             : null;
-        if ($declared !== null && strcasecmp($declared, 'binary') !== 0) {
+        if ($declared !== null && strcasecmp($declared, 'binary') === 0) {
+            $declared = null;
+        }
+        $singleByteOrUtf8 = $declared === null
+            || preg_match('/^(us-ascii|ascii|utf-?8|iso-?8859-\d+|latin-?\d|windows-125\d|cp-?125\d)$/i', $declared);
+        if ($singleByteOrUtf8 && mb_check_encoding($bytes, 'UTF-8')) {
+            return $bytes;
+        }
+        if ($declared !== null) {
             $converted = $part->getContent('UTF-8');
             if ($converted !== null && mb_check_encoding($converted, 'UTF-8')) {
                 return $converted;

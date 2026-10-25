@@ -57,9 +57,11 @@ side by side with the current parsing so both can be compared.
 - The encoded-word repairs are kept (`fixMalformedEncodedWords()`: glued header
   names, Exchange lone-`?` terminators, nested words, UTF-8 bytes in iso-8859-1
   words). They fix input that is malformed for any parser.
-- Body text: transfer-decoded bytes that are valid UTF-8 are kept as UTF-8 even
-  when another charset is declared (mislabelled UTF-8 is common); otherwise the
-  declared charset is used, and Windows-1252 when none is declared.
+- Body text: with no charset or a single-byte one (iso-8859-*, windows-125*,
+  us-ascii, utf-8) declared, transfer-decoded bytes that are valid UTF-8 are kept
+  as UTF-8 (mislabelled UTF-8 is common). Other declared charsets (UTF-16,
+  ISO-2022-JP, ...) are always decoded, since their bytes can pass as UTF-8.
+  Otherwise the declared charset is used, and Windows-1252 when none is declared.
 - The first inline `text/plain` / `text/html` part is used, not the last part of
   that type, so text attachments are no longer taken as the body.
 
@@ -72,12 +74,13 @@ deliberate. Every `.new.json` is a reviewed behaviour change:
 |---|---|
 | Single-part quoted-printable/base64 bodies decoded | `body-plain-iso88591-quoted-printable`, `body-plain-utf8-base64`, `body-plain-utf8-quoted-printable-soft-breaks` |
 | Declared Windows-1252 kept (`–` no longer lost) | `body-plain-windows1252-8bit` |
+| Declared multi-byte charsets decoded (UTF-16, ISO-2022-JP) | `body-plain-utf16le-base64`, `body-plain-iso2022jp-7bit` |
 | Single-part HTML read as HTML, not raw markup in `plain_text` | `body-html-only-single-part` |
 | Content types case-insensitive | `body-uppercase-content-type-and-encoding` |
 | A `text/plain` attachment is not taken as the body | `body-mixed-text-attachment-after-body`, `real-bcc-with-x-forwarded-for-header` |
 | Invalid To/Cc address no longer makes the email unreadable | `bug-invalid-address-header`, `headers-invalid-cc-address`, `bug152-malformed-header-body-separation` |
 | No exception for header-only input or missing boundary | `headers-only-partial-eml`, `imap-subject-*`, `body-multipart-without-boundary` |
-| All X-Forwarded-For headers, comma separated addresses split | `headers-multiple-x-forwarded-for`, `headers-x-forwarded-for-two-in-one-header` |
+| All X-Forwarded-For headers, comma separated addresses split (not inside a quoted display name) | `headers-multiple-x-forwarded-for`, `headers-x-forwarded-for-two-in-one-header`, `headers-x-forwarded-for-quoted-comma-display-name` |
 | Raw 8-bit subject decoded instead of a broken encoded-word | `subject-raw-latin1-no-encoding`, `bug145-raw-non-ascii-subject` |
 | Missing subject is `""`, not an error text | `subject-missing-header`, `garbage-raw-text`, `not-an-email` |
 | Text without any header is not taken as body | `garbage-raw-text`, `not-an-email` |
@@ -133,6 +136,9 @@ Body extraction:
   `body-plain-utf8-quoted-printable-soft-breaks`)
 - A single-part `text/html` email puts the raw HTML in `plain_text`
   (`body-html-only-single-part`)
+- Declared multi-byte charsets are not decoded: UTF-16 comes out as base64,
+  ISO-2022-JP as escape-sequence text (`body-plain-utf16le-base64`,
+  `body-plain-iso2022jp-7bit`)
 - Content types are compared case-sensitively: `TEXT/PLAIN` gives empty text
   (`body-uppercase-content-type-and-encoding`)
 - The last `text/plain` part wins, so a `.txt` attachment replaces the body
@@ -148,6 +154,7 @@ Headers:
 - Two `X-Forwarded-For` headers throw (the `ArrayIterator` check in namespace
   `Imap` never matches) (`headers-multiple-x-forwarded-for`)
 - Two addresses in one `X-Forwarded-For` header stay one string
+  (`headers-x-forwarded-for-quoted-comma-display-name` likewise)
   (`headers-x-forwarded-for-two-in-one-header`)
 
 Subjects:

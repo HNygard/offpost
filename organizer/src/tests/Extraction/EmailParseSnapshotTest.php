@@ -67,6 +67,25 @@ class EmailParseSnapshotTest extends TestCase {
         );
     }
 
+    public function testBodyStartingWithErrorIsNotTakenForParseFailure(): void {
+        // :: Setup
+        // extractContentFromEmail() signals failure with "ERROR\n\n" . $eml; an
+        // ordinary body that happens to start with "ERROR" must stay a body
+        $eml = "From: a@b.no\r\nSubject: Feilrapport\r\nContent-Type: text/plain; charset=utf-8\r\n\r\nERROR\r\n\r\nSomething failed\r\n";
+
+        // :: Act
+        $snapshot = EmailParseSnapshot::fromEml($eml);
+
+        // :: Assert
+        $this->assertEquals([
+            'subject' => 'Feilrapport',
+            'x_forwarded_for' => [],
+            'plain_text' => "ERROR\n\nSomething failed",
+            'html' => null,
+            'parse_error' => null,
+        ], $snapshot);
+    }
+
     public function testSnapshotRecordsExceptionThatEscapesExtraction(): void {
         // :: Setup
         // multipart without boundary: the parser throws outside extractContentFromEmail()'s try

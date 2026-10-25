@@ -45,7 +45,9 @@ class EmailParseSnapshot {
         $parseError = $uncaught ?? null;
         $plainText = $body->plain_text;
         $html = $body->html;
-        if (is_string($plainText) && str_starts_with($plainText, "ERROR\n\n")) {
+        // Match the whole failure envelope, so a body that starts with "ERROR" is not
+        // taken for a failure
+        if ($plainText === "ERROR\n\n" . $eml && is_string($html) && str_starts_with($html, '<pre>')) {
             // extractContentFromEmail() returns the raw EML plus a stack trace on
             // failure. Keep only "ExceptionClass: message" - the trace has file
             // paths and line numbers that differ between machines.
