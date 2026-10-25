@@ -1,6 +1,15 @@
 #!/bin/sh
 set -e
 
+# The image carries vendor/; in development it comes from the mounted checkout
+if [ ! -f /php-frontend/vendor/autoload.php ]; then
+    echo "ERROR: /php-frontend/vendor/autoload.php missing. In development run" >&2
+    echo "  composer install   (in organizer/src)" >&2
+    echo "or without host PHP:" >&2
+    echo "  docker compose -f docker-compose.dev.yaml run --rm --no-deps --user www-data --entrypoint composer organizer install" >&2
+    exit 1
+fi
+
 # Wait for PostgreSQL to be ready
 echo "Waiting for PostgreSQL..."
 for i in $(seq 1 30); do

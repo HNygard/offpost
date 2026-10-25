@@ -56,8 +56,7 @@ notify_admin() {
 # already pulled, so the next run sees no new commits; pushing a fix deploys again.
 fail() {
   echo "[$(date)] Deploy FAILED: $1"
-  notify_admin "Deploy of $LOCAL_HASH..$REMOTE_HASH failed: $1. Not retried; push a fix to deploy again. organizer/src is bind-mounted, so the pulled PHP code is live even if the image build failed. See /opt/offpost/logs/deploy-cronjob.log."
-  git rev-parse HEAD > organizer/src/git-sha.txt
+  notify_admin "Deploy of $LOCAL_HASH..$REMOTE_HASH failed: $1. Not retried; push a fix to deploy again. The organizer runs the code baked into its image, so until a deploy succeeds the previous version keeps running. See /opt/offpost/logs/deploy-cronjob.log."
   exit 1
 }
 
@@ -114,9 +113,10 @@ if [ "$LOCAL_HASH" != "$REMOTE_HASH" ]; then
   # Pull the latest changes
   git pull origin main || fail "git pull"
 
-  # Build organizer image locally (it has its own Dockerfile)
+  # Build organizer image locally (it has its own Dockerfile). The image carries the code
+  # and vendor/; GIT_SHA is baked in for the web app (class/GitVersion.php).
   echo "[$(date)] Building organizer image..."
-  $COMPOSE build organizer || fail "building organizer image"
+  GIT_SHA=$(git rev-parse HEAD) $COMPOSE build organizer || fail "building organizer image"
   echo "[$(date)] Building cron image..."
   $COMPOSE build cron || fail "building cron image"
 
@@ -136,12 +136,6 @@ if [ "$LOCAL_HASH" != "$REMOTE_HASH" ]; then
 
   echo "[$(date)] Deployment completed."
 fi
-
-# Record the deployed commit so the web app can show it (organizer/src/class/GitVersion.php).
-# organizer/src is bind-mounted into the container, so no rebuild is needed to pick it up.
-# Runs on every invocation, not only on deploy, so the file also appears on the first run
-# after this line was added (the deploy that pulled it still ran the old script).
-git rev-parse HEAD > organizer/src/git-sha.txt
 
 exit
 }

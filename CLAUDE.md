@@ -33,9 +33,10 @@ I pledge to follow the custom instructions.
 - The three commands above run on the host, which is how CI does it too (see
   .github/workflows/php.yml: docker provides only postgres/organizer, phpunit runs
   on the runner). They need PHP with pdo_pgsql and dev dependencies in
-  organizer/src/vendor/ - the image installs --no-dev, and the anonymous
-  /php-frontend/vendor volume keeps the container's copy off the host bind mount,
-  so the host vendor/ is not populated for you.
+  organizer/src/vendor/ (composer install in organizer/src). The dev container
+  mounts organizer/src including that vendor/, so it must exist before
+  "docker compose up"; the entrypoint stops with instructions if it is missing.
+  Production runs the image as built (code and vendor/ baked in, no mount).
 
 - To run unit tests entirely in a container instead, with no host PHP or composer,
   use the `run-tests-in-container` skill (.claude/skills/run-tests-in-container/SKILL.md).

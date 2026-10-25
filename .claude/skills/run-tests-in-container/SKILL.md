@@ -7,11 +7,10 @@ description: Run the offpost PHPUnit unit tests entirely inside the organizer Do
 
 From the project root:
 
-    docker compose -f docker-compose.dev.yaml run --rm --entrypoint sh \
+    docker compose -f docker-compose.dev.yaml run --rm --entrypoint sh --user www-data \
       -e DB_HOST=postgres -e DB_PORT=5432 \
       -e DB_PASSWORD_FILE=/run/secrets/postgres_password \
       -v "$PWD/data:/data:ro" \
-      -v offpost-test-vendor:/php-frontend/vendor \
       organizer -c '[ -x vendor/bin/phpunit ] || composer install --no-interaction --no-progress; ./vendor/bin/phpunit --exclude-group integration tests/'
 
 Each flag earns its place:
@@ -22,6 +21,7 @@ Each flag earns its place:
    source tree, i.e. /data/ in the container, while compose mounts the data dir
    at /organizer-data. Without this every test touching an entity dies with
    "Entities JSON file not found".
- - offpost-test-vendor: a named volume, so dev dependencies survive --rm. With
-   the default anonymous volume, composer install is discarded on every run.
+ - --user www-data: composer install writes dev dependencies into the mounted
+   checkout (organizer/src/vendor), where they persist and host tools see them.
+   www-data has UID 1000 like the host user, so the files are not owned by root.
  - --exclude-group integration: matches what CI runs for the unit suite.
