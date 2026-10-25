@@ -60,8 +60,9 @@ Limits and failure handling:
   `STARTUP_WAIT_SECONDS` after `up -d`) stops the deploy, emails the admins with the step,
   and resumes scheduled tasks. If the organizer container is down, the alert is sent from a
   one-off `docker compose run` container instead. A failed deploy is not retried (HEAD is
-  already pulled); pushing a fix deploys again. Note that `organizer/src` is bind-mounted, so
-  pulled PHP code is live even when the image build failed. `git fetch` failures are only
+  already pulled); pushing a fix deploys again. The organizer runs the code and `vendor/`
+  baked into its image (nothing is mounted over `/php-frontend`), so after a failed build
+  the previous version keeps running unchanged. `git fetch` failures are only
   logged, so network blips do not send an email every interval.
 - Not paused: web requests, and the analysis worker (it calls the API from outside).
 
@@ -104,7 +105,23 @@ existing tag for base OS updates, and a deploy pulls that rebuild. Pinning by di
 
 ## Deployed version
 
-Every run of `deploy-cronjob.sh` writes `git rev-parse HEAD` to `organizer/src/git-sha.txt`
-(gitignored). The page header shows the short SHA under "Logout", linked to the commit on
-GitHub. The error page shows it too, and puts the full SHA at the top of the copyable error
-details so bug reports include it. If it is missing, the cronjob has not run since the file was introduced.
+`deploy-cronjob.sh` builds the organizer image with `GIT_SHA=$(git rev-parse HEAD)`, and the
+Dockerfile writes it to `/php-frontend/git-sha.txt` in the image. The page header shows the
+short SHA under "Logout", linked to the commit on GitHub. The error page shows it too, and
+puts the full SHA at the top of the copyable error details so bug reports include it. If it
+is missing, the image was built without `GIT_SHA` (e.g. by hand, or development).
+
+## Code and composer packages in the image
+
+The organizer image carries its code and `vendor/` (`composer install --no-dev` at build
+time); production mounts only data, secrets and config, never code. Until 2026-10 the code
+was bind-mounted with `vendor/` in an anonymous volume, which docker compose kept across
+container recreation, so composer changes never reached production (after PR #172 the
+running code still loaded PHPMailer 6.10.0). To check what the running code loads:
+
+```bash
+docker compose -f docker-compose.prod.yaml exec -T organizer php -r 'require "vendor/autoload.php"; echo PHPMailer\PHPMailer\PHPMailer::VERSION, "\n";'
+```
+
+Do not use `docker compose up -d --renew-anon-volumes` (`-V`) for all services: `mysql`
+(Roundcube's database) has no configured volume, so its data is in an anonymous volume.

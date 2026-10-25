@@ -1,5 +1,4 @@
 src/vendor/
-# Written by deploy-cronjob.sh after every deploy and read through the bind mount, so a copy in
-# the image is never used; including it changed the build context and recreated organizer on
-# every deploy.
+# The image gets the commit through the GIT_SHA build arg (see Dockerfile). A stale
+# git-sha.txt from a checkout must not end up in the image.
 src/git-sha.txt
