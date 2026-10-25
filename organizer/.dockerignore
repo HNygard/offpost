@@ -1,1 +1,5 @@
 src/vendor/
+# Written by deploy-cronjob.sh after every deploy and read through the bind mount, so a copy in
+# the image is never used; including it changed the build context and recreated organizer on
+# every deploy.
+src/git-sha.txt
