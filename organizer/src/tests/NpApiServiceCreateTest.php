@@ -1,6 +1,7 @@
 <?php
 // organizer/src/tests/NpApiServiceCreateTest.php
 use PHPUnit\Framework\TestCase;
+use PHPUnit\Framework\Attributes\DataProvider;
 
 require_once __DIR__ . '/bootstrap.php';
 require_once __DIR__ . '/../class/NpApiService.php';
@@ -268,9 +269,7 @@ class NpApiServiceCreateTest extends TestCase {
         $this->assertEquals($first['thread_id'], $second['thread_id']);
     }
 
-    /**
-     * @dataProvider malformedPostlisteLabels
-     */
+    #[DataProvider('malformedPostlisteLabels')]
     public function testMalformedPostlistePeriodThrows(string $label): void {
         $this->expectException(NpApiValidationException::class);
         $this->expectExceptionMessage('Malformed postliste period');

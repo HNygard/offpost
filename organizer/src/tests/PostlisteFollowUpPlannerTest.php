@@ -1,6 +1,7 @@
 <?php
 // organizer/src/tests/PostlisteFollowUpPlannerTest.php
 use PHPUnit\Framework\TestCase;
+use PHPUnit\Framework\Attributes\DataProvider;
 use App\Enums\ThreadEmailStatusType;
 
 require_once __DIR__ . '/../class/PostlisteFollowUpPlanner.php';
@@ -107,8 +108,8 @@ class PostlisteFollowUpPlannerTest extends TestCase {
     }
 
     /**
-     * @dataProvider substantiveStatuses
      */
+#[DataProvider('substantiveStatuses')]
     public function testSubstantiveReplyPausesReminders($statusType): void {
         $emails = [$this->request(), $this->email('IN', $this->day(5), $statusType)];
 

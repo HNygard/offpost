@@ -1,6 +1,7 @@
 <?php
 
 use PHPUnit\Framework\TestCase;
+use PHPUnit\Framework\Attributes\DataProvider;
 
 require_once __DIR__ . '/../class/ThreadState/ThreadState.php';
 
@@ -53,7 +54,7 @@ class ThreadStateTest extends TestCase {
         return array_map(fn(string $key) => [$key], ThreadState::CORE_KEYS);
     }
 
-    /** @dataProvider coreKeys */
+    #[DataProvider('coreKeys')]
     public function testMissingCoreKeyIsRejected(string $missingKey): void {
         // :: Setup
         $blob = $this->validBlob();

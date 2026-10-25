@@ -1,6 +1,8 @@
 <?php
 
 use PHPUnit\Framework\TestCase;
+use PHPUnit\Framework\Attributes\DataProvider;
+use PHPUnit\Framework\Attributes\Group;
 use Imap\ImapConnection;
 use Imap\ImapFolderManager;
 use Imap\ImapEmailProcessor;
@@ -400,9 +402,8 @@ class ThreadEmailMoverTest extends TestCase {
     /**
      * Integration test to verify error is saved to database for unmatched inbox emails
      * Note: This test requires a working database connection
-     * 
-     * @group integration
      */
+    #[Group('integration')]
     public function testProcessMailboxSavesErrorForUnmatchedInboxEmail() {
         // Enable database operations for this integration test
         ThreadEmailMover::$skipDatabaseOperations = false;
@@ -498,9 +499,7 @@ class ThreadEmailMoverTest extends TestCase {
         ];
     }
 
-    /**
-     * @dataProvider nonInboxMailboxProvider
-     */
+    #[DataProvider('nonInboxMailboxProvider')]
     public function testProcessNonInboxMailbox(
         string $sourceMailbox,
         array $emailAddresses,
@@ -633,9 +632,8 @@ class ThreadEmailMoverTest extends TestCase {
 
     /**
      * Integration test to verify that manually mapped emails in thread_email_mapping are handled correctly
-     * 
-     * @group integration
      */
+    #[Group('integration')]
     public function testProcessMailboxWithMappedEmail() {
         // Enable database operations for this integration test
         ThreadEmailMover::$skipDatabaseOperations = false;
@@ -705,9 +703,8 @@ class ThreadEmailMoverTest extends TestCase {
 
     /**
      * Integration test to verify that mapping table takes precedence over email address matching
-     * 
-     * @group integration
      */
+    #[Group('integration')]
     public function testProcessMailboxMappingTakesPrecedence() {
         // Enable database operations for this integration test
         ThreadEmailMover::$skipDatabaseOperations = false;

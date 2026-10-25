@@ -1,13 +1,12 @@
 <?php
 // organizer/src/tests/PostlistePeriodTest.php
 use PHPUnit\Framework\TestCase;
+use PHPUnit\Framework\Attributes\DataProvider;
 
 require_once __DIR__ . '/../class/PostlistePeriod.php';
 
 class PostlistePeriodTest extends TestCase {
-    /**
-     * @dataProvider validPeriods
-     */
+    #[DataProvider('validPeriods')]
     public function testValidPeriodParsesToInclusiveDateRange(string $period, string $expectedFrom, string $expectedTo): void {
         // :: Act
         $parsed = PostlistePeriod::tryParse($period);
@@ -34,9 +33,7 @@ class PostlistePeriodTest extends TestCase {
         ];
     }
 
-    /**
-     * @dataProvider malformedPeriods
-     */
+    #[DataProvider('malformedPeriods')]
     public function testMalformedPeriodIsRejected(string $period): void {
         $this->assertFalse(PostlistePeriod::isValid($period), "Period '$period' must be rejected");
         $this->assertNull(PostlistePeriod::tryParse($period));

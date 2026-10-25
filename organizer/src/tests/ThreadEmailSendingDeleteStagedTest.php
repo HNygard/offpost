@@ -1,6 +1,7 @@
 <?php
 // organizer/src/tests/ThreadEmailSendingDeleteStagedTest.php
 use PHPUnit\Framework\TestCase;
+use PHPUnit\Framework\Attributes\DataProvider;
 
 require_once __DIR__ . '/bootstrap.php';
 require_once __DIR__ . '/../class/ThreadEmailSending.php';
@@ -62,8 +63,8 @@ class ThreadEmailSendingDeleteStagedTest extends TestCase {
     }
 
     /**
-     * @dataProvider notStagedStatuses
      */
+#[DataProvider('notStagedStatuses')]
     public function testSendingNotInStagingIsLeftAlone(string $status): void {
         // :: Setup
         $sending = $this->createSending($status);

@@ -12,6 +12,7 @@ if (!defined('TYPEMODEL')) define('TYPEMODEL', 7);
 if (!defined('TYPEOTHER')) define('TYPEOTHER', 8);
 
 use PHPUnit\Framework\TestCase;
+use PHPUnit\Framework\Attributes\Group;
 use Imap\ImapConnection;
 use Imap\ImapFolderManager;
 use Imap\ImapEmailProcessor;
@@ -93,9 +94,9 @@ class ThreadEmailReceiveIntegrationTest extends TestCase {
     }
     
     /**
-     * @group integration
      * This test checks what happens when we receive emails in our system from a public entity.
      */
+    #[Group('integration')]
     public function testReceiveEmail() {
         // :: Setup
 

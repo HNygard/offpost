@@ -8,6 +8,7 @@ require_once __DIR__ . '/../class/ThreadStatusRepository.php';
 require_once __DIR__ . '/../class/Entity.php';
 
 use PHPUnit\Framework\TestCase;
+use PHPUnit\Framework\Attributes\DataProvider;
 
 class ThreadScheduledFollowUpSenderTest extends TestCase {
     private $sender;
@@ -264,9 +265,7 @@ class ThreadScheduledFollowUpSenderTest extends TestCase {
         );
     }
 
-    /**
-     * @dataProvider entityTypes
-     */
+    #[DataProvider('entityTypes')]
     public function testKlageinstansForEntityType(?string $type, string $expected): void {
         $this->assertEquals($expected, ThreadScheduledFollowUpSender::klageinstansForEntityType($type));
     }
