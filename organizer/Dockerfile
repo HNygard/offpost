@@ -54,6 +54,15 @@ USER www-data
 RUN composer install --no-dev --no-interaction --no-progress --optimize-autoloader
 USER root
 
+# Copy of vendor/ outside /php-frontend, with a stamp of the installed packages and
+# autoloaders. sync-vendor.sh (run by the entrypoint) uses it to update the
+# /php-frontend/vendor volume, which docker compose carries over between containers.
+RUN cat vendor/composer/installed.json vendor/composer/autoload_*.php | sha1sum > vendor/.image-vendor-stamp \
+    && mkdir -p /opt/offpost \
+    && cp -a vendor /opt/offpost/vendor
+COPY sync-vendor.sh /usr/local/bin/
+RUN chmod +x /usr/local/bin/sync-vendor.sh
+
 COPY localhost.conf /etc/apache2/conf-enabled/localhost.conf
 COPY apache-resource-limits.conf /etc/apache2/conf-enabled/apache-resource-limits.conf
 COPY phpdev.ini /usr/local/etc/php/conf.d/phpdev.ini

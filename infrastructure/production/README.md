@@ -108,3 +108,25 @@ Every run of `deploy-cronjob.sh` writes `git rev-parse HEAD` to `organizer/src/g
 (gitignored). The page header shows the short SHA under "Logout", linked to the commit on
 GitHub. The error page shows it too, and puts the full SHA at the top of the copyable error
 details so bug reports include it. If it is missing, the cronjob has not run since the file was introduced.
+
+## Composer packages (vendor/)
+
+`organizer/src` is bind-mounted over `/php-frontend`, and `/php-frontend/vendor` is an
+anonymous volume so the image's `vendor/` is not hidden by the bind mount. Docker only
+fills that volume when it is created, and `docker compose up -d` carries it over when it
+recreates the container. Until 2026-10 this meant composer changes never reached
+production: after PR #172 the running code still loaded PHPMailer 6.10.0.
+
+The image therefore keeps a copy of its `vendor/` in `/opt/offpost/vendor`, and
+`organizer/sync-vendor.sh` (run first by the entrypoint) replaces the volume's content
+when its stamp of installed packages and autoloaders differs from the image's. A failed
+copy stops the container, so the deploy fails and notifies instead of running on stale
+packages. To verify what the running code loads:
+
+```bash
+docker compose -f docker-compose.prod.yaml exec -T organizer php -r 'require "vendor/autoload.php"; echo PHPMailer\PHPMailer\PHPMailer::VERSION, "\n";'
+```
+
+Do not use `docker compose up -d --renew-anon-volumes` (`-V`) for all services:
+`mysql` (Roundcube's database) has no configured volume, so its data is in an
+anonymous volume too and would be lost.

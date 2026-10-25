@@ -1,6 +1,10 @@
 #!/bin/sh
 set -e
 
+# The vendor/ volume outlives containers; bring it in line with this image
+# before any PHP runs (see sync-vendor.sh)
+/usr/local/bin/sync-vendor.sh
+
 # Wait for PostgreSQL to be ready
 echo "Waiting for PostgreSQL..."
 for i in $(seq 1 30); do
