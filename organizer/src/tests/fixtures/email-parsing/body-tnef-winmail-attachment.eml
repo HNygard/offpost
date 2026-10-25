@@ -1,0 +1,19 @@
+From: Postmottak Testkommune <postmottak@testkommune.no>
+To: Ola Nordmann <ola.nordmann@offpost.no>
+Date: Mon, 14 Apr 2025 12:16:03 +0000
+Message-ID: <fixture@testkommune.no>
+MIME-Version: 1.0
+Subject: Svar fra Outlook
+Content-Type: multipart/mixed; boundary="t1"
+
+--t1
+Content-Type: text/plain; charset="us-ascii"
+
+Se vedlegg.
+--t1
+Content-Type: application/ms-tnef; name="winmail.dat"
+Content-Disposition: attachment; filename="winmail.dat"
+Content-Transfer-Encoding: base64
+
+eJ8+IgAAAQaQCAAEAAAAAAABAAEAAQeQBgAIAAAA5AQAAAAAAADoAAEIgAcAGAAAAElQTS5NaWNy
+--t1--

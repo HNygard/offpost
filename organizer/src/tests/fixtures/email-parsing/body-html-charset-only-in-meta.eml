@@ -1,0 +1,14 @@
+From: Postmottak Testkommune <postmottak@testkommune.no>
+To: Ola Nordmann <ola.nordmann@offpost.no>
+Date: Mon, 14 Apr 2025 12:16:03 +0000
+Message-ID: <fixture@testkommune.no>
+MIME-Version: 1.0
+Subject: Mottak av innsynskrav
+Content-Type: multipart/alternative; boundary="alt1"
+
+--alt1
+Content-Type: text/html
+Content-Transfer-Encoding: 8bit
+
+<html><head><meta http-equiv="Content-Type" content="text/html; charset=iso-8859-1"></head><body><p>Svar på innsynskrav om søknad</p></body></html>
+--alt1--

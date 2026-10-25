@@ -1,0 +1,9 @@
+{
+    "subject": "Error getting subject - Failed to parse email due to problematic header on line 6\nHeader name: Cc\nException type: Laminas\\Mail\\Exception\\InvalidArgumentException\nOriginal error: The input is not a valid email address. Use the basic format local-part@hostname\nNew error: The input is not a valid email address. Use the basic format local-part@hostname\nProblematic line: Cc: \"Feil, Adresse\" <ugyldig@>\nProblematic line (hex): 43633a20224665696c2c204164726573736522203c7567796c646967403e\n\nPartial EML up to this header:\nFrom: Postmottak Testkommune <postmottak@testkommune.no>\nTo: Ola Nordmann <ola.nordmann@offpost.no>\nDate: Mon, 14 Apr 2025 12:16:03 +0000\nMessage-ID: <fixture@testkommune.no>\nMIME-Version: 1.0\nCc: \"Feil, Adresse\" <ugyldig@>",
+    "x_forwarded_for": [
+        "exception-during-getting-x-forwarded-for (failed to parse email due to problematic header on line 6\nheader name: cc\nexception type: laminas\\mail\\exception\\invalidargumentexception\noriginal error: the input is not a valid email address. use the basic format local-part@hostname\nnew error: the input is not a valid email address. use the basic format local-part@hostname\nproblematic line: cc: \"feil, adresse\" <ugyldig@>\nproblematic line (hex): 43633a20224665696c2c204164726573736522203c7567796c646967403e\n\npartial eml up to this header:\nfrom: postmottak testkommune <postmottak@testkommune.no>\nto: ola nordmann <ola.nordmann@offpost.no>\ndate: mon, 14 apr 2025 12:16:03 +0000\nmessage-id: <fixture@testkommune.no>\nmime-version: 1.0\ncc: \"feil, adresse\" <ugyldig@>)"
+    ],
+    "plain_text": null,
+    "html": null,
+    "parse_error": "Exception: Failed to parse email due to problematic header on line 6"
+}

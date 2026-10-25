@@ -1,0 +1,19 @@
+From: Postmottak Testkommune <postmottak@testkommune.no>
+To: Ola Nordmann <ola.nordmann@offpost.no>
+Date: Mon, 14 Apr 2025 12:16:03 +0000
+Message-ID: <fixture@testkommune.no>
+MIME-Version: 1.0
+Subject: Postliste uke 15
+Content-Type: multipart/mixed; boundary="mix2"
+
+--mix2
+Content-Type: text/plain; charset=utf-8
+
+Vedlagt er postlisten for uke 15.
+--mix2
+Content-Type: text/plain; charset=utf-8; name="postliste.txt"
+Content-Disposition: attachment; filename="postliste.txt"
+
+2025/1 Søknad om dispensasjon
+2025/2 Klage på vedtak
+--mix2--

@@ -1,0 +1,6 @@
+From: sender@example.com
+To: not-a-valid-address
+Subject: Test Email
+Content-Type: text/plain
+
+This is a test email body

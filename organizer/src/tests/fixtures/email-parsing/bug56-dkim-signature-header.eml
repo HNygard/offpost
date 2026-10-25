@@ -1,0 +1,22 @@
+Return-Path: <postmottak@varoy.kommune.no>
+Delivered-To: <test@example.com>
+DKIM-Signature: v=1; a=rsa-sha256; c=relaxed/relaxed;
+	d=custmx.one.com; s=20201015;
+	h=mime-version:content-transfer-encoding:content-type:in-reply-to:references:
+	 message-id:date:subject:to:from:x-halone-refid:x-halone-sa:from:x-halone-sa:
+	 x-halone-refid;
+	bh=rIv00cKr8Xj97WFZtdmVkJKsLtJVgVpaj8sxpPtmnM0=;
+	bÑRyvwGvMBQY371EWYO86jmKOmZwcKfiXURMrZaZkjz7dUf1Hq8mCHVcn+dPWm8dk3vSipkYLDQJH
+	 iXL6nkuCFGUJz/uPGXWaVqB1skd6V0jHR17zvGQBFyIZyMsVOibl0XvY9bmZwf7Is6jCLUm2OJJ/Uo
+	 EdxSemT/iRaznT2cNZU0tU40umIm5HTQxw2lL/ltAhfvDKfSrITTwXbelqMk0GjsdXgI309XYqm1cQ
+	 BLObJxLrARR2ZzHmkERv267dTCjzJm3JV1GQJK4JAWO3iDzJBB6FG8njUCz5tAQvpeRPu+GnTLKFMq
+	 sZ+DzQgUPHuBimow2XjATT3yZQ3JfEA==
+From: =?iso-8859-1?Q?Postmottak_V=E6r=F8y_kommune?= <postmottak@varoy.kommune.no>
+To: <test@example.com>
+Subject: Test Subject
+Date: Sun, 7 Sep 2025 08:28:35 +0000
+Content-Type: text/plain; charset="iso-8859-1"
+Content-Transfer-Encoding: quoted-printable
+MIME-Version: 1.0
+
+Test body content.

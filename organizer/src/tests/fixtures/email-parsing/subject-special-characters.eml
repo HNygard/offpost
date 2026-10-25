@@ -1,0 +1,9 @@
+Return-Path: <test@example.com>
+From: Test Sender <test@example.com>
+To: recipient@example.com
+Subject: Test with special chars: åæø ÄÖÜ €£$
+Date: Mon, 14 Apr 2025 12:16:03 +0000
+Message-ID: <test123@example.com>
+Content-Type: text/plain; charset=utf-8
+
+This is the email body.

@@ -1,0 +1,7 @@
+{
+    "subject": "Mottak av innsynskrav",
+    "x_forwarded_for": [],
+    "plain_text": "<html><head><style>p{color:red}</style></head><body><p>Hei,</p><p>Vi bekrefter mottak av innsynskravet ditt. Saken får <b>saksnummer 2025/123</b>.</p><ul><li>Første punkt</li><li>Andre punkt</li></ul><p>Med vennlig hilsen<br>Postmottak Testkommune</p></body></html>",
+    "html": null,
+    "parse_error": null
+}

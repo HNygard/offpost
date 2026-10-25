@@ -301,6 +301,23 @@ This is a test email.
         $this->assertEquals('Test Email', $result->getHeader('subject')->getFieldValue());
     }
 
+    public function testFixMalformedEncodedWords_Base64PaddingIsNotANestedWordStart() {
+        // :: Setup
+        // Real-world subject (Kristiansand kommune): base64 padding "=" directly before the
+        // closing "?=" reads as "=?", which the nested-word repair took for a new
+        // encoded-word and split, losing the subject text after it
+        $lines = [
+            'Subject: =?UTF-8?B?U8O4a25hZA==?= om innsyn',
+            ' - jfr. valgsforskriften =?utf-8?b?wqc5LTE=?= - samt rutine for valget i 2023',
+        ];
+
+        // :: Act
+        $fixed = array_map(fn($line) => ThreadEmailExtractorEmailBody::fixMalformedEncodedWords($line), $lines);
+
+        // :: Assert
+        $this->assertEquals($lines, $fixed, 'Well-formed base64 encoded-words must be left untouched');
+    }
+
     public function testReadLaminasMessage_withErrorHandling_NestedEncodedWordInFrom() {
         // :: Setup
         // Real-world header from Oslo kommune (Outlook/Exchange): the outer iso-8859-1

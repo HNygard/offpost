@@ -1,0 +1,9 @@
+{
+    "subject": "To videresendinger",
+    "x_forwarded_for": [
+        "exception-during-getting-x-forwarded-for (call to undefined method arrayiterator::getfieldvalue())"
+    ],
+    "plain_text": "Innhold.",
+    "html": null,
+    "parse_error": null
+}

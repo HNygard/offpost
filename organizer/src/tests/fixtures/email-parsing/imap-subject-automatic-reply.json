@@ -1,0 +1,7 @@
+{
+    "subject": "Automatic reply: Innsynshenvendelse - sak 2026/1",
+    "x_forwarded_for": [],
+    "plain_text": null,
+    "html": null,
+    "parse_error": "UNCAUGHT Laminas\\Mail\\Storage\\Exception\\RuntimeException: no content"
+}

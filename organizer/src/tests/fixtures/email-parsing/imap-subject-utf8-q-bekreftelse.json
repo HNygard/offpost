@@ -1,0 +1,7 @@
+{
+    "subject": "Bekreftelse på mottatt e-post",
+    "x_forwarded_for": [],
+    "plain_text": null,
+    "html": null,
+    "parse_error": "UNCAUGHT Laminas\\Mail\\Storage\\Exception\\RuntimeException: no content"
+}

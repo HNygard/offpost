@@ -1,0 +1,7 @@
+{
+    "subject": "Mottak av innsynskrav",
+    "x_forwarded_for": [],
+    "plain_text": "Dette er en lang linje med =C3=A6=C3=B8=C3=A5 som m=C3=A5 brytes myke linje=\nskift. Dette er en lang linje med =C3=A6=C3=B8=C3=A5 som m=C3=A5 brytes myk=\ne linjeskift. Dette er en lang linje med =C3=A6=C3=B8=C3=A5 som m=C3=A5 bry=\ntes myke linjeskift. Dette er en lang linje med =C3=A6=C3=B8=C3=A5 som m=\n=C3=A5 brytes myke linjeskift.",
+    "html": null,
+    "parse_error": null
+}

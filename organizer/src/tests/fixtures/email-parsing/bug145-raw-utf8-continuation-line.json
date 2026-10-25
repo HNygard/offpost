@@ -1,0 +1,7 @@
+{
+    "subject": "Test",
+    "x_forwarded_for": [],
+    "plain_text": "Test body",
+    "html": null,
+    "parse_error": null
+}

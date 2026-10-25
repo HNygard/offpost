@@ -1,0 +1,7 @@
+From: sender@example.com
+To: recipient@example.com
+X-Custom-Header: Test with ø and å and æ
+Subject: Test
+Content-Type: text/plain
+
+Test body

@@ -1,0 +1,29 @@
+From: Postmottak Testkommune <postmottak@testkommune.no>
+To: Ola Nordmann <ola.nordmann@offpost.no>
+Date: Mon, 14 Apr 2025 12:16:03 +0000
+Message-ID: <fixture@testkommune.no>
+MIME-Version: 1.0
+Subject: Dokumenter i sak 2025/123
+Content-Type: multipart/mixed; boundary="mix1"
+
+--mix1
+Content-Type: multipart/alternative; boundary="alt1"
+
+--alt1
+Content-Type: text/plain; charset=utf-8
+
+Vedlagt følger dokumentene du ba om.
+--alt1
+Content-Type: text/html; charset=utf-8
+
+<p>Vedlagt følger <i>dokumentene</i> du ba om.</p>
+--alt1--
+
+--mix1
+Content-Type: application/pdf; name="vedtak.pdf"
+Content-Disposition: attachment; filename="vedtak.pdf"
+Content-Transfer-Encoding: base64
+
+JVBERi0xLjQKJSBmaXh0dXJlCjEgMCBvYmogPDwgL1R5cGUgL0NhdGFsb2cgPj4gZW5kb2JqCnRy
+YWlsZXIgPDwgL1Jvb3QgMSAwIFIgPj4KJSVFT0YK
+--mix1--

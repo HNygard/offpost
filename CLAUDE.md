@@ -73,7 +73,7 @@ I pledge to follow the custom instructions.
 
 ## Code Structure
 
-Per-feature docs live in `docs/` (np-api.md, thread-state.md, thread-analysis.md, thread-export-api.md).
+Per-feature docs live in `docs/` (np-api.md, thread-state.md, thread-analysis.md, thread-export-api.md, email-parsing.md).
 
 ## Database
 

@@ -1,0 +1,10 @@
+{
+    "subject": "To videresendinger",
+    "x_forwarded_for": [
+        "first.address@offpost.no",
+        "second.address@offpost.no"
+    ],
+    "plain_text": "Innhold.",
+    "html": null,
+    "parse_error": null
+}

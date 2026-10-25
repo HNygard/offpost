@@ -1,0 +1,9 @@
+{
+    "subject": "Report Domain: offpost.no Submitter: bedsys.net Report-ID:2021.10.05.76731",
+    "x_forwarded_for": [
+        "dmarc@offpost.no"
+    ],
+    "plain_text": "This is a DMARC aggregate report for offpost.no\n\n1 records.\n1 passed.\n0 failed.\n\nSubmitted by Bedriftssystemer as\nGenerated with Mail::DMARC 1.20180125",
+    "html": "",
+    "parse_error": null
+}

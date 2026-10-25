@@ -1,0 +1,7 @@
+{
+    "subject": "Error getting subject - Header with Name subject or subject not found",
+    "x_forwarded_for": [],
+    "plain_text": "This is not a valid EML format",
+    "html": null,
+    "parse_error": null
+}
