@@ -4,62 +4,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 # Offpost - Application to interact with public entities using email
 
-## Norwegian description of service
-(kept in sync with README.md in the root directory)
-
-Offpost - Offentlig post - er en tjeneste for å sende e-post til offentlige myndigheter.
-
-Tjenesten baserer seg på at man lager en forespørsel til en myndighet. Denne får en unik profil med tilfeldig navn og epost. Eposten brukes for å sende e-post og å motta svar. De tilfeldige navnene baserer seg på Motorvognregisteret, så det er ekte navn men kombinasjonen av fornavn og etternavn er sannsynligvis unik siden navene ikke er vektet.
-
-## Architecture
-(kept in sync with README.md in the root directory)
-
-Offpost is mainly a PHP application running on a web server. It revolves around email threads sent to public entities.
-
-One email thread is a conversation between the system and a public entity. Or mulitple in case of a complaint.
-Connected to the thread is a profile of first name, last name and email address. This is unique for each thread.
-
-It uses IMAP to get emails from a mail server and store them in local storage. The emails are sorted into threads
-based on the to/from addresses that matches the profile of the thread.
-
-## Components
-(kept in sync with README.md in the root directory)
-
-### Organizer
-- Main program that provides client, API and JSON storage for email threads
-- Creates threads and "identities" in Roundcube
-- Sorts email using IMAP folders directly on the server
-
-### Roundcube
-- Webmail client using the IMAP server directly
-- Email threads are stored as folders on the IMAP server
-- Uses MySQL for storage
-
-### Sendgrid (Production only)
-- Used to send emails
-- Handles copying to the IMAP server
-
-### IMAP Server
-- Used to store email threads
-- Email threads are organized as folders on the server
-
-### Auth Service (Development only)
-- Simple authentication service for development
-- Not intended for production use
-
-### GreenMail (Development only)
-- SMTP/IMAP server for development environment
-- Provides email testing capabilities without external dependencies
-- Configured with test accounts for local development
-
-## Capabilities
-
-Main capabilities, but not limited to:
-- You can read and analyze PHP code, including understanding class structures, methods, and dependencies
-- You can suggest improvements to code organization and email handling logic
-- You can help debug IMAP connection and email processing issues
-- You can write and modify PHP unit tests
-- You can help with Docker configuration and deployment
+Domain overview, architecture and components: see README.md.
 
 ## Rules
 
@@ -92,25 +37,8 @@ I pledge to follow the custom instructions.
   /php-frontend/vendor volume keeps the container's copy off the host bind mount,
   so the host vendor/ is not populated for you.
 
-- To run unit tests entirely in a container instead, with no host PHP or composer
-  (from the project root):
-    docker compose -f docker-compose.dev.yaml run --rm --entrypoint sh \
-      -e DB_HOST=postgres -e DB_PORT=5432 \
-      -e DB_PASSWORD_FILE=/run/secrets/postgres_password \
-      -v "$PWD/data:/data:ro" \
-      -v offpost-test-vendor:/php-frontend/vendor \
-      organizer -c '[ -x vendor/bin/phpunit ] || composer install --no-interaction --no-progress; ./vendor/bin/phpunit --exclude-group integration tests/'
-  Each flag earns its place:
-   - DB_*: tests/bootstrap.php defaults to the host-side view (127.0.0.1:25432 and
-     the repo's secrets/ path); neither resolves in a container. It only falls back
-     to these defaults when the variables are unset, so host runs stay unchanged.
-   - data:/data: Entity::loadEntities() resolves entities_test.json relative to the
-     source tree, i.e. /data/ in the container, while compose mounts the data dir
-     at /organizer-data. Without this every test touching an entity dies with
-     "Entities JSON file not found".
-   - offpost-test-vendor: a named volume, so dev dependencies survive --rm. With
-     the default anonymous volume, composer install is discarded on every run.
-   - --exclude-group integration: matches what CI runs for the unit suite.
+- To run unit tests entirely in a container instead, with no host PHP or composer,
+  use the `run-tests-in-container` skill (.claude/skills/run-tests-in-container/SKILL.md).
 
 - If docker reports "permission denied ... /var/run/docker.sock" even though you
   are in the docker group, the shell session predates the group membership. Use
@@ -145,60 +73,7 @@ I pledge to follow the custom instructions.
 
 ## Code Structure
 
-### Key Directories
-```
-organizer/src/
-├── class/           # Core business logic
-│   ├── Imap/        # IMAP handling with retry logic (ImapWrapper, ImapFolderManager)
-│   ├── Ai/          # OpenAI integration
-│   ├── Extraction/  # Email content extraction services
-│   └── Enums/       # Status enums
-├── tests/           # PHPUnit unit tests
-├── e2e-tests/       # Integration tests (require Docker services)
-├── migrations/sql/  # Database migrations (SQL scripts)
-├── system-pages/    # Scheduled task endpoints (cron-triggered)
-└── api/             # API endpoints
-```
-
-### Key Classes
-- `Thread` - Core thread entity with status management (STAGING → READY → SENDING → SENT)
-- `Database` - PDO singleton for database access
-- `ThreadStorageManager` - Singleton for thread storage operations
-- `ThreadDatabaseOperations` - Core database CRUD for threads
-- `ImapWrapper` - IMAP operations with retry logic and exponential backoff
-- `ThreadStatusRepository` - Email/thread status queries
-- `ThreadEmailMover` - Moves emails between IMAP folders with error handling
-- `ThreadScheduledEmailReceiver` - Polls IMAP for new emails
-- `ThreadScheduledEmailSender` - Sends queued emails
-- `ThreadScheduledFollowUpSender` - Automatic follow-up email management (speedy: one automatic reminder on day 5; slow: staged for a human; postliste automatic on day 10/20)
-- `PostlisteFollowUpPlanner` - Pure decision rules for the postliste plan (tested with a fixed clock)
-- `PostlistePeriod` - Validates/parses `postliste:<period>` labels (ISO week, month, year, ranges)
-- `NpApiService` - norske-postlister.no API: thread creation, listing, email classification, replies (docs/np-api.md)
-- `ThreadEmailDatabaseSaver` - Parses EML files and saves to database
-- `AdminNotificationService` - Sends admin alerts for critical issues
-- `ThreadEmailResponseClassifier` - Pure rules classifying incoming email from subject, AI summary and attachments (docs/np-api.md)
-- `ThreadEmailStatusUpdater` - Applies those rules to thread_emails; never overwrites a manual classification
-- `NpThreadAutoArchiver` - Decides and archives finished norske-postlister threads
-- `ThreadExportService` - Builds the full per-thread export JSON and the export list (docs/thread-export-api.md)
-- `ThreadExportSync` - Pure logic deciding which thread ids the export CLI needs to (re)fetch (docs/thread-export-api.md)
-- `ThreadState` - Value class validating the cumulative thread-state blob recorded per email (docs/thread-state.md)
-- `ThreadStateTypeDeriver` - Pure rules deriving the thread status from a `ThreadState` blob (docs/thread-state.md)
-- `ThreadEventAnalysis` - Pure logic for `tools/analyze-threads.php`: per-event input text, JSON schema, answer validation, resume planning, totals (docs/thread-analysis.md)
-- `ThreadAnalysisRepository` - Database operations for the analysis queue/runs/events/calls tables; validates and applies a worker's result to `thread_emails` (docs/thread-analysis.md)
-- `ThreadAnalysisWorkItem` - Pure logic choosing which emails a worker should analyse for a claimed run (full/incremental) (docs/thread-analysis.md)
-- `ThreadAnalysisStats` - Read-only queries for the admin debug pages: cost/token totals, per-model and per-prompt cost, the queue, recent runs, email-type gaps and disagreements with `thread_emails.status_type` (docs/thread-analysis.md)
-- `ClaudeCodeEventRunner` - Shared call/validate/retry-once logic for one event against headless Claude Code, used by both `tools/analyze-threads.php` and `tools/analysis-worker.php` (docs/thread-analysis.md)
-- `AttachmentExtractionStats` - Read-only attachment file-type survey (text / no text / failed / not extracted per type and year) for /extraction-overview
-
-### Scheduled Tasks
-Located in `system-pages/`, triggered by cron:
-- `scheduled-email-sending` - Send queued emails
-- `scheduled-email-receiver` - Poll IMAP for new emails
-- `scheduled-imap-handling` - Manage IMAP folder structure
-- `scheduled-email-extraction` - Extract content using AI
-- `scheduled-thread-follow-up` - Automatic follow-up handling
-- `scheduled-email-classification` - Rule-based classification of incoming email (auto-replies, documents) before the AI summary
-- `scheduled-np-thread-archiving` - Archive norske-postlister threads that finished successfully (`?dry_run=1` to preview)
+Per-feature docs live in `docs/` (np-api.md, thread-state.md, thread-analysis.md, thread-export-api.md).
 
 ## Database
 
