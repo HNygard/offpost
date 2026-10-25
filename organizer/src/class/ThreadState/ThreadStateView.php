@@ -17,9 +17,10 @@ use App\Enums\ThreadStateType;
  * plain arrays and return HTML, so they can be unit tested without a
  * database. All output is escaped with htmlspecialchars().
  *
- * loadEmailStates() is the one method that touches the database: it reads
- * thread_state/thread_state_type/thread_state_source directly, because
- * Thread::mapFromDatabase() does not copy those columns onto ThreadEmail.
+ * loadEmailStates() and countEmailsAfter() are the methods that touch the
+ * database: they read thread_emails directly, because
+ * Thread::mapFromDatabase() does not copy the thread_state* columns onto
+ * ThreadEmail.
  */
 class ThreadStateView {
     // Bokmål labels for `waiting_for` (see docs/thread-state.md).
@@ -99,6 +100,24 @@ class ThreadStateView {
     }
 
     /**
+     * How many emails of the thread come after the given email, in the same
+     * order as loadEmailStates() (datetime_received, then id). Ignored emails
+     * are not counted, since thread analysis leaves them out too
+     * (ThreadAnalysisWorkItem::selectEmails()). Used to tell that the latest
+     * thread state is outdated: newer emails have not been analysed yet.
+     */
+    public static function countEmailsAfter(string $threadId, string $emailId): int {
+        return (int) Database::queryValue(
+            "SELECT COUNT(*)
+             FROM thread_emails e
+             JOIN thread_emails s ON s.id = ? AND s.thread_id = e.thread_id
+             WHERE e.thread_id = ? AND e.ignore IS NOT TRUE
+               AND (e.datetime_received, e.id) > (s.datetime_received, s.id)",
+            [$emailId, $threadId]
+        );
+    }
+
+    /**
      * The "Thread state" block, shown just before "Emails in Thread". Shown
      * only when the caller has a state to render - the caller decides that
      * from loadEmailStates() being non-empty.
@@ -112,6 +131,9 @@ class ThreadStateView {
      *   to show a review status for.
      * @param string|null $today 'Y-m-d' used to count days to a complaint
      *   deadline; null means the current date. Tests pass a fixed date.
+     * @param int $newerEmailCount emails received after the email this state
+     *   belongs to (countEmailsAfter()). When above 0 the state is outdated:
+     *   the block is dimmed and gets a warning saying so.
      */
     public static function renderBlock(
         array $state,
@@ -120,10 +142,19 @@ class ThreadStateView {
         bool $isAdmin,
         string $threadId,
         ?string $latestRunReviewStatus = null,
-        ?string $today = null
+        ?string $today = null,
+        int $newerEmailCount = 0
     ): string {
-        $html = '<div class="thread-state">';
+        $html = $newerEmailCount > 0
+            ? '<div class="thread-state thread-state-outdated">'
+            : '<div class="thread-state">';
         $html .= '<h2>Thread state</h2>';
+
+        if ($newerEmailCount > 0) {
+            $html .= '<p class="thread-state-outdated-warning"><strong>Outdated:</strong> '
+                . $newerEmailCount . ($newerEmailCount === 1 ? ' newer email has' : ' newer emails have')
+                . ' not been analysed yet. The state below may no longer be correct.</p>';
+        }
 
         $html .= '<p class="thread-state-status">' . self::renderStatusBadge($stateType);
         if ($stateSource !== null) {

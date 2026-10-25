@@ -170,6 +170,9 @@ $historyEntries = $history->getHistoryForThread($thread->id);
 $threadStates = ThreadStateView::loadEmailStates($thread->id);
 $latestThreadState = !empty($threadStates) ? end($threadStates) : null;
 $threadStatesByEmailId = array_column($threadStates, null, 'id');
+$emailsAfterLatestThreadState = $latestThreadState !== null
+    ? ThreadStateView::countEmailsAfter($thread->id, $latestThreadState['id'])
+    : 0;
 $isAdminForThreadState = isset($_SESSION['user']['sub']) && in_array($_SESSION['user']['sub'], $admins);
 
 // For admins only: the thread's latest analysis run's review status (step
@@ -438,7 +441,8 @@ function print_extraction ($extraction) {
                 $latestThreadState['thread_state_source'],
                 $isAdminForThreadState,
                 $thread->id,
-                $latestRunReviewStatus
+                $latestRunReviewStatus,
+                newerEmailCount: $emailsAfterLatestThreadState
             ) ?>
         <?php endif; ?>
 

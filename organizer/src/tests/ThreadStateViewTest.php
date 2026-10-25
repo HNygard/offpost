@@ -238,6 +238,50 @@ class ThreadStateViewTest extends TestCase {
         );
     }
 
+    public function testRenderBlockMarksStateAsOutdatedWhenNewerEmailsExist(): void {
+        // :: Setup
+        $state = $this->smallState();
+
+        // :: Act
+        $html = ThreadStateView::renderBlock($state, 'WAITING_FOR_US', 'auto', false, 'thread-1', null, null, 3);
+
+        // :: Assert
+        $this->assertStringStartsWith(
+            '<div class="thread-state thread-state-outdated">'
+            . '<h2>Thread state</h2>'
+            . '<p class="thread-state-outdated-warning"><strong>Outdated:</strong> '
+            . '3 newer emails have not been analysed yet. The state below may no longer be correct.</p>'
+            . '<p class="thread-state-status">',
+            $html
+        );
+    }
+
+    public function testRenderBlockOutdatedWarningUsesSingularForOneNewerEmail(): void {
+        // :: Setup
+        $state = $this->smallState();
+
+        // :: Act
+        $html = ThreadStateView::renderBlock($state, 'WAITING_FOR_US', 'auto', false, 'thread-1', null, null, 1);
+
+        // :: Assert
+        $this->assertStringContainsString(
+            '<strong>Outdated:</strong> 1 newer email has not been analysed yet.',
+            $html
+        );
+    }
+
+    public function testRenderBlockIsNotOutdatedWithoutNewerEmails(): void {
+        // :: Setup
+        $state = $this->smallState();
+
+        // :: Act
+        $html = ThreadStateView::renderBlock($state, 'WAITING_FOR_US', 'auto', false, 'thread-1', null, null, 0);
+
+        // :: Assert
+        $this->assertStringStartsWith('<div class="thread-state"><h2>Thread state</h2><p class="thread-state-status">', $html);
+        $this->assertStringNotContainsString('outdated', $html);
+    }
+
     private function stateWithComplaintDeadline(string $deadline): array {
         $state = $this->smallState();
         $state['dates'] = [
@@ -437,5 +481,38 @@ class ThreadStateViewTest extends TestCase {
         $this->assertEquals('ANSWERED', $states[1]['thread_state_type']);
         $this->assertEquals('manual', $states[1]['thread_state_source']);
         $this->assertEquals($stateB, $states[1]['thread_state']);
+    }
+
+    public function testCountEmailsAfterCountsNewerNonIgnoredEmails(): void {
+        // :: Setup
+        // Like the reported thread: state on the second email, three newer
+        // emails not analysed yet, plus one ignored email that analysis skips.
+        $threadId = $this->createFixedThread();
+        $this->insertEmail($threadId, '2023-01-01 10:00:00+00', null);
+        $stateEmailId = $this->insertEmail($threadId, '2023-01-02 10:00:00+00', $this->smallState(), 'WAITING_FOR_US', 'auto');
+        $this->insertEmail($threadId, '2023-01-03 10:00:00+00', null);
+        $this->insertEmail($threadId, '2023-01-04 10:00:00+00', null);
+        $this->insertEmail($threadId, '2023-01-05 10:00:00+00', null);
+        $ignoredEmailId = $this->insertEmail($threadId, '2023-01-06 10:00:00+00', null);
+        Database::execute("UPDATE thread_emails SET ignore = true WHERE id = ?", [$ignoredEmailId]);
+
+        // :: Act
+        $count = ThreadStateView::countEmailsAfter($threadId, $stateEmailId);
+
+        // :: Assert
+        $this->assertEquals(3, $count);
+    }
+
+    public function testCountEmailsAfterIsZeroWhenStateIsOnLatestEmail(): void {
+        // :: Setup
+        $threadId = $this->createFixedThread();
+        $this->insertEmail($threadId, '2023-01-01 10:00:00+00', null);
+        $stateEmailId = $this->insertEmail($threadId, '2023-01-02 10:00:00+00', $this->smallState(), 'ANSWERED', 'auto');
+
+        // :: Act
+        $count = ThreadStateView::countEmailsAfter($threadId, $stateEmailId);
+
+        // :: Assert
+        $this->assertEquals(0, $count);
     }
 }

@@ -545,6 +545,18 @@ span.label.classification.label_info {
     margin-top: 0;
 }
 
+/* Newer emails than the state's email have not been analysed yet. */
+.thread-state-outdated > :not(h2):not(.thread-state-outdated-warning) {
+    opacity: 0.55;
+}
+
+.thread-state-outdated-warning {
+    padding: 8px 12px;
+    border-left: 6px solid #f0ad4e;
+    border-radius: 4px;
+    background-color: #fff8e1;
+}
+
 .thread-state-items,
 .thread-state-complaints {
     width: 100%;
