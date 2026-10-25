@@ -25,6 +25,12 @@ try {
     $pdo = new PDO($dsn, $user, $password);
     $pdo->setAttribute(PDO::ATTR_ERRMODE, PDO::ERRMODE_EXCEPTION);
 
+    // Serialize concurrent runs (e.g. the container entrypoint and CI's
+    // "wait for migrations" step both running this on a fresh database).
+    // Without it both see every migration as pending and the loser fails with
+    // a duplicate key error. The lock is released when the connection closes.
+    $pdo->query("SELECT pg_advisory_lock(hashtext('offpost-migrations'))");
+
     // Create migrations table if it doesn't exist
     $pdo->exec("
         CREATE TABLE IF NOT EXISTS migrations (
