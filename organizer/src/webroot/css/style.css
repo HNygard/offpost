@@ -546,15 +546,34 @@ span.label.classification.label_info {
 }
 
 /* Newer emails than the state's email have not been analysed yet. */
+.thread-state-outdated {
+    border: 3px dashed #e67e22;
+    background-color: #fdf2e9;
+}
+
 .thread-state-outdated > :not(h2):not(.thread-state-outdated-warning) {
-    opacity: 0.55;
+    opacity: 0.4;
+}
+
+.thread-state-outdated-badge {
+    display: inline-block;
+    margin-left: 8px;
+    padding: 2px 10px;
+    border-radius: 4px;
+    background-color: #c0392b;
+    color: #fff;
+    font-size: 0.6em;
+    letter-spacing: 0.05em;
+    vertical-align: middle;
 }
 
 .thread-state-outdated-warning {
-    padding: 8px 12px;
-    border-left: 6px solid #f0ad4e;
+    padding: 10px 14px;
+    border-left: 6px solid #c0392b;
     border-radius: 4px;
-    background-color: #fff8e1;
+    background-color: #fadbd8;
+    color: #78281f;
+    font-size: 1.1em;
 }
 
 .thread-state-items,

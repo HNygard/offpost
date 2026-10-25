@@ -148,7 +148,9 @@ class ThreadStateView {
         $html = $newerEmailCount > 0
             ? '<div class="thread-state thread-state-outdated">'
             : '<div class="thread-state">';
-        $html .= '<h2>Thread state</h2>';
+        $html .= $newerEmailCount > 0
+            ? '<h2>Thread state <span class="thread-state-outdated-badge">OUTDATED</span></h2>'
+            : '<h2>Thread state</h2>';
 
         if ($newerEmailCount > 0) {
             $html .= '<p class="thread-state-outdated-warning"><strong>Outdated:</strong> '

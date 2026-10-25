@@ -163,8 +163,9 @@ the thread, in `view-thread.php`:
   link to the debug page from step 2c change 4b, `/thread-analysis/thread?id=<thread id>`.
 - When the thread has newer emails than the one the state belongs to (not counting `ignore`d
   emails, which analysis skips too - `ThreadStateView::countEmailsAfter()`), the state is outdated:
-  the block gets the `thread-state-outdated` class (dimmed) and an "Outdated: N newer emails have
-  not been analysed yet" warning right under the heading. The state itself is still shown, since
+  the block gets the `thread-state-outdated` class (orange dashed border, content dimmed), a red
+  "OUTDATED" badge in the heading, and a red "Outdated: N newer emails have not been analysed yet"
+  warning right under the heading. The state itself is still shown, since
   it is usually still mostly right and is the best we have until the next analysis run.
 - A complaint deadline - a `dates` entry whose `what` contains "klagefrist" (case-insensitive;
   `dates` has no type field) - is lifted out of the dates list into a callout right under the

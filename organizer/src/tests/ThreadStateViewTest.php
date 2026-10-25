@@ -248,7 +248,7 @@ class ThreadStateViewTest extends TestCase {
         // :: Assert
         $this->assertStringStartsWith(
             '<div class="thread-state thread-state-outdated">'
-            . '<h2>Thread state</h2>'
+            . '<h2>Thread state <span class="thread-state-outdated-badge">OUTDATED</span></h2>'
             . '<p class="thread-state-outdated-warning"><strong>Outdated:</strong> '
             . '3 newer emails have not been analysed yet. The state below may no longer be correct.</p>'
             . '<p class="thread-state-status">',
