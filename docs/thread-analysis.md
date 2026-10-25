@@ -233,13 +233,17 @@ being given a thread id. `kind` is required and only `"np"` exists so far (anyth
 - the thread carries the label `NpApiService::NP_LABEL` (`norske_postlister_no`) in `threads.labels`
   - archived or not;
 - it has at least one email with `ignore` not true;
-- it has **no** row at all in `thread_analysis_runs`, in any status - once a thread has been queued
-  once, even if that run failed, it is never picked again here (a fresh look at it goes through the
-  normal `request`/admin debug page instead);
+- it has no open (`requested`/`claimed`) run;
+- it has a non-ignored email stored (`created_at`) after its latest run was claimed (`claimed_at`,
+  or `requested_at` if never claimed) - so a never-queued thread is picked, and a done or failed one
+  again once a new email has arrived. A failed run with no new email after it is not retried here
+  (that goes through the normal `request`/admin debug page instead). `created_at`, not
+  `datetime_received`, so an email sent earlier but stored later still counts as new. In
+  `incremental` mode the new run continues after the last email that has a `thread_state`;
 - ordered by the latest `datetime_received` of its non-ignored emails, newest first, then by
   thread id.
 
-Null (204) once every norske-postlister.no thread has been queued at least once.
+Null (204) once no norske-postlister.no thread has a new email since its latest run.
 
 The claim response's `thread` field is the full thread export
 (`ThreadExportService::exportThread($threadId, false)`) with every email's `eml_base64` left out -
