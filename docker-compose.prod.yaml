@@ -106,6 +106,9 @@ services:
 
   cron:
     build: ./cron-scheduler
+    volumes:
+      # Deploy pause flag and lock, see infrastructure/production/deploy-cronjob.sh
+      - /opt/offpost/run:/offpost-run:ro
     networks:
     - app-network
     restart: unless-stopped

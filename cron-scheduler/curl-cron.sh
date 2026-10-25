@@ -1,50 +1,79 @@
 set -e
+
+# Deploy pause (infrastructure/production/deploy-cronjob.sh). Each run holds a
+# shared lock so a deploy can wait for running runs to finish, and stops before
+# the next task once the pause file exists. Without the mounted directory (dev),
+# neither file exists and nothing changes.
+RUN_DIR="${OFFPOST_RUN_DIR:-/offpost-run}"
+if [ -e "$RUN_DIR/curl-cron.lock" ]; then
+    exec 9<"$RUN_DIR/curl-cron.lock"
+    flock -s 9
+fi
+exit_if_paused() {
+    if [ -e "$RUN_DIR/scheduled-tasks-paused" ]; then
+        echo "$(date) Scheduled tasks paused for deploy, stopping this run"
+        exit 0
+    fi
+}
+
 echo "=============================="
 
+exit_if_paused
 echo "$(date) Scheduled sending of EMAIL"
 curl "http://organizer/scheduled-email-sending" -s 2>&1
 echo ""
 
+exit_if_paused
 echo "$(date) Scheduled IMAP handling (create folders, process sent, process inbox)"
 curl "http://organizer/scheduled-imap-handling" -s 2>&1
 echo ""
 
+exit_if_paused
 echo "$(date) Scheduled receiving of EMAIL"
 curl "http://organizer/scheduled-email-receiver" -s 2>&1
 echo ""
 
+exit_if_paused
 echo "$(date) Scheduled extraction from email BODY"
 curl "http://organizer/scheduled-email-extraction" -s 2>&1
 echo ""
 
+exit_if_paused
 echo "$(date) Scheduled extraction from email ATTACHMENT PDF"
 curl "http://organizer/scheduled-email-extraction?type=attachment_pdf" -s 2>&1
 echo ""
 
+exit_if_paused
 echo "$(date) Scheduled rule-based CLASSIFICATION of incoming email"
 curl "http://organizer/scheduled-email-classification" -s 2>&1
 echo ""
 
+exit_if_paused
 echo "$(date) Scheduled extraction from email PROMPT SAKSNUMMER"
 curl "http://organizer/scheduled-email-extraction?type=prompt_saksnummer" -s 2>&1
 echo ""
 
+exit_if_paused
 echo "$(date) Scheduled extraction from email PROMPT EMAIL LATEST REPLY"
 curl "http://organizer/scheduled-email-extraction?type=prompt_email_latest_reply" -s 2>&1
 echo ""
 
+exit_if_paused
 echo "$(date) Scheduled extraction from email PROMPT ASKING FOR COPY"
 curl "http://organizer/scheduled-email-extraction?type=prompt_copy_asking_for" -s 2>&1
 echo ""
 
+exit_if_paused
 echo "$(date) Scheduled extraction from email PROMPT SUMMARY"
 curl "http://organizer/scheduled-email-extraction?type=prompt_summary" -s 2>&1
 echo ""
 
+exit_if_paused
 echo "$(date) Scheduled thread FOLLOW-UP"
 curl "http://organizer/scheduled-thread-follow-up" -s 2>&1
 echo ""
 
+exit_if_paused
 echo "$(date) Scheduled ARCHIVING of finished norske-postlister threads"
 curl "http://organizer/scheduled-np-thread-archiving" -s 2>&1
 echo ""

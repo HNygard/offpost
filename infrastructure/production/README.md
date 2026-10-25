@@ -6,8 +6,11 @@ Production servers are pulling updates from Github and deploying them to the ser
 
 1. Make directories
     ```
-    mkdir -p /opt/offpost/logs
+    mkdir -p /opt/offpost/logs /opt/offpost/run
     ```
+    `/opt/offpost/run` must be writable by the user running the deploy cronjob (see
+    "Pausing scheduled tasks during deploy"). Create it before the first `up -d`, otherwise
+    docker creates it owned by root.
 2. Pull git repo
     ```
     cd /opt/offpost
@@ -29,6 +32,41 @@ Production servers are pulling updates from Github and deploying them to the ser
     The cronjob runs every 10 minutes. When there are new commits on `main` it rebuilds,
     pulls images and runs `docker compose up -d`, which recreates every container whose
     image or config changed.
+
+## Pausing scheduled tasks during deploy
+
+Scheduled tasks (`cron-scheduler/curl-cron.sh`, started every minute in the `cron`
+container) are paused around `docker compose up -d`, so a restart does not cut them off:
+
+1. Build and pull run first, with tasks still running.
+2. The deploy creates `/opt/offpost/run/scheduled-tasks-paused`. Each `curl-cron.sh` run
+   checks for it before every task and stops; a task already running finishes.
+3. The deploy waits for the runs to stop: every run holds a shared `flock` on
+   `/opt/offpost/run/curl-cron.lock` (mounted read-only into `cron` as `/offpost-run`), and
+   the deploy takes an exclusive lock on it.
+4. `up -d`, then wait until the organizer answers HTTP (Apache starts after migrations).
+5. The pause file is removed.
+
+Limits and failure handling:
+- Waiting is capped at `PAUSE_WAIT_SECONDS` (600) in `deploy-cronjob.sh`. When it runs out,
+  the deploy goes ahead and emails the admins (`organizer/src/bin/notify-admin.php`).
+- The pause file is removed on any exit of the deploy (`trap ... EXIT`), and a deploy that
+  was killed hard (SIGKILL, reboot) leaves a stale file that the next cronjob run removes,
+  since it holds the deploy lock (`/tmp/offpost-deploy-cronjob.lock`). Tasks are never
+  paused longer than one cronjob interval after a deploy dies.
+- If `/opt/offpost/run` is not writable, the deploy logs a warning and deploys without
+  pausing, as before.
+- A failing step (`git pull`, a build, `pull`, `up -d`, or the organizer not answering within
+  `STARTUP_WAIT_SECONDS` after `up -d`) stops the deploy, emails the admins with the step,
+  and resumes scheduled tasks. If the organizer container is down, the alert is sent from a
+  one-off `docker compose run` container instead. A failed deploy is not retried (HEAD is
+  already pulled); pushing a fix deploys again. Note that `organizer/src` is bind-mounted, so
+  pulled PHP code is live even when the image build failed. `git fetch` failures are only
+  logged, so network blips do not send an email every interval.
+- Not paused: web requests, and the analysis worker (it calls the API from outside).
+
+To pause by hand (e.g. for maintenance), create the pause file; remove it to resume. The
+next deploy cronjob run also removes it.
 
 ## PHP version
 
