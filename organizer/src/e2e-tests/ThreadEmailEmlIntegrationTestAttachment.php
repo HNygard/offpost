@@ -25,6 +25,7 @@ require_once(__DIR__ . '/../class/Imap/ImapAttachmentHandler.php');
 require_once(__DIR__ . '/../class/Enums/ThreadEmailStatusType.php');
 
 use App\Enums\ThreadEmailStatusType;
+use PHPUnit\Framework\Attributes\Group;
 
 
 /**
@@ -363,9 +364,7 @@ class ThreadEmailEmlIntegrationTestAttachment extends E2EPageTestCase {
         return '';
     }
 
-    /**
-     * @group integration
-     */
+    #[Group('integration')]
     public function testHtmlEmailWithAttachments() {
         $this->internal_setup();
 

@@ -34,9 +34,9 @@ class ImapAttachmentHandlerTest extends TestCase {
         // Capture debug logs
         $this->debugLogs = [];
         $this->connection->method('logDebug')
-            ->will($this->returnCallback(function($message) {
+            ->willReturnCallback(function($message) {
                 $this->debugLogs[] = $message;
-            }));
+            });
 
         $this->handler = new ImapAttachmentHandler($this->connection);
 
@@ -147,9 +147,9 @@ class ImapAttachmentHandlerTest extends TestCase {
                 ->getMock();
 
             $this->connection->method('logDebug')
-                ->will($this->returnCallback(function($message) {
+                ->willReturnCallback(function($message) {
                     $this->debugLogs[] = $message;
-                }));
+                });
 
             $this->handler = new ImapAttachmentHandler($this->connection);
             $this->connection->openConnection();

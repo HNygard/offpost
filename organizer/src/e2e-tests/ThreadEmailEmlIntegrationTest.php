@@ -8,6 +8,7 @@ use Imap\ImapFolderManager;
 use Imap\ImapEmailProcessor;
 use Imap\ImapAttachmentHandler;
 use Imap\ImapEmail;
+use PHPUnit\Framework\Attributes\Group;
 
 require_once(__DIR__ . '/../tests/bootstrap.php');
 require_once(__DIR__ . '/../class/common.php');
@@ -579,9 +580,7 @@ class ThreadEmailEmlIntegrationTest extends E2EPageTestCase {
         return $response;
     }
 
-    /**
-     * @group integration
-     */
+    #[Group('integration')]
     public function testCompleteEmlProcessing() {
         $this->internalTest(
             __DIR__ . '/../../../data/threads/964950768-nord-odal-kommune/thread_6772dad8005266.28491966/2021-09-29_215629 - OUT.eml',

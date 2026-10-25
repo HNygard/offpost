@@ -1,6 +1,7 @@
 <?php
 // organizer/src/tests/NpApiServiceClassifyReplyTest.php
 use PHPUnit\Framework\TestCase;
+use PHPUnit\Framework\Attributes\DataProvider;
 use App\Enums\ThreadEmailStatusType;
 
 require_once __DIR__ . '/bootstrap.php';
@@ -147,8 +148,8 @@ class NpApiServiceClassifyReplyTest extends TestCase {
     }
 
     /**
-     * @dataProvider badStatusTypes
      */
+#[DataProvider('badStatusTypes')]
     public function testClassifyEmailRejectsUnknownStatusType(string $statusType): void {
         $thread = $this->createPostlisteThread();
         $emailId = $this->insertEmail($thread->id, 'IN', '2026-09-25T08:00:00+00:00', null);

@@ -1,6 +1,7 @@
 <?php
 
 use PHPUnit\Framework\TestCase;
+use PHPUnit\Framework\Attributes\DataProvider;
 use App\Enums\ThreadEmailStatusType;
 
 require_once __DIR__ . '/../class/ThreadEmailResponseClassifier.php';
@@ -22,7 +23,7 @@ class ThreadEmailResponseClassifierTest extends TestCase {
         ];
     }
 
-    /** @dataProvider autoReplySubjects */
+    #[DataProvider('autoReplySubjects')]
     public function testAutoReplySubjectIsRequestReceipt(string $subject) {
         // :: Act
         // Summary that the old keyword rules turned into REQUEST_REJECTED.
@@ -42,7 +43,7 @@ class ThreadEmailResponseClassifierTest extends TestCase {
         ];
     }
 
-    /** @dataProvider notAutoReplySubjects */
+    #[DataProvider('notAutoReplySubjects')]
     public function testOrdinarySubjectIsNotAutoReply(string $subject) {
         // :: Act
         $result = ThreadEmailResponseClassifier::isAutoReplySubject($subject);
@@ -86,7 +87,7 @@ class ThreadEmailResponseClassifierTest extends TestCase {
         ];
     }
 
-    /** @dataProvider nextDayConfirmationSummaries */
+    #[DataProvider('nextDayConfirmationSummaries')]
     public function testNextDayConfirmationSummaryIsRequestReceipt(string $summary) {
         // :: Act
         // Typically the next working day: no timing hint, only the wording.

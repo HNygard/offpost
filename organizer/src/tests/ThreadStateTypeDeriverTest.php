@@ -1,6 +1,7 @@
 <?php
 
 use PHPUnit\Framework\TestCase;
+use PHPUnit\Framework\Attributes\DataProvider;
 use App\Enums\ThreadStateType;
 
 require_once __DIR__ . '/../class/ThreadState/ThreadState.php';
@@ -56,7 +57,7 @@ class ThreadStateTypeDeriverTest extends TestCase {
         ];
     }
 
-    /** @dataProvider openComplaintRoundStatuses */
+    #[DataProvider('openComplaintRoundStatuses')]
     public function testRule1OpenComplaintRoundGivesItsThreadStatus(string $roundStatus, ThreadStateType $expected): void {
         // :: Setup
         $state = $this->state(['BEING_EVALUATED'], 'ENTITY', [$this->complaintRound($roundStatus)]);

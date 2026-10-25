@@ -12,6 +12,7 @@ if (!defined('TYPEMODEL')) define('TYPEMODEL', 7);
 if (!defined('TYPEOTHER')) define('TYPEOTHER', 8);
 
 use PHPUnit\Framework\TestCase;
+use PHPUnit\Framework\Attributes\Group;
 use Imap\ImapConnection;
 
 require_once(__DIR__ . '/../tests/bootstrap.php');
@@ -135,9 +136,8 @@ class ThreadScheduledEmailSendingIntegrationTest extends TestCase {
      * 1. Creates a thread with READY_FOR_SENDING status
      * 2. Triggers the scheduled email sending
      * 3. Verifies the email was received in the public entity mailbox
-     * 
-     * @group integration
      */
+    #[Group('integration')]
     public function testScheduledEmailSending() {
         // :: Setup
 

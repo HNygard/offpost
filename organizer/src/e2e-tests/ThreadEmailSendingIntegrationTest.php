@@ -12,6 +12,7 @@ if (!defined('TYPEMODEL')) define('TYPEMODEL', 7);
 if (!defined('TYPEOTHER')) define('TYPEOTHER', 8);
 
 use PHPUnit\Framework\TestCase;
+use PHPUnit\Framework\Attributes\Group;
 use Imap\ImapConnection;
 use Imap\ImapFolderManager;
 use Imap\ImapEmailProcessor;
@@ -146,9 +147,7 @@ class ThreadEmailSendingIntegrationTest extends TestCase {
         return null;
     }
 
-    /**
-     * @group integration
-     */
+    #[Group('integration')]
     public function testStartThread() {
         // Create unique test data
         $uniqueId = uniqid();

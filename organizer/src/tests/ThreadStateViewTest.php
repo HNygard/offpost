@@ -1,6 +1,7 @@
 <?php
 // organizer/src/tests/ThreadStateViewTest.php
 use PHPUnit\Framework\TestCase;
+use PHPUnit\Framework\Attributes\DataProvider;
 
 require_once __DIR__ . '/bootstrap.php';
 require_once __DIR__ . '/../class/ThreadState/ThreadStateView.php';
@@ -295,9 +296,7 @@ class ThreadStateViewTest extends TestCase {
         ];
     }
 
-    /**
-     * @dataProvider complaintDeadlineCountdownProvider
-     */
+    #[DataProvider('complaintDeadlineCountdownProvider')]
     public function testRenderBlockComplaintDeadlineCountdown(string $deadline, string $modifier, string $countdown): void {
         // :: Setup
         $state = $this->stateWithComplaintDeadline($deadline);
