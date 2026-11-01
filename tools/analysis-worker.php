@@ -33,7 +33,7 @@ Options:
   --thread=ID          Request (mode --mode) and claim this thread's run, then stop; implies --once
   --mode=MODE          incremental|full, used with --thread and --next-np (default: incremental)
   --once               Process at most one run, then stop
-  --next-np            Pick the next norske-postlister.no thread (POST request-next) instead of
+  --next-np            Pick the next norske-postlister.no or postliste thread (POST request-next) instead of
                        draining the general queue; repeats up to --limit times, then stops. Cannot
                        be combined with --thread.
   --limit=N            Max threads to process with --next-np (default: 1)

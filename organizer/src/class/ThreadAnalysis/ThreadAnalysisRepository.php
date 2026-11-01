@@ -124,8 +124,9 @@ class ThreadAnalysisRepository {
     /**
      * Picks the next norske-postlister.no thread ("Change 7" in
      * docs/superpowers/plans/2026-09-27-step2c-analysis-in-prod.md) - one
-     * carrying NpApiService::NP_LABEL, with no open ('requested'/'claimed')
-     * run, and with at least one non-ignored email stored (created_at) after
+     * carrying NpApiService::NP_LABEL or NpApiService::POSTLISTE_LABEL
+     * (postjournal-request threads, which the NP API sees too), with no open
+     * ('requested'/'claimed') run, and with at least one non-ignored email stored (created_at) after
      * its latest run was claimed (or requested, if never claimed) - so a
      * never-queued thread is picked, and a done or failed one again only
      * once a new email has arrived - and requests a run for it, in one
@@ -150,7 +151,7 @@ class ThreadAnalysisRepository {
                      WHERE ignore IS NOT TRUE
                      GROUP BY thread_id
                  ) te ON te.thread_id = t.id
-                 WHERE ? = ANY(t.labels)
+                 WHERE (? = ANY(t.labels) OR ? = ANY(t.labels))
                    AND NOT EXISTS (
                        SELECT 1 FROM thread_analysis_runs r
                        WHERE r.thread_id = t.id AND r.status IN ('requested', 'claimed')
@@ -168,7 +169,7 @@ class ThreadAnalysisRepository {
                  ORDER BY te.latest_received DESC, t.id DESC
                  LIMIT 1
                  FOR UPDATE OF t SKIP LOCKED",
-                [NpApiService::NP_LABEL]
+                [NpApiService::NP_LABEL, NpApiService::POSTLISTE_LABEL]
             );
             if ($thread === null) {
                 if ($ownsTransaction) {

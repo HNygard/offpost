@@ -230,8 +230,9 @@ being given a thread id. `kind` is required and only `"np"` exists so far (anyth
 `ThreadAnalysisRepository::requestNextNpThread(mode, requestedBy)`, which does the pick and the
 `requestRun()` call in one transaction:
 
-- the thread carries the label `NpApiService::NP_LABEL` (`norske_postlister_no`) in `threads.labels`
-  - archived or not;
+- the thread carries the label `NpApiService::NP_LABEL` (`norske_postlister_no`) or
+  `NpApiService::POSTLISTE_LABEL` (`postliste`, the postjournal-request threads that the NP API
+  also sees) in `threads.labels` - archived or not. A `postliste:<period>` label alone does not count;
 - it has at least one email with `ignore` not true;
 - it has no open (`requested`/`claimed`) run;
 - it has a non-ignored email stored (`created_at`) after its latest run was claimed (`claimed_at`,

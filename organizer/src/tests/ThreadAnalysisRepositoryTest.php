@@ -261,6 +261,40 @@ class ThreadAnalysisRepositoryTest extends TestCase {
         $this->assertEquals($npThreadId, $picked['thread_id'], json_encode($picked, JSON_PRETTY_PRINT));
     }
 
+    public function testRequestNextNpThreadAlsoPicksPostlisteLabelledThreads(): void {
+        // :: Setup
+        $npThreadId = $this->createNpThread();
+        $this->insertEmail($npThreadId, '2026-02-01T09:00:00+00:00');
+        // Postjournal-request thread (NpApiService::POSTLISTE_LABEL + period label),
+        // visible to the NP API like NP_LABEL threads, with the newer email.
+        $postlisteThreadId = $this->createFixedThread([NpApiService::POSTLISTE_LABEL, 'postliste:2013-01--2024-07']);
+        $this->insertEmail($postlisteThreadId, '2026-02-02T09:00:00+00:00');
+
+        // :: Act
+        $picked = ThreadAnalysisRepository::requestNextNpThread('incremental', 'token');
+
+        // :: Assert
+        $this->assertNotNull($picked);
+        $this->assertEquals($postlisteThreadId, $picked['thread_id'], json_encode($picked, JSON_PRETTY_PRINT));
+    }
+
+    public function testRequestNextNpThreadDoesNotPickThreadWithOnlyPostlistePeriodLabel(): void {
+        // :: Setup
+        $npThreadId = $this->createNpThread();
+        $this->insertEmail($npThreadId, '2026-02-01T09:00:00+00:00');
+        // Only the period label, not the bare 'postliste' label - the NP API
+        // does not see this thread either.
+        $periodOnlyThreadId = $this->createFixedThread(['postliste:2013-01--2024-07']);
+        $this->insertEmail($periodOnlyThreadId, '2026-02-02T09:00:00+00:00');
+
+        // :: Act
+        $picked = ThreadAnalysisRepository::requestNextNpThread('incremental', 'token');
+
+        // :: Assert
+        $this->assertNotNull($picked);
+        $this->assertEquals($npThreadId, $picked['thread_id'], json_encode($picked, JSON_PRETTY_PRINT));
+    }
+
     public function testRequestNextNpThreadSkipsThreadWithNoNewEmailSinceItsLatestRun(): void {
         // :: Setup
         $threadDone = $this->createNpThread();
