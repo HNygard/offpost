@@ -35,30 +35,30 @@ RUN usermod -u 1000 www-data && groupmod -g 1000 www-data
 RUN chown -R www-data:www-data /var/run/apache2 /var/lock/apache2 /var/log/apache2
 
 # Install Composer
-COPY --from=composer:latest /usr/bin/composer /usr/bin/composer
+COPY --from=composer:2 /usr/bin/composer /usr/bin/composer
 
-# Set up application directory
+# The image carries the application and its vendor/: production runs it as built,
+# development mounts organizer/src over /php-frontend (including its vendor/).
 WORKDIR /php-frontend
-
-# Copy application files with correct ownership
-COPY --chown=www-data:www-data src/ ./
-
-# Create vendor directory with correct permissions
-RUN mkdir -p vendor && chown -R www-data:www-data .
+RUN chown www-data:www-data /php-frontend
 
 # Create composer cache directory with correct permissions for www-data user
 RUN mkdir -p /var/www/.composer/cache && chown -R www-data:www-data /var/www/.composer
 
-# Install dependencies as www-data user
+# Dependencies first, as their own layer: rebuilt only when composer.json/lock change
 USER www-data
-RUN composer install --no-dev --no-interaction --no-progress --optimize-autoloader
+COPY --chown=www-data:www-data src/composer.json src/composer.lock ./
+RUN composer install --no-dev --no-interaction --no-progress --no-autoloader --no-scripts
+
+# Application code (src/vendor/ and src/git-sha.txt are excluded by .dockerignore)
+COPY --chown=www-data:www-data src/ ./
+RUN composer dump-autoload --no-dev --optimize
 USER root
 
 COPY localhost.conf /etc/apache2/conf-enabled/localhost.conf
 COPY apache-resource-limits.conf /etc/apache2/conf-enabled/apache-resource-limits.conf
 COPY phpdev.ini /usr/local/etc/php/conf.d/phpdev.ini
 COPY docker-entrypoint.sh /usr/local/bin/
-RUN mkdir -p /opt/offpost/migrations
 RUN chmod +x /usr/local/bin/docker-entrypoint.sh
 
 # Set resource limits for the container
@@ -75,10 +75,9 @@ RUN chmod +x /usr/local/bin/docker-entrypoint.sh
 #    echo "ulimit -u 150" >> /etc/apache2/envvars
 # => DISABLED as it stops curl to openai from working
 
-# Copy SQL migrations, just to trigger recreation of container on deploy
-COPY src/migrations/sql/ /opt/offpost/migrations/
-
-# Ensure correct permissions
-RUN chown -R www-data:www-data /php-frontend
+# The commit this image was built from, shown by the web app (class/GitVersion.php).
+# Last, so a new commit does not invalidate the layers above. Empty in development.
+ARG GIT_SHA=
+RUN if [ -n "$GIT_SHA" ]; then echo "$GIT_SHA" > /php-frontend/git-sha.txt; fi
 
 ENTRYPOINT ["/usr/local/bin/docker-entrypoint.sh"]

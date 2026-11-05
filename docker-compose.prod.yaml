@@ -74,7 +74,12 @@ services:
       - ADMINER_DEFAULT_SERVER=postgres
 
   organizer:
-    build: ./organizer
+    # Runs the image as built: code and vendor/ are in the image, nothing is mounted
+    # over /php-frontend. GIT_SHA is set by infrastructure/production/deploy-cronjob.sh.
+    build:
+      context: ./organizer
+      args:
+        GIT_SHA: ${GIT_SHA:-}
     networks:
       - app-network
     ports:
@@ -86,8 +91,6 @@ services:
       - mysql:mysql
     volumes:
       - /opt/offpost/secrets/username-password-override-prod.php:/username-password-override.php
-      - ./organizer/src:/php-frontend
-      - /php-frontend/vendor
       - /opt/offpost/data/:/organizer-data
       - ./data/entities.json:/organizer-data/entities.json
       - /opt/offpost/secrets/postgres_password:/run/secrets/postgres_password:ro

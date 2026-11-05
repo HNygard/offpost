@@ -55,10 +55,15 @@ based on the to/from addresses that matches the profile of the thread.
 
 ### Setup
 
-1. Start the development services:
+1. Install the PHP dependencies, then start the development services. The organizer
+container mounts `organizer/src` including its `vendor/` (production runs the same image
+with code and `vendor/` baked in):
 ```bash
+(cd organizer/src && composer install)
 docker-compose -f docker-compose.dev.yaml up -d
 ```
+Without host PHP, install with the image's composer instead:
+`docker compose -f docker-compose.dev.yaml run --rm --no-deps --user www-data --entrypoint composer organizer install`
 
 2. Access Roundcube (mail client):
 - URL: http://localhost:25080/

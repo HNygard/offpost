@@ -3,9 +3,10 @@
 /**
  * The git commit the running code was deployed from.
  *
- * infrastructure/production/deploy-cronjob.sh writes the full SHA to
- * organizer/src/git-sha.txt (gitignored). The .git directory is not mounted
- * into the container, so this file is the only way the app knows its version.
+ * infrastructure/production/deploy-cronjob.sh builds the organizer image with
+ * the GIT_SHA build arg, and the Dockerfile writes it to git-sha.txt next to
+ * the code (gitignored, excluded from the build context). The .git directory is
+ * not in the image, so this file is the only way the app knows its version.
  * Without the file (e.g. in development) there is no version to show.
  */
 class GitVersion {

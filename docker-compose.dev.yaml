@@ -118,8 +118,9 @@ services:
       - greenmail:greenmail
     volumes:
       - ./organizer/src/username-password-override-dev.php:/username-password-override.php
+      # Same image as production, with the source mounted for live editing. vendor/
+      # comes from the checkout too (composer install in organizer/src, see README).
       - ./organizer/src:/php-frontend
-      - /php-frontend/vendor
       - ./data/:/organizer-data
       - ./data/entities.json:/organizer-data/entities.json
       - ./secrets/postgres_password:/run/secrets/postgres_password:ro
