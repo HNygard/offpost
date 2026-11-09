@@ -78,6 +78,12 @@ docker-compose -f docker-compose.prod.yaml up -d
 
 Note: The auth service is only available in development. For production uses auth0.
 
+Login carries the original path and query in signed OIDC state bound to an
+HttpOnly browser cookie, independently of the PHP session. The callback and
+`/authorize` login-recovery endpoint preserve that destination even if PHP session
+data expires while the login tab is idle. Callbacks with invalid or missing state
+are rejected. A direct `/authorize` visit without a pending login returns to `/`.
+
 ### Running Tests
 
 To run the organizer tests:
