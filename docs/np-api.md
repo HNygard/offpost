@@ -19,9 +19,13 @@ A browser cannot attach a custom header to a form post or a simple cross-site re
 header is what keeps the session-authed POST endpoints closed to CSRF. The norske-postlister
 `offpost-email` downloader uses the admin session with this header; it has no token.
 
-For browser login recovery, `/authorize` restarts authentication without replacing
-the original page saved in the session. If the session is lost entirely, login
-returns to `/`. API token authentication is unchanged.
+For browser login recovery, the original path and query travel in signed OIDC state,
+bound to HttpOnly, SameSite=Lax browser-session cookies (Secure in HTTPS deployments).
+These cookies are independent of PHP session storage, so both the callback and
+`/authorize` recovery preserve the destination after PHP session expiry. Each login
+attempt has its own state cookie; successful login consumes it. Invalid or missing
+callback state is rejected before token exchange. Opening `/authorize` without a
+pending login defaults to `/`. API token authentication is unchanged.
 
 ## Thread kinds and labels
 
