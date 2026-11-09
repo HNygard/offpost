@@ -15,4 +15,14 @@ class E2EAuthenticationTest extends E2EPageTestCase {
             '<h1>Offpost - Email Engine Organizer</h1>', $response->body);
     }
 
+    public function testAuthorizeRestartsLogin() {
+        $response = $this->renderPage('/authorize?iss=https%3A%2F%2Fauth.offpost.no%2F', user: null, expected_status: '302 Found');
+        $this->assertStringContainsString('Location: http://localhost:25083/oidc/auth?client_id=organizer&response_type=code&scope=openid+email+profile&redirect_uri=http%3A%2F%2Flocalhost%3A25081%2Fcallback&state=', $response->headers);
+    }
+
+    public function testAuthorizeLoggedInReturnsHome() {
+        $response = $this->renderPage('/authorize?iss=https%3A%2F%2Fauth.offpost.no%2F', expected_status: '302 Found');
+        $this->assertStringContainsString("Location: /\r\n", $response->headers);
+    }
+
 }

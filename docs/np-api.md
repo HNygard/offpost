@@ -19,6 +19,10 @@ A browser cannot attach a custom header to a form post or a simple cross-site re
 header is what keeps the session-authed POST endpoints closed to CSRF. The norske-postlister
 `offpost-email` downloader uses the admin session with this header; it has no token.
 
+For browser login recovery, `/authorize` restarts authentication without replacing
+the original page saved in the session. If the session is lost entirely, login
+returns to `/`. API token authentication is unchanged.
+
 ## Thread kinds and labels
 
 | Kind | Labels | Mapping label (dedup key) |

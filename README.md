@@ -78,6 +78,11 @@ docker-compose -f docker-compose.prod.yaml up -d
 
 Note: The auth service is only available in development. For production uses auth0.
 
+The `/authorize` login-recovery endpoint restarts authentication after an expired
+login without overwriting the original page saved in the session. After login,
+the callback returns to that page, or `/` if the session has expired completely.
+Already signed-in users visiting `/authorize` return to `/`.
+
 ### Running Tests
 
 To run the organizer tests:

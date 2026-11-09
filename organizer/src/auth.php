@@ -7,10 +7,12 @@ function isAuthenticated() {
     return isset($_SESSION['user']);
 }
 
-function requireAuth() {
+function requireAuth(bool $rememberCurrentUrl = true) {
     if (!isAuthenticated()) {
         // Store the current URL to redirect back after login
-        $_SESSION['redirect_after_login'] = $_SERVER['REQUEST_URI'];
+        if ($rememberCurrentUrl) {
+            $_SESSION['redirect_after_login'] = $_SERVER['REQUEST_URI'];
+        }
         
         require __DIR__ . '/username-password.php';
 
