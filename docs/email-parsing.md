@@ -24,6 +24,40 @@ the bytes survive JSON.
 Not covered: attachments and the IMAP header objects. Those come from the PHP
 `imap` extension, not from the parser library.
 
+Attachments (`Imap/ImapAttachmentHandler.php`) are the top-level MIME parts that
+have a `name`/`filename` parameter, and - when the email is `multipart/mixed` -
+every part after the first (the body) that has no name, e.g. a forwarded email
+(`message/rfc822`). Unnamed parts get the name `unnamed-part-<n>.<ext>`, with the
+extension from the MIME type (`eml`, `pdf`, `jpg`, ...) or none when the type is
+not one we know. Nested multiparts are skipped (not one file), and in other
+multiparts (`alternative`, `related`) unnamed parts are the body, not attachments.
+Some unnamed parts are probably noise (body fragments, signatures); those are kept
+for now and will be filtered once we have seen what production contains.
+
+Every attachment is stored and shown, whatever its type: `filetype` is the lowercased extension (`pdf`, `xls`, `jpeg`, `webp`, ...)
+or `UNKNOWN` when the name has no usable extension. Unknown types are served as
+`application/octet-stream` (downloaded, not rendered). Earlier versions only kept a
+fixed list of extensions and silently dropped the rest, so documents an entity sent
+went missing from the thread.
+
+Each attachment carries `partNumber`, the MIME part its content is fetched from.
+Do not derive it from the position in the returned array: skipped parts (the body,
+nested multiparts) leave gaps, and an earlier version did that and saved the bytes
+of the wrong part under an attachment's name. Parts without transfer encoding
+(7bit, 8bit, binary) are stored as-is.
+
+To find emails stored with that bug, run (read-only):
+
+```
+php bin/attachment-part-check.php [--email=<id>] [--thread=<id>] [--limit=N] [--all]
+```
+
+`AttachmentPartCheck` re-reads the raw EML with zbateson and compares every stored
+attachment with the top-level part of the same name: `wrong_content` (with the part
+whose bytes it actually holds), `stored_content_missing`, `no_matching_part`, and
+`missing` for parts that were never stored. It selects and names parts with the
+same rules as ingestion (`ImapAttachmentHandler::unnamedPartName()`).
+
 ## Fixture snapshots
 
 `organizer/src/tests/fixtures/email-parsing/` holds EML files with their recorded

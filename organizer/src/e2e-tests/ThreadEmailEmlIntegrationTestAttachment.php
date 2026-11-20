@@ -447,4 +447,102 @@ class ThreadEmailEmlIntegrationTestAttachment extends E2EPageTestCase {
         $this->assertStringContainsString('rutine', $attachment['filename'], "Attachment filename does not contain expected text");
     }
 
+    public function testEachAttachmentIsStoredWithTheContentOfItsOwnMimePart() {
+        // :: Setup
+        // Reported case: Gjesdal kommune's "Mobilabonnement Gjesdal.pdf" was stored
+        // holding the bytes of the webp before it. The saver fetched content from part
+        // (position among kept attachments + 2), which is wrong as soon as a part is
+        // skipped. Here part 2 is a nested multipart (skipped, not one file), so every
+        // attachment after it would get the bytes of the part before it.
+        //   1 text/plain body
+        //   2 multipart/related holding an image (skipped)
+        //   3 Organisasjonskart (2).webp
+        //   4 application/pdf without name
+        //   5 Mobilabonnement Gjesdal.pdf
+        $this->internal_setup();
+        $subject = 'Vedlegg i riktig rekkefolge';
+        $this->deleteGreenMailEmailsWithSubject($subject);
+
+        $webpBytes = "RIFF\x10\x00\x00\x00WEBPVP8 organisasjonskart";
+        $unnamedPdfBytes = "%PDF-1.4 vedlegg uten navn";
+        $pdfBytes = "%PDF-1.4 mobilabonnement";
+        $eml = "From: Postmottak <{$this->testEntityEmail}>\r\n"
+            . "To: greenmail-user@dev.offpost.no\r\n"
+            . "Cc: <{$this->thread->my_email}>\r\n"
+            . "Subject: $subject\r\n"
+            . "Date: Mon, 09 Nov 2026 10:00:00 +0100\r\n"
+            . "Message-ID: <vedlegg-rekkefolge@dev.offpost.no>\r\n"
+            . "MIME-Version: 1.0\r\n"
+            . "Content-Type: multipart/mixed; boundary=\"OUTER\"\r\n"
+            . "\r\n"
+            . "--OUTER\r\n"
+            . "Content-Type: text/plain; charset=utf-8\r\n"
+            . "\r\n"
+            . "Vedlagt følger en oversikt.\r\n"
+            . "--OUTER\r\n"
+            . "Content-Type: multipart/related; boundary=\"INNER\"\r\n"
+            . "\r\n"
+            . "--INNER\r\n"
+            . "Content-Type: image/gif\r\n"
+            . "Content-Transfer-Encoding: base64\r\n"
+            . "\r\n"
+            . base64_encode("GIF89a nested") . "\r\n"
+            . "--INNER--\r\n"
+            . "--OUTER\r\n"
+            . "Content-Type: image/webp; name=\"Organisasjonskart (2).webp\"\r\n"
+            . "Content-Disposition: attachment; filename=\"Organisasjonskart (2).webp\"\r\n"
+            . "Content-Transfer-Encoding: base64\r\n"
+            . "\r\n"
+            . base64_encode($webpBytes) . "\r\n"
+            . "--OUTER\r\n"
+            . "Content-Type: application/pdf\r\n"
+            . "Content-Transfer-Encoding: base64\r\n"
+            . "\r\n"
+            . base64_encode($unnamedPdfBytes) . "\r\n"
+            . "--OUTER\r\n"
+            . "Content-Type: application/pdf; name=\"Mobilabonnement Gjesdal.pdf\"\r\n"
+            . "Content-Disposition: attachment; filename=\"Mobilabonnement Gjesdal.pdf\"\r\n"
+            . "Content-Transfer-Encoding: base64\r\n"
+            . "\r\n"
+            . base64_encode($pdfBytes) . "\r\n"
+            . "--OUTER--\r\n";
+
+        $this->sendRawEmlToGreenMail($eml);
+        $this->imapConnection->openConnection();
+        $found = imap_search($this->imapConnection->getConnection(), 'SUBJECT "' . $subject . '"');
+        $this->assertEquals(1, count($found ?: []), 'Expected the test email in GreenMail exactly once');
+
+        // :: Act
+        $this->simulateEmailProcessing($found[0], 'Vedlagt');
+
+        // :: Assert
+        $rows = Database::query(
+            "SELECT name, filetype, content FROM thread_email_attachments
+             WHERE email_id IN (SELECT id FROM thread_emails WHERE thread_id = ?)
+             ORDER BY name",
+            [$this->thread->id]
+        );
+        $stored = array_map(fn($row) => [
+            $row['name'],
+            $row['filetype'],
+            is_resource($row['content']) ? stream_get_contents($row['content']) : $row['content'],
+        ], $rows);
+        $this->assertEquals([
+            ['Mobilabonnement Gjesdal.pdf', 'pdf', $pdfBytes],
+            ['Organisasjonskart (2).webp', 'webp', $webpBytes],
+            ['unnamed-part-4.pdf', 'pdf', $unnamedPdfBytes],
+        ], $stored);
+    }
+
+    private function deleteGreenMailEmailsWithSubject(string $subject): void {
+        $this->imapConnection->openConnection();
+        $emails = imap_search($this->imapConnection->getConnection(), 'SUBJECT "' . $subject . '"');
+        if ($emails) {
+            foreach ($emails as $email) {
+                imap_delete($this->imapConnection->getConnection(), $email);
+            }
+            imap_expunge($this->imapConnection->getConnection());
+        }
+    }
+
 }

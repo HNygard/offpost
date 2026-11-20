@@ -126,6 +126,9 @@ foreach ($thread->emails as $email) {
                 elseif($att->filetype == 'gif') {
                     header("Content-type:image/gif");
                 }
+                elseif($att->filetype == 'webp') {
+                    header("Content-type:image/webp");
+                }
                 elseif($att->filetype == 'txt') {
                     header("Content-type:text/plain");
                 }

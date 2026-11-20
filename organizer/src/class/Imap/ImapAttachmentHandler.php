@@ -23,9 +23,17 @@ class ImapAttachmentHandler {
             return [];
         }
 
+        // In multipart/mixed, part 1 is the body and every later part is something
+        // attached, also when it has no name (e.g. a forwarded email). Other
+        // multiparts (alternative, related) hold the body itself in unnamed parts.
+        $isMixed = strtoupper($structure->subtype ?? '') === 'MIXED';
+
         $attachments = [];
         for ($i = 0; $i < count($structure->parts); $i++) {
             $attachment = $this->processAttachmentPart($uid, $structure->parts[$i], $i + 1);
+            if (!$attachment && $isMixed && $i > 0) {
+                $attachment = $this->processUnnamedPart($structure->parts[$i], $i + 1);
+            }
             if ($attachment) {
                 $attachments[] = $attachment;
             }
@@ -112,10 +120,72 @@ class ImapAttachmentHandler {
             $att->filetype = $this->determineFileType($att->filename);
         }
         if ($att->filetype === null) {
-            return null;
+            if (empty($att->name)) {
+                return null;
+            }
+            // No usable extension. Keep it anyway: an attachment we cannot type is
+            // still something the entity sent us and must be visible in the thread.
+            $att->filetype = 'UNKNOWN';
         }
 
+        // MIME part number to fetch the content from. Not derivable from the index
+        // in the returned array, since parts we skip leave gaps.
+        $att->partNumber = $partNumber;
+
         return $att;
+    }
+
+    /**
+     * A part of multipart/mixed after the body that has no name. Kept under a
+     * generated name so it is stored and shown like any other attachment.
+     */
+    private function processUnnamedPart(object $part, int $partNumber): ?object {
+        $type = $part->type ?? null;
+        if ($type === null || $type === TYPEMULTIPART) {
+            // A nested multipart is not one file.
+            return null;
+        }
+        $types = [TYPETEXT => 'text', TYPEMESSAGE => 'message', TYPEAPPLICATION => 'application',
+                  TYPEAUDIO => 'audio', TYPEIMAGE => 'image', TYPEVIDEO => 'video', TYPEMODEL => 'model'];
+        $mimeType = ($types[$type] ?? 'application') . '/' . strtolower($part->subtype ?? 'octet-stream');
+
+        $att = new \stdClass();
+        $att->name = self::unnamedPartName($partNumber, $mimeType);
+        $att->filename = $att->name;
+        $att->filetype = self::extensionForMimeType($mimeType) ?? 'UNKNOWN';
+        $att->partNumber = $partNumber;
+        return $att;
+    }
+
+    /**
+     * Name for an attachment without one: "unnamed-part-<n>.<ext>", or without
+     * extension when the MIME type is not one we know. Also used by
+     * AttachmentPartCheck to match stored rows to parts.
+     */
+    public static function unnamedPartName(int $partNumber, string $mimeType): string {
+        $extension = self::extensionForMimeType($mimeType);
+        return 'unnamed-part-' . $partNumber . ($extension === null ? '' : '.' . $extension);
+    }
+
+    private static function extensionForMimeType(string $mimeType): ?string {
+        $map = [
+            'application/pdf' => 'pdf',
+            'message/rfc822' => 'eml',
+            'text/plain' => 'txt',
+            'text/html' => 'htm',
+            'text/calendar' => 'ics',
+            'text/csv' => 'csv',
+            'image/jpeg' => 'jpg',
+            'image/png' => 'png',
+            'image/gif' => 'gif',
+            'image/webp' => 'webp',
+            'application/zip' => 'zip',
+            'application/msword' => 'doc',
+            'application/vnd.openxmlformats-officedocument.wordprocessingml.document' => 'docx',
+            'application/vnd.ms-excel' => 'xls',
+            'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' => 'xlsx',
+        ];
+        return $map[strtolower($mimeType)] ?? null;
     }
 
     public function getAttachmentContent(int $uid, int $partNumber): string {
@@ -126,6 +196,9 @@ class ImapAttachmentHandler {
             $content = base64_decode($content);
         } elseif ($structure->parts[$partNumber - 1]->encoding == 4) { // QUOTED-PRINTABLE
             $content = quoted_printable_decode($content);
+        }
+        elseif (in_array($structure->parts[$partNumber - 1]->encoding, [0, 1, 2], true)) {
+            // 7BIT, 8BIT, BINARY: not transfer-encoded, the body is the content.
         }
         else {
             throw new \Exception('Unsupported encoding: ' . $structure->parts[$partNumber - 1]->encoding);
@@ -224,6 +297,12 @@ class ImapAttachmentHandler {
             str_starts_with($filename, 'Outlook-kvafjord k') ||
             str_ends_with($filename, '.rda')) {
             return 'UNKNOWN';
+        }
+
+        // Any other plain extension (.xls, .jpeg, .odt, .msg, .webp, ...) is kept as
+        // the type, so the attachment is stored and shown instead of dropped.
+        if (preg_match('/^[a-z0-9]{1,16}$/', $extension)) {
+            return $extension;
         }
 
         return null;

@@ -194,7 +194,7 @@ class ImapAttachmentHandlerTest extends TestCase {
         }
     }
 
-    public function testProcessAttachmentsWithUnsupportedType(): void {
+    public function testProcessAttachmentsWithUnknownTypeIsKept(): void {
         // Setup mock connection
         $resource = fopen('php://memory', 'r');
         $this->mockWrapper->method('open')->willReturn($resource);
@@ -222,8 +222,198 @@ class ImapAttachmentHandlerTest extends TestCase {
             ->willReturnCallback(function($str) { return $str; });
 
         $attachments = $this->handler->processAttachments(1);
-        
-        $this->assertEmpty($attachments);
+
+        $this->assertCount(1, $attachments, json_encode($attachments, JSON_PRETTY_PRINT));
+        $this->assertEquals('test.xyz', $attachments[0]->name);
+        $this->assertEquals('xyz', $attachments[0]->filetype);
+        $this->assertEquals(1, $attachments[0]->partNumber);
+
+        fclose($resource);
+    }
+
+    private function createNamedPart(string $name): stdClass {
+        $part = $this->createTestPart();
+        $param = new stdClass();
+        $param->attribute = 'name';
+        $param->value = $name;
+        $part->ifparameters = true;
+        $part->parameters = [$param];
+        return $part;
+    }
+
+    public function testProcessAttachmentsKeepsMimePartNumberWhenEarlierPartIsSkipped(): void {
+        // :: Setup
+        // Body (part 1), a part without name that is not an attachment (part 2), a pdf (part 3).
+        // The pdf content must be fetched from part 3, not from the skipped part 2.
+        $resource = fopen('php://memory', 'r');
+        $this->mockWrapper->method('open')->willReturn($resource);
+        $this->connection->openConnection();
+
+        $structure = new stdClass();
+        $structure->parts = [
+            $this->createTestPart(),
+            $this->createTestPart(),
+            $this->createNamedPart('Mobilabonnement Gjesdal.pdf'),
+        ];
+        $this->mockWrapper->method('fetchstructure')->willReturn($structure);
+
+        // :: Act
+        $attachments = $this->handler->processAttachments(1);
+
+        // :: Assert
+        $this->assertCount(1, $attachments, json_encode($attachments, JSON_PRETTY_PRINT));
+        $this->assertEquals('Mobilabonnement Gjesdal.pdf', $attachments[0]->name);
+        $this->assertEquals(3, $attachments[0]->partNumber, 'Part number must be the MIME part, not the index among kept attachments');
+
+        fclose($resource);
+    }
+
+    public function testProcessAttachmentsWithWebpImage(): void {
+        // :: Setup
+        $resource = fopen('php://memory', 'r');
+        $this->mockWrapper->method('open')->willReturn($resource);
+        $this->connection->openConnection();
+
+        $structure = new stdClass();
+        $structure->parts = [
+            $this->createTestPart(),
+            $this->createNamedPart('Organisasjonskart (2).webp'),
+            $this->createNamedPart('Mobilabonnement Gjesdal.pdf'),
+        ];
+        $this->mockWrapper->method('fetchstructure')->willReturn($structure);
+
+        // :: Act
+        $attachments = $this->handler->processAttachments(1);
+
+        // :: Assert
+        $this->assertCount(2, $attachments, json_encode($attachments, JSON_PRETTY_PRINT));
+        $this->assertEquals('Organisasjonskart (2).webp', $attachments[0]->name);
+        $this->assertEquals('webp', $attachments[0]->filetype);
+        $this->assertEquals(2, $attachments[0]->partNumber);
+        $this->assertEquals('Mobilabonnement Gjesdal.pdf', $attachments[1]->name);
+        $this->assertEquals(3, $attachments[1]->partNumber);
+
+        fclose($resource);
+    }
+
+    private function createUnnamedPart(int $type, string $subtype): stdClass {
+        $part = $this->createTestPart();
+        $part->type = $type;
+        $part->ifsubtype = true;
+        $part->subtype = $subtype;
+        return $part;
+    }
+
+    public function testProcessAttachmentsKeepsUnnamedPartsAfterTheBody(): void {
+        // :: Setup
+        // multipart/mixed: body (part 1), then a forwarded email, a pdf and an
+        // image of a type we have no extension for, none of them with a name.
+        $resource = fopen('php://memory', 'r');
+        $this->mockWrapper->method('open')->willReturn($resource);
+        $this->connection->openConnection();
+
+        $structure = new stdClass();
+        $structure->type = TYPEMULTIPART;
+        $structure->subtype = 'MIXED';
+        $structure->parts = [
+            $this->createUnnamedPart(TYPETEXT, 'PLAIN'),
+            $this->createUnnamedPart(TYPEMESSAGE, 'RFC822'),
+            $this->createUnnamedPart(TYPEAPPLICATION, 'PDF'),
+            $this->createUnnamedPart(TYPEIMAGE, 'X-SOMETHING'),
+        ];
+        $this->mockWrapper->method('fetchstructure')->willReturn($structure);
+
+        // :: Act
+        $attachments = $this->handler->processAttachments(1);
+
+        // :: Assert
+        $summary = array_map(fn($a) => [$a->name, $a->filename, $a->filetype, $a->partNumber], $attachments);
+        $this->assertEquals([
+            ['unnamed-part-2.eml', 'unnamed-part-2.eml', 'eml', 2],
+            ['unnamed-part-3.pdf', 'unnamed-part-3.pdf', 'pdf', 3],
+            ['unnamed-part-4', 'unnamed-part-4', 'UNKNOWN', 4],
+        ], $summary);
+
+        fclose($resource);
+    }
+
+    public function testProcessAttachmentsSkipsNestedMultipartWithoutName(): void {
+        // :: Setup
+        // multipart/mixed whose part 2 is itself a multipart: not one file, skipped.
+        $resource = fopen('php://memory', 'r');
+        $this->mockWrapper->method('open')->willReturn($resource);
+        $this->connection->openConnection();
+
+        $structure = new stdClass();
+        $structure->type = TYPEMULTIPART;
+        $structure->subtype = 'MIXED';
+        $structure->parts = [
+            $this->createUnnamedPart(TYPETEXT, 'PLAIN'),
+            $this->createUnnamedPart(TYPEMULTIPART, 'ALTERNATIVE'),
+            $this->createNamedPart('Mobilabonnement Gjesdal.pdf'),
+        ];
+        $this->mockWrapper->method('fetchstructure')->willReturn($structure);
+
+        // :: Act
+        $attachments = $this->handler->processAttachments(1);
+
+        // :: Assert
+        $summary = array_map(fn($a) => [$a->name, $a->filetype, $a->partNumber], $attachments);
+        $this->assertEquals([['Mobilabonnement Gjesdal.pdf', 'pdf', 3]], $summary);
+
+        fclose($resource);
+    }
+
+    public function testProcessAttachmentsIgnoresUnnamedPartsOfAlternativeBody(): void {
+        // :: Setup
+        // multipart/alternative: the unnamed parts are the plain and html versions
+        // of the body, not attachments.
+        $resource = fopen('php://memory', 'r');
+        $this->mockWrapper->method('open')->willReturn($resource);
+        $this->connection->openConnection();
+
+        $structure = new stdClass();
+        $structure->type = TYPEMULTIPART;
+        $structure->subtype = 'ALTERNATIVE';
+        $structure->parts = [
+            $this->createUnnamedPart(TYPETEXT, 'PLAIN'),
+            $this->createUnnamedPart(TYPETEXT, 'HTML'),
+        ];
+        $this->mockWrapper->method('fetchstructure')->willReturn($structure);
+
+        // :: Act
+        $attachments = $this->handler->processAttachments(1);
+
+        // :: Assert
+        $this->assertEquals([], $attachments);
+
+        fclose($resource);
+    }
+
+    public static function unencodedTransferEncodings(): array {
+        return ['7bit' => [0], '8bit' => [1], 'binary' => [2]];
+    }
+
+    #[\PHPUnit\Framework\Attributes\DataProvider('unencodedTransferEncodings')]
+    public function testGetAttachmentContentReturnsUnencodedPartAsIs(int $encoding): void {
+        // :: Setup
+        // .ics, .htm, .eml and other text attachments are often sent without base64.
+        $resource = fopen('php://memory', 'r');
+        $this->mockWrapper->method('open')->willReturn($resource);
+        $this->connection->openConnection();
+
+        $part = $this->createNamedPart('invitasjon.ics');
+        $part->encoding = $encoding;
+        $structure = new stdClass();
+        $structure->parts = [$this->createTestPart(), $part];
+        $this->mockWrapper->method('fetchstructure')->willReturn($structure);
+        $this->mockWrapper->method('fetchbody')->willReturn("BEGIN:VCALENDAR\r\nEND:VCALENDAR\r\n");
+
+        // :: Act
+        $content = $this->handler->getAttachmentContent(1, 2);
+
+        // :: Assert
+        $this->assertEquals("BEGIN:VCALENDAR\r\nEND:VCALENDAR\r\n", $content);
 
         fclose($resource);
     }

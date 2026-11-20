@@ -172,7 +172,7 @@ class ThreadEmailDatabaseSaver {
                             $attachment->location = $filename . ' - att ' . $j . '-' .
                                                  md5($attachment->name) . '.' . $attachment->filetype;
                             
-                            $this->saveAttachmentToDatabase($emailId, $attachment, $this->attachmentHandler->getAttachmentContent($email->uid, $j + 1));
+                            $this->saveAttachmentToDatabase($emailId, $attachment, $this->attachmentHandler->getAttachmentContent($email->uid, $attachment->partNumber));
                         }
                         
                         // Update thread email list

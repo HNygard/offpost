@@ -625,6 +625,7 @@ class NpApiService {
             'jpg' => 'image/jpeg',
             'jpeg' => 'image/jpeg',
             'gif' => 'image/gif',
+            'webp' => 'image/webp',
             'txt' => 'text/plain',
             'docx' => 'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
             'doc' => 'application/msword',
@@ -643,6 +644,11 @@ class NpApiService {
         if ($filetype !== null && str_contains($filetype, '/')) {
             // Already a MIME type.
             return $filetype;
+        }
+        if ($filetype !== null && preg_match('/^[a-z0-9]{1,16}$/', $filetype)) {
+            // Plain extension of a type we have no MIME type for (.xls, .odt, ...).
+            // ImapAttachmentHandler stores attachments of any type, so this is expected.
+            return 'application/octet-stream';
         }
         error_log(
             'NpApiService::attachmentContentType: unrecognized thread_email_attachments.filetype: '

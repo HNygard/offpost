@@ -205,14 +205,16 @@ class ImapAttachmentHandlerProcessAttachmentPartTest extends TestCase {
         $this->assertEquals('pdf', $result->filetype, 'File type should be determined correctly');
     }
 
-    public function testProcessAttachmentPartWithUnsupportedFileType(): void {
+    public function testProcessAttachmentPartWithUnknownFileTypeIsKept(): void {
         // :: Setup
+        // Attachments of types we do not know (.xls, .jpeg, .odt, .msg, ...) must still be
+        // stored and shown. Dropping them hid documents public entities sent us.
         $part = $this->createTestPart();
         $part->ifparameters = true;
         
         $param = new stdClass();
         $param->attribute = 'name';
-        $param->value = 'unknown.xyz';
+        $param->value = 'Budsjett.XLS';
         $part->parameters = [$param];
 
         $uid = 123;
@@ -222,7 +224,31 @@ class ImapAttachmentHandlerProcessAttachmentPartTest extends TestCase {
         $result = $this->reflectionMethod->invokeArgs($this->handler, [$uid, $part, $partNumber]);
 
         // :: Assert
-        $this->assertNull($result, 'Should return null for unsupported file type');
+        $this->assertNotNull($result, 'Unknown file type must not be dropped');
+        $this->assertEquals('Budsjett.XLS', $result->name);
+        $this->assertEquals('xls', $result->filetype, 'File type is the lowercased extension');
+    }
+
+    public function testProcessAttachmentPartWithoutExtensionIsKeptAsUnknown(): void {
+        // :: Setup
+        $part = $this->createTestPart();
+        $part->ifparameters = true;
+
+        $param = new stdClass();
+        $param->attribute = 'name';
+        $param->value = 'Vedlegg';
+        $part->parameters = [$param];
+
+        $uid = 123;
+        $partNumber = 1;
+
+        // :: Act
+        $result = $this->reflectionMethod->invokeArgs($this->handler, [$uid, $part, $partNumber]);
+
+        // :: Assert
+        $this->assertNotNull($result, 'Attachment without extension must not be dropped');
+        $this->assertEquals('Vedlegg', $result->name);
+        $this->assertEquals('UNKNOWN', $result->filetype);
     }
 
     public function testProcessAttachmentPartWithEmptyFilename(): void {
