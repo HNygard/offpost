@@ -46,16 +46,27 @@ nested multiparts) leave gaps, and an earlier version did that and saved the byt
 of the wrong part under an attachment's name. Parts without transfer encoding
 (7bit, 8bit, binary) are stored as-is.
 
-To find emails stored with that bug, run (read-only):
+To find emails stored with that bug, run (read-only without `--apply`):
 
 ```
-php bin/attachment-part-check.php [--email=<id>] [--thread=<id>] [--limit=N] [--all]
+php bin/attachment-part-check.php [--email=<id>] [--thread=<id>] [--limit=N] [--all] [--apply]
 ```
+
+In production, run it inside the organizer container:
+`docker compose -f docker-compose.prod.yaml exec -T organizer php bin/attachment-part-check.php`.
 
 `AttachmentPartCheck` re-reads the raw EML with zbateson and compares every stored
 attachment with the top-level part of the same name: `wrong_content` (with the part
-whose bytes it actually holds), `stored_content_missing`, `no_matching_part`, and
-`missing` for parts that were never stored. It selects and names parts with the
+whose bytes it actually holds), `stored_content_missing`, `name_differs` (no part of
+that name, but the bytes are those of a part no other row matched: only the stored
+name differs, e.g. a stray space from a folded header), `no_matching_part` (neither
+name nor bytes match), and `missing` for parts that were never stored.
+
+`AttachmentPartRepair` (`--apply`, one transaction per email) gives `wrong_content`
+and `stored_content_missing` rows the bytes and size of their own part and deletes
+their extractions so the extractors run again, and inserts `missing` parts as new
+attachments. Names are not changed. Without `--apply` the script prints what it
+would do ("would fix_content ...", "would add_missing ..."). It selects and names parts with the
 same rules as ingestion (`ImapAttachmentHandler::unnamedPartName()`).
 
 ## Fixture snapshots

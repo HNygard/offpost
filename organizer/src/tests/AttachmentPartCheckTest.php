@@ -120,6 +120,38 @@ class AttachmentPartCheckTest extends TestCase {
         ], $findings[2]);
     }
 
+    public function testStoredUnderOtherNameWithCorrectBytesIsNameDiffers(): void {
+        // :: Setup
+        // Production has ~1900 rows like this: the name was stored differently from how
+        // zbateson decodes it (stray space from a folded header), the bytes are right.
+        // The part must not also be reported missing, or a repair would duplicate it.
+        $stored = [
+            $this->stored('att-1', 'Organisasjonskart (2 ).webp', self::WEBP_BYTES),
+            $this->stored('att-2', 'Mobilabonnement Gjesdal.pdf', self::PDF_BYTES),
+        ];
+
+        // :: Act
+        $findings = AttachmentPartCheck::check($this->gjesdalShapedEml(), $stored);
+
+        // :: Assert
+        $this->assertEquals([
+            [
+                'status' => AttachmentPartCheck::NAME_DIFFERS,
+                'attachment_id' => 'att-1',
+                'name' => 'Organisasjonskart (2 ).webp',
+                'part_number' => 2,
+                'content_matches_part' => 2,
+            ],
+            [
+                'status' => AttachmentPartCheck::OK,
+                'attachment_id' => 'att-2',
+                'name' => 'Mobilabonnement Gjesdal.pdf',
+                'part_number' => 3,
+                'content_matches_part' => 3,
+            ],
+        ], $findings);
+    }
+
     public function testStoredAttachmentWithoutContent(): void {
         // :: Setup
         $stored = [

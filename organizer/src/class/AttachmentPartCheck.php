@@ -23,6 +23,7 @@ class AttachmentPartCheck {
     public const OK = 'ok';
     public const WRONG_CONTENT = 'wrong_content';
     public const STORED_CONTENT_MISSING = 'stored_content_missing';
+    public const NAME_DIFFERS = 'name_differs';
     public const NO_MATCHING_PART = 'no_matching_part';
     public const MISSING = 'missing';
 
@@ -65,17 +66,11 @@ class AttachmentPartCheck {
         $claimed = [];
         $findings = [];
 
-        foreach ($stored as $att) {
+        // Pass 1: rows with a part of the same name. A shifted row keeps its own
+        // name, so it is matched here and reported WRONG_CONTENT.
+        foreach ($stored as $k => $att) {
             $content = $att['content'];
-            $contentMatchesPart = null;
-            if ($content !== null) {
-                foreach ($parts as $partNumber => $part) {
-                    if ($part['content'] === $content) {
-                        $contentMatchesPart = $partNumber;
-                        break;
-                    }
-                }
-            }
+            $contentMatchesPart = self::partWithContent($parts, $content);
 
             // Parts with the same name, unclaimed ones first so duplicate names
             // (image001.png twice) pair up one to one.
@@ -85,13 +80,12 @@ class AttachmentPartCheck {
                     $candidates[] = $partNumber;
                 }
             }
+            if (empty($candidates)) {
+                continue;
+            }
             $unclaimed = array_values(array_diff($candidates, $claimed));
 
-            if (empty($candidates)) {
-                $status = self::NO_MATCHING_PART;
-                $partNumber = null;
-            }
-            elseif ($content === null) {
+            if ($content === null) {
                 $status = self::STORED_CONTENT_MISSING;
                 $partNumber = $unclaimed[0] ?? $candidates[0];
             }
@@ -104,17 +98,27 @@ class AttachmentPartCheck {
                 $partNumber = $unclaimed[0] ?? $candidates[0];
             }
 
-            if ($partNumber !== null) {
-                $claimed[] = $partNumber;
-            }
-            $findings[] = [
-                'status' => $status,
-                'attachment_id' => $att['id'],
-                'name' => $att['name'],
-                'part_number' => $partNumber,
-                'content_matches_part' => $contentMatchesPart,
-            ];
+            $claimed[] = $partNumber;
+            $findings[$k] = self::finding($status, $att, $partNumber, $contentMatchesPart);
         }
+
+        // Pass 2: rows whose name matches no part. When the bytes are those of a part
+        // no row has claimed, only the name was stored differently (NAME_DIFFERS).
+        foreach ($stored as $k => $att) {
+            if (isset($findings[$k])) {
+                continue;
+            }
+            $contentMatchesPart = self::partWithContent($parts, $att['content']);
+            if ($contentMatchesPart !== null && !in_array($contentMatchesPart, $claimed, true)) {
+                $claimed[] = $contentMatchesPart;
+                $findings[$k] = self::finding(self::NAME_DIFFERS, $att, $contentMatchesPart, $contentMatchesPart);
+            }
+            else {
+                $findings[$k] = self::finding(self::NO_MATCHING_PART, $att, null, $contentMatchesPart);
+            }
+        }
+        ksort($findings);
+        $findings = array_values($findings);
 
         foreach ($parts as $partNumber => $part) {
             if (in_array($partNumber, $claimed, true)) {
@@ -130,5 +134,27 @@ class AttachmentPartCheck {
         }
 
         return $findings;
+    }
+
+    private static function partWithContent(array $parts, ?string $content): ?int {
+        if ($content === null) {
+            return null;
+        }
+        foreach ($parts as $partNumber => $part) {
+            if ($part['content'] === $content) {
+                return $partNumber;
+            }
+        }
+        return null;
+    }
+
+    private static function finding(string $status, array $att, ?int $partNumber, ?int $contentMatchesPart): array {
+        return [
+            'status' => $status,
+            'attachment_id' => $att['id'],
+            'name' => $att['name'],
+            'part_number' => $partNumber,
+            'content_matches_part' => $contentMatchesPart,
+        ];
     }
 }
