@@ -172,6 +172,8 @@ class AttachmentPartRepairTest extends TestCase {
                 AttachmentPartRepair::HISTORY_USER_ID,
                 [
                     'repair' => AttachmentPartRepair::REPAIR_ID,
+                    'summary' => 'Some attachments on this email showed the wrong file or were missing. '
+                        . 'They have been restored from the original email.',
                     'reason' => AttachmentPartRepair::REASON,
                     'fixed' => [[
                         'attachment_id' => $this->pdfAttachmentId,

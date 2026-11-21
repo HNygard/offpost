@@ -33,6 +33,37 @@ class ThreadViewPageTest extends E2EPageTestCase {
         $this->assertStringContainsString('<span class="email-type">', $response->body);
     }
 
+    public function testAttachmentRepairIsShownOnTheEmail() {
+        // :: Setup
+        $testData = E2ETestSetup::createTestThread();
+        $threadId = $testData['thread']->id;
+        Database::execute(
+            "INSERT INTO thread_email_history (thread_id, email_id, action, user_id, details, created_at)
+             VALUES (?, ?, 'attachments_repaired', 'attachment-part-repair', ?, '2026-11-21 12:00:00+00')",
+            [$threadId, $testData['email_id'], json_encode([
+                'repair' => 'attachment-mime-part-2026-11',
+                'summary' => 'Some attachments on this email showed the wrong file or were missing. '
+                    . 'They have been restored from the original email.',
+                'reason' => 'Technical explanation, not shown.',
+                'fixed' => [['attachment_id' => $testData['attachment_id'], 'name' => 'test.pdf', 'part' => 3,
+                             'problem' => 'held the content of part 2 (x.webp)']],
+                'added' => [],
+            ])]
+        );
+
+        // :: Act
+        $response = $this->renderPage('/thread-view?entityId=' . $testData['entity_id'] . '&threadId=' . $threadId);
+
+        // :: Assert
+        $this->assertStringContainsString(
+            '<div class="attachment-repair-note">Some attachments on this email showed the wrong file or were missing. '
+                . 'They have been restored from the original email. (1 corrected, 0 added) '
+                . '<span class="history-date">2026-11-21 ',
+            $response->body
+        );
+        $this->assertStringNotContainsString('Technical explanation, not shown.', $response->body);
+    }
+
     public function testPageWithoutEntityId() {
         // :: Setup
         // No setup needed

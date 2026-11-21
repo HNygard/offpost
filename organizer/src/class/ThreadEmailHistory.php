@@ -39,11 +39,12 @@ class ThreadEmailHistory {
                 return 'Email ' . ($details['ignored'] ? 'ignored' : 'unignored');
             case 'attachments_repaired':
                 // Written by AttachmentPartRepair (bin/attachment-part-check.php --apply).
+                // details['summary'] is the short, non-technical text for display;
+                // details['reason'] has the technical explanation.
                 $details = json_decode($details, true);
-                return 'Attachments repaired from the raw email'
-                    . (isset($details['repair']) ? ' (' . $details['repair'] . ')' : '') . ': '
-                    . count($details['fixed'] ?? []) . ' content fixed, '
-                    . count($details['added'] ?? []) . ' added';
+                return ($details['summary'] ?? 'Attachments restored from the original email.')
+                    . ' (' . count($details['fixed'] ?? []) . ' corrected, '
+                    . count($details['added'] ?? []) . ' added)';
             default:
                 throw new Exception('Unknown action: ' . $action);
         }

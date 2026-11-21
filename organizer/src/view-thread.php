@@ -5,6 +5,8 @@ require_once __DIR__ . '/class/Threads.php';
 require_once __DIR__ . '/class/ThreadEmailClassifier.php';
 require_once __DIR__ . '/class/ThreadStorageManager.php';
 require_once __DIR__ . '/class/ThreadHistory.php';
+require_once __DIR__ . '/class/ThreadEmailHistory.php';
+require_once __DIR__ . '/class/AttachmentPartRepair.php';
 require_once __DIR__ . '/class/ThreadEmailSending.php';
 require_once __DIR__ . '/class/Extraction/ThreadEmailExtractionService.php';
 require_once __DIR__ . '/class/ThreadUtils.php';
@@ -164,6 +166,15 @@ $extraction_service = new ThreadEmailExtractionService();
 // Get thread history
 $history = new ThreadHistory();
 $historyEntries = $history->getHistoryForThread($thread->id);
+
+// Attachment repairs are shown on the email they belong to (other email history is not shown).
+$emailHistory = new ThreadEmailHistory();
+$attachmentRepairNotes = [];
+foreach ($emailHistory->getHistoryForThread($thread->id) as $entry) {
+    if ($entry['action'] === AttachmentPartRepair::HISTORY_ACTION) {
+        $attachmentRepairNotes[$entry['email_id']][] = $emailHistory->formatHistoryEntry($entry);
+    }
+}
 
 // Cumulative thread state (docs/thread-state.md), keyed by email id. Not
 // carried on ThreadEmail by Thread::mapFromDatabase(), so loaded separately.
@@ -565,6 +576,9 @@ function print_extraction ($extraction) {
                                 </div>
                                 <?php endforeach; ?>
                             </div>
+                            <?php foreach ($attachmentRepairNotes[$email->id] ?? [] as $note): ?>
+                                <div class="attachment-repair-note"><?= htmlescape($note['action']) ?> <span class="history-date"><?= htmlescape($note['date']) ?></span></div>
+                            <?php endforeach; ?>
                         </div>
                     <?php endif; ?>
                 </div>

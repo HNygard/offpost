@@ -67,7 +67,8 @@ and `stored_content_missing` rows the bytes and size of their own part and delet
 their extractions so the extractors run again, and inserts `missing` parts as new
 attachments. Names are not changed. Each repaired email gets one
 `thread_email_history` entry (action `attachments_repaired`, user
-`attachment-part-repair`). Its details explain the repair: `repair`
+`attachment-part-repair`). Its details explain the repair: `summary` (short,
+non-technical; shown in the thread view under the email's attachments), `repair`
 (`attachment-mime-part-2026-11`, so later attachment repairs can use the same
 action), `reason` (what the bug was), and `fixed` / `added` with attachment id,
 name, part and `problem` ("held the content of part 2 (x.webp)", "was empty",

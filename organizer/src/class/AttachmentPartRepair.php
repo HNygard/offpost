@@ -29,6 +29,10 @@ class AttachmentPartRepair {
     // Identifies this repair in thread_email_history.details, since other attachment
     // repairs may use the same action later.
     const REPAIR_ID = 'attachment-mime-part-2026-11';
+    // Short, non-technical; this is what the history shows.
+    const SUMMARY = 'Some attachments on this email showed the wrong file or were missing. '
+        . 'They have been restored from the original email.';
+    // The technical explanation, for whoever looks into the details.
     const REASON = 'Offpost stored the content of each attachment by its position among the attachments it '
         . 'recognised, not by its MIME part. An attachment it did not recognise (a type such as .webp, '
         . 'or no name) was skipped and never stored, and every later attachment in the same email got '
@@ -80,6 +84,7 @@ class AttachmentPartRepair {
             $threadId = Database::queryValue("SELECT thread_id FROM thread_emails WHERE id = ?", [$emailId]);
             (new ThreadEmailHistory())->logAction($threadId, $emailId, self::HISTORY_ACTION, self::HISTORY_USER_ID, [
                 'repair' => self::REPAIR_ID,
+                'summary' => self::SUMMARY,
                 'reason' => self::REASON,
                 'fixed' => $fixed,
                 'added' => $added,

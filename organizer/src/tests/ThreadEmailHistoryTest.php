@@ -53,11 +53,20 @@ class ThreadEmailHistoryTest extends PHPUnit\Framework\TestCase {
                 'action' => AttachmentPartRepair::HISTORY_ACTION,
                 'details' => json_encode([
                     'repair' => 'attachment-mime-part-2026-11',
+                    'summary' => 'Some attachments on this email showed the wrong file or were missing. '
+                        . 'They have been restored from the original email.',
                     'reason' => 'Explanation of the bug.',
                     'fixed' => [['attachment_id' => 'a1', 'name' => 'x.pdf', 'part' => 3]],
                     'added' => [['attachment_id' => 'a2', 'name' => 'y.webp', 'part' => 2], ['attachment_id' => 'a3', 'name' => 'z.pdf', 'part' => 4]],
                 ]),
-                'expected' => 'Attachments repaired from the raw email (attachment-mime-part-2026-11): 1 content fixed, 2 added'
+                'expected' => 'Some attachments on this email showed the wrong file or were missing. '
+                    . 'They have been restored from the original email. (1 corrected, 2 added)'
+            ],
+            [
+                // An entry without summary still displays.
+                'action' => AttachmentPartRepair::HISTORY_ACTION,
+                'details' => json_encode(['fixed' => [], 'added' => [['attachment_id' => 'a2', 'name' => 'y.webp', 'part' => 2]]]),
+                'expected' => 'Attachments restored from the original email. (0 corrected, 1 added)'
             ]
         ];
 
