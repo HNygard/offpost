@@ -279,7 +279,7 @@ class ThreadStatusRepositoryTest extends PHPUnit\Framework\TestCase {
         $expected_status2->email_count_in = 0;
         $expected_status2->email_count_out = 0;
         $expected_status2->status = ThreadStatusRepository::NOT_SENT;
-        $expected_status2->email_server_last_checked_at = $statuses[$this->testThreadId]->email_server_last_checked_at;
+        $expected_status2->email_server_last_checked_at = $statuses[$secondThreadId]->email_server_last_checked_at;
         #$expected_status2->email_last_activity = $statuses[$this->testThreadId]->email_last_activity;
         #$expected_status2->email_last_sent = $statuses[$this->testThreadId]->email_last_activity;
         $this->assertEquals($expected_status2, $statuses[$secondThreadId], "Status for second thread should be NOT_SENT");
@@ -369,7 +369,7 @@ class ThreadStatusRepositoryTest extends PHPUnit\Framework\TestCase {
         $expected_status2->email_count_in = 0;
         $expected_status2->email_count_out = 0;
         $expected_status2->status = ThreadStatusRepository::NOT_SENT;
-        $expected_status2->email_server_last_checked_at = $filteredStatuses[$this->testThreadId]->email_server_last_checked_at;
+        $expected_status2->email_server_last_checked_at = $filteredStatuses[$thirdThreadId]->email_server_last_checked_at;
         $expected_status2->email_last_activity = null;
         $expected_status2->email_last_sent = null;
         $expected_status2->email_last_received = null;
