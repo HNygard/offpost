@@ -67,8 +67,11 @@ and `stored_content_missing` rows the bytes and size of their own part and delet
 their extractions so the extractors run again, and inserts `missing` parts as new
 attachments. Names are not changed. Each repaired email gets one
 `thread_email_history` entry (action `attachments_repaired`, user
-`attachment-part-repair`, details `{"fixed": [...], "added": [...]}` with
-attachment id, name and part), which also changes the thread export fingerprint so
+`attachment-part-repair`). Its details explain the repair: `repair`
+(`attachment-mime-part-2026-11`, so later attachment repairs can use the same
+action), `reason` (what the bug was), and `fixed` / `added` with attachment id,
+name, part and `problem` ("held the content of part 2 (x.webp)", "was empty",
+"had no content", "was never stored"). The entry also changes the thread export fingerprint so
 those threads are fetched again. Without `--apply` the script prints what it would
 do ("would fix_content ...", "would add_missing ...") and writes nothing. It selects and names parts with the
 same rules as ingestion (`ImapAttachmentHandler::unnamedPartName()`).

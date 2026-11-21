@@ -26,6 +26,16 @@ class AttachmentPartRepair {
     const HISTORY_ACTION = 'attachments_repaired';
     const HISTORY_USER_ID = 'attachment-part-repair';
 
+    // Identifies this repair in thread_email_history.details, since other attachment
+    // repairs may use the same action later.
+    const REPAIR_ID = 'attachment-mime-part-2026-11';
+    const REASON = 'Offpost stored the content of each attachment by its position among the attachments it '
+        . 'recognised, not by its MIME part. An attachment it did not recognise (a type such as .webp, '
+        . 'or no name) was skipped and never stored, and every later attachment in the same email got '
+        . 'the content of the part before it. Fixed 2026-11-20. Separately, some .zip attachments were '
+        . 'already empty when attachments moved from files to the database (2025-02-08). The content is '
+        . 'restored from the raw email Offpost has stored.';
+
     /**
      * @param array $findings AttachmentPartCheck::check() for this email
      * @param bool $apply false: only return what would be done
@@ -42,15 +52,26 @@ class AttachmentPartRepair {
                 || $f['status'] === AttachmentPartCheck::STORED_CONTENT_MISSING) {
                 $actions[] = "fix_content attachment={$f['attachment_id']} part={$f['part_number']} {$f['name']}";
                 if ($apply) {
+                    $problem = self::contentProblem($f, $parts);
                     self::fixContent($emailId, $f['attachment_id'], $parts[$f['part_number']]['content']);
-                    $fixed[] = ['attachment_id' => $f['attachment_id'], 'name' => $f['name'], 'part' => $f['part_number']];
+                    $fixed[] = [
+                        'attachment_id' => $f['attachment_id'],
+                        'name' => $f['name'],
+                        'part' => $f['part_number'],
+                        'problem' => $problem,
+                    ];
                 }
             }
             elseif ($f['status'] === AttachmentPartCheck::MISSING) {
                 $actions[] = "add_missing part={$f['part_number']} {$f['name']}";
                 if ($apply) {
                     $attachmentId = self::addMissing($emailId, $f['part_number'], $parts[$f['part_number']]);
-                    $added[] = ['attachment_id' => $attachmentId, 'name' => $f['name'], 'part' => $f['part_number']];
+                    $added[] = [
+                        'attachment_id' => $attachmentId,
+                        'name' => $f['name'],
+                        'part' => $f['part_number'],
+                        'problem' => 'was never stored',
+                    ];
                 }
             }
         }
@@ -58,11 +79,31 @@ class AttachmentPartRepair {
         if (!empty($fixed) || !empty($added)) {
             $threadId = Database::queryValue("SELECT thread_id FROM thread_emails WHERE id = ?", [$emailId]);
             (new ThreadEmailHistory())->logAction($threadId, $emailId, self::HISTORY_ACTION, self::HISTORY_USER_ID, [
+                'repair' => self::REPAIR_ID,
+                'reason' => self::REASON,
                 'fixed' => $fixed,
                 'added' => $added,
             ]);
         }
         return $actions;
+    }
+
+    /**
+     * What was wrong with a stored attachment, read before its content is replaced.
+     */
+    private static function contentProblem(array $finding, array $parts): string {
+        if ($finding['status'] === AttachmentPartCheck::STORED_CONTENT_MISSING) {
+            return 'had no content';
+        }
+        $heldPart = $finding['content_matches_part'];
+        if ($heldPart !== null) {
+            return "held the content of part $heldPart ({$parts[$heldPart]['filename']})";
+        }
+        $storedLength = Database::queryValue(
+            "SELECT octet_length(content) FROM thread_email_attachments WHERE id = ?",
+            [$finding['attachment_id']]
+        );
+        return (int)$storedLength === 0 ? 'was empty' : 'matched no part of the email';
     }
 
     private static function fixContent(string $emailId, string $attachmentId, string $content): void {

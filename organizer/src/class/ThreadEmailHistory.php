@@ -40,7 +40,8 @@ class ThreadEmailHistory {
             case 'attachments_repaired':
                 // Written by AttachmentPartRepair (bin/attachment-part-check.php --apply).
                 $details = json_decode($details, true);
-                return 'Attachments repaired from the raw email: '
+                return 'Attachments repaired from the raw email'
+                    . (isset($details['repair']) ? ' (' . $details['repair'] . ')' : '') . ': '
                     . count($details['fixed'] ?? []) . ' content fixed, '
                     . count($details['added'] ?? []) . ' added';
             default:

@@ -171,8 +171,20 @@ class AttachmentPartRepairTest extends TestCase {
                 AttachmentPartRepair::HISTORY_ACTION,
                 AttachmentPartRepair::HISTORY_USER_ID,
                 [
-                    'fixed' => [['attachment_id' => $this->pdfAttachmentId, 'name' => 'Mobilabonnement Gjesdal.pdf', 'part' => 3]],
-                    'added' => [['attachment_id' => $webpId, 'name' => 'Organisasjonskart (2).webp', 'part' => 2]],
+                    'repair' => AttachmentPartRepair::REPAIR_ID,
+                    'reason' => AttachmentPartRepair::REASON,
+                    'fixed' => [[
+                        'attachment_id' => $this->pdfAttachmentId,
+                        'name' => 'Mobilabonnement Gjesdal.pdf',
+                        'part' => 3,
+                        'problem' => 'held the content of part 2 (Organisasjonskart (2).webp)',
+                    ]],
+                    'added' => [[
+                        'attachment_id' => $webpId,
+                        'name' => 'Organisasjonskart (2).webp',
+                        'part' => 2,
+                        'problem' => 'was never stored',
+                    ]],
                 ],
             ],
         ], $this->history(), 'One history entry per repaired email, listing what was changed');
@@ -182,6 +194,25 @@ class AttachmentPartRepairTest extends TestCase {
             AttachmentPartCheck::check($this->gjesdalShapedEml(), $this->storedAttachments())
         );
         $this->assertEquals([AttachmentPartCheck::OK, AttachmentPartCheck::OK], $statuses, 'After repair the check finds nothing');
+    }
+
+    public function testEmptyStoredAttachmentIsExplainedAsEmpty(): void {
+        // :: Setup
+        // Production has 94 .zip rows like this: already 0 bytes on disk when attachments
+        // moved from files to the database.
+        Database::queryValueWithBinaryParam(
+            "UPDATE thread_email_attachments SET content = :content WHERE id = :id RETURNING id",
+            [':id' => $this->pdfAttachmentId],
+            [':content' => '']
+        );
+        $findings = AttachmentPartCheck::check($this->gjesdalShapedEml(), $this->storedAttachments());
+
+        // :: Act
+        AttachmentPartRepair::repairEmail($this->emailId, $this->gjesdalShapedEml(), $findings, true);
+
+        // :: Assert
+        $problems = array_map(fn($item) => $item['problem'], $this->history()[0][2]['fixed']);
+        $this->assertEquals(['was empty'], $problems);
     }
 
     public function testApplyIsANoOpWhenEverythingIsOk(): void {

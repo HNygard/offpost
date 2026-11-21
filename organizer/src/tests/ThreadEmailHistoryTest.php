@@ -52,10 +52,12 @@ class ThreadEmailHistoryTest extends PHPUnit\Framework\TestCase {
             [
                 'action' => AttachmentPartRepair::HISTORY_ACTION,
                 'details' => json_encode([
+                    'repair' => 'attachment-mime-part-2026-11',
+                    'reason' => 'Explanation of the bug.',
                     'fixed' => [['attachment_id' => 'a1', 'name' => 'x.pdf', 'part' => 3]],
                     'added' => [['attachment_id' => 'a2', 'name' => 'y.webp', 'part' => 2], ['attachment_id' => 'a3', 'name' => 'z.pdf', 'part' => 4]],
                 ]),
-                'expected' => 'Attachments repaired from the raw email: 1 content fixed, 2 added'
+                'expected' => 'Attachments repaired from the raw email (attachment-mime-part-2026-11): 1 content fixed, 2 added'
             ]
         ];
 
