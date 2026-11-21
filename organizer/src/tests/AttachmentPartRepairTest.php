@@ -112,6 +112,16 @@ class AttachmentPartRepairTest extends TestCase {
         );
     }
 
+    private function history(): array {
+        return array_map(
+            fn($row) => [$row['action'], $row['user_id'], json_decode($row['details'], true)],
+            Database::query(
+                "SELECT action, user_id, details FROM thread_email_history WHERE email_id = ? ORDER BY id",
+                [$this->emailId]
+            )
+        );
+    }
+
     private function extractionCount(): int {
         return (int)Database::queryValue(
             "SELECT COUNT(*) FROM thread_email_extractions WHERE email_id = ?",
@@ -135,6 +145,7 @@ class AttachmentPartRepairTest extends TestCase {
             ['Mobilabonnement Gjesdal.pdf', 'pdf', self::WEBP_BYTES, null],
         ], $this->storedSummary(), 'Dry run must not change stored attachments');
         $this->assertEquals(1, $this->extractionCount(), 'Dry run must not delete extractions');
+        $this->assertEquals([], $this->history(), 'Dry run must not write history');
     }
 
     public function testApplyFixesContentAddsMissingAndResetsExtractions(): void {
@@ -150,6 +161,21 @@ class AttachmentPartRepairTest extends TestCase {
             ['Organisasjonskart (2).webp', 'webp', self::WEBP_BYTES, strlen(self::WEBP_BYTES)],
         ], $this->storedSummary());
         $this->assertEquals(0, $this->extractionCount(), 'Extraction made from the wrong bytes must be deleted so it runs again');
+
+        $webpId = Database::queryValue(
+            "SELECT id FROM thread_email_attachments WHERE email_id = ? AND name = 'Organisasjonskart (2).webp'",
+            [$this->emailId]
+        );
+        $this->assertEquals([
+            [
+                AttachmentPartRepair::HISTORY_ACTION,
+                AttachmentPartRepair::HISTORY_USER_ID,
+                [
+                    'fixed' => [['attachment_id' => $this->pdfAttachmentId, 'name' => 'Mobilabonnement Gjesdal.pdf', 'part' => 3]],
+                    'added' => [['attachment_id' => $webpId, 'name' => 'Organisasjonskart (2).webp', 'part' => 2]],
+                ],
+            ],
+        ], $this->history(), 'One history entry per repaired email, listing what was changed');
 
         $statuses = array_map(
             fn($f) => $f['status'],
@@ -169,5 +195,7 @@ class AttachmentPartRepairTest extends TestCase {
 
         // :: Assert
         $this->assertEquals([], $actions);
+        $this->assertCount(1, $this->history(), 'Only the first apply changed something, so only it writes history: '
+            . json_encode($this->history(), JSON_PRETTY_PRINT));
     }
 }

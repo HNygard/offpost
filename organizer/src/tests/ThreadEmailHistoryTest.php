@@ -1,6 +1,7 @@
 <?php
 
 require_once __DIR__ . '/../class/ThreadEmailHistory.php';
+require_once __DIR__ . '/../class/AttachmentPartRepair.php';
 
 class ThreadEmailHistoryTest extends PHPUnit\Framework\TestCase {
     private $history;
@@ -47,6 +48,14 @@ class ThreadEmailHistoryTest extends PHPUnit\Framework\TestCase {
                 'action' => 'ignored',
                 'details' => json_encode(['ignored' => false]),
                 'expected' => 'Email unignored'
+            ],
+            [
+                'action' => AttachmentPartRepair::HISTORY_ACTION,
+                'details' => json_encode([
+                    'fixed' => [['attachment_id' => 'a1', 'name' => 'x.pdf', 'part' => 3]],
+                    'added' => [['attachment_id' => 'a2', 'name' => 'y.webp', 'part' => 2], ['attachment_id' => 'a3', 'name' => 'z.pdf', 'part' => 4]],
+                ]),
+                'expected' => 'Attachments repaired from the raw email: 1 content fixed, 2 added'
             ]
         ];
 

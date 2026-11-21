@@ -37,6 +37,12 @@ class ThreadEmailHistory {
             case 'ignored':
                 $details = json_decode($details, true);
                 return 'Email ' . ($details['ignored'] ? 'ignored' : 'unignored');
+            case 'attachments_repaired':
+                // Written by AttachmentPartRepair (bin/attachment-part-check.php --apply).
+                $details = json_decode($details, true);
+                return 'Attachments repaired from the raw email: '
+                    . count($details['fixed'] ?? []) . ' content fixed, '
+                    . count($details['added'] ?? []) . ' added';
             default:
                 throw new Exception('Unknown action: ' . $action);
         }
