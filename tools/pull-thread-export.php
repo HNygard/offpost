@@ -12,7 +12,10 @@
 // Usage:
 //   php tools/pull-thread-export.php \
 //       --base-url=https://offpost.no --token-file=secrets/admin_api_token \
-//       [--out=thread-export] [--full] [--limit=N]
+//       [--out=thread-export] [--full] [--limit=N] [--id=<uuid>]
+//
+// With --id, only that one thread is fetched (no list call, no fingerprint
+// check); it is still recorded in index.json.
 //
 // Output layout (relative to --out, default "thread-export" under cwd):
 //   <out>/threads/<id>.json  - one export per thread
@@ -32,6 +35,7 @@ Options:
   --out=DIR           Output directory, relative to cwd (default: thread-export)
   --full              Refetch every thread, ignoring local fingerprints
   --limit=N           Fetch at most N threads this run
+  --id=UUID           Fetch only this one thread (skips the list call)
   --help              Show this help and exit
 
 Writes <out>/threads/<id>.json and <out>/index.json (id => fingerprint).
@@ -96,6 +100,7 @@ $tokenFile = null;
 $out = 'thread-export';
 $full = false;
 $limit = null;
+$onlyId = null;
 
 foreach ($args as $arg) {
     if (str_starts_with($arg, '--base-url=')) {
@@ -113,6 +118,9 @@ foreach ($args as $arg) {
     elseif (str_starts_with($arg, '--limit=')) {
         $limit = (int)substr($arg, strlen('--limit='));
     }
+    elseif (str_starts_with($arg, '--id=')) {
+        $onlyId = substr($arg, strlen('--id='));
+    }
     else {
         fail("Unknown argument: $arg\n\nRun with --help for usage.");
     }
@@ -120,6 +128,9 @@ foreach ($args as $arg) {
 
 if ($baseUrl === null || $baseUrl === '') {
     fail("Missing required --base-url=URL\n\nRun with --help for usage.");
+}
+if ($onlyId !== null && !ThreadExportSync::isValidThreadId($onlyId)) {
+    fail("Invalid --id: expected a thread UUID, got $onlyId");
 }
 if ($tokenFile === null || $tokenFile === '') {
     fail("Missing required --token-file=PATH\n\nRun with --help for usage.");
@@ -149,8 +160,14 @@ if (is_file($indexPath)) {
     }
 }
 
-// -- fetch the list --
+// -- fetch the list (or just the one --id) --
 
+if ($onlyId !== null) {
+    $listedThreads = [];
+    $plan = ['toFetch' => [$onlyId], 'unchanged' => 0];
+    echo "Fetching single thread $onlyId from $baseUrl\n";
+}
+else {
 echo "Fetching thread list from $baseUrl ...\n";
 [$status, $body, $curlError] = httpGet($baseUrl . '/api/admin/export/threads', $token);
 if ($curlError !== null) {
@@ -169,13 +186,16 @@ if ($list['export_version'] !== 1) {
 $listedThreads = $list['threads'] ?? [];
 
 $plan = ThreadExportSync::planFetch($listedThreads, $localIndex, $full, $limit);
+}
 
 $titlesById = [];
 foreach ($listedThreads as $listed) {
     $titlesById[$listed['id']] = (string) ($listed['title'] ?? '');
 }
 $total = count($plan['toFetch']);
-echo count($listedThreads) . " threads listed: $total to fetch, {$plan['unchanged']} unchanged\n";
+if ($onlyId === null) {
+    echo count($listedThreads) . " threads listed: $total to fetch, {$plan['unchanged']} unchanged\n";
+}
 
 $fetched = 0;
 $failed = 0;

@@ -161,4 +161,32 @@ class ThreadExportSyncTest extends TestCase {
             '' => false,
         ], $results);
     }
+
+    public function testIsValidThreadId(): void {
+        // :: Setup
+        $ids = [
+            '583045d8-04ba-4083-bfcb-7ce5b652569a',
+            '583045D8-04BA-4083-BFCB-7CE5B652569A',
+            '583045d8-04ba-4083-bfcb-7ce5b652569',
+            '583045d804ba4083bfcb7ce5b652569a',
+            '../583045d8-04ba-4083-bfcb-7ce5b652569a',
+            '',
+        ];
+
+        // :: Act
+        $results = [];
+        foreach ($ids as $id) {
+            $results[$id] = ThreadExportSync::isValidThreadId($id);
+        }
+
+        // :: Assert
+        $this->assertEquals([
+            '583045d8-04ba-4083-bfcb-7ce5b652569a' => true,
+            '583045D8-04BA-4083-BFCB-7CE5B652569A' => true,
+            '583045d8-04ba-4083-bfcb-7ce5b652569' => false,
+            '583045d804ba4083bfcb7ce5b652569a' => false,
+            '../583045d8-04ba-4083-bfcb-7ce5b652569a' => false,
+            '' => false,
+        ], $results);
+    }
 }

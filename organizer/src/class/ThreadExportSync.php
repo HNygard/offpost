@@ -70,4 +70,12 @@ class ThreadExportSync {
         }
         return $scheme === 'http' && in_array(strtolower($parts['host']), ['localhost', '127.0.0.1'], true);
     }
+
+    /**
+     * Is this a thread id the CLI may fetch with --id? Must be a UUID: it is
+     * put in a URL and used as a local filename (<out>/threads/<id>.json).
+     */
+    public static function isValidThreadId(string $id): bool {
+        return preg_match('/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i', $id) === 1;
+    }
 }

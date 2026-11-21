@@ -122,7 +122,7 @@ https (plain http is allowed for localhost only).
 ```
 php tools/pull-thread-export.php \
     --base-url=https://offpost.no --token-file=secrets/admin_api_token \
-    [--out=thread-export] [--full] [--limit=N]
+    [--out=thread-export] [--full] [--limit=N] [--id=<uuid>]
 ```
 
 | Option | Meaning |
@@ -132,6 +132,7 @@ php tools/pull-thread-export.php \
 | `--out=DIR` | Output directory, relative to cwd. Default `thread-export`. |
 | `--full` | Refetch every thread, ignoring local fingerprints. |
 | `--limit=N` | Fetch at most N threads this run. |
+| `--id=UUID` | Fetch only this one thread: no list call, no fingerprint check (always refetched). It is still written to `threads/<id>.json` and recorded in `index.json`. Must be a UUID. |
 | `--help` | Print usage and exit. |
 
 It calls the list endpoint, then the thread endpoint for each id that is new or whose
