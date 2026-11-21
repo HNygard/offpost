@@ -27,6 +27,9 @@ require_once __DIR__ . '/../class/AttachmentPartRepair.php';
 
 ini_set('error_log', '/dev/null');
 ini_set('display_errors', 'stderr');
+// One email is held several times over (raw EML, header-repaired copy, parsed parts,
+// stored attachments). Emails with ~70 MB of attachments exceed the default limit.
+ini_set('memory_limit', '2G');
 
 $options = [];
 foreach (array_slice($argv, 1) as $arg) {
@@ -131,6 +134,10 @@ foreach ($ids as $row) {
         }
         $actionCount += count($actions);
     }
+
+    // Free this email before the next one is loaded, so two large emails are never in
+    // memory at once.
+    unset($eml, $stored, $findings);
 
     $done++;
     if ($done % 500 === 0) {
