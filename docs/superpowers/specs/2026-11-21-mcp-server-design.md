@@ -82,8 +82,9 @@ same verification code runs locally. Issuer, audience and JWKS URL come from
 ## Tools
 
 All tools: validate UUIDs before querying (400-style tool error, like `np_attachment_get.php`),
-return JSON text content, and report "not found" for both missing and not-accessible objects
-(don't leak existence). Errors are MCP tool errors (`isError: true`) with a short message.
+return JSON text content, and answer a missing or inaccessible thread/attachment/extraction
+with the same error text, `Not found, or no access` (owner's wording), so existence isn't leaked
+but the user isn't misled either. Errors are MCP tool errors (`isError: true`) with a short message.
 
 | Tool | Inputs | Returns | Reuses |
 |---|---|---|---|
@@ -99,9 +100,17 @@ Access rules (owner decisions, 2026-11-21):
 
 - **Reading** (`get_thread`, `get_attachment_raw`, `get_attachment_extraction`):
   `Thread::canUserAccess($sub)` - owner, granted, or a public thread. A public thread is
-  readable, including its files and extractions. (The UI's `file.php:39` is stricter today and
-  refuses raw files on public threads the user isn't authorized on; MCP deliberately follows the
-  owner's rule instead. `file.php` is not changed by this work.)
+  readable, including its files and extractions.
+- **Sync the UI with this rule:** `file.php:39` calls
+  `ThreadAuthorizationManager::canUserAccessThread()` directly, which skips the public-thread
+  exception, so the UI refuses raw files on public threads today. History shows no reason: the
+  public exception has lived in `Thread::canUserAccess()` since `30662102` (2024-12-30), and the
+  check in `file.php` was added later in `ac5904c7` (2025-02-16) without mentioning public
+  threads - an oversight. Change `file.php` to `$thread->canUserAccess($sub)`, and add an e2e
+  test in `e2e-tests/pages/FilePageTest.php` that a logged-in non-granted user can download a
+  file from a public thread (and still gets refused on a non-public one).
+  `classify-email.php:46` uses the same direct check, but classifying is a write, so the
+  stricter rule is correct there and stays.
 - **Writing** (`send_reply`): `ThreadAuthorizationManager::canUserAccessThread($threadId, $sub)` -
   owner or granted only. A public thread the user has no authorization row for is not
   replyable through MCP, even though the UI allows it today. This keeps an assistant from
@@ -160,6 +169,5 @@ claude.ai). README gets a line under capabilities.
   `list_my_threads` hides archived threads unless `include_archived` is true.
 - `start_thread` defaults: law basis `offentleglova`, follow-up plan `speedy` (the UI defaults).
 - One entity per `start_thread` call.
-- "Not found" for both missing and inaccessible objects.
 - History entries tagged `"via": "mcp"`.
 - Inline logic in `start-thread.php` / `thread-reply.php` extracted into shared services.
