@@ -145,7 +145,7 @@ unchanged.
   signature - with a fixed test keypair), each tool's authorization (own thread, granted,
   other user's, public - reads allowed on public, `send_reply` refused on public-not-granted),
   recipient validation in `send_reply`.
-- E2E: an `/mcp` call with a token from the dev `oidc-provider` lists threads and queues a reply.
+- E2E: `/mcp` calls with tokens signed by a committed test-only key (trusted in development only) cover 401/metadata, initialize, tools/list and a tool call; the full OAuth login against the dev `oidc-provider` is verified manually with Claude Code (`claude mcp add --transport http`).
 
 ## Docs
 
