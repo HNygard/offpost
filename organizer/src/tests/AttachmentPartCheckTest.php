@@ -152,6 +152,115 @@ class AttachmentPartCheckTest extends TestCase {
         ], $findings);
     }
 
+    /**
+     * multipart/mixed with a body (part 1) and the given [name, bytes] attachments
+     * (parts 2, 3, ...).
+     */
+    private function emlWithAttachments(array $attachments): string {
+        $eml = "From: Postmottak <postmottak@example.com>\r\n"
+            . "To: someone@example.com\r\n"
+            . "Subject: Like vedlegg\r\n"
+            . "MIME-Version: 1.0\r\n"
+            . "Content-Type: multipart/mixed; boundary=\"BOUNDARY\"\r\n"
+            . "\r\n"
+            . "--BOUNDARY\r\n"
+            . "Content-Type: text/plain; charset=utf-8\r\n"
+            . "\r\n"
+            . "Hei,\r\n";
+        foreach ($attachments as [$name, $bytes]) {
+            $eml .= "--BOUNDARY\r\n"
+                . "Content-Type: application/octet-stream; name=\"$name\"\r\n"
+                . "Content-Disposition: attachment; filename=\"$name\"\r\n"
+                . "Content-Transfer-Encoding: base64\r\n"
+                . "\r\n"
+                . base64_encode($bytes) . "\r\n";
+        }
+        return $eml . "--BOUNDARY--\r\n";
+    }
+
+    private function statuses(array $findings): array {
+        return array_map(fn($f) => [$f['status'], $f['attachment_id'], $f['name'], $f['part_number']], $findings);
+    }
+
+    public function testSameAttachmentTwiceIsOkForBothParts(): void {
+        // :: Setup
+        // A logo attached twice: same name, same bytes. Each row must pair with its own
+        // part, so neither part is reported missing (and re-added on every --apply).
+        $eml = $this->emlWithAttachments([['image001.png', 'LOGO'], ['image001.png', 'LOGO']]);
+        $stored = [$this->stored('att-1', 'image001.png', 'LOGO'), $this->stored('att-2', 'image001.png', 'LOGO')];
+
+        // :: Act
+        $findings = AttachmentPartCheck::check($eml, $stored);
+
+        // :: Assert
+        $this->assertEquals([
+            [AttachmentPartCheck::OK, 'att-1', 'image001.png', 2],
+            [AttachmentPartCheck::OK, 'att-2', 'image001.png', 3],
+        ], $this->statuses($findings));
+    }
+
+    public function testSameBytesUnderDifferentNamesAreOk(): void {
+        // :: Setup
+        // The same document attached under two names. Its bytes also match the earlier
+        // part, which must not make the second row wrong_content.
+        $eml = $this->emlWithAttachments([['vedtak.pdf', self::PDF_BYTES], ['vedtak-kopi.pdf', self::PDF_BYTES]]);
+        $stored = [
+            $this->stored('att-1', 'vedtak.pdf', self::PDF_BYTES),
+            $this->stored('att-2', 'vedtak-kopi.pdf', self::PDF_BYTES),
+        ];
+
+        // :: Act
+        $findings = AttachmentPartCheck::check($eml, $stored);
+
+        // :: Assert
+        $this->assertEquals([
+            [AttachmentPartCheck::OK, 'att-1', 'vedtak.pdf', 2],
+            [AttachmentPartCheck::OK, 'att-2', 'vedtak-kopi.pdf', 3],
+        ], $this->statuses($findings));
+    }
+
+    public function testExtraCopyOfAStoredAttachmentIsDuplicate(): void {
+        // :: Setup
+        // Three rows for two identical parts: the third is a duplicate. It must not be
+        // repaired, and no part may be reported missing because of it.
+        $eml = $this->emlWithAttachments([['image001.png', 'LOGO'], ['image001.png', 'LOGO']]);
+        $stored = [
+            $this->stored('att-1', 'image001.png', 'LOGO'),
+            $this->stored('att-2', 'image001.png', 'LOGO'),
+            $this->stored('att-3', 'image001.png', 'LOGO'),
+        ];
+
+        // :: Act
+        $findings = AttachmentPartCheck::check($eml, $stored);
+
+        // :: Assert
+        $this->assertEquals([
+            [AttachmentPartCheck::OK, 'att-1', 'image001.png', 2],
+            [AttachmentPartCheck::OK, 'att-2', 'image001.png', 3],
+            [AttachmentPartCheck::DUPLICATE, 'att-3', 'image001.png', 2],
+        ], $this->statuses($findings));
+    }
+
+    public function testNameDiffersPicksTheUnclaimedPartWithTheSameBytes(): void {
+        // :: Setup
+        // Two parts with the same bytes; the second row's name was stored differently.
+        // Its bytes match part 2 first, but part 2 is taken: it belongs to part 3.
+        $eml = $this->emlWithAttachments([['a.pdf', self::PDF_BYTES], ['b.pdf', self::PDF_BYTES]]);
+        $stored = [
+            $this->stored('att-1', 'a.pdf', self::PDF_BYTES),
+            $this->stored('att-2', 'b .pdf', self::PDF_BYTES),
+        ];
+
+        // :: Act
+        $findings = AttachmentPartCheck::check($eml, $stored);
+
+        // :: Assert
+        $this->assertEquals([
+            [AttachmentPartCheck::OK, 'att-1', 'a.pdf', 2],
+            [AttachmentPartCheck::NAME_DIFFERS, 'att-2', 'b .pdf', 3],
+        ], $this->statuses($findings));
+    }
+
     public function testStoredAttachmentWithoutContent(): void {
         // :: Setup
         $stored = [

@@ -60,12 +60,20 @@ attachment with the top-level part of the same name: `wrong_content` (with the p
 whose bytes it actually holds), `stored_content_missing`, `name_differs` (no part of
 that name, but the bytes are those of a part no other row matched: only the stored
 name differs, e.g. a stray space from a folded header), `no_matching_part` (neither
-name nor bytes match), and `missing` for parts that were never stored.
+name nor bytes match), `duplicate` (an extra copy: its bytes are those of a part with
+its name that another row already matches, or no part of that name is left), and
+`missing` for parts that were never stored. Rows are paired with parts in three
+passes - exact name+bytes matches first, then other rows with a part of their name,
+then rows without one - so identical attachments (the same logo twice) pair up one
+to one instead of all claiming the first part.
 
 `AttachmentPartRepair` (`--apply`, one transaction per email) gives `wrong_content`
 and `stored_content_missing` rows the bytes and size of their own part and deletes
 their extractions so the extractors run again, and inserts `missing` parts as new
-attachments. Names are not changed. Each repaired email gets one
+attachments. A `duplicate` is removed only when this repair added it in an earlier
+run (its id is in an earlier entry's `added` list): the first production run used a
+check that paired both copies of a twice-attached file with one part and added a
+third. Other duplicates are left alone. Names are not changed. Each repaired email gets one
 `thread_email_history` entry (action `attachments_repaired`, user
 `attachment-part-repair`). Its details explain the repair: `summary` (short,
 non-technical; shown in the thread view under the email's attachments), `repair`

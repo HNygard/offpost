@@ -25,6 +25,7 @@ class AttachmentPartCheck {
     public const STORED_CONTENT_MISSING = 'stored_content_missing';
     public const NAME_DIFFERS = 'name_differs';
     public const NO_MATCHING_PART = 'no_matching_part';
+    public const DUPLICATE = 'duplicate';
     public const MISSING = 'missing';
 
     /**
@@ -66,55 +67,70 @@ class AttachmentPartCheck {
         $claimed = [];
         $findings = [];
 
-        // Pass 1: rows with a part of the same name. A shifted row keeps its own
-        // name, so it is matched here and reported WRONG_CONTENT.
-        foreach ($stored as $k => $att) {
-            $content = $att['content'];
-            $contentMatchesPart = self::partWithContent($parts, $content);
-
-            // Parts with the same name, unclaimed ones first so duplicate names
-            // (image001.png twice) pair up one to one.
+        // Parts with the row's name, in part order.
+        $candidatesOf = function (array $att) use ($parts): array {
             $candidates = [];
             foreach ($parts as $partNumber => $part) {
                 if ($part['filename'] === $att['name'] || $part['filename'] === $att['filename']) {
                     $candidates[] = $partNumber;
                 }
             }
-            if (empty($candidates)) {
+            return $candidates;
+        };
+        $withContent = function (array $partNumbers, ?string $content) use ($parts): array {
+            return $content === null ? [] : array_values(array_filter(
+                $partNumbers,
+                fn($partNumber) => $parts[$partNumber]['content'] === $content
+            ));
+        };
+
+        // Pass 1: rows whose bytes are those of an unclaimed part with their name. Done
+        // first, so a row with wrong content cannot take the part of a correct row when
+        // names repeat (image001.png twice).
+        foreach ($stored as $k => $att) {
+            $free = array_values(array_diff($withContent($candidatesOf($att), $att['content']), $claimed));
+            if (!empty($free)) {
+                $claimed[] = $free[0];
+                $findings[$k] = self::finding(self::OK, $att, $free[0], $free[0]);
+            }
+        }
+
+        // Pass 2: other rows that have parts with their name.
+        foreach ($stored as $k => $att) {
+            $candidates = $candidatesOf($att);
+            if (isset($findings[$k]) || empty($candidates)) {
                 continue;
             }
             $unclaimed = array_values(array_diff($candidates, $claimed));
+            $sameBytes = $withContent($candidates, $att['content']);
+            $contentMatchesPart = self::partWithContent($parts, $att['content'], $claimed);
 
-            if ($content === null) {
-                $status = self::STORED_CONTENT_MISSING;
-                $partNumber = $unclaimed[0] ?? $candidates[0];
+            if (!empty($sameBytes) || empty($unclaimed)) {
+                // Its bytes are those of a part already matched by another row, or no part
+                // of that name is left: an extra copy, not something to repair.
+                $findings[$k] = self::finding(self::DUPLICATE, $att, $sameBytes[0] ?? $candidates[0], $contentMatchesPart);
+                continue;
             }
-            elseif ($contentMatchesPart !== null && in_array($contentMatchesPart, $candidates, true)) {
-                $status = self::OK;
-                $partNumber = $contentMatchesPart;
-            }
-            else {
-                $status = self::WRONG_CONTENT;
-                $partNumber = $unclaimed[0] ?? $candidates[0];
-            }
-
-            $claimed[] = $partNumber;
-            $findings[$k] = self::finding($status, $att, $partNumber, $contentMatchesPart);
+            $status = $att['content'] === null ? self::STORED_CONTENT_MISSING : self::WRONG_CONTENT;
+            $claimed[] = $unclaimed[0];
+            $findings[$k] = self::finding($status, $att, $unclaimed[0], $contentMatchesPart);
         }
 
-        // Pass 2: rows whose name matches no part. When the bytes are those of a part
-        // no row has claimed, only the name was stored differently (NAME_DIFFERS).
+        // Pass 3: rows whose name matches no part. When the bytes are those of a part no
+        // row has claimed, only the name was stored differently (NAME_DIFFERS).
         foreach ($stored as $k => $att) {
             if (isset($findings[$k])) {
                 continue;
             }
-            $contentMatchesPart = self::partWithContent($parts, $att['content']);
-            if ($contentMatchesPart !== null && !in_array($contentMatchesPart, $claimed, true)) {
-                $claimed[] = $contentMatchesPart;
-                $findings[$k] = self::finding(self::NAME_DIFFERS, $att, $contentMatchesPart, $contentMatchesPart);
+            $free = array_values(array_diff($withContent(array_keys($parts), $att['content']), $claimed));
+            if (!empty($free)) {
+                $claimed[] = $free[0];
+                $findings[$k] = self::finding(self::NAME_DIFFERS, $att, $free[0], $free[0]);
             }
             else {
-                $findings[$k] = self::finding(self::NO_MATCHING_PART, $att, null, $contentMatchesPart);
+                $findings[$k] = self::finding(
+                    self::NO_MATCHING_PART, $att, null, self::partWithContent($parts, $att['content'], $claimed)
+                );
             }
         }
         ksort($findings);
@@ -136,16 +152,24 @@ class AttachmentPartCheck {
         return $findings;
     }
 
-    private static function partWithContent(array $parts, ?string $content): ?int {
+    /**
+     * A part with these bytes, preferring one no row has claimed (for reporting which
+     * part a row's bytes came from). Null when no part has them.
+     */
+    private static function partWithContent(array $parts, ?string $content, array $claimed = []): ?int {
         if ($content === null) {
             return null;
         }
+        $first = null;
         foreach ($parts as $partNumber => $part) {
             if ($part['content'] === $content) {
-                return $partNumber;
+                if (!in_array($partNumber, $claimed, true)) {
+                    return $partNumber;
+                }
+                $first ??= $partNumber;
             }
         }
-        return null;
+        return $first;
     }
 
     private static function finding(string $status, array $att, ?int $partNumber, ?int $contentMatchesPart): array {

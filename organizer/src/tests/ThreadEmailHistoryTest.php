@@ -63,6 +63,17 @@ class ThreadEmailHistoryTest extends PHPUnit\Framework\TestCase {
                     . 'They have been restored from the original email. (1 corrected, 2 added)'
             ],
             [
+                'action' => AttachmentPartRepair::HISTORY_ACTION,
+                'details' => json_encode([
+                    'summary' => 'An extra copy of an attachment, added by mistake during an earlier correction, has been removed.',
+                    'fixed' => [],
+                    'added' => [],
+                    'removed' => [['attachment_id' => 'a4', 'name' => 'image001.png', 'part' => null]],
+                ]),
+                'expected' => 'An extra copy of an attachment, added by mistake during an earlier correction, '
+                    . 'has been removed. (0 corrected, 0 added, 1 removed)'
+            ],
+            [
                 // An entry without summary still displays.
                 'action' => AttachmentPartRepair::HISTORY_ACTION,
                 'details' => json_encode(['fixed' => [], 'added' => [['attachment_id' => 'a2', 'name' => 'y.webp', 'part' => 2]]]),

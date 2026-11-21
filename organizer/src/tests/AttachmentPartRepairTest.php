@@ -187,6 +187,7 @@ class AttachmentPartRepairTest extends TestCase {
                         'part' => 2,
                         'problem' => 'was never stored',
                     ]],
+                    'removed' => [],
                 ],
             ],
         ], $this->history(), 'One history entry per repaired email, listing what was changed');
@@ -215,6 +216,162 @@ class AttachmentPartRepairTest extends TestCase {
         // :: Assert
         $problems = array_map(fn($item) => $item['problem'], $this->history()[0][2]['fixed']);
         $this->assertEquals(['was empty'], $problems);
+    }
+
+    public function testSameAttachmentTwiceIsAddedOnceAndNotAgainOnNextApply(): void {
+        // :: Setup
+        // Production: after the first --apply, a re-check reported parts missing again in
+        // emails with the same attachment twice, so every --apply would add another copy.
+        $eml = "From: Postmottak <postmottak@example.com>\r\n"
+            . "Subject: Logo to ganger\r\n"
+            . "MIME-Version: 1.0\r\n"
+            . "Content-Type: multipart/mixed; boundary=\"BOUNDARY\"\r\n"
+            . "\r\n"
+            . "--BOUNDARY\r\n"
+            . "Content-Type: text/plain; charset=utf-8\r\n"
+            . "\r\n"
+            . "Hei,\r\n";
+        foreach ([2, 3] as $partNumber) {
+            $eml .= "--BOUNDARY\r\n"
+                . "Content-Type: image/png; name=\"image001.png\"\r\n"
+                . "Content-Disposition: attachment; filename=\"image001.png\"\r\n"
+                . "Content-Transfer-Encoding: base64\r\n"
+                . "\r\n"
+                . base64_encode("PNG logo") . "\r\n";
+        }
+        $eml .= "--BOUNDARY--\r\n";
+        Database::execute("DELETE FROM thread_email_extractions WHERE email_id = ?", [$this->emailId]);
+        Database::execute("DELETE FROM thread_email_attachments WHERE email_id = ?", [$this->emailId]);
+        Database::queryValueWithBinaryParam(
+            "INSERT INTO thread_email_attachments (email_id, name, filename, filetype, location, content)
+             VALUES (:email_id, 'image001.png', 'image001.png', 'png', 'x - att 1-x.png', :content)
+             RETURNING id",
+            [':email_id' => $this->emailId],
+            [':content' => "PNG logo"]
+        );
+        $firstActions = AttachmentPartRepair::repairEmail(
+            $this->emailId, $eml, AttachmentPartCheck::check($eml, $this->storedAttachments()), true
+        );
+
+        // :: Act
+        $secondActions = AttachmentPartRepair::repairEmail(
+            $this->emailId, $eml, AttachmentPartCheck::check($eml, $this->storedAttachments()), true
+        );
+
+        // :: Assert
+        $this->assertEquals(['add_missing part=3 image001.png'], $firstActions);
+        $this->assertEquals([], $secondActions, 'Second apply must not add another copy');
+        $this->assertCount(2, $this->storedAttachments(), json_encode(
+            array_map(fn($a) => $a['name'], $this->storedAttachments()), JSON_PRETTY_PRINT
+        ));
+    }
+
+    public function testExtraCopyAddedByAnEarlierRunIsRemoved(): void {
+        // :: Setup
+        // The first production run used a check that paired both stored copies of a
+        // twice-attached file with the first part, reported the second part missing and
+        // added a third copy. That copy, and only that one, is removed again.
+        $logo = "PNG logo";
+        $eml = "From: Postmottak <postmottak@example.com>\r\n"
+            . "Subject: Logo to ganger\r\n"
+            . "MIME-Version: 1.0\r\n"
+            . "Content-Type: multipart/mixed; boundary=\"BOUNDARY\"\r\n"
+            . "\r\n"
+            . "--BOUNDARY\r\n"
+            . "Content-Type: text/plain; charset=utf-8\r\n"
+            . "\r\n"
+            . "Hei,\r\n";
+        foreach ([2, 3] as $partNumber) {
+            $eml .= "--BOUNDARY\r\n"
+                . "Content-Type: image/png; name=\"image001.png\"\r\n"
+                . "Content-Disposition: attachment; filename=\"image001.png\"\r\n"
+                . "Content-Transfer-Encoding: base64\r\n"
+                . "\r\n"
+                . base64_encode($logo) . "\r\n";
+        }
+        $eml .= "--BOUNDARY--\r\n";
+        Database::execute("DELETE FROM thread_email_extractions WHERE email_id = ?", [$this->emailId]);
+        Database::execute("DELETE FROM thread_email_attachments WHERE email_id = ?", [$this->emailId]);
+        $ids = [];
+        foreach (['2026-01-01 10:00:00+00', '2026-01-01 10:00:01+00', '2026-11-21 16:00:00+00'] as $createdAt) {
+            $ids[] = Database::queryValueWithBinaryParam(
+                "INSERT INTO thread_email_attachments (email_id, name, filename, filetype, location, content, created_at)
+                 VALUES (:email_id, 'image001.png', 'image001.png', 'png', 'x', :content, :created_at)
+                 RETURNING id",
+                [':email_id' => $this->emailId, ':created_at' => $createdAt],
+                [':content' => $logo]
+            );
+        }
+        [$firstId, $secondId, $addedId] = $ids;
+        $threadId = Database::queryValue("SELECT thread_id FROM thread_emails WHERE id = ?", [$this->emailId]);
+        (new ThreadEmailHistory())->logAction($threadId, $this->emailId, AttachmentPartRepair::HISTORY_ACTION,
+            AttachmentPartRepair::HISTORY_USER_ID, [
+                'repair' => AttachmentPartRepair::REPAIR_ID,
+                'fixed' => [],
+                'added' => [['attachment_id' => $addedId, 'name' => 'image001.png', 'part' => 3, 'problem' => 'was never stored']],
+            ]);
+        $findings = AttachmentPartCheck::check($eml, $this->storedAttachments());
+
+        // :: Act
+        $actions = AttachmentPartRepair::repairEmail($this->emailId, $eml, $findings, true);
+
+        // :: Assert
+        $this->assertEquals(["remove_own_duplicate attachment=$addedId image001.png"], $actions);
+        $remaining = array_map(fn($a) => $a['id'], $this->storedAttachments());
+        sort($remaining);
+        $expected = [$firstId, $secondId];
+        sort($expected);
+        $this->assertEquals($expected, $remaining, 'Only the copy this repair added is removed');
+        $history = $this->history();
+        $lastHistory = end($history);
+        $this->assertEquals([
+            ['attachment_id' => $addedId, 'name' => 'image001.png', 'part' => null,
+             'problem' => 'was added twice by an earlier run of this repair'],
+        ], $lastHistory[2]['removed']);
+        $this->assertEquals(AttachmentPartRepair::SUMMARY_REMOVED_ONLY, $lastHistory[2]['summary']);
+    }
+
+    public function testDuplicateNotAddedByThisRepairIsLeftAlone(): void {
+        // :: Setup
+        // Three stored copies for two parts, none added by this repair: left as they are.
+        $logo = "PNG logo";
+        $eml = "From: Postmottak <postmottak@example.com>\r\n"
+            . "Subject: Logo to ganger\r\n"
+            . "MIME-Version: 1.0\r\n"
+            . "Content-Type: multipart/mixed; boundary=\"BOUNDARY\"\r\n"
+            . "\r\n"
+            . "--BOUNDARY\r\n"
+            . "Content-Type: text/plain; charset=utf-8\r\n"
+            . "\r\n"
+            . "Hei,\r\n";
+        foreach ([2, 3] as $partNumber) {
+            $eml .= "--BOUNDARY\r\n"
+                . "Content-Type: image/png; name=\"image001.png\"\r\n"
+                . "Content-Disposition: attachment; filename=\"image001.png\"\r\n"
+                . "Content-Transfer-Encoding: base64\r\n"
+                . "\r\n"
+                . base64_encode($logo) . "\r\n";
+        }
+        $eml .= "--BOUNDARY--\r\n";
+        Database::execute("DELETE FROM thread_email_extractions WHERE email_id = ?", [$this->emailId]);
+        Database::execute("DELETE FROM thread_email_attachments WHERE email_id = ?", [$this->emailId]);
+        foreach ([1, 2, 3] as $n) {
+            Database::queryValueWithBinaryParam(
+                "INSERT INTO thread_email_attachments (email_id, name, filename, filetype, location, content)
+                 VALUES (:email_id, 'image001.png', 'image001.png', 'png', 'x', :content)
+                 RETURNING id",
+                [':email_id' => $this->emailId],
+                [':content' => $logo]
+            );
+        }
+        $findings = AttachmentPartCheck::check($eml, $this->storedAttachments());
+
+        // :: Act
+        $actions = AttachmentPartRepair::repairEmail($this->emailId, $eml, $findings, true);
+
+        // :: Assert
+        $this->assertEquals([], $actions);
+        $this->assertCount(3, $this->storedAttachments(), 'Duplicates that existed before the repair are kept');
     }
 
     public function testApplyIsANoOpWhenEverythingIsOk(): void {

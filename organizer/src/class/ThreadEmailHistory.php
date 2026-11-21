@@ -44,7 +44,9 @@ class ThreadEmailHistory {
                 $details = json_decode($details, true);
                 return ($details['summary'] ?? 'Attachments restored from the original email.')
                     . ' (' . count($details['fixed'] ?? []) . ' corrected, '
-                    . count($details['added'] ?? []) . ' added)';
+                    . count($details['added'] ?? []) . ' added'
+                    . (empty($details['removed']) ? '' : ', ' . count($details['removed']) . ' removed')
+                    . ')';
             default:
                 throw new Exception('Unknown action: ' . $action);
         }
