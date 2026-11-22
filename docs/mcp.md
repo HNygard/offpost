@@ -57,7 +57,9 @@ the authorization server from the metadata, registers itself and opens the norma
 `auth/server.js` (Node `oidc-provider`) has issuer `http://localhost:25083/oidc`, dynamic
 registration, and resource indicators issuing RS256 JWT access tokens for `http://localhost:25081/mcp`
 (these must match `organizer/src/mcp-config.php`). Public clients must use PKCE; the confidential
-`organizer` client keeps PKCE optional. The web UI login is unaffected: it uses the provider
+`organizer` client keeps PKCE optional. The `organizer` client is excluded from the MCP
+resource so that its userinfo-based web login keeps working (userinfo rejects tokens that have an
+audience); this must be confirmed in the manual check below. The web login uses the provider
 endpoints under `/oidc` directly, not discovery.
 
 E2E tests sign tokens with a committed test-only key (`organizer/src/tests/fixtures/mcp/`),

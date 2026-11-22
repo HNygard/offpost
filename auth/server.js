@@ -1,4 +1,4 @@
-import { Provider } from 'oidc-provider';
+import { Provider, errors } from 'oidc-provider';
 import express from 'express';
 import cors from 'cors';
 import winston from 'winston';
@@ -122,14 +122,22 @@ const configuration = {
     // Issue JWT access tokens for the MCP resource server (organizer /mcp).
     resourceIndicators: {
       enabled: true,
-      defaultResource: () => MCP_RESOURCE,
-      useGrantedResource: () => true,
-      getResourceServerInfo: () => ({
-        scope: 'openid',
-        audience: MCP_RESOURCE,
-        accessTokenFormat: 'jwt',
-        jwt: { sign: { alg: 'RS256' } },
-      }),
+      // The organizer web login uses userinfo, which rejects tokens with an audience,
+      // so the MCP resource applies to every client except 'organizer'.
+      defaultResource: (ctx, client, oneOf) =>
+        oneOf ?? (client.clientId === 'organizer' ? undefined : MCP_RESOURCE),
+      useGrantedResource: (ctx, model) => model.clientId !== 'organizer',
+      getResourceServerInfo: (ctx, resourceIndicator) => {
+        if (resourceIndicator !== MCP_RESOURCE) {
+          throw new errors.InvalidTarget();
+        }
+        return {
+          scope: 'openid',
+          audience: MCP_RESOURCE,
+          accessTokenFormat: 'jwt',
+          jwt: { sign: { alg: 'RS256' } },
+        };
+      },
     },
   },
   claims: {
