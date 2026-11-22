@@ -225,6 +225,26 @@ class McpToolsReadTest extends TestCase {
         $this->assertArrayHasKey('attachments', $email);
     }
 
+    public function testGetThreadSendingsOmitSmtpTranscripts(): void {
+        // :: Setup
+        $thread = $this->createThread('Med sending', self::USER_A);
+        Database::execute(
+            "UPDATE thread_email_sendings SET smtp_debug = 'debug', smtp_response = '250 OK' WHERE thread_id = ?",
+            [$thread->id]
+        );
+
+        // :: Act
+        $data = $this->callData('get_thread', ['thread_id' => $thread->id], self::USER_A);
+
+        // :: Assert
+        $this->assertNotEmpty($data['sendings'], json_encode($data['sendings'], JSON_PRETTY_PRINT));
+        foreach ($data['sendings'] as $sending) {
+            $this->assertArrayNotHasKey('smtp_debug', $sending);
+            $this->assertArrayNotHasKey('smtp_response', $sending);
+            $this->assertArrayHasKey('status', $sending);
+        }
+    }
+
     public function testGetThreadReducesExtractionsAndDropsAttachmentLocation(): void {
         // :: Setup
         $thread = $this->createThread('Med vedlegg', self::USER_A);

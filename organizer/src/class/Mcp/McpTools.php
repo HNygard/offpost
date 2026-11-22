@@ -241,11 +241,17 @@ class McpTools implements McpToolProvider {
             $emails[] = $email;
         }
 
+        // Raw SMTP transcripts are not useful to the model and may leak server details.
+        $sendings = array_map(function ($sending) {
+            unset($sending['smtp_debug'], $sending['smtp_response']);
+            return $sending;
+        }, $export['sendings']);
+
         return [
             'thread' => $export['thread'],
             'entity' => $export['entity'],
             'emails' => $emails,
-            'sendings' => $export['sendings'],
+            'sendings' => $sendings,
             'thread_url' => NpApiService::threadUrl($threadId),
         ];
     }
