@@ -78,6 +78,19 @@ class McpApiTest extends TestCase {
         ], json_decode($resp['body'], true));
     }
 
+    public function testProtectedResourceMetadataPathSuffixedForMcp(): void {
+        // :: Act
+        $resp = $this->request('GET', '/.well-known/oauth-protected-resource/mcp', null);
+
+        // :: Assert
+        $this->assertEquals(200, $resp['status'], $resp['body']);
+        $this->assertEquals([
+            'resource' => 'http://localhost:25081/mcp',
+            'authorization_servers' => ['http://localhost:25083/oidc'],
+            'bearer_methods_supported' => ['header'],
+        ], json_decode($resp['body'], true));
+    }
+
     public function testNoTokenIs401WithMetadataHeader(): void {
         // :: Act
         $resp =$this->request('POST', '/mcp', null, '{"jsonrpc":"2.0","id":1,"method":"ping"}');

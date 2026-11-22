@@ -1,13 +1,6 @@
 <?php
 // MCP (Model Context Protocol) endpoint, streamable HTTP, POST only. OAuth bearer auth.
 // Deliberately starts no session and does not use auth.php.
-require_once __DIR__ . '/../../username-password.php';
-require_once __DIR__ . '/../../mcp-config.php';
-require_once __DIR__ . '/../../class/Mcp/McpHttp.php';
-require_once __DIR__ . '/../../class/Mcp/McpTokenVerifier.php';
-require_once __DIR__ . '/../../class/Mcp/McpJwksLoader.php';
-require_once __DIR__ . '/../../class/Mcp/McpServer.php';
-require_once __DIR__ . '/../../class/Mcp/McpTools.php';
 
 function mcpJsonError(int $status, string $message): void {
     http_response_code($status);
@@ -16,6 +9,14 @@ function mcpJsonError(int $status, string $message): void {
 }
 
 try {
+    require_once __DIR__ . '/../../username-password.php';
+    require_once __DIR__ . '/../../mcp-config.php';
+    require_once __DIR__ . '/../../class/Mcp/McpHttp.php';
+    require_once __DIR__ . '/../../class/Mcp/McpTokenVerifier.php';
+    require_once __DIR__ . '/../../class/Mcp/McpJwksLoader.php';
+    require_once __DIR__ . '/../../class/Mcp/McpServer.php';
+    require_once __DIR__ . '/../../class/Mcp/McpTools.php';
+
     if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
         header('Allow: POST');
         mcpJsonError(405, 'Method not allowed, use POST');
