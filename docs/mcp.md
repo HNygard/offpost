@@ -125,7 +125,11 @@ registration, and resource indicators issuing RS256 JWT access tokens for `http:
 (these must match `organizer/src/mcp-config.php`). The MCP resource's scope is `mcp` (matching
 `$mcp_scopes`); it must be a resource scope, not an OIDC one such as `openid`: with `openid` there,
 a client that requests only the resource gets nothing granted and the provider redirects back with
-`error=access_denied`. Dynamic client registrations are persisted by `auth/dev-adapter.js` to the
+`error=access_denied`. The provider's `scopes` list includes `mcp` (plus the defaults `openid`,
+`offline_access`, and `profile` from claims): MCP clients put the advertised scope in their dynamic
+registration, which is otherwise rejected with `invalid_client_metadata` ("scope must only contain
+Authorization Server supported scope values"; Claude Code shows "This service doesn't accept
+sign-ins from Claude Code"). Dynamic client registrations are persisted by `auth/dev-adapter.js` to the
 gitignored `auth/.oidc-store/clients.json` (ignored by nodemon), so MCP clients that cache their
 `client_id` don't get `invalid_client` after an auth restart; sessions and grants stay in memory,
 so you log in again. Consent grants the requested OIDC scopes too (e.g. `offline_access`, so the

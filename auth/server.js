@@ -107,6 +107,10 @@ const OIDC_ISSUER = 'http://localhost:25083/oidc';
 const configuration = {
   // Persists dynamic client registrations across restarts (see dev-adapter.js).
   adapter: DevAdapter,
+  // The library defaults plus 'mcp' (the MCP resource scope, advertised by Offpost as
+  // scopes_supported). Without it, a dynamic registration that includes "scope": "mcp" - as
+  // Claude Code sends - is rejected with invalid_client_metadata. 'profile' is added from claims.
+  scopes: ['openid', 'offline_access', 'mcp'],
   clients: [{
     client_id: 'organizer',
     client_secret: 'secret',
