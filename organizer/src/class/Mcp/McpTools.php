@@ -6,6 +6,8 @@ require_once __DIR__ . '/../Entity.php';
 require_once __DIR__ . '/../Thread.php';
 require_once __DIR__ . '/../NpApiService.php';
 require_once __DIR__ . '/../ThreadExportService.php';
+require_once __DIR__ . '/../ThreadStorageManager.php';
+require_once __DIR__ . '/../Extraction/ThreadEmailExtractionService.php';
 
 /**
  * The tools served by the /mcp endpoint. Every tool returns one JSON text item.
@@ -16,6 +18,9 @@ require_once __DIR__ . '/../ThreadExportService.php';
 class McpTools implements McpToolProvider {
     private const DEFAULT_LIMIT = 50;
     private const MAX_LIMIT = 200;
+    public const MAX_RAW_ATTACHMENT_BYTES = 5242880;
+    /** Test-only: replaces MAX_RAW_ATTACHMENT_BYTES when set. */
+    public static ?int $maxRawBytesOverride = null;
     private const UUID_REGEX = '/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/';
 
     public function definitions(): array {
@@ -67,6 +72,36 @@ class McpTools implements McpToolProvider {
                     'additionalProperties' => false,
                 ],
             ],
+            [
+                'name' => 'get_attachment_raw',
+                'description' => 'Get the original bytes of one attachment (images as image content, other types as an embedded resource). '
+                    . 'Attachments over 5 MB are refused; use get_attachment_extraction for their text. '
+                    . 'Attachment ids come from get_thread. Public threads of other users are readable too.',
+                'inputSchema' => [
+                    'type' => 'object',
+                    'properties' => [
+                        'thread_id' => ['type' => 'string', 'description' => 'Thread id (UUID) from list_my_threads.'],
+                        'attachment_id' => ['type' => 'string', 'description' => 'Attachment id (UUID) from get_thread.'],
+                    ],
+                    'required' => ['thread_id', 'attachment_id'],
+                    'additionalProperties' => false,
+                ],
+            ],
+            [
+                'name' => 'get_attachment_extraction',
+                'description' => 'Get the extracted text of one attachment (e.g. OCR or AI text extraction), optionally only for one prompt. '
+                    . 'An empty list means no extraction exists yet. Attachment ids come from get_thread.',
+                'inputSchema' => [
+                    'type' => 'object',
+                    'properties' => [
+                        'thread_id' => ['type' => 'string', 'description' => 'Thread id (UUID) from list_my_threads.'],
+                        'attachment_id' => ['type' => 'string', 'description' => 'Attachment id (UUID) from get_thread.'],
+                        'prompt_id' => ['type' => 'string', 'description' => 'Only return extractions made with this prompt id.'],
+                    ],
+                    'required' => ['thread_id', 'attachment_id'],
+                    'additionalProperties' => false,
+                ],
+            ],
         ];
     }
 
@@ -78,6 +113,10 @@ class McpTools implements McpToolProvider {
                 return $this->textResult($this->listMyThreads($args, $userId));
             case 'get_thread':
                 return $this->textResult($this->getThread($args, $userId));
+            case 'get_attachment_raw':
+                return $this->getAttachmentRaw($args, $userId);
+            case 'get_attachment_extraction':
+                return $this->textResult($this->getAttachmentExtraction($args, $userId));
             default:
                 throw new McpToolException("Unknown tool: $name");
         }
@@ -219,11 +258,8 @@ class McpTools implements McpToolProvider {
     }
 
     private function getThread(array $args, string $userId): array {
-        $threadId = $this->requireUuid($args['thread_id'] ?? null);
-        $thread = Thread::loadFromDatabaseOrNone($threadId);
-        if ($thread === null || !$thread->canUserAccess($userId)) {
-            throw new McpNotFoundException();
-        }
+        $thread = $this->loadAccessibleThread($args, $userId);
+        $threadId = $thread->id;
         $export = ThreadExportService::exportThread($threadId, false);
         if ($export === null) {
             throw new McpNotFoundException();
@@ -254,6 +290,95 @@ class McpTools implements McpToolProvider {
             'sendings' => $sendings,
             'thread_url' => NpApiService::threadUrl($threadId),
         ];
+    }
+
+    /** Loads the thread named by $args['thread_id'], or throws McpNotFoundException if missing or not readable by the user. */
+    private function loadAccessibleThread(array $args, string $userId): Thread {
+        $threadId = $this->requireUuid($args['thread_id'] ?? null);
+        $thread = Thread::loadFromDatabaseOrNone($threadId);
+        if ($thread === null || !$thread->canUserAccess($userId)) {
+            throw new McpNotFoundException();
+        }
+        return $thread;
+    }
+
+    /**
+     * Metadata of an attachment that belongs to one of the thread's emails, without loading its content.
+     * Throws McpNotFoundException when the attachment id is invalid or belongs to another thread.
+     */
+    private function loadThreadAttachmentInfo(Thread $thread, array $args): array {
+        $attachmentId = $this->requireUuid($args['attachment_id'] ?? null);
+        $row = Database::queryOneOrNone(
+            "SELECT tea.id, tea.name, tea.filename, tea.filetype, tea.size,
+                    tea.content IS NULL AS content_missing, octet_length(tea.content) AS content_length
+             FROM thread_email_attachments tea
+             JOIN thread_emails te ON te.id = tea.email_id
+             WHERE te.thread_id = ? AND tea.id = ?",
+            [$thread->id, $attachmentId]
+        );
+        if ($row === null) {
+            throw new McpNotFoundException();
+        }
+        return $row;
+    }
+
+    private function getAttachmentRaw(array $args, string $userId): array {
+        $thread = $this->loadAccessibleThread($args, $userId);
+        $info = $this->loadThreadAttachmentInfo($thread, $args);
+
+        if ($info['content_missing'] === true || $info['content_missing'] === 't') {
+            throw new McpToolException('Attachment content was never stored; try get_attachment_extraction');
+        }
+        $size = $info['size'] !== null ? (int)$info['size'] : (int)$info['content_length'];
+        $cap = self::$maxRawBytesOverride ?? self::MAX_RAW_ATTACHMENT_BYTES;
+        // Checked before the content is loaded or base64-encoded.
+        if ($size > $cap) {
+            throw new McpToolException('Attachment is larger than 5 MB; use get_attachment_extraction for its text');
+        }
+
+        $attachment = ThreadStorageManager::getInstance()->getThreadEmailAttachment($thread, $info['id']);
+        $mimeType = NpApiService::attachmentContentType($info['filetype']);
+        $data = base64_encode($attachment->content);
+
+        if (str_starts_with($mimeType, 'image/')) {
+            return [['type' => 'image', 'data' => $data, 'mimeType' => $mimeType]];
+        }
+        return [
+            $this->textResult([
+                'name' => $info['name'],
+                'filename' => $info['filename'],
+                'mimeType' => $mimeType,
+                'size' => $size,
+            ])[0],
+            ['type' => 'resource', 'resource' => [
+                'uri' => "offpost://thread/{$thread->id}/attachment/{$info['id']}",
+                'mimeType' => $mimeType,
+                'blob' => $data,
+            ]],
+        ];
+    }
+
+    private function getAttachmentExtraction(array $args, string $userId): array {
+        $thread = $this->loadAccessibleThread($args, $userId);
+        $info = $this->loadThreadAttachmentInfo($thread, $args);
+        $promptId = $this->optionalString($args, 'prompt_id');
+
+        $extractions = [];
+        foreach ((new ThreadEmailExtractionService())->getExtractionsForAttachment($info['id']) as $e) {
+            if ($promptId !== null && $e->prompt_id !== $promptId) {
+                continue;
+            }
+            $extractions[] = [
+                'extraction_id' => $e->extraction_id,
+                'prompt_id' => $e->prompt_id,
+                'prompt_service' => $e->prompt_service,
+                'extracted_text' => $e->extracted_text,
+                'error_message' => $e->error_message,
+                'created_at' => $this->isoTimestamp($e->created_at),
+                'updated_at' => $this->isoTimestamp($e->updated_at),
+            ];
+        }
+        return ['attachment_id' => $info['id'], 'extractions' => $extractions];
     }
 
     private function reduceExtractions(array $extractions): array {

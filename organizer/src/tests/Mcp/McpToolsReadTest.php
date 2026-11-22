@@ -55,12 +55,15 @@ class McpToolsReadTest extends TestCase {
         );
     }
 
-    public function testDefinitionsListOnlyReadTools(): void {
+    public function testDefinitionsListReadTools(): void {
         // :: Act
         $names = array_column($this->tools->definitions(), 'name');
 
         // :: Assert
-        $this->assertEquals(['list_entities', 'list_my_threads', 'get_thread'], $names);
+        $this->assertEquals(
+            ['list_entities', 'list_my_threads', 'get_thread', 'get_attachment_raw', 'get_attachment_extraction'],
+            $names
+        );
     }
 
     public function testUnknownToolThrows(): void {
