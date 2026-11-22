@@ -426,7 +426,7 @@ class ThreadDatabaseOperations {
         return $thread;
     }
 
-    public function createThread($entityId, Thread $thread, $userId) {
+    public function createThread($entityId, Thread $thread, $userId, array $historyDetails = []) {
         // Check entity
         $entity = Entity::getById($entityId);
 
@@ -475,7 +475,7 @@ class ThreadDatabaseOperations {
         $thread->entity_id = $entityId;
         
         // Log thread creation
-        $this->history->logAction($uuid, 'created', $userId);
+        $this->history->logAction($uuid, 'created', $userId, $historyDetails ?: null);
         
         return $thread;
     }

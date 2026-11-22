@@ -29,8 +29,8 @@ class ThreadStorageManager {
         return $this->dbOps->getThreadsForEntity($entityId);
     }
     
-    public function createThread($entityId, Thread $thread, $userId = 'system') {
-        return $this->dbOps->createThread($entityId, $thread, $userId);
+    public function createThread($entityId, Thread $thread, $userId = 'system', array $historyDetails = []) {
+        return $this->dbOps->createThread($entityId, $thread, $userId, $historyDetails);
     }
 
     public function updateThread(Thread $thread, $userId = 'system') {
