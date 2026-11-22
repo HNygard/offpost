@@ -39,7 +39,7 @@ UUID that is missing or inaccessible gives exactly `Not found, or no access`.
 | `start_thread` | any authenticated user; creates a thread owned by the token `sub`, queued `READY_FOR_SENDING`, no daily cap. Refuses entities without email (`Entity has no email address: <id>`) and defunct ones (`Entity no longer exists: <id>`) |
 | `list_my_threads` | only threads with a `thread_authorizations` row for the user (owner or granted); public threads merely viewable are not listed. Each thread has `has_delivery_problem` (computed for the listed threads in one query) |
 | `get_thread` | read rule: owner, granted **or public** (`Thread::canUserAccess`); no raw EML, no `body_html`. Returns `delivery_problems` (see below), `can_reply` (true only with a `thread_authorizations` row, the same check as `send_reply`); `reply_recipients` is empty unless `can_reply` |
-| `get_attachment_link` | read rule. By default returns `{name, filename, mimeType, size, download_url, expires_in: 300}` and loads no content (no size cap). With `inline: true` it also returns the content (image content or embedded resource); attachments over 5 MB are then refused (use `get_attachment_extraction`). Attachments whose content was never stored give an error in both modes. Replaces `get_attachment_link` |
+| `get_attachment_link` | read rule. By default returns `{name, filename, mimeType, size, download_url, expires_in: 300}` and loads no content (no size cap). With `inline: true` it also returns the content (image content or embedded resource); attachments over 5 MB are then refused (use `get_attachment_extraction`). Attachments whose content was never stored give an error in both modes. Replaces `get_attachment_raw` |
 | `get_attachment_extraction` | read rule |
 | `send_reply` | owner or granted only (`thread_authorizations` row); a public thread without a row is refused. Recipient must be one of the thread's valid reply recipients. Queued `READY_FOR_SENDING`. Subject and body are stored trimmed |
 
@@ -97,7 +97,11 @@ with `curl -o file.pdf "<download_url>"` so the file stays out of its context.
 
 One-time, before the first deploy of attachment links, on the production host:
 `openssl rand -hex 32 > /opt/offpost/secrets/mcp_link_secret` (readable by the container; it is
-mounted by `docker-compose.prod.yaml`). Without it the MCP endpoints answer 500 JSON.
+mounted by `docker-compose.prod.yaml`). The file must exist before `up`: if it is missing, docker
+creates a directory at that path, and then you must remove that directory and create the file.
+A missing, short or unusable secret is logged and disables attachment links only:
+`get_attachment_link` answers the tool error `Attachment links are not configured` and the download
+endpoint answers a plain-text 500; the rest of the MCP endpoints (including OAuth discovery) work.
 
 After pulling this branch, run `docker-compose -f <compose file> down && docker-compose -f <compose file> up --build -d`.
 The image installs `firebase/php-jwt`, and the anonymous vendor volume would otherwise keep the old

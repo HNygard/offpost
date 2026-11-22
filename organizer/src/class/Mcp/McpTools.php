@@ -559,7 +559,7 @@ class McpTools implements McpToolProvider {
             throw new McpToolException('Attachment content was never stored; try get_attachment_extraction');
         }
         if ($this->links === null || $this->resource === null) {
-            throw new RuntimeException('Attachment links are not configured');
+            throw new McpToolException('Attachment links are not configured');
         }
         $size = $info['size'] !== null ? (int)$info['size'] : (int)$info['content_length'];
         $mimeType = NpApiService::attachmentContentType($info['filetype']);

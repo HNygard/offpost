@@ -78,7 +78,7 @@ class McpAttachmentLinkTest extends TestCase {
         $this->assertRejected(fn() => $this->link('another-secret-0123456789abcdef-0123456789')->verify($token, self::NOW));
     }
 
-    /** @dataProvider garbageProvider */
+    #[\PHPUnit\Framework\Attributes\DataProvider('garbageProvider')]
     public function testGarbageIsRejected(string $garbage): void {
         // :: Act / Assert
         $this->assertRejected(fn() => $this->link()->verify($garbage, self::NOW));
@@ -100,13 +100,16 @@ class McpAttachmentLinkTest extends TestCase {
         @mkdir($dir);
         file_put_contents($dir . '/secret', self::SECRET . "\n");
 
-        // :: Act
-        $secret = McpLinkSecret::load($dir . '/secret', false);
+        try {
+            // :: Act
+            $secret = McpLinkSecret::load($dir . '/secret', false);
 
-        // :: Assert
-        $this->assertEquals(self::SECRET, $secret);
-        unlink($dir . '/secret');
-        rmdir($dir);
+            // :: Assert
+            $this->assertEquals(self::SECRET, $secret);
+        } finally {
+            @unlink($dir . '/secret');
+            @rmdir($dir);
+        }
     }
 
     public function testShortSecretFileThrows(): void {
@@ -138,14 +141,33 @@ class McpAttachmentLinkTest extends TestCase {
         $dir = sys_get_temp_dir() . '/mcp-secret-test-gen';
         @mkdir($dir);
 
-        // :: Act
-        $first = McpLinkSecret::load('/nonexistent/mcp_link_secret', true, $dir);
-        $second = McpLinkSecret::load('/nonexistent/mcp_link_secret', true, $dir);
+        try {
+            // :: Act
+            $first = McpLinkSecret::load('/nonexistent/mcp_link_secret', true, $dir);
+            $second = McpLinkSecret::load('/nonexistent/mcp_link_secret', true, $dir);
 
-        // :: Assert
-        $this->assertEquals($first, $second, 'the generated secret is reused');
-        $this->assertEquals(64, strlen($first));
-        array_map('unlink', glob($dir . '/*'));
-        rmdir($dir);
+            // :: Assert
+            $this->assertEquals($first, $second, 'the generated secret is reused');
+            $this->assertEquals(64, strlen($first));
+        } finally {
+            array_map('unlink', glob($dir . '/*'));
+            @rmdir($dir);
+        }
+    }
+
+    public function testDirectoryAtSecretPathIsReportedAsNotRegularFile(): void {
+        // :: Setup
+        $dir = sys_get_temp_dir() . '/mcp-secret-test-dir';
+        @mkdir($dir);
+
+        try {
+            // :: Act / Assert
+            McpLinkSecret::load($dir, false);
+            $this->fail('Expected RuntimeException');
+        } catch (RuntimeException $e) {
+            $this->assertEquals("MCP link secret is not a regular file: $dir", $e->getMessage());
+        } finally {
+            @rmdir($dir);
+        }
     }
 }

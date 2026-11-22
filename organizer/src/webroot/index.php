@@ -112,7 +112,7 @@ try {
             throw new Exception("404 Not Found", 404);
         }
     }
-}
+} 
 catch (Throwable $e) {
     displayErrorPage($e);
 }

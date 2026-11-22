@@ -15,7 +15,17 @@ class McpLinkSecret {
      * @throws RuntimeException when the secret is missing (production) or too short
      */
     public static function load(string $file, bool $allowGenerated, ?string $tempDir = null): string {
-        $secret = is_readable($file) ? trim((string)file_get_contents($file)) : null;
+        $secret = null;
+        if (file_exists($file)) {
+            if (!is_file($file)) {
+                throw new RuntimeException("MCP link secret is not a regular file: $file");
+            }
+            $content = is_readable($file) ? @file_get_contents($file) : false;
+            if ($content === false) {
+                throw new RuntimeException("MCP link secret file is unreadable: $file");
+            }
+            $secret = trim($content);
+        }
         if ($secret === null && $allowGenerated) {
             return self::generated($tempDir ?? sys_get_temp_dir());
         }

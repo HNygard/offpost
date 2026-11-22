@@ -24,7 +24,14 @@ if (defined('PHPUNIT_RUNNING') || $environment === 'development') {
 // HMAC secret for attachment download links. Production reads /run/secrets/mcp_link_secret;
 // development/PHPUnit generates one into the temp dir when the file is missing.
 require_once __DIR__ . '/class/Mcp/McpLinkSecret.php';
-$mcp_link_secret = McpLinkSecret::load(
-    McpLinkSecret::PRODUCTION_FILE,
-    defined('PHPUNIT_RUNNING') || $environment === 'development'
-);
+// A missing or unusable secret must not take down the other MCP endpoints (OAuth discovery,
+// the JSON-RPC endpoint): it is logged and links are disabled ($mcp_link_secret = null).
+try {
+    $mcp_link_secret = McpLinkSecret::load(
+        McpLinkSecret::PRODUCTION_FILE,
+        defined('PHPUNIT_RUNNING') || $environment === 'development'
+    );
+} catch (RuntimeException $e) {
+    error_log('MCP attachment links disabled: ' . $e->getMessage());
+    $mcp_link_secret = null;
+}

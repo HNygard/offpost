@@ -24,6 +24,11 @@ try {
         exit;
     }
 
+    if ($mcp_link_secret === null) {
+        mcpDownloadError(500, 'Attachment links are not configured');
+        exit;
+    }
+
     try {
         $claims = (new McpAttachmentLink($mcp_link_secret))->verify((string)($_GET['token'] ?? ''), time());
     } catch (McpAuthException $e) {

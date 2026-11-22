@@ -48,7 +48,7 @@ try {
     if (json_last_error() !== JSON_ERROR_NONE) {
         $request = McpServer::PARSE_ERROR;
     }
-    $response = (new McpServer(new McpTools(new McpAttachmentLink($mcp_link_secret), $mcp_resource)))->handle($request, $userId);
+    $response = (new McpServer(new McpTools($mcp_link_secret === null ? null : new McpAttachmentLink($mcp_link_secret), $mcp_resource)))->handle($request, $userId);
 
     if ($response === null) {
         http_response_code(202);

@@ -185,6 +185,15 @@ class McpToolsAttachmentTest extends TestCase {
         $this->assertEquals(strlen(self::PDF_BYTES), json_decode($content[0]['text'], true)['size']);
     }
 
+    public function testLinkWithoutConfiguredLinksIsToolError(): void {
+        // :: Setup
+        [$threadId, $attachmentId] = $this->threadWithAttachment(self::USER_A, 'pdf', self::PDF_BYTES);
+        $this->tools = new McpTools(null, self::RESOURCE);
+
+        // :: Act / Assert
+        $this->assertToolError('Attachment links are not configured', fn() => $this->callLink($threadId, $attachmentId, self::USER_A));
+    }
+
     public function testLinkNullContentIsError(): void {
         // :: Setup
         [$threadId, $attachmentId] = $this->threadWithAttachment(self::USER_A, 'pdf', null);
