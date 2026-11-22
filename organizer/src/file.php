@@ -39,7 +39,7 @@ if (!$thread) {
 if (!ThreadAuthorizationManager::canUserAccessThread($threadId, $_SESSION['user']['sub'])) {
     http_response_code(403);
     header('Content-Type: text/plain');
-    throw new Exception("Unauthorized access to thread: {$threadId}");
+    die("Unauthorized access to thread: {$threadId}");
 }
 
 foreach ($thread->emails as $email) {

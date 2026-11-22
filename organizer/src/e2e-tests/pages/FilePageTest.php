@@ -50,7 +50,7 @@ class FilePageTest extends E2EPageTestCase {
         $response = $this->renderPage('/file?threadId=' . $threadId . '&attachmentId=' . $testData['attachment_id']);
 
         // :: Assert
-        $this->assertStringContainsString('Content-type:application/pdf', $response->headers);
+        $this->assertMatchesRegularExpression('/^Content-Type:\s*application\/pdf/mi', $response->headers);
         $this->assertEquals($expectedBytes, $response->body, 'Public thread attachment should be served to a user without authorization row');
     }
 
