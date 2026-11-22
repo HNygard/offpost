@@ -76,6 +76,7 @@ class McpApiTest extends TestCase {
             'resource' => 'http://localhost:25081/mcp',
             'authorization_servers' => ['http://localhost:25083/oidc'],
             'bearer_methods_supported' => ['header'],
+            'scopes_supported' => ['mcp'],
         ], json_decode($resp['body'], true));
     }
 
@@ -89,6 +90,7 @@ class McpApiTest extends TestCase {
             'resource' => 'http://localhost:25081/mcp',
             'authorization_servers' => ['http://localhost:25083/oidc'],
             'bearer_methods_supported' => ['header'],
+            'scopes_supported' => ['mcp'],
         ], json_decode($resp['body'], true));
     }
 
@@ -99,7 +101,7 @@ class McpApiTest extends TestCase {
         // :: Assert
         $this->assertEquals(401, $resp['status'], $resp['body']);
         $this->assertEquals(
-            'Bearer resource_metadata="http://localhost:25081/.well-known/oauth-protected-resource"',
+            'Bearer resource_metadata="http://localhost:25081/.well-known/oauth-protected-resource", scope="mcp"',
             $this->headerValue($resp['headers'], 'WWW-Authenticate')
         );
     }
@@ -119,7 +121,7 @@ class McpApiTest extends TestCase {
         // :: Assert
         $this->assertEquals(401, $resp['status'], $resp['body']);
         $this->assertEquals(
-            'Bearer resource_metadata="http://localhost:25081/.well-known/oauth-protected-resource", error="invalid_token"',
+            'Bearer resource_metadata="http://localhost:25081/.well-known/oauth-protected-resource", scope="mcp", error="invalid_token"',
             $this->headerValue($resp['headers'], 'WWW-Authenticate')
         );
         $this->assertEquals(['error' => 'Invalid token'], json_decode($resp['body'], true));

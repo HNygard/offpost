@@ -29,7 +29,7 @@ try {
 
     $token = McpHttp::bearerToken($_SERVER, function_exists('getallheaders') ? getallheaders() : []);
     if ($token === null) {
-        header('WWW-Authenticate: ' . McpHttp::wwwAuthenticate($metadataUrl, false));
+        header('WWW-Authenticate: ' . McpHttp::wwwAuthenticate($metadataUrl, false, $mcp_scopes));
         mcpJsonError(401, 'Missing bearer token');
         exit;
     }
@@ -39,7 +39,7 @@ try {
     try {
         $userId = (new McpTokenVerifier($mcp_issuer, $mcp_resource, $jwks))->verify($token);
     } catch (McpAuthException $e) {
-        header('WWW-Authenticate: ' . McpHttp::wwwAuthenticate($metadataUrl, true));
+        header('WWW-Authenticate: ' . McpHttp::wwwAuthenticate($metadataUrl, true, $mcp_scopes));
         mcpJsonError(401, 'Invalid token');
         exit;
     }

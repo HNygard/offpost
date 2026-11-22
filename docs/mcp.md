@@ -16,8 +16,14 @@ OAuth bearer JWT (RS256), verified against the authorization server's JWKS. Issu
   ending in `@clients`. They do not represent an Offpost user.
 - JWKS sources: a source that cannot be loaded is logged and skipped; only when no source gives
   any keys is the request a 500.
-- No token: 401 with `WWW-Authenticate: Bearer resource_metadata="<metadata url>"`.
+- No token: 401 with `WWW-Authenticate: Bearer resource_metadata="<metadata url>"`, plus
+  `scope="<scopes>"` when `$mcp_scopes` is non-empty.
 - Bad token: 401, same header plus `error="invalid_token"`.
+- Scopes: `$mcp_scopes` is advertised as `scopes_supported` in the metadata and as `scope` in
+  `WWW-Authenticate` (MCP clients pick the scope to request from these). Development: `['mcp']`.
+  Production: `[]`, because Auth0 issues tokens for the API audience without a scope; to advertise
+  `mcp` there, first add `mcp` as a permission on the Auth0 API, then set it in `mcp-config.php`.
+  The token's scope is not checked.
 - Non-POST: 405 with `Allow: POST`. Notifications: 202, empty body.
 - Unexpected errors (including JWKS fetch failure and configuration errors such as an unknown
   environment; config is loaded inside the try, for the metadata endpoint too): 500
@@ -116,10 +122,13 @@ the authorization server from the metadata, registers itself and opens the norma
 
 `auth/server.js` (Node `oidc-provider`) has issuer `http://localhost:25083/oidc`, dynamic
 registration, and resource indicators issuing RS256 JWT access tokens for `http://localhost:25081/mcp`
-(these must match `organizer/src/mcp-config.php`). Public clients must use PKCE; the confidential
+(these must match `organizer/src/mcp-config.php`). The MCP resource's scope is `mcp` (matching
+`$mcp_scopes`); it must be a resource scope, not an OIDC one such as `openid`: with `openid` there,
+a client that requests only the resource gets nothing granted and the provider redirects back with
+`error=access_denied`. Public clients must use PKCE; the confidential
 `organizer` client keeps PKCE optional. The `organizer` client is excluded from the MCP
 resource so that its userinfo-based web login keeps working (userinfo rejects tokens that have an
-audience); this must be confirmed in the manual check below. The web login uses the provider
+audience). The web login uses the provider
 endpoints under `/oidc` directly, not discovery. The dev issuer has a path, so its discovery
 metadata is at `http://localhost:25083/oidc/.well-known/openid-configuration`.
 
@@ -131,7 +140,7 @@ file on every request (file sources are not cached), and a missing file is skipp
 `McpJwksLoader` while another source loads, so run any test that uses `McpTestKeys` before
 calling the dev server. Key generation is random on purpose; tests must not depend on key values.
 
-Manual OAuth check with Claude Code (after rebuilding the dev stack so the auth service picks up the change):
+Manual OAuth check with Claude Code (after rebuilding the dev stack, or `docker-compose -p offpost -f docker-compose.dev.yaml restart auth` after changing `auth/server.js`):
 
 ```
 claude mcp add --transport http offpost-dev http://localhost:25081/mcp
@@ -143,7 +152,7 @@ listed. Call `list_my_threads` to see the dev user's threads.
 ## Configuration
 
 `organizer/src/mcp-config.php` (non-secret) sets `$mcp_resource`, `$mcp_authorization_server`,
-`$mcp_issuer` and `$mcp_jwks_sources` per `$environment`; an unknown environment throws.
+`$mcp_issuer`, `$mcp_jwks_sources` and `$mcp_scopes` per `$environment`; an unknown environment throws.
 The generated test-only JWKS `organizer/src/tests/fixtures/mcp/generated/test-jwks.json` is trusted in development only.
 
 ## Code

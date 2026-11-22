@@ -94,6 +94,28 @@ class McpHttpTest extends TestCase {
         );
     }
 
+    public function testWwwAuthenticateWithScope() {
+        // :: Act
+        $value = McpHttp::wwwAuthenticate('https://offpost.test/.well-known/oauth-protected-resource', false, ['mcp']);
+
+        // :: Assert
+        $this->assertEquals(
+            'Bearer resource_metadata="https://offpost.test/.well-known/oauth-protected-resource", scope="mcp"',
+            $value
+        );
+    }
+
+    public function testWwwAuthenticateWithScopeAndInvalidToken() {
+        // :: Act
+        $value = McpHttp::wwwAuthenticate('https://offpost.test/.well-known/oauth-protected-resource', true, ['mcp', 'other']);
+
+        // :: Assert
+        $this->assertEquals(
+            'Bearer resource_metadata="https://offpost.test/.well-known/oauth-protected-resource", scope="mcp other", error="invalid_token"',
+            $value
+        );
+    }
+
     public function testWwwAuthenticateWithInvalidToken() {
         // :: Act
         $value = McpHttp::wwwAuthenticate('https://offpost.test/.well-known/oauth-protected-resource', true);

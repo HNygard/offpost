@@ -6,6 +6,10 @@ if (defined('PHPUNIT_RUNNING') || $environment === 'development') {
     $mcp_resource = 'http://localhost:25081/mcp';
     $mcp_authorization_server = 'http://localhost:25083/oidc';
     $mcp_issuer = $mcp_authorization_server;
+    // Scopes advertised to MCP clients (metadata scopes_supported + WWW-Authenticate scope).
+    // MCP clients send no scope without them, and the dev oidc-provider then grants nothing
+    // and answers access_denied. auth/server.js gives the MCP resource the 'mcp' scope.
+    $mcp_scopes = ['mcp'];
     // The generated JWKS holds a public TEST key (McpTestKeys creates it on first use; gitignored).
     // It must be trusted in development only. McpJwksLoader skips it while the file is missing.
     $mcp_jwks_sources = [
@@ -17,6 +21,9 @@ if (defined('PHPUNIT_RUNNING') || $environment === 'development') {
     $mcp_authorization_server = 'https://auth.offpost.no/';
     $mcp_issuer = $mcp_authorization_server;
     $mcp_jwks_sources = ['https://auth.offpost.no/.well-known/jwks.json'];
+    // Auth0 issues tokens for the API audience without a scope, so none is advertised.
+    // To advertise one, first add it as a permission on the Auth0 API (docs/mcp.md).
+    $mcp_scopes = [];
 } else {
     throw new Exception('Unknown environment for MCP config: ' . var_export($environment, true));
 }

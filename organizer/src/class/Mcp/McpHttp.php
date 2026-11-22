@@ -26,8 +26,15 @@ class McpHttp {
         return $m[1];
     }
 
-    public static function wwwAuthenticate(string $metadataUrl, bool $invalidToken): string {
+    /**
+     * @param string[] $scopes Scopes the client should request (MCP scope selection reads this
+     *   first, then the metadata's scopes_supported). Empty: no scope parameter.
+     */
+    public static function wwwAuthenticate(string $metadataUrl, bool $invalidToken, array $scopes = []): string {
         $value = 'Bearer resource_metadata="' . $metadataUrl . '"';
+        if (count($scopes) > 0) {
+            $value .= ', scope="' . implode(' ', $scopes) . '"';
+        }
         if ($invalidToken) {
             $value .= ', error="invalid_token"';
         }

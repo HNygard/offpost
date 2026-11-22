@@ -132,7 +132,8 @@ const configuration = {
           throw new errors.InvalidTarget();
         }
         return {
-          scope: 'openid',
+          // Must match $mcp_scopes in organizer/src/mcp-config.php (advertised to MCP clients).
+          scope: 'mcp',
           audience: MCP_RESOURCE,
           accessTokenFormat: 'jwt',
           jwt: { sign: { alg: 'RS256' } },

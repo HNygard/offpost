@@ -4,11 +4,15 @@ try {
     require_once __DIR__ . '/../../username-password.php';
     require_once __DIR__ . '/../../mcp-config.php';
 
-    $body = json_encode([
+    $metadata = [
         'resource' => $mcp_resource,
         'authorization_servers' => [$mcp_authorization_server],
         'bearer_methods_supported' => ['header'],
-    ], JSON_UNESCAPED_SLASHES);
+    ];
+    if (count($mcp_scopes) > 0) {
+        $metadata['scopes_supported'] = $mcp_scopes;
+    }
+    $body = json_encode($metadata, JSON_UNESCAPED_SLASHES);
     header('Content-Type: application/json');
     echo $body;
 } catch (Throwable $e) {
