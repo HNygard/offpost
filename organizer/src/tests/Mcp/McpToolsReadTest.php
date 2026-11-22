@@ -61,7 +61,8 @@ class McpToolsReadTest extends TestCase {
 
         // :: Assert
         $this->assertEquals(
-            ['list_entities', 'list_my_threads', 'get_thread', 'get_attachment_raw', 'get_attachment_extraction'],
+            ['list_entities', 'list_my_threads', 'get_thread', 'get_attachment_raw', 'get_attachment_extraction',
+             'start_thread', 'send_reply'],
             $names
         );
     }

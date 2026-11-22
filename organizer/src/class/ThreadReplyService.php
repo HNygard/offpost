@@ -27,7 +27,7 @@ class ThreadReplyService {
         bool $send,
         array $historyDetails = []
     ): ThreadEmailSending {
-        if ($subject === '' || $body === '' || trim($recipient) === '') {
+        if (trim($subject) === '' || trim($body) === '' || trim($recipient) === '') {
             throw new ThreadReplyValidationException('Subject, body and recipient are required');
         }
 

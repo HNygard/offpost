@@ -7,13 +7,18 @@ require_once __DIR__ . '/../Thread.php';
 require_once __DIR__ . '/../NpApiService.php';
 require_once __DIR__ . '/../ThreadExportService.php';
 require_once __DIR__ . '/../ThreadStorageManager.php';
+require_once __DIR__ . '/../ThreadAuthorization.php';
+require_once __DIR__ . '/../ThreadCreationService.php';
+require_once __DIR__ . '/../ThreadReplyService.php';
+require_once __DIR__ . '/../ThreadUtils.php';
 require_once __DIR__ . '/../Extraction/ThreadEmailExtractionService.php';
 
 /**
  * The tools served by the /mcp endpoint. Every tool returns one JSON text item.
  *
  * Access rules: reads of a single thread use Thread::canUserAccess() (public
- * threads are readable); list_my_threads uses thread_authorizations rows only.
+ * threads are readable); list_my_threads and the write tools (send_reply) use
+ * thread_authorizations rows only (owner or granted).
  */
 class McpTools implements McpToolProvider {
     private const DEFAULT_LIMIT = 50;
@@ -102,6 +107,48 @@ class McpTools implements McpToolProvider {
                     'additionalProperties' => false,
                 ],
             ],
+            [
+                'name' => 'start_thread',
+                'description' => 'Start a new thread: this sends a real request email to the public body (entity), in the user\'s name, '
+                    . 'within minutes. It cannot be recalled. One thread is created per call. entity_id comes from list_entities.',
+                'inputSchema' => [
+                    'type' => 'object',
+                    'properties' => [
+                        'entity_id' => ['type' => 'string', 'description' => 'Entity id from list_entities.'],
+                        'title' => ['type' => 'string', 'description' => 'Thread title, also used as the email subject.'],
+                        'body' => ['type' => 'string', 'description' => 'The request text.'],
+                        'law_basis' => [
+                            'type' => 'string',
+                            'enum' => ['offentleglova', 'other'],
+                            'description' => 'Legal basis of the request (default offentleglova).',
+                        ],
+                        'follow_up_plan' => [
+                            'type' => 'string',
+                            'enum' => ['speedy', 'slow', 'postliste', 'none'],
+                            'description' => 'How reminders are scheduled (default speedy); none disables follow-up.',
+                        ],
+                    ],
+                    'required' => ['entity_id', 'title', 'body'],
+                    'additionalProperties' => false,
+                ],
+            ],
+            [
+                'name' => 'send_reply',
+                'description' => 'Reply in a thread you own or have been given access to. The email is queued and sent within minutes, '
+                    . 'in the user\'s name, and cannot be recalled. recipient must be one of the reply_recipients returned by get_thread '
+                    . '(the entity email and addresses seen in the thread).',
+                'inputSchema' => [
+                    'type' => 'object',
+                    'properties' => [
+                        'thread_id' => ['type' => 'string', 'description' => 'Thread id (UUID) from list_my_threads.'],
+                        'subject' => ['type' => 'string', 'description' => 'Email subject.'],
+                        'body' => ['type' => 'string', 'description' => 'Email text.'],
+                        'recipient' => ['type' => 'string', 'description' => 'One of get_thread reply_recipients.'],
+                    ],
+                    'required' => ['thread_id', 'subject', 'body', 'recipient'],
+                    'additionalProperties' => false,
+                ],
+            ],
         ];
     }
 
@@ -117,6 +164,10 @@ class McpTools implements McpToolProvider {
                 return $this->getAttachmentRaw($args, $userId);
             case 'get_attachment_extraction':
                 return $this->textResult($this->getAttachmentExtraction($args, $userId));
+            case 'start_thread':
+                return $this->textResult($this->startThread($args, $userId));
+            case 'send_reply':
+                return $this->textResult($this->sendReply($args, $userId));
             default:
                 throw new McpToolException("Unknown tool: $name");
         }
@@ -135,6 +186,14 @@ class McpTools implements McpToolProvider {
             throw new McpToolException("Argument '$key' must be a string");
         }
         return $args[$key];
+    }
+
+    private function requiredString(array $args, string $key): string {
+        $value = $this->optionalString($args, $key);
+        if ($value === null) {
+            throw new McpToolException("Argument '$key' is required");
+        }
+        return $value;
     }
 
     private function optionalBool(array $args, string $key, bool $default): bool {
@@ -288,7 +347,89 @@ class McpTools implements McpToolProvider {
             'entity' => $export['entity'],
             'emails' => $emails,
             'sendings' => $sendings,
+            'reply_recipients' => array_values(getThreadReplyRecipients($thread)),
             'thread_url' => NpApiService::threadUrl($threadId),
+        ];
+    }
+
+    private function startThread(array $args, string $userId): array {
+        $entityId = $this->requiredString($args, 'entity_id');
+        $title = $this->requiredString($args, 'title');
+        $body = $this->requiredString($args, 'body');
+        $lawBasis = $this->optionalString($args, 'law_basis') ?? Thread::REQUEST_LAW_BASIS_OFFENTLEGLOVA;
+        $plan = $this->optionalString($args, 'follow_up_plan') ?? Thread::REQUEST_FOLLOW_UP_PLAN_SPEEDY;
+
+        if (!in_array($lawBasis, [Thread::REQUEST_LAW_BASIS_OFFENTLEGLOVA, Thread::REQUEST_LAW_BASIS_OTHER], true)) {
+            throw new McpToolException('Invalid law_basis');
+        }
+        if ($plan !== 'none' && !in_array($plan, Thread::REQUEST_FOLLOW_UP_PLANS, true)) {
+            throw new McpToolException('Invalid follow_up_plan');
+        }
+        if (trim($title) === '' || trim($body) === '') {
+            throw new McpToolException('title and body are required');
+        }
+        if (!Entity::exists($entityId)) {
+            throw new McpToolException("Unknown entity_id: $entityId");
+        }
+
+        // Tests run inside one transaction; PDO has no nested transactions.
+        $ownsTransaction = !Database::getInstance()->inTransaction();
+        if ($ownsTransaction) {
+            Database::beginTransaction();
+        }
+        try {
+            $thread = (new ThreadCreationService())->createThread(
+                $entityId, $title, $body, $userId, $lawBasis,
+                $plan === 'none' ? null : $plan,
+                true, false, [], ['via' => 'mcp']
+            );
+            if ($ownsTransaction) {
+                Database::commit();
+            }
+        } catch (Throwable $e) {
+            if ($ownsTransaction) {
+                Database::rollBack();
+            }
+            throw $e;
+        }
+
+        return [
+            'thread_id' => $thread->id,
+            'thread_url' => NpApiService::threadUrl($thread->id),
+            'sending_status' => ThreadEmailSending::STATUS_READY_FOR_SENDING,
+        ];
+    }
+
+    private function sendReply(array $args, string $userId): array {
+        $threadId = $this->requireUuid($args['thread_id'] ?? null);
+        $subject = $this->requiredString($args, 'subject');
+        $body = $this->requiredString($args, 'body');
+        $recipient = $this->requiredString($args, 'recipient');
+
+        // Writes need an owner or granted row. ThreadAuthorizationManager::canUserAccessThread()
+        // is not usable here: it also returns true for public threads.
+        $authorized = Database::queryOneOrNone(
+            "SELECT 1 AS ok FROM thread_authorizations WHERE thread_id = ? AND user_id = ?",
+            [$threadId, $userId]
+        );
+        $thread = $authorized === null ? null : Thread::loadFromDatabaseOrNone($threadId);
+        if ($thread === null) {
+            throw new McpNotFoundException();
+        }
+
+        try {
+            $sending = (new ThreadReplyService())->queueReply(
+                $thread, $subject, $body, $recipient, $userId, true, ['via' => 'mcp']
+            );
+        } catch (ThreadReplyValidationException $e) {
+            throw new McpToolException($e->getMessage());
+        }
+
+        return [
+            'email_sending_id' => $sending->id,
+            'thread_id' => $threadId,
+            'recipient' => $sending->email_to,
+            'status' => $sending->status,
         ];
     }
 

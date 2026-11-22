@@ -91,6 +91,24 @@ class ThreadReplyServiceTest extends TestCase {
         (new ThreadReplyService())->queueReply($thread, 'S', '', self::ENTITY_EMAIL, self::USER, true);
     }
 
+    public function testQueueReplyWhitespaceBodyThrows(): void {
+        // :: Setup
+        $thread = $this->createThread();
+
+        // :: Act / Assert
+        $this->expectException(ThreadReplyValidationException::class);
+        (new ThreadReplyService())->queueReply($thread, 'S', "  \n ", self::ENTITY_EMAIL, self::USER, true);
+    }
+
+    public function testQueueReplyWhitespaceSubjectThrows(): void {
+        // :: Setup
+        $thread = $this->createThread();
+
+        // :: Act / Assert
+        $this->expectException(ThreadReplyValidationException::class);
+        (new ThreadReplyService())->queueReply($thread, '   ', 'B', self::ENTITY_EMAIL, self::USER, true);
+    }
+
     public function testQueueReplyHistoryMergesDetails(): void {
         // :: Setup
         $thread = $this->createThread();
