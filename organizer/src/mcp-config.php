@@ -6,10 +6,11 @@ if (defined('PHPUNIT_RUNNING') || $environment === 'development') {
     $mcp_resource = 'http://localhost:25081/mcp';
     $mcp_authorization_server = 'http://localhost:25083/oidc';
     $mcp_issuer = $mcp_authorization_server;
-    // The fixture JWKS holds a public TEST key. It must be trusted in development only.
+    // The generated JWKS holds a public TEST key (McpTestKeys creates it on first use; gitignored).
+    // It must be trusted in development only. McpJwksLoader skips it while the file is missing.
     $mcp_jwks_sources = [
         'http://auth:3000/oidc/jwks',
-        __DIR__ . '/tests/fixtures/mcp/test-jwks.json',
+        __DIR__ . '/tests/fixtures/mcp/generated/test-jwks.json',
     ];
 } elseif ($environment === 'production') {
     $mcp_resource = 'https://offpost.no/mcp';

@@ -110,7 +110,7 @@ class McpApiTest extends TestCase {
             'aud' => self::AUDIENCE,
             'sub' => self::DEV_USER_ID,
             'exp' => 4102444800,
-        ], McpTestKeys::OTHER_PRIVATE_KEY);
+        ], McpTestKeys::otherPrivateKey());
 
         // :: Act
         $resp = $this->rpc($badToken, ['jsonrpc' => '2.0', 'id' => 1, 'method' => 'ping']);

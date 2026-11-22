@@ -83,8 +83,13 @@ audience); this must be confirmed in the manual check below. The web login uses 
 endpoints under `/oidc` directly, not discovery. The dev issuer has a path, so its discovery
 metadata is at `http://localhost:25083/oidc/.well-known/openid-configuration`.
 
-E2E tests sign tokens with a committed test-only key (`organizer/src/tests/fixtures/mcp/`),
-which is trusted only when `$environment` is `development` (or under PHPUnit).
+E2E tests sign tokens with test-only RSA keys that `McpTestKeys` generates on first use into the
+gitignored `organizer/src/tests/fixtures/mcp/generated/` (`test-keys.json`, mode 0600, with both
+private PEMs; and the public `test-jwks.json`). No key material is committed. The public JWKS is
+trusted only when `$environment` is `development` (or under PHPUnit). The server reads the JWKS
+file on every request (file sources are not cached), and a missing file is skipped by
+`McpJwksLoader` while another source loads, so run any test that uses `McpTestKeys` before
+calling the dev server. Key generation is random on purpose; tests must not depend on key values.
 
 Manual OAuth check with Claude Code (after rebuilding the dev stack so the auth service picks up the change):
 
@@ -99,7 +104,7 @@ listed. Call `list_my_threads` to see the dev user's threads.
 
 `organizer/src/mcp-config.php` (non-secret) sets `$mcp_resource`, `$mcp_authorization_server`,
 `$mcp_issuer` and `$mcp_jwks_sources` per `$environment`; an unknown environment throws.
-The test-only JWKS `organizer/src/tests/fixtures/mcp/test-jwks.json` is trusted in development only.
+The generated test-only JWKS `organizer/src/tests/fixtures/mcp/generated/test-jwks.json` is trusted in development only.
 
 ## Code
 

@@ -105,14 +105,13 @@ class McpHttpTest extends TestCase {
         );
     }
 
-    public function testTestJwksFixtureMatchesTestKeys() {
+    public function testGeneratedJwksFileMatchesTestKeys() {
         // :: Setup
-        $fromFile = json_decode(file_get_contents(__DIR__ . '/../fixtures/mcp/test-jwks.json'), true);
-
         // :: Act
         $fromKeys = McpTestKeys::jwks();
+        $fromFile = json_decode(file_get_contents(McpTestKeys::jwksPath()), true);
 
         // :: Assert
-        $this->assertEquals($fromKeys, $fromFile, 'test-jwks.json must be the public half of McpTestKeys');
+        $this->assertEquals($fromKeys, $fromFile, 'the generated test-jwks.json must be the public half of McpTestKeys');
     }
 }

@@ -101,7 +101,7 @@ class McpTokenVerifierTest extends TestCase {
 
     public function testTokenSignedByOtherKeyRejected() {
         // :: Setup
-        $token = McpTestKeys::token($this->claims(), McpTestKeys::OTHER_PRIVATE_KEY);
+        $token = McpTestKeys::token($this->claims(), McpTestKeys::otherPrivateKey());
 
         // :: Act
         $this->expectException(McpAuthException::class);
@@ -110,7 +110,7 @@ class McpTokenVerifierTest extends TestCase {
 
     public function testHs256TokenRejected() {
         // :: Setup
-        $details = openssl_pkey_get_details(openssl_pkey_get_private(McpTestKeys::PRIVATE_KEY));
+        $details = openssl_pkey_get_details(openssl_pkey_get_private(McpTestKeys::privateKey()));
         $token = \Firebase\JWT\JWT::encode($this->claims(), $details['key'], 'HS256', McpTestKeys::KID);
 
         // :: Act
