@@ -37,11 +37,18 @@ UUID that is missing or inaccessible gives exactly `Not found, or no access`.
 |---|---|
 | `list_entities` | any authenticated user (public bodies). Search is a case-insensitive substring of name or `org_num`. Entities without an email address and entities that no longer exist (`entity_existed_to_and_including` in the past) are left out |
 | `start_thread` | any authenticated user; creates a thread owned by the token `sub`, queued `READY_FOR_SENDING`, no daily cap. Refuses entities without email (`Entity has no email address: <id>`) and defunct ones (`Entity no longer exists: <id>`) |
-| `list_my_threads` | only threads with a `thread_authorizations` row for the user (owner or granted); public threads merely viewable are not listed |
-| `get_thread` | read rule: owner, granted **or public** (`Thread::canUserAccess`); no raw EML, no `body_html`. Returns `can_reply` (true only with a `thread_authorizations` row, the same check as `send_reply`); `reply_recipients` is empty unless `can_reply` |
+| `list_my_threads` | only threads with a `thread_authorizations` row for the user (owner or granted); public threads merely viewable are not listed. Each thread has `has_delivery_problem` (computed for the listed threads in one query) |
+| `get_thread` | read rule: owner, granted **or public** (`Thread::canUserAccess`); no raw EML, no `body_html`. Returns `delivery_problems` (see below), `can_reply` (true only with a `thread_authorizations` row, the same check as `send_reply`); `reply_recipients` is empty unless `can_reply` |
 | `get_attachment_link` | read rule. By default returns `{name, filename, mimeType, size, download_url, expires_in: 300}` and loads no content (no size cap). With `inline: true` it also returns the content (image content or embedded resource); attachments over 5 MB are then refused (use `get_attachment_extraction`). Attachments whose content was never stored give an error in both modes. Replaces `get_attachment_link` |
 | `get_attachment_extraction` | read rule |
 | `send_reply` | owner or granted only (`thread_authorizations` row); a public thread without a row is refused. Recipient must be one of the thread's valid reply recipients. Queued `READY_FOR_SENDING`. Subject and body are stored trimmed |
+
+Delivery problems: `ThreadScheduledEmailSender` records a failed send as status `READY_FOR_SENDING`
+(it is retried) with the failure text in `thread_email_sendings.error_message`; a later successful
+send sets `SENT` but does not clear `error_message`. A delivery problem is therefore a sending with
+`error_message` not null **and** status not `SENT`. `get_thread` lists them as `delivery_problems`:
+`[{sending_id, recipient, subject, status, error, updated_at}]` (empty list when none), and
+`list_my_threads` sets `has_delivery_problem` with the same rule.
 
 History entries written through MCP (`created`, `thread_reply_created_and_queued_sending`) use the
 token `sub` as user and carry `"via": "mcp"` in the details.

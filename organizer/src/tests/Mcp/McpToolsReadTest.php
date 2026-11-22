@@ -277,6 +277,80 @@ class McpToolsReadTest extends TestCase {
         $this->assertArrayHasKey('attachments', $email);
     }
 
+    private function setSending(string $threadId, string $status, ?string $error): void {
+        Database::execute(
+            "UPDATE thread_email_sendings SET status = ?, error_message = ? WHERE thread_id = ?",
+            [$status, $error, $threadId]
+        );
+    }
+
+    public function testGetThreadFailedSendingIsDeliveryProblem(): void {
+        // :: Setup
+        $thread = $this->createThread('Feilet sending', self::USER_A);
+        $this->setSending($thread->id, ThreadEmailSending::STATUS_READY_FOR_SENDING, 'SMTP connect failed');
+
+        // :: Act
+        $data = $this->callData('get_thread', ['thread_id' => $thread->id], self::USER_A);
+
+        // :: Assert
+        $sending = $data['sendings'][0];
+        // updated_at is maintained by a database trigger, so it is taken from the export.
+        $this->assertEquals([[
+            'sending_id' => $sending['id'],
+            'recipient' => $sending['email_to'],
+            'subject' => $sending['email_subject'],
+            'status' => 'READY_FOR_SENDING',
+            'error' => 'SMTP connect failed',
+            'updated_at' => $sending['updated_at'],
+        ]], $data['delivery_problems'], json_encode($data['delivery_problems'], JSON_PRETTY_PRINT));
+    }
+
+    public function testGetThreadQueuedSendingWithoutErrorIsNotDeliveryProblem(): void {
+        // :: Setup
+        $thread = $this->createThread('Ingen feil', self::USER_A);
+        $this->setSending($thread->id, ThreadEmailSending::STATUS_SENT, null);
+
+        // :: Act
+        $data = $this->callData('get_thread', ['thread_id' => $thread->id], self::USER_A);
+
+        // :: Assert
+        $this->assertSame([], $data['delivery_problems']);
+    }
+
+    public function testGetThreadErrorThatLaterSucceededIsNotDeliveryProblem(): void {
+        // :: Setup
+        // The sender keeps error_message when a retry succeeds, so a SENT row can still carry one.
+        $thread = $this->createThread('Sendt etter feil', self::USER_A);
+        $this->setSending($thread->id, ThreadEmailSending::STATUS_SENT, 'SMTP connect failed');
+
+        // :: Act
+        $data = $this->callData('get_thread', ['thread_id' => $thread->id], self::USER_A);
+
+        // :: Assert
+        $this->assertSame([], $data['delivery_problems']);
+    }
+
+    public function testListMyThreadsFlagsOnlyThreadsWithDeliveryProblem(): void {
+        // :: Setup
+        $failed = $this->createThread('Feilet', self::USER_A);
+        $fine = $this->createThread('Fin', self::USER_A);
+        $recovered = $this->createThread('Gjenopprettet', self::USER_A);
+        $this->setSending($failed->id, ThreadEmailSending::STATUS_READY_FOR_SENDING, 'Mailbox full');
+        $this->setSending($fine->id, ThreadEmailSending::STATUS_SENT, null);
+        $this->setSending($recovered->id, ThreadEmailSending::STATUS_SENT, 'Mailbox full');
+
+        // :: Act
+        $data = $this->callData('list_my_threads', [], self::USER_A);
+
+        // :: Assert
+        $byId = array_column($data['threads'], 'has_delivery_problem', 'thread_id');
+        $this->assertEquals(
+            [$failed->id => true, $fine->id => false, $recovered->id => false],
+            $byId,
+            json_encode($data, JSON_PRETTY_PRINT)
+        );
+    }
+
     public function testGetThreadSendingsOmitSmtpTranscripts(): void {
         // :: Setup
         $thread = $this->createThread('Med sending', self::USER_A);

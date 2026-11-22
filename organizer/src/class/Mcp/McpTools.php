@@ -71,7 +71,8 @@ class McpTools implements McpToolProvider {
             [
                 'name' => 'list_my_threads',
                 'description' => 'List the threads (requests and their replies) you own or have been given access to, newest activity first. '
-                    . 'Use this to find thread ids for get_thread and the other thread tools.',
+                    . 'Use this to find thread ids for get_thread and the other thread tools. '
+                    . 'has_delivery_problem is true when an outgoing email of the thread failed to send (see delivery_problems in get_thread).',
                 'inputSchema' => [
                     'type' => 'object',
                     'properties' => [
@@ -85,7 +86,7 @@ class McpTools implements McpToolProvider {
             [
                 'name' => 'get_thread',
                 'description' => 'Get one thread with its entity, emails (plain text body, classification, attachments with extraction summaries) '
-                    . 'and queued or sent outgoing emails, plus can_reply and, when true, the reply_recipients for send_reply. Thread ids come from list_my_threads. Public threads of other users are readable too.',
+                    . 'and queued or sent outgoing emails, plus delivery_problems (outgoing emails that failed to send and are still not sent; an empty list means none), plus can_reply and, when true, the reply_recipients for send_reply. Thread ids come from list_my_threads. Public threads of other users are readable too.',
                 'inputSchema' => [
                     'type' => 'object',
                     'properties' => [
@@ -324,6 +325,7 @@ class McpTools implements McpToolProvider {
         $page = array_slice($matching, 0, $limit);
 
         $stateTypes = NpApiService::threadStateTypesByThreadId(array_column($page, 'id'));
+        $withProblems = $this->threadIdsWithDeliveryProblems(array_column($page, 'id'));
         $threads = [];
         foreach ($page as $row) {
             $threads[] = [
@@ -338,6 +340,7 @@ class McpTools implements McpToolProvider {
                 'last_activity' => $this->isoTimestamp($row['last_activity']),
                 'archived' => $row['archived'],
                 'is_owner' => $row['is_owner'] === true || $row['is_owner'] === 't',
+                'has_delivery_problem' => isset($withProblems[$row['id']]),
             ];
         }
         return ['threads' => $threads, 'truncated' => count($matching) > $limit];
@@ -376,10 +379,52 @@ class McpTools implements McpToolProvider {
             'entity' => $export['entity'],
             'emails' => $emails,
             'sendings' => $sendings,
+            'delivery_problems' => $this->deliveryProblems($sendings),
             'can_reply' => $canReply,
             'reply_recipients' => $canReply ? array_values(getThreadReplyRecipients($thread)) : [],
             'thread_url' => NpApiService::threadUrl($threadId),
         ];
+    }
+
+    /**
+     * A delivery problem is a sending that has an error_message and is not SENT. A failed send is
+     * recorded by ThreadScheduledEmailSender as status READY_FOR_SENDING plus error_message (it is
+     * retried). The error_message is not cleared when a retry succeeds, so SENT rows never count.
+     */
+    private function deliveryProblems(array $sendings): array {
+        $problems = [];
+        foreach ($sendings as $sending) {
+            if ($sending['error_message'] === null || $sending['status'] === ThreadEmailSending::STATUS_SENT) {
+                continue;
+            }
+            $problems[] = [
+                'sending_id' => $sending['id'],
+                'recipient' => $sending['email_to'],
+                'subject' => $sending['email_subject'],
+                'status' => $sending['status'],
+                'error' => $sending['error_message'],
+                'updated_at' => $sending['updated_at'],
+            ];
+        }
+        return $problems;
+    }
+
+    /**
+     * Same definition as deliveryProblems(), for many threads in one query.
+     * @param string[] $threadIds
+     * @return array<string, true> thread ids that have a delivery problem
+     */
+    private function threadIdsWithDeliveryProblems(array $threadIds): array {
+        if ($threadIds === []) {
+            return [];
+        }
+        $placeholders = implode(',', array_fill(0, count($threadIds), '?'));
+        $rows = Database::query(
+            "SELECT DISTINCT thread_id FROM thread_email_sendings
+             WHERE thread_id IN ($placeholders) AND error_message IS NOT NULL AND status <> ?",
+            [...array_values($threadIds), ThreadEmailSending::STATUS_SENT]
+        );
+        return array_fill_keys(array_column($rows, 'thread_id'), true);
     }
 
     private function startThread(array $args, string $userId): array {
