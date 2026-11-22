@@ -99,6 +99,10 @@ app.get('/dev-login', (req, res) => {
   res.json({ success: true, user: DEV_USER, loginToken: DEV_LOGIN_TOKEN });
 });
 
+// Must equal $mcp_resource / $mcp_issuer in organizer/src/mcp-config.php (development).
+const MCP_RESOURCE = 'http://localhost:25081/mcp';
+const OIDC_ISSUER = 'http://localhost:25083/oidc';
+
 const configuration = {
   clients: [{
     client_id: 'organizer',
@@ -108,11 +112,25 @@ const configuration = {
     response_types: ['code'],
   }],
   pkce: {
-    required: () => false,
+    // Public clients (dynamically registered MCP clients) must use PKCE.
+    // The confidential 'organizer' client keeps PKCE optional.
+    required: (ctx, client) => client.clientAuthMethod === 'none',
   },
   features: {
     devInteractions: { enabled: false },
-    registration: { enabled: false },
+    registration: { enabled: true },
+    // Issue JWT access tokens for the MCP resource server (organizer /mcp).
+    resourceIndicators: {
+      enabled: true,
+      defaultResource: () => MCP_RESOURCE,
+      useGrantedResource: () => true,
+      getResourceServerInfo: () => ({
+        scope: 'openid',
+        audience: MCP_RESOURCE,
+        accessTokenFormat: 'jwt',
+        jwt: { sign: { alg: 'RS256' } },
+      }),
+    },
   },
   claims: {
     openid: ['sub'],
@@ -168,7 +186,7 @@ const configuration = {
   // Save dev user on startup
   await saveUser(DEV_USER);
   
-  const oidc = new Provider('http://localhost:25083', configuration);
+  const oidc = new Provider(OIDC_ISSUER, configuration);
 
   // Request logging
   app.use((req, res, next) => {
@@ -252,6 +270,11 @@ const configuration = {
           });
           
           grant.addOIDCScope('openid profile');
+          // Resource indicators: the grant must also cover the requested resource scopes.
+          const missing = details.prompt.details.missingResourceScopes || {};
+          for (const [indicator, scopes] of Object.entries(missing)) {
+            grant.addResourceScope(indicator, scopes.join(' '));
+          }
           await grant.save();
           
           const result = {
