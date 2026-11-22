@@ -93,6 +93,9 @@ try {
         $npEmailClassifyRe = '#^/api/np/thread/([^/]+)/email/([^/]+)/classify$#';
         $npThreadReplyRe = '#^/api/np/thread/([^/]+)/reply$#';
 
+        // MCP attachment download links; the signed token is re-validated in the endpoint.
+        $mcpAttachmentRe = '#^/mcp/attachment/([A-Za-z0-9_\-\.]+)$#';
+
         if (array_key_exists($path, $regularPages)) {
             require __DIR__ . $regularPages[$path];
         } elseif (preg_match($npEmailClassifyRe, $path, $m)) {
@@ -102,11 +105,14 @@ try {
         } elseif (preg_match($npThreadReplyRe, $path, $m)) {
             $_GET['thread_id'] = urldecode($m[1]);
             require __DIR__ . '/../api/np/np_thread_reply.php';
+        } elseif (preg_match($mcpAttachmentRe, $path, $m)) {
+            $_GET['token'] = $m[1];
+            require __DIR__ . '/../api/mcp/attachment_download.php';
         } else {
             throw new Exception("404 Not Found", 404);
         }
     }
-} 
+}
 catch (Throwable $e) {
     displayErrorPage($e);
 }

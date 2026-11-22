@@ -39,7 +39,7 @@ UUID that is missing or inaccessible gives exactly `Not found, or no access`.
 | `start_thread` | any authenticated user; creates a thread owned by the token `sub`, queued `READY_FOR_SENDING`, no daily cap. Refuses entities without email (`Entity has no email address: <id>`) and defunct ones (`Entity no longer exists: <id>`) |
 | `list_my_threads` | only threads with a `thread_authorizations` row for the user (owner or granted); public threads merely viewable are not listed |
 | `get_thread` | read rule: owner, granted **or public** (`Thread::canUserAccess`); no raw EML, no `body_html`. Returns `can_reply` (true only with a `thread_authorizations` row, the same check as `send_reply`); `reply_recipients` is empty unless `can_reply` |
-| `get_attachment_raw` | read rule; attachments over 5 MB raw are refused (use `get_attachment_extraction`) |
+| `get_attachment_link` | read rule. By default returns `{name, filename, mimeType, size, download_url, expires_in: 300}` and loads no content (no size cap). With `inline: true` it also returns the content (image content or embedded resource); attachments over 5 MB are then refused (use `get_attachment_extraction`). Attachments whose content was never stored give an error in both modes. Replaces `get_attachment_link` |
 | `get_attachment_extraction` | read rule |
 | `send_reply` | owner or granted only (`thread_authorizations` row); a public thread without a row is refused. Recipient must be one of the thread's valid reply recipients. Queued `READY_FOR_SENDING`. Subject and body are stored trimmed |
 
@@ -49,6 +49,31 @@ token `sub` as user and carry `"via": "mcp"` in the details.
 `file.php` follows the same public-thread read rule as the MCP read tools (it uses
 `ThreadAuthorizationManager::canUserAccessThread()`, which admits public threads). It now answers
 403 for unauthorized file requests instead of a 500 error page.
+
+## Attachment download links
+
+`get_attachment_link` returns `download_url = <resource>/attachment/<token>`, for example
+`https://offpost.no/mcp/attachment/<token>`. The tool description tells the assistant to fetch it
+with `curl -o file.pdf "<download_url>"` so the file stays out of its context.
+
+- Token: `base64url(json{sub, tid, aid, exp}) . '.' . base64url(hmac_sha256(payload_part, secret))`,
+  `exp` = issue time + 300 s (`McpAttachmentLink`). Bad format, bad signature (`hash_equals`) or
+  expiry give `McpAuthException`.
+- `GET /mcp/attachment/<token>` (`api/mcp/attachment_download.php`, route in `webroot/index.php`)
+  needs no session or bearer header: the link is the credential. GET only (405 otherwise).
+  An invalid or expired token gives 403 `Link invalid or expired`. Access is then re-checked for
+  the token's `sub` at download time (`Thread::canUserAccess`, attachment belongs to the thread,
+  content stored); any failure gives 404 `Not found, or no access`. The response carries
+  `Content-Type`, `Content-Disposition: attachment` (sanitised filename as in `np_attachment_get.php`),
+  `Content-Length`, `Cache-Control: no-store`, `Referrer-Policy: no-referrer` and
+  `X-Content-Type-Options: nosniff`. Unexpected errors give a plain 500.
+- Secret `$mcp_link_secret` (`mcp-config.php`, `McpLinkSecret`): production reads
+  `/run/secrets/mcp_link_secret` (trimmed, at least 32 characters, otherwise an exception).
+  Development/PHPUnit generates a random secret once into
+  `sys_get_temp_dir()/offpost-mcp-link-secret-<uid>` (0600) when the file is missing; those links die
+  when the container restarts. The host cannot read the container's dev secret, so the e2e tests
+  cover access loss by removing the user's access after the link was issued; expiry is covered by
+  unit tests with a fixed clock.
 
 ## Auth0 tenant setup (production, one-time)
 
@@ -62,6 +87,10 @@ token `sub` as user and carry `"via": "mcp"` in the details.
    stays usable.
 
 ## Deploying
+
+One-time, before the first deploy of attachment links, on the production host:
+`openssl rand -hex 32 > /opt/offpost/secrets/mcp_link_secret` (readable by the container; it is
+mounted by `docker-compose.prod.yaml`). Without it the MCP endpoints answer 500 JSON.
 
 After pulling this branch, run `docker-compose -f <compose file> down && docker-compose -f <compose file> up --build -d`.
 The image installs `firebase/php-jwt`, and the anonymous vendor volume would otherwise keep the old
@@ -108,5 +137,6 @@ The generated test-only JWKS `organizer/src/tests/fixtures/mcp/generated/test-jw
 
 ## Code
 
-`api/mcp/mcp.php`, `api/mcp/oauth_protected_resource.php`, `class/Mcp/` (`McpHttp`, `McpTokenVerifier`,
-`McpJwksLoader`, `McpServer`, `McpTools`). Routes in `webroot/index.php`.
+`api/mcp/mcp.php`, `api/mcp/oauth_protected_resource.php`, `api/mcp/attachment_download.php`,
+`class/Mcp/` (`McpHttp`, `McpTokenVerifier`, `McpJwksLoader`, `McpServer`, `McpTools`,
+`McpAttachmentLink`, `McpLinkSecret`). Routes in `webroot/index.php`.

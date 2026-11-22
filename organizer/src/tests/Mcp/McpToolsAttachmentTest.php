@@ -5,6 +5,7 @@ use PHPUnit\Framework\TestCase;
 require_once __DIR__ . '/../bootstrap.php';
 require_once __DIR__ . '/../../class/Mcp/McpToolProvider.php';
 require_once __DIR__ . '/../../class/Mcp/McpTools.php';
+require_once __DIR__ . '/../../class/Mcp/McpAttachmentLink.php';
 require_once __DIR__ . '/../../class/ThreadCreationService.php';
 
 class McpToolsAttachmentTest extends TestCase {
@@ -14,13 +15,16 @@ class McpToolsAttachmentTest extends TestCase {
     const PDF_BYTES = '%PDF-1.4 test';
     const PNG_BASE64 = 'iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mNkYPhfDwAChwGA60e6kgAAAABJRU5ErkJggg==';
     const NOT_FOUND = 'Not found, or no access';
+    const LINK_SECRET = 'unit-test-secret-0123456789abcdef-0123456789';
+    const RESOURCE = 'https://offpost.test/mcp';
+    const NOW = 1700000000;
     const TOO_LARGE = 'Attachment is larger than 5 MB; use get_attachment_extraction for its text';
 
     private McpTools $tools;
 
     protected function setUp(): void {
         Database::beginTransaction();
-        $this->tools = new McpTools();
+        $this->tools = new McpTools(new McpAttachmentLink(self::LINK_SECRET), self::RESOURCE, fn() => self::NOW);
     }
 
     protected function tearDown(): void {
@@ -68,8 +72,14 @@ class McpToolsAttachmentTest extends TestCase {
         return [$thread->id, $attachmentId];
     }
 
+    /** Calls get_attachment_link with inline content,. */
     private function callRaw(string $threadId, string $attachmentId, string $userId): array {
-        return $this->tools->call('get_attachment_raw', ['thread_id' => $threadId, 'attachment_id' => $attachmentId], $userId);
+        return $this->tools->call('get_attachment_link',
+            ['thread_id' => $threadId, 'attachment_id' => $attachmentId, 'inline' => true], $userId);
+    }
+
+    private function callLink(string $threadId, string $attachmentId, string $userId): array {
+        return $this->tools->call('get_attachment_link', ['thread_id' => $threadId, 'attachment_id' => $attachmentId], $userId);
     }
 
     private function assertToolError(string $message, callable $call): void {
@@ -94,7 +104,7 @@ class McpToolsAttachmentTest extends TestCase {
 
         // :: Assert
         $this->assertEquals(
-            ['list_entities', 'list_my_threads', 'get_thread', 'get_attachment_raw', 'get_attachment_extraction',
+            ['list_entities', 'list_my_threads', 'get_thread', 'get_attachment_link', 'get_attachment_extraction',
              'start_thread', 'send_reply'],
             $names
         );
@@ -110,10 +120,12 @@ class McpToolsAttachmentTest extends TestCase {
         // :: Assert
         $this->assertCount(2, $content, json_encode($content, JSON_PRETTY_PRINT));
         $this->assertEquals('text', $content[0]['type']);
+        $summary = json_decode($content[0]['text'], true);
         $this->assertEquals(
-            ['name' => 'doc', 'filename' => 'doc.pdf', 'mimeType' => 'application/pdf', 'size' => strlen(self::PDF_BYTES)],
-            json_decode($content[0]['text'], true)
+            ['name' => 'doc', 'filename' => 'doc.pdf', 'mimeType' => 'application/pdf', 'size' => strlen(self::PDF_BYTES), 'expires_in' => 300],
+            array_diff_key($summary, ['download_url' => true])
         );
+        $this->assertStringStartsWith(self::RESOURCE . '/attachment/', $summary['download_url']);
         $this->assertEquals([
             'type' => 'resource',
             'resource' => [
@@ -122,6 +134,77 @@ class McpToolsAttachmentTest extends TestCase {
                 'blob' => base64_encode('%PDF-1.4 test'),
             ],
         ], $content[1]);
+    }
+
+    public function testLinkByDefaultReturnsDownloadUrlWithoutContent(): void {
+        // :: Setup
+        [$threadId, $attachmentId] = $this->threadWithAttachment(self::USER_A, 'pdf', self::PDF_BYTES);
+
+        // :: Act
+        $content = $this->callLink($threadId, $attachmentId, self::USER_A);
+
+        // :: Assert
+        $this->assertCount(1, $content, json_encode($content, JSON_PRETTY_PRINT));
+        $this->assertEquals('text', $content[0]['type']);
+        $data = json_decode($content[0]['text'], true);
+        $token = substr($data['download_url'], strlen(self::RESOURCE . '/attachment/'));
+        $this->assertEquals([
+            'name' => 'doc',
+            'filename' => 'doc.pdf',
+            'mimeType' => 'application/pdf',
+            'size' => strlen(self::PDF_BYTES),
+            'download_url' => self::RESOURCE . '/attachment/' . $token,
+            'expires_in' => 300,
+        ], $data);
+        $this->assertEquals(
+            ['sub' => self::USER_A, 'tid' => $threadId, 'aid' => $attachmentId],
+            (new McpAttachmentLink(self::LINK_SECRET))->verify($token, self::NOW + 300)
+        );
+    }
+
+    public function testLinkForImageIsStillTextOnlyByDefault(): void {
+        // :: Setup
+        [$threadId, $attachmentId] = $this->threadWithAttachment(self::USER_A, 'png', base64_decode(self::PNG_BASE64));
+
+        // :: Act
+        $content = $this->callLink($threadId, $attachmentId, self::USER_A);
+
+        // :: Assert
+        $this->assertEquals(['text'], array_column($content, 'type'), json_encode($content, JSON_PRETTY_PRINT));
+    }
+
+    public function testLinkIgnoresSizeCap(): void {
+        // :: Setup
+        McpTools::$maxRawBytesOverride = 5;
+        [$threadId, $attachmentId] = $this->threadWithAttachment(self::USER_A, 'pdf', self::PDF_BYTES);
+
+        // :: Act
+        $content = $this->callLink($threadId, $attachmentId, self::USER_A);
+
+        // :: Assert
+        $this->assertEquals(strlen(self::PDF_BYTES), json_decode($content[0]['text'], true)['size']);
+    }
+
+    public function testLinkNullContentIsError(): void {
+        // :: Setup
+        [$threadId, $attachmentId] = $this->threadWithAttachment(self::USER_A, 'pdf', null);
+
+        // :: Act / Assert
+        $this->assertToolError('Attachment content was never stored; try get_attachment_extraction',
+            fn() => $this->callLink($threadId, $attachmentId, self::USER_A));
+    }
+
+    public function testLinkPrivateThreadOtherUserNotFound(): void {
+        // :: Setup
+        [$threadId, $attachmentId] = $this->threadWithAttachment(self::USER_A, 'pdf', self::PDF_BYTES);
+
+        // :: Act / Assert
+        $this->assertToolError(self::NOT_FOUND, fn() => $this->callLink($threadId, $attachmentId, self::USER_B));
+    }
+
+    public function testLinkNonUuidIsInvalidArgument(): void {
+        // :: Act / Assert
+        $this->assertToolError('Invalid thread_id (expected UUID)', fn() => $this->callLink('nope', 'nope', self::USER_A));
     }
 
     public function testRawImageReturnsImageContent(): void {

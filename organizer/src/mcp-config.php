@@ -20,3 +20,11 @@ if (defined('PHPUNIT_RUNNING') || $environment === 'development') {
 } else {
     throw new Exception('Unknown environment for MCP config: ' . var_export($environment, true));
 }
+
+// HMAC secret for attachment download links. Production reads /run/secrets/mcp_link_secret;
+// development/PHPUnit generates one into the temp dir when the file is missing.
+require_once __DIR__ . '/class/Mcp/McpLinkSecret.php';
+$mcp_link_secret = McpLinkSecret::load(
+    McpLinkSecret::PRODUCTION_FILE,
+    defined('PHPUNIT_RUNNING') || $environment === 'development'
+);

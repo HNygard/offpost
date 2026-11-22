@@ -1,6 +1,7 @@
 <?php
 
 require_once __DIR__ . '/McpToolProvider.php';
+require_once __DIR__ . '/McpAttachmentLink.php';
 require_once __DIR__ . '/../Database.php';
 require_once __DIR__ . '/../Entity.php';
 require_once __DIR__ . '/../Thread.php';
@@ -27,6 +28,22 @@ class McpTools implements McpToolProvider {
     /** Test-only: replaces MAX_RAW_ATTACHMENT_BYTES when set. */
     public static ?int $maxRawBytesOverride = null;
     private const UUID_REGEX = '/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/';
+
+    /** @var callable(): int */
+    private $clock;
+
+    /**
+     * @param ?McpAttachmentLink $links signs the download links of get_attachment_link
+     * @param ?string $resource the MCP resource URL; download links are <resource>/attachment/<token>
+     * @param ?callable $clock returns the current unix time; injected by tests
+     */
+    public function __construct(
+        private ?McpAttachmentLink $links = null,
+        private ?string $resource = null,
+        ?callable $clock = null
+    ) {
+        $this->clock = $clock ?? 'time';
+    }
 
     public function definitions(): array {
         $limit = [
@@ -79,15 +96,19 @@ class McpTools implements McpToolProvider {
                 ],
             ],
             [
-                'name' => 'get_attachment_raw',
-                'description' => 'Get the original bytes of one attachment (images as image content, other types as an embedded resource). '
-                    . 'Attachments over 5 MB are refused; use get_attachment_extraction for their text. '
+                'name' => 'get_attachment_link',
+                'description' => 'Get a download link for the original bytes of one attachment. Prefer download_url: fetch it with curl into a local file, '
+                    . 'for example `curl -o file.pdf "<download_url>"`, so the file stays out of your context. '
+                    . 'The link works without authentication for 5 minutes (expires_in seconds) and no size limit applies. '
+                    . 'Set inline to true only for small files you must see yourself (images as image content, other types as an embedded resource; '
+                    . 'attachments over 5 MB are refused, use get_attachment_extraction for their text). '
                     . 'Attachment ids come from get_thread. Public threads of other users are readable too.',
                 'inputSchema' => [
                     'type' => 'object',
                     'properties' => [
                         'thread_id' => ['type' => 'string', 'description' => 'Thread id (UUID) from list_my_threads.'],
                         'attachment_id' => ['type' => 'string', 'description' => 'Attachment id (UUID) from get_thread.'],
+                        'inline' => ['type' => 'boolean', 'description' => 'Also return the content inline (default false). Only for small files.'],
                     ],
                     'required' => ['thread_id', 'attachment_id'],
                     'additionalProperties' => false,
@@ -162,8 +183,8 @@ class McpTools implements McpToolProvider {
                 return $this->textResult($this->listMyThreads($args, $userId));
             case 'get_thread':
                 return $this->textResult($this->getThread($args, $userId));
-            case 'get_attachment_raw':
-                return $this->getAttachmentRaw($args, $userId);
+            case 'get_attachment_link':
+                return $this->getAttachmentLink($args, $userId);
             case 'get_attachment_extraction':
                 return $this->textResult($this->getAttachmentExtraction($args, $userId));
             case 'start_thread':
@@ -484,14 +505,32 @@ class McpTools implements McpToolProvider {
         return $row;
     }
 
-    private function getAttachmentRaw(array $args, string $userId): array {
+    private function getAttachmentLink(array $args, string $userId): array {
         $thread = $this->loadAccessibleThread($args, $userId);
         $info = $this->loadThreadAttachmentInfo($thread, $args);
+        $inline = $this->optionalBool($args, 'inline', false);
 
         if ($info['content_missing'] === true || $info['content_missing'] === 't') {
             throw new McpToolException('Attachment content was never stored; try get_attachment_extraction');
         }
+        if ($this->links === null || $this->resource === null) {
+            throw new RuntimeException('Attachment links are not configured');
+        }
         $size = $info['size'] !== null ? (int)$info['size'] : (int)$info['content_length'];
+        $mimeType = NpApiService::attachmentContentType($info['filetype']);
+        $token = $this->links->create($userId, $thread->id, $info['id'], ($this->clock)());
+        $summary = [
+            'name' => $info['name'],
+            'filename' => $info['filename'],
+            'mimeType' => $mimeType,
+            'size' => $size,
+            'download_url' => rtrim($this->resource, '/') . '/attachment/' . $token,
+            'expires_in' => McpAttachmentLink::TTL_SECONDS,
+        ];
+        if (!$inline) {
+            return $this->textResult($summary);
+        }
+
         $cap = self::$maxRawBytesOverride ?? self::MAX_RAW_ATTACHMENT_BYTES;
         // Checked before the content is loaded or base64-encoded.
         if ($size > $cap) {
@@ -499,19 +538,13 @@ class McpTools implements McpToolProvider {
         }
 
         $attachment = ThreadStorageManager::getInstance()->getThreadEmailAttachment($thread, $info['id']);
-        $mimeType = NpApiService::attachmentContentType($info['filetype']);
         $data = base64_encode($attachment->content);
 
         if (str_starts_with($mimeType, 'image/')) {
             return [['type' => 'image', 'data' => $data, 'mimeType' => $mimeType]];
         }
         return [
-            $this->textResult([
-                'name' => $info['name'],
-                'filename' => $info['filename'],
-                'mimeType' => $mimeType,
-                'size' => $size,
-            ])[0],
+            $this->textResult($summary)[0],
             ['type' => 'resource', 'resource' => [
                 'uri' => "offpost://thread/{$thread->id}/attachment/{$info['id']}",
                 'mimeType' => $mimeType,
