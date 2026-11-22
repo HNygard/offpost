@@ -9,19 +9,23 @@ class McpJwksLoader {
     /**
      * @param string[] $sources each an http(s) URL or a local file path
      * @return array merged JWKS: ['keys' => [...]]
-     * @throws McpAuthException if a source cannot be read or is not a JWKS
+     * @throws McpAuthException if no source gave any keys; a failing source is logged and skipped
      */
     public static function load(array $sources): array {
         $keys = [];
         foreach ($sources as $source) {
             $json = preg_match('#^https?://#', $source)
                 ? self::fetchCached($source)
-                : @file_get_contents($source);
+                : (is_readable($source) ? file_get_contents($source) : false);
             $decoded = is_string($json) ? json_decode($json, true) : null;
             if (!is_array($decoded) || !isset($decoded['keys']) || !is_array($decoded['keys'])) {
-                throw new McpAuthException('Could not load JWKS from ' . $source);
+                error_log('MCP: could not load JWKS from ' . $source);
+                continue;
             }
             array_push($keys, ...$decoded['keys']);
+        }
+        if ($keys === []) {
+            throw new McpAuthException('Could not load any JWKS keys from the configured sources');
         }
         return ['keys' => $keys];
     }

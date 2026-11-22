@@ -124,6 +124,100 @@ class McpTokenVerifierTest extends TestCase {
         $this->verifier()->verify('not.a.jwt');
     }
 
+    public function testIatWithinLeewayIsAccepted() {
+        // :: Setup
+        // time() is used on purpose: this test is about clock leeway itself, and the
+        // verifier has no injectable clock. It is the only allowed exception to the no-time rule.
+        $token = McpTestKeys::token($this->claims(['iat' => time() + 30]));
+
+        // :: Act
+        $sub = $this->verifier()->verify($token);
+
+        // :: Assert
+        $this->assertEquals('user-1', $sub);
+    }
+
+    public function testIatBeyondLeewayIsRejected() {
+        // :: Setup
+        // time() on purpose, see testIatWithinLeewayIsAccepted.
+        $token = McpTestKeys::token($this->claims(['iat' => time() + 120]));
+
+        // :: Act
+        $this->expectException(McpAuthException::class);
+        $this->verifier()->verify($token);
+    }
+
+    public function testLeewayIsRestoredAfterVerify() {
+        // :: Setup
+        $before = \Firebase\JWT\JWT::$leeway;
+        $token = McpTestKeys::token($this->claims());
+
+        // :: Act
+        $this->verifier()->verify($token);
+
+        // :: Assert
+        $this->assertEquals($before, \Firebase\JWT\JWT::$leeway, 'JWT::$leeway must not leak');
+    }
+
+    public function testClientCredentialsGrantTypeRejected() {
+        // :: Setup
+        $token = McpTestKeys::token($this->claims(['gty' => 'client-credentials']));
+
+        // :: Act
+        $this->expectException(McpAuthException::class);
+        $this->verifier()->verify($token);
+    }
+
+    public function testClientsSubjectRejected() {
+        // :: Setup
+        $token = McpTestKeys::token($this->claims(['sub' => 'abc123@clients']));
+
+        // :: Act
+        $this->expectException(McpAuthException::class);
+        $this->verifier()->verify($token);
+    }
+
+    public function testJwksLoaderSkipsFailingSource() {
+        // :: Setup
+        $dir = sys_get_temp_dir() . '/offpost-mcp-jwks-test-mixed-' . getmypid();
+        mkdir($dir, 0777, true);
+        file_put_contents($dir . '/good.json', json_encode(['keys' => [['kid' => 'a', 'kty' => 'RSA']]]));
+
+        // :: Act
+        $previousLog = ini_set('error_log', '/dev/null'); // the skipped source is logged
+        $jwks = McpJwksLoader::load([$dir . '/missing.json', $dir . '/good.json']);
+        ini_set('error_log', $previousLog);
+
+        // :: Assert
+        $this->assertEquals(['a'], array_column($jwks['keys'], 'kid'), json_encode($jwks, JSON_PRETTY_PRINT));
+
+        unlink($dir . '/good.json');
+        rmdir($dir);
+    }
+
+    public function testJwksLoaderThrowsWhenNoSourceGivesKeys() {
+        // :: Setup
+        $dir = sys_get_temp_dir() . '/offpost-mcp-jwks-test-bad-' . getmypid();
+        mkdir($dir, 0777, true);
+        file_put_contents($dir . '/bad.json', 'not json');
+
+        // :: Act
+        $previousLog = ini_set('error_log', '/dev/null'); // the skipped sources are logged
+        try {
+            McpJwksLoader::load([$dir . '/missing.json', $dir . '/bad.json']);
+            $error = null;
+        } catch (McpAuthException $e) {
+            $error = $e;
+        }
+        ini_set('error_log', $previousLog);
+
+        // :: Assert
+        $this->assertNotNull($error, 'all sources bad must throw');
+
+        unlink($dir . '/bad.json');
+        rmdir($dir);
+    }
+
     public function testJwksLoaderMergesFileSources() {
         // :: Setup
         $dir = sys_get_temp_dir() . '/offpost-mcp-jwks-test-' . getmypid();
