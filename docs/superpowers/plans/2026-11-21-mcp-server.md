@@ -6,13 +6,13 @@
 
 **Architecture:** Offpost is an OAuth resource server only: it publishes RFC 9728 metadata pointing at Auth0 and verifies Auth0-issued RS256 JWT access tokens (`sub` = the same user id as the browser session). A small hand-written stateless JSON-RPC 2.0 handler serves MCP Streamable HTTP (JSON responses, no SSE, no sessions). Tools call shared services extracted from `start-thread.php` / `thread-reply.php`, so UI and MCP follow the same rules.
 
-**Tech Stack:** PHP 8.2, PostgreSQL, PHPUnit 11, `firebase/php-jwt` ^6.11, Auth0 (prod), Node `oidc-provider` 8 (dev).
+**Tech Stack:** PHP 8.2, PostgreSQL, PHPUnit 11, `firebase/php-jwt` ^7.0, Auth0 (prod), Node `oidc-provider` 8 (dev).
 
 **Spec:** `docs/superpowers/specs/2026-11-21-mcp-server-design.md`
 
 ## Global Constraints
 
-- PHP 8.2 (`php:8.2.35-apache`); only new composer dependency is `firebase/php-jwt` (^6.11).
+- PHP 8.2 (`php:8.2.35-apache`); only new composer dependency is `firebase/php-jwt` (^7.0 - 6.x is affected by CVE-2025-45769).
 - Endpoint files are plain PHP like `organizer/src/api/np/`; routes go in `organizer/src/webroot/index.php`.
 - Error text for a missing **or** inaccessible thread/attachment/extraction is exactly `Not found, or no access`.
 - Reads (`get_thread`, `get_attachment_raw`, `get_attachment_extraction`) use `Thread::canUserAccess($sub)` (public threads readable).
@@ -47,10 +47,10 @@
   - `class McpAuthException extends Exception` (in `McpTokenVerifier.php`)
   - `new McpTokenVerifier(string $issuer, string $audience, array $jwks)` - `$jwks` is a decoded JWKS (`['keys' => [...]]`)
   - `McpTokenVerifier::verify(string $jwt): string` - returns `sub`; throws `McpAuthException` on any failure
-  - `McpJwksLoader::load(array $sources): array` - each source is an `https?://` URL or a local file path; merges all `keys` into one JWKS; URL results cached in `sys_get_temp_dir()/offpost-mcp-jwks-<md5(url)>.json` for 3600 s
+  - `McpJwksLoader::load(array $sources): array` - each source is an `https?://` URL or a local file path; merges all `keys` into one JWKS; URL results cached for 3600 s as `<md5(url)>.json` in a private per-uid dir `sys_get_temp_dir()/offpost-mcp-jwks-<uid>` (mode 0700, ownership checked, atomic temp-file + rename writes)
   - `McpTestKeys::PRIVATE_KEY` (PEM string), `McpTestKeys::KID` = `'offpost-mcp-test-1'`, `McpTestKeys::jwks(): array`, `McpTestKeys::token(array $claims): string` (RS256, header `kid`)
 
-- [ ] **Step 1:** In `organizer/src`, run `composer install`, then `composer require firebase/php-jwt:^6.11`. Expected: `vendor/firebase/php-jwt` exists and the lock file is updated.
+- [ ] **Step 1:** In `organizer/src`, run `composer install`, then `composer require firebase/php-jwt:^7.0`. Expected: `vendor/firebase/php-jwt` exists and the lock file is updated.
 - [ ] **Step 2:** Create `McpTestKeys.php`: a fixed 2048-bit RSA keypair generated once with `openssl genrsa 2048` and pasted in as a PHP heredoc constant. The file header says it is a **test-only key, trusted only when `$environment == 'development'` or under PHPUnit**. Do not use a `.pem` file (repo rule). `jwks()` derives n/e via `openssl_pkey_get_details`.
 - [ ] **Step 3: Write failing tests** in `McpTokenVerifierTest` with issuer `https://issuer.test/`, audience `https://offpost.test/mcp`, and base claims `sub=user-1`, `iss`, `aud`, `exp=4102444800` (2100-01-01), `iat=1700000000`:
   - `testValidTokenReturnsSub` → `assertEquals('user-1', $verifier->verify($token))`
@@ -216,7 +216,7 @@ Inputs and outputs (`inputSchema` uses JSON Schema `type: object` and `additiona
 - Create: `organizer/src/api/mcp/oauth_protected_resource.php`
 - Create: `organizer/src/class/Mcp/McpHttp.php`
 - Modify: `organizer/src/webroot/index.php` (add `'/mcp'` and `'/.well-known/oauth-protected-resource'` next to `'/api/np/threads'`, line ~71)
-- Modify: `organizer/src/username-password.php`. Add only these non-secret variables to each environment branch; do not touch or print existing values:
+- Create: `organizer/src/mcp-config.php` (not `username-password.php`, which holds credentials and is off-limits). Required by the MCP endpoint files after `username-password.php`; defines these non-secret variables per `$environment` (PHPUnit uses the development values). Test key trust (the fixture JWKS) must only ever be in the development branch:
   - `$mcp_resource`: dev `http://localhost:25081/mcp`, prod `https://offpost.no/mcp`
   - `$mcp_authorization_server`: dev `http://localhost:25083/oidc`, prod `https://auth.offpost.no/`
   - `$mcp_issuer`: same as `$mcp_authorization_server`
@@ -280,7 +280,7 @@ Inputs and outputs (`inputSchema` uses JSON Schema `type: object` and `additiona
     - `useGrantedResource: () => true`
     - `getResourceServerInfo: () => ({ scope: 'openid', audience: 'http://localhost:25081/mcp', accessTokenFormat: 'jwt', jwt: { sign: { alg: 'RS256' } } })`
   - Set `pkce.required: () => true` for public clients only. Keep the `organizer` client working: it is confidential, so allow PKCE to be optional when a `client_secret` is used.
-  - Update the dev `$oidc_*` URLs in `username-password.php` only if the issuer change breaks the existing login, and check that by logging in at `http://localhost:25081`.
+  - Do not edit `username-password.php`. Check that the existing dev login at `http://localhost:25081` still works after the issuer change; if it breaks, report it to the controller.
 - [ ] **Step 2:** Manual verification:
   1. Run `claude mcp add --transport http offpost-dev http://localhost:25081/mcp`.
   2. In Claude Code, run `/mcp` and authenticate. Expected: a browser login, then the seven tools are listed.

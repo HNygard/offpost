@@ -77,7 +77,7 @@ Auth0 tenant setup (one-time, documented in `docs/mcp.md`, done by the owner):
 Dev: configure `auth/server.js` (`oidc-provider`) with `features.registration`,
 `features.resourceIndicators` issuing JWT access tokens for `http://localhost:25081/mcp`, so the
 same verification code runs locally. Issuer, audience and JWKS URL come from
-`username-password.php`-style config, not hardcoded.
+a separate non-secret config file, `organizer/src/mcp-config.php` (keyed on `$environment`), not hardcoded and not in the credentials file.
 
 ## Tools
 
