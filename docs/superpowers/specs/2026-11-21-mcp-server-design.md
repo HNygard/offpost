@@ -101,17 +101,18 @@ Access rules (owner decisions, 2026-11-21):
 - **Reading** (`get_thread`, `get_attachment_raw`, `get_attachment_extraction`):
   `Thread::canUserAccess($sub)` - owner, granted, or a public thread. A public thread is
   readable, including its files and extractions.
-- **Sync the UI with this rule:** `file.php:39` calls
-  `ThreadAuthorizationManager::canUserAccessThread()` directly, which skips the public-thread
-  exception, so the UI refuses raw files on public threads today. History shows no reason: the
-  public exception has lived in `Thread::canUserAccess()` since `30662102` (2024-12-30), and the
-  check in `file.php` was added later in `ac5904c7` (2025-02-16) without mentioning public
-  threads - an oversight. Change `file.php` to `$thread->canUserAccess($sub)`, and add an e2e
-  test in `e2e-tests/pages/FilePageTest.php` that a logged-in non-granted user can download a
-  file from a public thread (and still gets refused on a non-public one).
-  `classify-email.php:46` uses the same direct check, but classifying is a write, so the
-  stricter rule is correct there and stays.
-- **Writing** (`send_reply`): `ThreadAuthorizationManager::canUserAccessThread($threadId, $sub)` -
+- **UI is already in sync (correction, 2026-11-22):** an earlier draft said `file.php:39` refuses
+  raw files on public threads. That was wrong: `file.php` calls
+  `ThreadAuthorizationManager::canUserAccessThread()`, and that function's SQL already admits
+  public threads (`t.public = true OR` an authorization row, `ThreadAuthorization.php:143-156`).
+  So the UI and MCP already follow the same read rule; no `file.php` change is needed. Add e2e
+  tests in `e2e-tests/pages/FilePageTest.php` that pin it: a logged-in non-granted user can
+  download a file from a public thread, and is refused on a non-public one.
+  Because `canUserAccessThread()` includes public threads, it is **not** the owner-or-granted
+  check `send_reply` needs; `send_reply` checks `thread_authorizations` rows directly.
+  (Observation, out of scope: `classify-email.php:46` also uses `canUserAccessThread()`, so any
+  logged-in user can classify emails on public threads today.)
+- **Writing** (`send_reply`): an owner or granted row in `thread_authorizations` for `$sub` -
   owner or granted only. A public thread the user has no authorization row for is not
   replyable through MCP, even though the UI allows it today. This keeps an assistant from
   sending mail under another user's sender identity.

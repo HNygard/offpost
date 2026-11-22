@@ -194,7 +194,7 @@ Inputs and outputs (`inputSchema` uses JSON Schema `type: object` and `additiona
 - Consumes: `ThreadCreationService::createThread`, `ThreadReplyService::queueReply` (Task 3).
 - Produces:
   - `start_thread {entity_id, title, body, law_basis?, follow_up_plan?}`: `law_basis` is one of `offentleglova` (default) or `other`. `follow_up_plan` is one of `speedy` (default), `slow`, `postliste` or `none` (which stores null). The call is `createThread(..., sendNow: true, public: false, labels: [], historyDetails: ['via'=>'mcp'])` inside a `Database` transaction. An unknown entity or an invalid enum raises `McpToolException('Unknown entity_id: <id>')` or `McpToolException('Invalid law_basis')` / `McpToolException('Invalid follow_up_plan')`. Empty title or body raises `McpToolException('title and body are required')`. Output `{thread_id, thread_url, sending_status:'READY_FOR_SENDING'}`. The UI's `group-…` label is not added, because MCP creates one thread per call.
-  - `send_reply {thread_id, subject, body, recipient}`: `requireUuid`, load the thread, and require `ThreadAuthorizationManager::canUserAccessThread($id, $userId)`; otherwise `McpNotFoundException`. Then call `queueReply(..., send: true, historyDetails: ['via'=>'mcp'])`. A `ThreadReplyValidationException` becomes `McpToolException` with the same message. Output `{email_sending_id, thread_id, recipient, status:'READY_FOR_SENDING'}`. The tool description lists how to find valid recipients: they are the thread's entity email and the addresses seen in the thread, as `getThreadReplyRecipients` does. Also add `reply_recipients` to the `get_thread` output, so the AI can see them.
+  - `send_reply {thread_id, subject, body, recipient}`: `requireUuid`, load the thread, and require an owner or granted row in `thread_authorizations` for `$userId` (not `canUserAccessThread()`, which also admits public threads); otherwise `McpNotFoundException`. Then call `queueReply(..., send: true, historyDetails: ['via'=>'mcp'])`. A `ThreadReplyValidationException` becomes `McpToolException` with the same message. Output `{email_sending_id, thread_id, recipient, status:'READY_FOR_SENDING'}`. The tool description lists how to find valid recipients: they are the thread's entity email and the addresses seen in the thread, as `getThreadReplyRecipients` does. Also add `reply_recipients` to the `get_thread` output, so the AI can see them.
 
 - [ ] **Step 1: Write failing tests:**
   - `testStartThreadDefaults`: law basis `offentleglova`, plan `speedy`, owner is the caller, sending row `READY_FOR_SENDING`, `created` history details `['via'=>'mcp']`
@@ -250,19 +250,20 @@ Inputs and outputs (`inputSchema` uses JSON Schema `type: object` and `additiona
 - [ ] **Step 5:** Rebuild/restart the dev stack (`docker-compose -f docker-compose.dev.yaml down && docker-compose -f docker-compose.dev.yaml up --build -d`, using `sg docker -c` if needed). Run unit and e2e tests. Expected: PASS.
 - [ ] **Step 6:** Commit.
 
-### Task 8: `file.php` follows the read rule
+### Task 8: Pin `file.php`'s public-thread behaviour with e2e tests
+
+`file.php:39` uses `ThreadAuthorizationManager::canUserAccessThread()`, which already admits public
+threads (`ThreadAuthorization.php:143-156`), so no code change is needed (spec correction
+2026-11-22). This task only adds tests that pin the behaviour MCP relies on.
 
 **Files:**
-- Modify: `organizer/src/file.php:39`. Change to `if (!$thread->canUserAccess($_SESSION['user']['sub']))`. Keep the 403 path as it is.
 - Test: `organizer/src/e2e-tests/pages/FilePageTest.php`
 
-- [ ] **Step 1: Write failing e2e tests:**
+- [ ] **Step 1: Write e2e tests:**
   - `testFilePublicThreadOtherUserCanDownload`: a public thread owned by another user, fetched with the logged-in e2e user's session → 200, body equals the attachment bytes
   - `testFilePrivateThreadOtherUserForbidden` → 403
-- [ ] **Step 2:** Run them. Expected: the first FAILS (403) and the second PASSES.
-- [ ] **Step 3:** Make the one-line change.
-- [ ] **Step 4:** Run the whole `FilePageTest.php`. Expected: PASS.
-- [ ] **Step 5:** Commit. The message cites `30662102` (when the public exception was added) and `ac5904c7` (the check that skipped it).
+- [ ] **Step 2:** `php -l` the file; e2e run deferred to the controller (Ruling 4). Expected when run: both PASS without code changes.
+- [ ] **Step 3:** Commit.
 
 ### Task 9: Dev OAuth provider, docs, README
 
@@ -301,7 +302,7 @@ Inputs and outputs (`inputSchema` uses JSON Schema `type: object` and `additiona
   - the 5 MB raw cap
   - history `via: mcp`
   - the dev setup and the test-only key note
-  - the `file.php` public-thread change
+  - that `file.php` and MCP share the public-thread read rule
 
   Add a link to `docs/mcp.md` in CLAUDE.md's docs list, and a capability line in README.md.
 - [ ] **Step 4:** Run all tests: `./organizer/src/vendor/bin/phpunit organizer/src/tests/ organizer/src/e2e-tests/`. Expected: PASS.
