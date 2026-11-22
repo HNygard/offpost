@@ -125,7 +125,11 @@ registration, and resource indicators issuing RS256 JWT access tokens for `http:
 (these must match `organizer/src/mcp-config.php`). The MCP resource's scope is `mcp` (matching
 `$mcp_scopes`); it must be a resource scope, not an OIDC one such as `openid`: with `openid` there,
 a client that requests only the resource gets nothing granted and the provider redirects back with
-`error=access_denied`. Public clients must use PKCE; the confidential
+`error=access_denied`. Dynamic client registrations are persisted by `auth/dev-adapter.js` to the
+gitignored `auth/.oidc-store/clients.json` (ignored by nodemon), so MCP clients that cache their
+`client_id` don't get `invalid_client` after an auth restart; sessions and grants stay in memory,
+so you log in again. Consent grants the requested OIDC scopes too (e.g. `offline_access`, so the
+client gets a refresh token). Public clients must use PKCE; the confidential
 `organizer` client keeps PKCE optional. The `organizer` client is excluded from the MCP
 resource so that its userinfo-based web login keeps working (userinfo rejects tokens that have an
 audience). The web login uses the provider

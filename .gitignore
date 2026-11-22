@@ -33,3 +33,6 @@ data/threads/test-entity-development
 
 # Generated MCP test keys (McpTestKeys creates them on first use)
 organizer/src/tests/fixtures/mcp/generated/
+
+# Dev oidc-provider client registrations (auth/dev-adapter.js)
+auth/.oidc-store/

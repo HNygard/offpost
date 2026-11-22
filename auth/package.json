@@ -16,5 +16,10 @@
     "oidc-provider": "^8.4.3",
     "cors": "^2.8.5",
     "winston": "^3.11.0"
+  },
+  "nodemonConfig": {
+    "ignore": [
+      ".oidc-store/*"
+    ]
   }
 }

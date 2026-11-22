@@ -4,6 +4,7 @@ import cors from 'cors';
 import winston from 'winston';
 import fs from 'fs/promises';
 import path from 'path';
+import DevAdapter from './dev-adapter.js';
 
 // Configure Winston logger
 const logger = winston.createLogger({
@@ -104,6 +105,8 @@ const MCP_RESOURCE = 'http://localhost:25081/mcp';
 const OIDC_ISSUER = 'http://localhost:25083/oidc';
 
 const configuration = {
+  // Persists dynamic client registrations across restarts (see dev-adapter.js).
+  adapter: DevAdapter,
   clients: [{
     client_id: 'organizer',
     client_secret: 'secret',
@@ -279,6 +282,12 @@ const configuration = {
           });
           
           grant.addOIDCScope('openid profile');
+          // Also grant the OIDC scopes the client asked for, e.g. offline_access (refresh
+          // tokens), which MCP clients request so they don't have to log in again every hour.
+          const missingOIDC = details.prompt.details.missingOIDCScope || [];
+          if (missingOIDC.length > 0) {
+            grant.addOIDCScope(missingOIDC.join(' '));
+          }
           // Resource indicators: the grant must also cover the requested resource scopes.
           const missing = details.prompt.details.missingResourceScopes || {};
           for (const [indicator, scopes] of Object.entries(missing)) {
