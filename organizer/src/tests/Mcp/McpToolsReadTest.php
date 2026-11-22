@@ -81,7 +81,7 @@ class McpToolsReadTest extends TestCase {
 
         // :: Assert
         $this->assertEquals(
-            ['000000000-test-municipality-no-email', '000000000-test-municipality'],
+            ['000000000-test-municipality'],
             array_column($data['entities'], 'entity_id'),
             json_encode($data, JSON_PRETTY_PRINT)
         );
@@ -95,6 +95,54 @@ class McpToolsReadTest extends TestCase {
 
         // :: Assert
         $this->assertContains(self::ENTITY, array_column($data['entities'], 'entity_id'));
+    }
+
+    public function testListEntitiesOrgNumIsSubstringMatch(): void {
+        // :: Act
+        $data = $this->callData('list_entities', ['search' => '00000', 'limit' => 200], self::USER_A);
+
+        // :: Assert
+        $this->assertContains(self::ENTITY, array_column($data['entities'], 'entity_id'), json_encode($data, JSON_PRETTY_PRINT));
+    }
+
+    public function testListEntitiesOmitsEntitiesWithoutEmail(): void {
+        // :: Act
+        $data = $this->callData('list_entities', ['search' => 'No Email', 'limit' => 200], self::USER_A);
+
+        // :: Assert
+        $this->assertEquals([], $data['entities'], json_encode($data, JSON_PRETTY_PRINT));
+    }
+
+    public function testListEntitiesOmitsDefunctEntities(): void {
+        // :: Act
+        $data = $this->callData('list_entities', ['search' => 'Defunct', 'limit' => 200], self::USER_A);
+
+        // :: Assert
+        $this->assertEquals([], $data['entities'], json_encode($data, JSON_PRETTY_PRINT));
+    }
+
+    public function testGetThreadOwnerCanReply(): void {
+        // :: Setup
+        $thread = $this->createThread('Min', self::USER_A);
+
+        // :: Act
+        $data = $this->callData('get_thread', ['thread_id' => $thread->id], self::USER_A);
+
+        // :: Assert
+        $this->assertTrue($data['can_reply']);
+        $this->assertEquals(['public-entity@dev.offpost.no'], $data['reply_recipients']);
+    }
+
+    public function testGetThreadPublicReaderWithoutGrantCannotReply(): void {
+        // :: Setup
+        $thread = $this->createThread('Offentlig', self::USER_A, true);
+
+        // :: Act
+        $data = $this->callData('get_thread', ['thread_id' => $thread->id], self::USER_B);
+
+        // :: Assert
+        $this->assertFalse($data['can_reply']);
+        $this->assertEquals([], $data['reply_recipients']);
     }
 
     public function testListEntitiesLimitAndTruncated(): void {
@@ -307,13 +355,13 @@ class McpToolsReadTest extends TestCase {
         $this->assertEquals('Not found, or no access', $response['result']['content'][0]['text']);
     }
 
-    public function testGetThreadNonUuidIsNotFound(): void {
+    public function testGetThreadNonUuidIsInvalidArgument(): void {
         // :: Act
         $response = $this->callThroughServer('get_thread', ['thread_id' => 'abc'], self::USER_A);
 
         // :: Assert
         $this->assertTrue($response['result']['isError']);
-        $this->assertEquals('Not found, or no access', $response['result']['content'][0]['text']);
+        $this->assertEquals('Invalid thread_id (expected UUID)', $response['result']['content'][0]['text']);
     }
 
     public function testGetThreadUnknownUuidIsNotFound(): void {

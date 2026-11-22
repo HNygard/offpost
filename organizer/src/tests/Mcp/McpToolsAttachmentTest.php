@@ -190,9 +190,17 @@ class McpToolsAttachmentTest extends TestCase {
         $this->assertToolError(self::NOT_FOUND, fn() => $this->callRaw($threadId, $attachmentId, self::USER_B));
     }
 
-    public function testRawNonUuidNotFound(): void {
+    public function testRawNonUuidIsInvalidArgument(): void {
         // :: Act / Assert
-        $this->assertToolError(self::NOT_FOUND, fn() => $this->callRaw('nope', 'nope', self::USER_A));
+        $this->assertToolError('Invalid thread_id (expected UUID)', fn() => $this->callRaw('nope', 'nope', self::USER_A));
+    }
+
+    public function testRawNonUuidAttachmentIsInvalidArgument(): void {
+        // :: Setup
+        [$threadId] = $this->threadWithAttachment(self::USER_A, 'pdf', self::PDF_BYTES);
+
+        // :: Act / Assert
+        $this->assertToolError('Invalid attachment_id (expected UUID)', fn() => $this->callRaw($threadId, 'nope', self::USER_A));
     }
 
     public function testExtractionReturnsAll(): void {

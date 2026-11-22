@@ -163,6 +163,36 @@ class McpToolsWriteTest extends TestCase {
         );
     }
 
+    public function testSendReplyStoresTrimmedSubjectAndBody(): void {
+        // :: Setup
+        $thread = $this->createThread(self::USER_A);
+
+        // :: Act
+        $data = $this->callData('send_reply', $this->replyArgs($thread->id, ['subject' => "  Re: Tittel \n", 'body' => "\n Takk. \n"]), self::USER_A);
+
+        // :: Assert
+        $row = Database::queryOne("SELECT email_subject, email_content FROM thread_email_sendings WHERE id = ?", [$data['email_sending_id']]);
+        $this->assertEquals(['email_subject' => 'Re: Tittel', 'email_content' => 'Takk.'], $row);
+    }
+
+    public function testStartThreadEntityWithoutEmail(): void {
+        // :: Setup
+        $this->expectException(McpToolException::class);
+        $this->expectExceptionMessage('Entity has no email address: 000000000-test-entity-no-email');
+
+        // :: Act
+        $this->tools->call('start_thread', $this->startArgs(['entity_id' => '000000000-test-entity-no-email']), self::USER_A);
+    }
+
+    public function testStartThreadDefunctEntity(): void {
+        // :: Setup
+        $this->expectException(McpToolException::class);
+        $this->expectExceptionMessage('Entity no longer exists: 000000000-test-entity-defunct');
+
+        // :: Act
+        $this->tools->call('start_thread', $this->startArgs(['entity_id' => '000000000-test-entity-defunct']), self::USER_A);
+    }
+
     public function testSendReplyGrantedUserQueues(): void {
         // :: Setup
         $thread = $this->createThread(self::USER_A);
@@ -233,9 +263,10 @@ class McpToolsWriteTest extends TestCase {
         $this->assertEquals($before, $this->sendingCount($thread->id));
     }
 
-    public function testSendReplyNonUuidNotFound(): void {
+    public function testSendReplyNonUuidIsInvalidArgument(): void {
         // :: Setup
-        $this->expectException(McpNotFoundException::class);
+        $this->expectException(McpToolException::class);
+        $this->expectExceptionMessage('Invalid thread_id (expected UUID)');
 
         // :: Act
         $this->tools->call('send_reply', $this->replyArgs('not-a-uuid'), self::USER_A);

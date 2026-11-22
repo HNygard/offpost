@@ -39,12 +39,13 @@ class McpTools implements McpToolProvider {
             [
                 'name' => 'list_entities',
                 'description' => 'Search the public entities (agencies, municipalities) that requests can be sent to. '
-                    . 'Matches a case-insensitive part of the name, or an exact organization number. '
+                    . 'Matches a case-insensitive part of the name or organization number. '
+                    . 'Only entities that can receive a request are listed (entities without an email address and entities that no longer exist are left out). '
                     . 'Returns entity_id, which is needed when starting a thread.',
                 'inputSchema' => [
                     'type' => 'object',
                     'properties' => [
-                        'search' => ['type' => 'string', 'description' => 'Part of the entity name, or an exact organization number.'],
+                        'search' => ['type' => 'string', 'description' => 'Part of the entity name or organization number.'],
                         'limit' => $limit,
                     ],
                     'additionalProperties' => false,
@@ -67,7 +68,7 @@ class McpTools implements McpToolProvider {
             [
                 'name' => 'get_thread',
                 'description' => 'Get one thread with its entity, emails (plain text body, classification, attachments with extraction summaries) '
-                    . 'and queued or sent outgoing emails. Thread ids come from list_my_threads. Public threads of other users are readable too.',
+                    . 'and queued or sent outgoing emails, plus can_reply and, when true, the reply_recipients for send_reply. Thread ids come from list_my_threads. Public threads of other users are readable too.',
                 'inputSchema' => [
                     'type' => 'object',
                     'properties' => [
@@ -110,7 +111,8 @@ class McpTools implements McpToolProvider {
             [
                 'name' => 'start_thread',
                 'description' => 'Start a new thread: this sends a real request email to the public body (entity), in the user\'s name, '
-                    . 'within minutes. It cannot be recalled. One thread is created per call. entity_id comes from list_entities.',
+                    . 'within minutes. It cannot be recalled. One thread is created per call. entity_id comes from list_entities; '
+                    . 'entities without an email address or that no longer exist are refused.',
                 'inputSchema' => [
                     'type' => 'object',
                     'properties' => [
@@ -136,7 +138,7 @@ class McpTools implements McpToolProvider {
                 'name' => 'send_reply',
                 'description' => 'Reply in a thread you own or have been given access to. The email is queued and sent within minutes, '
                     . 'in the user\'s name, and cannot be recalled. recipient must be one of the reply_recipients returned by get_thread '
-                    . '(the entity email and addresses seen in the thread).',
+                    . '(the entity email and addresses seen in the thread); get_thread reports can_reply for this.',
                 'inputSchema' => [
                     'type' => 'object',
                     'properties' => [
@@ -216,9 +218,9 @@ class McpTools implements McpToolProvider {
         return max(1, min(self::MAX_LIMIT, $args['limit']));
     }
 
-    private function requireUuid(mixed $v): string {
+    private function requireUuid(mixed $v, string $field): string {
         if (!is_string($v) || !preg_match(self::UUID_REGEX, $v)) {
-            throw new McpNotFoundException();
+            throw new McpToolException("Invalid $field (expected UUID)");
         }
         return $v;
     }
@@ -233,9 +235,13 @@ class McpTools implements McpToolProvider {
 
         $entities = [];
         foreach (Entity::getAll() as $entity) {
+            // Same rule start_thread enforces: no recipient or a defunct entity cannot get a request.
+            if (trim((string)($entity->email ?? '')) === '' || Entity::isDefunct($entity)) {
+                continue;
+            }
             if ($search !== null && $search !== '') {
                 $matchesName = mb_stripos($entity->name ?? '', $search) !== false;
-                $matchesOrgNum = ($entity->org_num ?? null) === $search;
+                $matchesOrgNum = mb_stripos((string)($entity->org_num ?? ''), $search) !== false;
                 if (!$matchesName && !$matchesOrgNum) {
                     continue;
                 }
@@ -342,12 +348,15 @@ class McpTools implements McpToolProvider {
             return $sending;
         }, $export['sendings']);
 
+        $canReply = $this->hasWriteAccess($threadId, $userId);
+
         return [
             'thread' => $export['thread'],
             'entity' => $export['entity'],
             'emails' => $emails,
             'sendings' => $sendings,
-            'reply_recipients' => array_values(getThreadReplyRecipients($thread)),
+            'can_reply' => $canReply,
+            'reply_recipients' => $canReply ? array_values(getThreadReplyRecipients($thread)) : [],
             'thread_url' => NpApiService::threadUrl($threadId),
         ];
     }
@@ -370,6 +379,13 @@ class McpTools implements McpToolProvider {
         }
         if (!Entity::exists($entityId)) {
             throw new McpToolException("Unknown entity_id: $entityId");
+        }
+        $entity = Entity::getById($entityId);
+        if (trim((string)($entity->email ?? '')) === '') {
+            throw new McpToolException("Entity has no email address: $entityId");
+        }
+        if (Entity::isDefunct($entity)) {
+            throw new McpToolException("Entity no longer exists: $entityId");
         }
 
         // Tests run inside one transaction; PDO has no nested transactions.
@@ -401,25 +417,19 @@ class McpTools implements McpToolProvider {
     }
 
     private function sendReply(array $args, string $userId): array {
-        $threadId = $this->requireUuid($args['thread_id'] ?? null);
+        $threadId = $this->requireUuid($args['thread_id'] ?? null, 'thread_id');
         $subject = $this->requiredString($args, 'subject');
         $body = $this->requiredString($args, 'body');
         $recipient = $this->requiredString($args, 'recipient');
 
-        // Writes need an owner or granted row. ThreadAuthorizationManager::canUserAccessThread()
-        // is not usable here: it also returns true for public threads.
-        $authorized = Database::queryOneOrNone(
-            "SELECT 1 AS ok FROM thread_authorizations WHERE thread_id = ? AND user_id = ?",
-            [$threadId, $userId]
-        );
-        $thread = $authorized === null ? null : Thread::loadFromDatabaseOrNone($threadId);
+        $thread = $this->hasWriteAccess($threadId, $userId) ? Thread::loadFromDatabaseOrNone($threadId) : null;
         if ($thread === null) {
             throw new McpNotFoundException();
         }
 
         try {
             $sending = (new ThreadReplyService())->queueReply(
-                $thread, $subject, $body, $recipient, $userId, true, ['via' => 'mcp']
+                $thread, trim($subject), trim($body), $recipient, $userId, true, ['via' => 'mcp']
             );
         } catch (ThreadReplyValidationException $e) {
             throw new McpToolException($e->getMessage());
@@ -433,9 +443,20 @@ class McpTools implements McpToolProvider {
         ];
     }
 
+    /**
+     * Writes need an owner or granted row. ThreadAuthorizationManager::canUserAccessThread()
+     * is not usable here: it also returns true for public threads.
+     */
+    private function hasWriteAccess(string $threadId, string $userId): bool {
+        return Database::queryOneOrNone(
+            "SELECT 1 AS ok FROM thread_authorizations WHERE thread_id = ? AND user_id = ?",
+            [$threadId, $userId]
+        ) !== null;
+    }
+
     /** Loads the thread named by $args['thread_id'], or throws McpNotFoundException if missing or not readable by the user. */
     private function loadAccessibleThread(array $args, string $userId): Thread {
-        $threadId = $this->requireUuid($args['thread_id'] ?? null);
+        $threadId = $this->requireUuid($args['thread_id'] ?? null, 'thread_id');
         $thread = Thread::loadFromDatabaseOrNone($threadId);
         if ($thread === null || !$thread->canUserAccess($userId)) {
             throw new McpNotFoundException();
@@ -448,7 +469,7 @@ class McpTools implements McpToolProvider {
      * Throws McpNotFoundException when the attachment id is invalid or belongs to another thread.
      */
     private function loadThreadAttachmentInfo(Thread $thread, array $args): array {
-        $attachmentId = $this->requireUuid($args['attachment_id'] ?? null);
+        $attachmentId = $this->requireUuid($args['attachment_id'] ?? null, 'attachment_id');
         $row = Database::queryOneOrNone(
             "SELECT tea.id, tea.name, tea.filename, tea.filetype, tea.size,
                     tea.content IS NULL AS content_missing, octet_length(tea.content) AS content_length
