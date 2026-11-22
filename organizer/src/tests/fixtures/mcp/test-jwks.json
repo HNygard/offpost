@@ -1,0 +1,12 @@
+{
+    "keys": [
+        {
+            "kty": "RSA",
+            "use": "sig",
+            "alg": "RS256",
+            "kid": "offpost-mcp-test-1",
+            "n": "oE8QnsoWyAw6tyKJqhu2fWXF30YY3ZcgxZ9ClILtUvUIgCvm4ZMuICN6YWL12uPxcSdAAPP0ZRHsaBMwwSHlXe44kXH8YUTQdD6xnHmVRqmdLrWCwQONF9tCtbUksPdPuFFeAooHqdKWikonv2xZLFGAx32tu-tHAzzT_-SCoyerkEtzTy-MubIhL01QhxhR69qCGHwQpo0EKp0RXLK9LJbO_r17PS8mWQ60zsD6g3teH_4d4WtiivOh0Nouw8Ff6RcOoZ0F4yBCGv6P4YUNpnQcV5ZX1CEBEjyqIo68jfSZKtiIby5076HgekiY-tZviKHJASO_uDOraXXn9c8Kww",
+            "e": "AQAB"
+        }
+    ]
+}

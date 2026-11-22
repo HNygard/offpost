@@ -70,6 +70,8 @@ try {
             // only require()'d lazily when a request actually matches the path.
             '/api/np/threads' => '/../api/np/np_threads_list.php',
             '/api/np/attachment' => '/../api/np/np_attachment_get.php',
+            '/mcp' => '/../api/mcp/mcp.php',
+            '/.well-known/oauth-protected-resource' => '/../api/mcp/oauth_protected_resource.php',
             '/api/admin/export/threads' => '/../api/admin/export_threads_list.php',
             '/api/admin/export/thread' => '/../api/admin/export_thread_get.php',
             '/api/admin/analysis/request' => '/../api/admin/analysis_request.php',
