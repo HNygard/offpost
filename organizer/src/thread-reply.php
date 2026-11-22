@@ -6,6 +6,7 @@ require_once __DIR__ . '/class/ThreadStorageManager.php';
 require_once __DIR__ . '/class/ThreadEmailSending.php';
 require_once __DIR__ . '/class/ThreadHistory.php';
 require_once __DIR__ . '/class/ThreadUtils.php';
+require_once __DIR__ . '/class/ThreadReplyService.php';
 
 // Require authentication
 requireAuth();
@@ -71,39 +72,9 @@ try {
     }
     
     $selectedRecipient = strtolower(trim($recipient));
-    
-    if (!in_array($selectedRecipient, array_map('strtolower', $validRecipients))) {
-        throw new Exception('Invalid recipient selected');
-    }
 
-    // Set status based on action
-    $status = $sendReply ? ThreadEmailSending::STATUS_READY_FOR_SENDING : ThreadEmailSending::STATUS_STAGING;
-
-    // Create email sending record for the recipient
-    $emailSending = ThreadEmailSending::create(
-        $threadId,
-        $replyBody,
-        $replySubject,
-        $selectedRecipient,
-        $thread->my_email,
-        $thread->my_name,
-        $status
-    );
-    
-    if (!$emailSending) {
-        throw new Exception('Failed to create email sending record for ' . $selectedRecipient);
-    }
-    
-    $emailIds = [$emailSending->id];
-
-    // Log the action in thread history
-    $history = new ThreadHistory();
-    $action = $sendReply ? 'thread_reply_created_and_queued_sending' : 'thread_reply_draft';
-    $history->logAction($threadId, $action, $userId, [
-        'email_sending_ids' => $emailIds,
-        'recipient' => $selectedRecipient,
-        'subject' => $replySubject
-    ]);
+    $replyService = new ThreadReplyService();
+    $replyService->queueReply($thread, $replySubject, $replyBody, $recipient, $userId, $sendReply);
 
     // Set success message
     $_SESSION['success_message'] = $sendReply ? 

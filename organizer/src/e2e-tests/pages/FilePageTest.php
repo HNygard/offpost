@@ -34,6 +34,42 @@ class FilePageTest extends E2EPageTestCase {
     }
         */
 
+    public function testFilePublicThreadOtherUserCanDownload() {
+        // :: Setup
+        // Thread owned by another user: the e2e session user ('dev-user-id') gets no thread_authorizations row
+        $testData = E2ETestSetup::createTestThread(userId: 'other-user-id');
+        $threadId = $testData['thread']->id;
+        Database::execute("UPDATE threads SET public = true WHERE id = ?", [$threadId]);
+
+        $expectedBytes = Database::queryValue("SELECT content FROM thread_email_attachments WHERE id = ?", [$testData['attachment_id']]);
+        if (is_resource($expectedBytes)) {
+            $expectedBytes = stream_get_contents($expectedBytes);
+        }
+
+        // :: Act
+        $response = $this->renderPage('/file?threadId=' . $threadId . '&attachmentId=' . $testData['attachment_id']);
+
+        // :: Assert
+        $this->assertMatchesRegularExpression('/^Content-Type:\s*application\/pdf/mi', $response->headers);
+        $this->assertEquals($expectedBytes, $response->body, 'Public thread attachment should be served to a user without authorization row');
+    }
+
+    public function testFilePrivateThreadOtherUserForbidden() {
+        // :: Setup
+        $testData = E2ETestSetup::createTestThread(userId: 'other-user-id');
+        $threadId = $testData['thread']->id;
+        Database::execute("UPDATE threads SET public = false WHERE id = ?", [$threadId]);
+
+        // :: Act
+        $response = $this->renderPage(
+            '/file?threadId=' . $threadId . '&attachmentId=' . $testData['attachment_id'],
+            'dev-user-id', 'GET', '403 Forbidden'
+        );
+
+        // :: Assert
+        $this->assertStringNotContainsString('%PDF-1.4', $response->body, 'Attachment bytes must not leak to unauthorized user');
+    }
+
     public function testFileNotLoggedIn() {
         // Should fail when not logged in
         $response = $this->renderPage('/file', user: null, expected_status:'302 Found');

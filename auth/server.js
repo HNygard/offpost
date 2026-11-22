@@ -1,9 +1,10 @@
-import { Provider } from 'oidc-provider';
+import { Provider, errors } from 'oidc-provider';
 import express from 'express';
 import cors from 'cors';
 import winston from 'winston';
 import fs from 'fs/promises';
 import path from 'path';
+import DevAdapter from './dev-adapter.js';
 
 // Configure Winston logger
 const logger = winston.createLogger({
@@ -99,7 +100,17 @@ app.get('/dev-login', (req, res) => {
   res.json({ success: true, user: DEV_USER, loginToken: DEV_LOGIN_TOKEN });
 });
 
+// Must equal $mcp_resource / $mcp_issuer in organizer/src/mcp-config.php (development).
+const MCP_RESOURCE = 'http://localhost:25081/mcp';
+const OIDC_ISSUER = 'http://localhost:25083/oidc';
+
 const configuration = {
+  // Persists dynamic client registrations across restarts (see dev-adapter.js).
+  adapter: DevAdapter,
+  // The library defaults plus 'mcp' (the MCP resource scope, advertised by Offpost as
+  // scopes_supported). Without it, a dynamic registration that includes "scope": "mcp" - as
+  // Claude Code sends - is rejected with invalid_client_metadata. 'profile' is added from claims.
+  scopes: ['openid', 'offline_access', 'mcp'],
   clients: [{
     client_id: 'organizer',
     client_secret: 'secret',
@@ -108,11 +119,34 @@ const configuration = {
     response_types: ['code'],
   }],
   pkce: {
-    required: () => false,
+    // Public clients (dynamically registered MCP clients) must use PKCE.
+    // The confidential 'organizer' client keeps PKCE optional.
+    required: (ctx, client) => client.clientAuthMethod === 'none',
   },
   features: {
     devInteractions: { enabled: false },
-    registration: { enabled: false },
+    registration: { enabled: true },
+    // Issue JWT access tokens for the MCP resource server (organizer /mcp).
+    resourceIndicators: {
+      enabled: true,
+      // The organizer web login uses userinfo, which rejects tokens with an audience,
+      // so the MCP resource applies to every client except 'organizer'.
+      defaultResource: (ctx, client, oneOf) =>
+        oneOf ?? (client.clientId === 'organizer' ? undefined : MCP_RESOURCE),
+      useGrantedResource: (ctx, model) => model.clientId !== 'organizer',
+      getResourceServerInfo: (ctx, resourceIndicator) => {
+        if (resourceIndicator !== MCP_RESOURCE) {
+          throw new errors.InvalidTarget();
+        }
+        return {
+          // Must match $mcp_scopes in organizer/src/mcp-config.php (advertised to MCP clients).
+          scope: 'mcp',
+          audience: MCP_RESOURCE,
+          accessTokenFormat: 'jwt',
+          jwt: { sign: { alg: 'RS256' } },
+        };
+      },
+    },
   },
   claims: {
     openid: ['sub'],
@@ -168,7 +202,7 @@ const configuration = {
   // Save dev user on startup
   await saveUser(DEV_USER);
   
-  const oidc = new Provider('http://localhost:25083', configuration);
+  const oidc = new Provider(OIDC_ISSUER, configuration);
 
   // Request logging
   app.use((req, res, next) => {
@@ -252,6 +286,17 @@ const configuration = {
           });
           
           grant.addOIDCScope('openid profile');
+          // Also grant the OIDC scopes the client asked for, e.g. offline_access (refresh
+          // tokens), which MCP clients request so they don't have to log in again every hour.
+          const missingOIDC = details.prompt.details.missingOIDCScope || [];
+          if (missingOIDC.length > 0) {
+            grant.addOIDCScope(missingOIDC.join(' '));
+          }
+          // Resource indicators: the grant must also cover the requested resource scopes.
+          const missing = details.prompt.details.missingResourceScopes || {};
+          for (const [indicator, scopes] of Object.entries(missing)) {
+            grant.addResourceScope(indicator, scopes.join(' '));
+          }
           await grant.save();
           
           const result = {

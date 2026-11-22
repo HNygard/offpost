@@ -686,7 +686,7 @@ class NpApiService {
      * One batch query for all listed threads, like getAllThreadStatusesEfficient()
      * does for statuses - see docs/thread-state.md.
      */
-    private static function threadStateTypesByThreadId(array $threadIds): array {
+    public static function threadStateTypesByThreadId(array $threadIds): array {
         if (count($threadIds) === 0) {
             return [];
         }

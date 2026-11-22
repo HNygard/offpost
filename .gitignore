@@ -30,3 +30,9 @@ data/threads/000000000-test-entity-development
 data/threads/test-entity-development
 !data/entities.json
 !data/entities_test.json
+
+# Generated MCP test keys (McpTestKeys creates them on first use)
+organizer/src/tests/fixtures/mcp/generated/
+
+# Dev oidc-provider client registrations (auth/dev-adapter.js)
+auth/.oidc-store/

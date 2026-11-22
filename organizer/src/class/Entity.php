@@ -125,6 +125,19 @@ class Entity {
     }
     
     /**
+     * True if the entity no longer exists: entity_existed_to_and_including is set
+     * and its date has passed (today is still "up to and including").
+     */
+    public static function isDefunct($entity): bool {
+        $to = $entity->entity_existed_to_and_including ?? null;
+        if ($to === null || trim((string)$to) === '') {
+            return false;
+        }
+        $time = strtotime((string)$to);
+        return $time === false || date('Y-m-d', $time) < date('Y-m-d');
+    }
+
+    /**
      * Get entity details by ID
      * @param string $entityId The entity ID
      * @return Entity Entity details

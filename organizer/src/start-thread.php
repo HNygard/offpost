@@ -6,6 +6,7 @@ require_once __DIR__ . '/class/ThreadAuthorization.php';
 require_once __DIR__ . '/class/ThreadStorageManager.php';
 require_once __DIR__ . '/class/Entity.php';
 require_once __DIR__ . '/class/ThreadEmailSending.php';
+require_once __DIR__ . '/class/ThreadCreationService.php';
 
 // Require authentication
 requireAuth();
@@ -250,63 +251,28 @@ $_POST['labels'] = $labelsString;
 
 
 Database::beginTransaction();
+$creationService = new ThreadCreationService();
 
 // Create a thread for each entity
 foreach ($entityIds as $entityId) {
-    $signDelim = mt_rand(0, 10) > 5 ? '---' : '--';
-    $obj = getRandomNameAndEmail();
-    $my_name = $obj->firstName . $obj->middleName . ' ' . $obj->lastName;
-    $my_email = $obj->email;
-
-    $thread = new Thread();
-    $thread->title = $_POST['title'];
-    $thread->my_name = $my_name;
-    $thread->my_email = $my_email;
-    $thread->labels = array();
-    $thread->initial_request = $_POST['body']; // Store the initial request
-    $thread->sending_status = isset($_POST['send_now']) && $_POST['send_now'] === '1' 
-        ? Thread::SENDING_STATUS_READY_FOR_SENDING 
-        : Thread::SENDING_STATUS_STAGING;
-    $thread->sent = false; // Will be updated if email is sent
-    $thread->archived = false;
-    $thread->public = isset($_POST['public']) && $_POST['public'] === '1';
-    $thread->request_law_basis = isset($_POST['request_law_basis']) ? $_POST['request_law_basis'] : Thread::REQUEST_LAW_BASIS_OTHER;
-    $thread->request_follow_up_plan = isset($_POST['request_follow_up_plan']) && !empty($_POST['request_follow_up_plan'])
-        ? $_POST['request_follow_up_plan']
-        : null;
-    $thread->emails = array();
-
-    $labels = explode(' ', $_POST['labels']);
-    foreach ($labels as $label) {
-        $thread->labels[] = trim($label);
+    $labels = array();
+    foreach (explode(' ', $_POST['labels']) as $label) {
+        $labels[] = trim($label);
     }
-    
-    $newThread = ThreadStorageManager::getInstance()->createThread(
-        $entityId,
-        $thread,
-        $_SESSION['user']['sub']
-    );
-    $threadId = $newThread->id;
 
-    // Set creator as owner using OpenID Connect subject identifier
-    $userId = $_SESSION['user']['sub']; // From OpenID Connect session
-    $newThread->addUser($userId, true);
-    
-    // Create a ThreadEmailSending record for this thread
-    $entity = Entity::getById($entityId);
-    ThreadEmailSending::create(
-        $threadId,
-        $_POST['body'] . "\n\n$signDelim\n" . $obj->firstName . $obj->middleName . ' ' . $obj->lastName,
+    $createdThreads[] = $creationService->createThread(
+        $entityId,
         $_POST['title'],
-        $entity->email,
-        $my_email,
-        $my_name,
-        isset($_POST['send_now']) && $_POST['send_now'] === '1' 
-            ? ThreadEmailSending::STATUS_READY_FOR_SENDING 
-            : ThreadEmailSending::STATUS_STAGING
+        $_POST['body'],
+        $_SESSION['user']['sub'], // From OpenID Connect session
+        isset($_POST['request_law_basis']) ? $_POST['request_law_basis'] : Thread::REQUEST_LAW_BASIS_OTHER,
+        isset($_POST['request_follow_up_plan']) && !empty($_POST['request_follow_up_plan'])
+            ? $_POST['request_follow_up_plan']
+            : null,
+        isset($_POST['send_now']) && $_POST['send_now'] === '1',
+        isset($_POST['public']) && $_POST['public'] === '1',
+        $labels
     );
-    
-    $createdThreads[] = $newThread;
 }
 Database::commit();
 
