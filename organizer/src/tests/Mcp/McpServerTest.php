@@ -70,7 +70,7 @@ class McpServerTest extends TestCase {
         $response = $this->server->handle($this->rpc('ping'), 'u1');
 
         // :: Assert
-        $this->assertSame([], $response['result']);
+        $this->assertEquals('{}', json_encode($response['result']));
     }
 
     public function testToolsListReturnsDefinitions(): void {

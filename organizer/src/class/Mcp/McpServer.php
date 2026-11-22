@@ -48,7 +48,7 @@ class McpServer {
                 case 'initialize':
                     return $this->result($id, $this->initialize($params));
                 case 'ping':
-                    return $this->result($id, []);
+                    return $this->result($id, new stdClass());
                 case 'tools/list':
                     return $this->result($id, ['tools' => $this->tools->definitions()]);
                 case 'tools/call':
@@ -96,7 +96,7 @@ class McpServer {
         }
     }
 
-    private function result(mixed $id, array $result): array {
+    private function result(mixed $id, array|object $result): array {
         return ['jsonrpc' => '2.0', 'id' => $id, 'result' => $result];
     }
 
