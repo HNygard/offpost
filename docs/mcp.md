@@ -90,14 +90,28 @@ with `curl -o file.pdf "<download_url>"` so the file stays out of its context.
 
 ## Auth0 tenant setup (production, one-time)
 
-1. Create an API with identifier `https://offpost.no/mcp`, signing algorithm RS256.
-2. Enable OIDC Dynamic Application Registration (tenant settings, Advanced).
-3. Promote the login connection(s) to domain level so dynamically registered clients can use them.
-4. Enable the Resource Parameter Compatibility Profile so the `resource` parameter maps to the audience.
-5. In the API settings, allow user access for dynamically registered (third-party) clients.
-6. Set the API's Token Expiration (Access Token lifetime) short, for example 3600 s. Offpost
-   cannot revoke issued JWTs, so the lifetime is the window in which a leaked or withdrawn token
-   stays usable.
+Done for auth.offpost.no on 2026-11-23 (API "Offpost MCP"). Dashboard names as of then:
+
+1. Applications -> APIs -> Create API: identifier exactly `https://offpost.no/mcp` (cannot be
+   changed later), JWT profile Auth0, signing algorithm RS256.
+2. In that API's Settings:
+   - Application Access Policy: User-delegated Access **All apps allowed** (claude.ai registers a
+     new app per connection, so per-app authorization would block it); Client Access **No apps
+     allowed** (Offpost rejects machine-to-machine tokens anyway).
+   - Default Permissions for third-party applications: User-delegated Access **All**. Dynamically
+     registered clients are third-party apps and need permissions even when the policy above allows
+     all apps; with "Unauthorized" they register but never get a token.
+   - Maximum Access Token Lifetime short, e.g. 3600 s. Offpost cannot revoke issued JWTs, so the
+     lifetime is the window in which a leaked or withdrawn token stays usable.
+   - Allow Offline Access **on**, so clients get refresh tokens instead of a new login every hour.
+   - Token Sender-Constraining: None / Never (Offpost does not support DPoP).
+3. Tenant Settings (gear, bottom of the left sidebar) -> Advanced:
+   - **Dynamic Client Registration (DCR)** on. Discovery then shows
+     `registration_endpoint: https://auth.offpost.no/oidc/register`.
+   - **Resource Parameter Compatibility Profile** on, so the `resource` parameter MCP clients send
+     selects the API (otherwise the token gets the wrong audience and Offpost answers 401).
+4. Authentication -> the login connection(s) -> **Promote Connection to Domain Level**, so the
+   login page of dynamically registered clients offers them.
 
 ## Deploying
 
