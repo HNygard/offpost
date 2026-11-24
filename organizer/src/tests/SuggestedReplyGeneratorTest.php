@@ -29,7 +29,7 @@ class SuggestedReplyGeneratorTest extends PHPUnit\Framework\TestCase {
         $result = $this->generator->generateSuggestedReply($thread);
         
         // :: Assert - With deterministic input, verify exact output
-        $expectedReply = "Tidligere e-poster:\n\n--\nTest User";
+        $expectedReply = "Tidligere e-poster:";
         $this->assertEquals($expectedReply, $result, 'Generated reply should match expected format exactly');
     }
     
@@ -65,8 +65,7 @@ class SuggestedReplyGeneratorTest extends PHPUnit\Framework\TestCase {
             "1. Sendt den 2025-01-16 14:20:00\n" .
             "   Sammendrag: Response to request\n\n" .
             "2. Mottatt den 2025-01-15 10:30:00\n" .
-            "   Sammendrag: Initial request\n\n" .
-            "--\nTest User";
+            "   Sammendrag: Initial request";
         $this->assertEquals($expectedReply, $result, 'Generated reply should match expected format exactly');
     }
     
@@ -106,10 +105,7 @@ class SuggestedReplyGeneratorTest extends PHPUnit\Framework\TestCase {
 
 1. Mottatt den 2025-01-15 10:30:00
    Sammendrag: Email with case number
-   Saksnummer: 2025/123-1 (Kongsberg kommune)
-
---
-Test User';
+   Saksnummer: 2025/123-1 (Kongsberg kommune)';
         $this->assertEquals($expectedResult, $result);
     }
     
@@ -149,10 +145,7 @@ Test User';
 
 1. Mottatt den 2025-01-15 10:30:00
    Sammendrag: Email with document number
-   Dokumentnummer: 2025/DOC-456 (Test Kommune)
-
---
-Test User';
+   Dokumentnummer: 2025/DOC-456 (Test Kommune)';
         $this->assertEquals($expectedResult, $result);
     }
     
@@ -190,10 +183,7 @@ Test User';
 
 1. Mottatt den 2025-01-15 10:30:00
    Sammendrag: Email requesting copy
-   Merk: Avsenderen ber om en kopi av e-posten.
-
---
-Test User';
+   Merk: Avsenderen ber om en kopi av e-posten.';
         
         $this->assertEquals($expectedResult, $result);
     }
@@ -288,10 +278,7 @@ Test User';
 2. Mottatt den 2025-01-15 10:30:00
    Sammendrag: Initial request
    Saksnummer: 2025/123-1 (Kongsberg kommune)
-   Merk: Avsenderen ber om en kopi av e-posten.
-
---
-Test User';
+   Merk: Avsenderen ber om en kopi av e-posten.';
         $this->assertEquals($expectedResult, $result);
     }
     
@@ -305,10 +292,7 @@ Test User';
         $result = $this->generator->generateSuggestedReply($thread);
         
         // :: Assert
-        $expectedResult = 'Tidligere e-poster:
-
---
-Test User';
+        $expectedResult = 'Tidligere e-poster:';
         $this->assertEquals($expectedResult, $result);
     }
     
@@ -348,8 +332,7 @@ Test User';
             "4. Mottatt den 2025-01-4 10:30:00\n" .
             "   Sammendrag: Email 4\n\n" .
             "5. Mottatt den 2025-01-3 10:30:00\n" .
-            "   Sammendrag: Email 3\n\n" .
-            "--\nTest User";
+            "   Sammendrag: Email 3";
         $this->assertEquals($expectedReply, $result, 'Generated reply should show exactly last 5 emails');
     }
     
@@ -402,10 +385,7 @@ Test User';
    Saksnummer: 2025/123-1 (Test Kommune)
 
 2. Mottatt den 2025-01-15 10:30:00
-   Sammendrag: First email
-
---
-Test User';
+   Sammendrag: First email';
         $this->assertEquals($expectedResult, $result);
     }
 }

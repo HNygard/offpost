@@ -62,9 +62,14 @@ class McpToolsWriteTest extends TestCase {
         $data = $this->callData('start_thread', $this->startArgs(), self::USER_A);
 
         // :: Assert
-        $this->assertEquals(['thread_id', 'thread_url', 'sending_status'], array_keys($data));
+        $this->assertEquals(['thread_id', 'thread_url', 'sending_status', 'my_name', 'my_email'], array_keys($data));
         $this->assertEquals('READY_FOR_SENDING', $data['sending_status']);
         $thread = Thread::loadFromDatabase($data['thread_id']);
+        $this->assertEquals(
+            ['my_name' => $thread->my_name, 'my_email' => $thread->my_email],
+            ['my_name' => $data['my_name'], 'my_email' => $data['my_email']],
+            'start_thread returns the generated identity stored on the thread'
+        );
         $this->assertEquals('offentleglova', $thread->request_law_basis);
         $this->assertEquals('speedy', $thread->request_follow_up_plan);
         $this->assertFalse((bool)$thread->public);
@@ -172,7 +177,7 @@ class McpToolsWriteTest extends TestCase {
 
         // :: Assert
         $row = Database::queryOne("SELECT email_subject, email_content FROM thread_email_sendings WHERE id = ?", [$data['email_sending_id']]);
-        $this->assertEquals(['email_subject' => 'Re: Tittel', 'email_content' => 'Takk.'], $row);
+        $this->assertEquals(['email_subject' => 'Re: Tittel', 'email_content' => "Takk.\n\n--\n" . $thread->my_name], $row);
     }
 
     public function testStartThreadEntityWithoutEmail(): void {

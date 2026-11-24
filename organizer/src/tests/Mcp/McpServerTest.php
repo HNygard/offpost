@@ -53,6 +53,7 @@ class McpServerTest extends TestCase {
         $this->assertEquals('2025-06-18', $response['result']['protocolVersion']);
         $this->assertEquals('{"tools":{}}', json_encode($response['result']['capabilities']));
         $this->assertEquals('offpost', $response['result']['serverInfo']['name']);
+        $this->assertEquals(McpServer::INSTRUCTIONS, $response['result']['instructions']);
         $this->assertSame(1, $response['id']);
         $this->assertEquals('2.0', $response['jsonrpc']);
     }

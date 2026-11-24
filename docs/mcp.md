@@ -45,13 +45,33 @@ UUID that is missing or inaccessible gives exactly `Not found, or no access`.
 | Tool | Access rule |
 |---|---|
 | `list_entities` | any authenticated user (public bodies). Search is a case-insensitive substring of name or `org_num`. Entities without an email address and entities that no longer exist (`entity_existed_to_and_including` in the past) are left out |
-| `start_thread` | any authenticated user; creates a thread owned by the token `sub`, queued `READY_FOR_SENDING`, no daily cap. Refuses entities without email (`Entity has no email address: <id>`) and defunct ones (`Entity no longer exists: <id>`) |
+| `start_thread` | any authenticated user; creates a thread owned by the token `sub`, queued `READY_FOR_SENDING`, no daily cap. Refuses entities without email (`Entity has no email address: <id>`) and defunct ones (`Entity no longer exists: <id>`). Returns `thread_id`, `thread_url`, `sending_status` and the new thread's generated identity `my_name`, `my_email` (see Sender identity and signatures) |
 | `list_my_threads` | only threads with a `thread_authorizations` row for the user (owner or granted); public threads merely viewable are not listed. Each thread has `has_delivery_problem` (computed for the listed threads in one query). Ordered by last activity newest first, then thread id. Returns `total` (threads matching the filters) and `next_cursor` (null on the last page; pass it back as `cursor`). Paging is keyset-based: the next page continues strictly after the last thread returned, so threads archived between pages (e.g. a bulk archive run) do not shift or skip the rest. An unparseable cursor gives `Invalid cursor`. `truncated` is true when more pages exist |
 | `get_thread` | read rule: owner, granted **or public** (`Thread::canUserAccess`); no raw EML, no `body_html`. Returns `delivery_problems` (see below), `can_reply` (true only with a `thread_authorizations` row, the same check as `send_reply`); `reply_recipients` is empty unless `can_reply` |
 | `get_attachment_link` | read rule. By default returns `{name, filename, mimeType, size, download_url, expires_in: 300}` and loads no content (no size cap). With `inline: true` it also returns the content (image content or embedded resource); attachments over 5 MB are then refused (use `get_attachment_extraction`). Attachments whose content was never stored give an error in both modes. Replaces `get_attachment_raw` |
 | `get_attachment_extraction` | read rule |
-| `send_reply` | owner or granted only (`thread_authorizations` row); a public thread without a row is refused. Recipient must be one of the thread's valid reply recipients. Queued `READY_FOR_SENDING`. Subject and body are stored trimmed |
+| `send_reply` | owner or granted only (`thread_authorizations` row); a public thread without a row is refused. Recipient must be one of the thread's valid reply recipients. Queued `READY_FOR_SENDING`. Subject and body are stored trimmed; the thread signature is appended to the body |
 | `archive_thread` | owner or granted only (`thread_authorizations` row), like `send_reply`; a public thread without a row is refused. `archived` (default true) archives, false unarchives. Same path as the web UI's archive action (`updateThread`), which logs `archived`/`unarchived` to thread history, here with `via: mcp`. Already in that state: `changed: false`, no history entry. Archiving only hides the thread from default lists; nothing is sent and incoming emails are still received |
+
+### Sender identity and signatures
+
+Every thread has its own sender identity, a generated name and email address (`threads.my_name`,
+`threads.my_email`, picked by `getRandomNameAndEmail()` in `ThreadCreationService`). It is never the
+user's real name. `start_thread` always creates a new identity. A new thread is a separate request:
+it is not connected to any earlier thread, neither in Offpost nor for the public body, even when it
+is on the same subject. A follow-up on a request is a `send_reply` in that request's thread.
+
+Offpost signs every outgoing email, so the agent must not:
+
+- `start_thread`: `ThreadCreationService` appends `--` or `---` plus `my_name` to the request body.
+- `send_reply`: `ThreadReplyService` appends `--` plus the thread's `my_name` (the web reply form
+  uses the same service and shows a note that the signature is added; its "Suggested Reply" text
+  therefore has no signature of its own).
+
+The same rules are in the `start_thread` and `send_reply` tool descriptions and in the server
+`instructions` returned by `initialize` (`McpServer::INSTRUCTIONS`), which MCP clients pass to the
+model. This was added after an agent started a follow-up as a new thread and signed it with the
+previous thread's name, so the entity got an email signed with two different names.
 
 Delivery problems: `ThreadScheduledEmailSender` records a failed send as status `READY_FOR_SENDING`
 (it is retried) with the failure text in `thread_email_sendings.error_message`; a later successful

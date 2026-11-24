@@ -12,6 +12,9 @@ class ThreadReplyValidationException extends Exception {}
  *
  * Shared by the thread-reply page and the MCP send_reply tool. Does NOT check
  * that the user may access the thread; callers do that.
+ *
+ * The thread's signature ("--" + my_name) is appended to the body, like
+ * ThreadCreationService does for the initial request, so callers must not sign.
  */
 class ThreadReplyService {
     /**
@@ -42,7 +45,7 @@ class ThreadReplyService {
 
         $emailSending = ThreadEmailSending::create(
             $thread->id,
-            $body,
+            $body . "\n\n--\n" . $thread->my_name,
             $subject,
             $selectedRecipient,
             $thread->my_email,
