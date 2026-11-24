@@ -1,6 +1,6 @@
 -- ******************************************************************
 -- AUTOMATICALLY GENERATED FILE - DO NOT MODIFY
--- Generated on: 2026-09-28 20:31:09
+-- Generated on: 2026-11-24 21:02:31
 -- 
 -- This file contains the current database schema after all migrations.
 -- It is NOT meant to be executed as a migration script.
@@ -58,6 +58,64 @@ CREATE INDEX imap_folder_status_folder_name_idx ON imap_folder_status USING btre
 CREATE INDEX imap_folder_status_folder_thread_unique ON imap_folder_status USING btree (folder_name, thread_id);
 CREATE INDEX imap_folder_status_requested_update_time_idx ON imap_folder_status USING btree (requested_update_time);
 CREATE INDEX imap_folder_status_thread_id_idx ON imap_folder_status USING btree (thread_id);
+
+CREATE TABLE oauth_access_tokens (
+    id bigint NOT NULL DEFAULT nextval('oauth_access_tokens_id_seq'::regclass),
+    token_hash character(64) NOT NULL,
+    client_id character varying(64) NOT NULL,
+    user_id character varying(255) NOT NULL,
+    resource text NOT NULL,
+    code_id bigint,
+    created_at timestamp with time zone NOT NULL DEFAULT now(),
+    last_used_at timestamp with time zone NOT NULL DEFAULT now()
+);
+
+ALTER TABLE oauth_access_tokens ADD CONSTRAINT oauth_access_tokens_pkey PRIMARY KEY (id);
+ALTER TABLE oauth_access_tokens ADD CONSTRAINT oauth_access_tokens_client_id_fkey FOREIGN KEY (client_id) REFERENCES oauth_clients (client_id);
+ALTER TABLE oauth_access_tokens ADD CONSTRAINT oauth_access_tokens_code_id_fkey FOREIGN KEY (code_id) REFERENCES oauth_authorization_codes (id);
+CREATE INDEX oauth_access_tokens_token_hash_key ON oauth_access_tokens USING btree (token_hash);
+CREATE INDEX oauth_access_tokens_user_id_idx ON oauth_access_tokens USING btree (user_id);
+
+CREATE TABLE oauth_authorization_codes (
+    id bigint NOT NULL DEFAULT nextval('oauth_authorization_codes_id_seq'::regclass),
+    code_hash character(64) NOT NULL,
+    client_id character varying(64) NOT NULL,
+    user_id character varying(255) NOT NULL,
+    redirect_uri text NOT NULL,
+    code_challenge character varying(128) NOT NULL,
+    resource text NOT NULL,
+    created_at timestamp with time zone NOT NULL DEFAULT now(),
+    expires_at timestamp with time zone NOT NULL,
+    used_at timestamp with time zone
+);
+
+ALTER TABLE oauth_authorization_codes ADD CONSTRAINT oauth_authorization_codes_pkey PRIMARY KEY (id);
+ALTER TABLE oauth_authorization_codes ADD CONSTRAINT oauth_authorization_codes_client_id_fkey FOREIGN KEY (client_id) REFERENCES oauth_clients (client_id);
+CREATE INDEX oauth_authorization_codes_code_hash_key ON oauth_authorization_codes USING btree (code_hash);
+
+CREATE TABLE oauth_clients (
+    id integer NOT NULL DEFAULT nextval('oauth_clients_id_seq'::regclass),
+    client_id character varying(64) NOT NULL,
+    client_secret_hash character(64),
+    client_name character varying(100),
+    redirect_uris jsonb NOT NULL,
+    token_endpoint_auth_method character varying(32) NOT NULL,
+    registration_ip character varying(64),
+    created_at timestamp with time zone NOT NULL DEFAULT now()
+);
+
+ALTER TABLE oauth_clients ADD CONSTRAINT oauth_clients_pkey PRIMARY KEY (id);
+CREATE INDEX oauth_clients_client_id_key ON oauth_clients USING btree (client_id);
+
+CREATE TABLE oauth_registration_attempts (
+    id bigint NOT NULL DEFAULT nextval('oauth_registration_attempts_id_seq'::regclass),
+    ip character varying(64) NOT NULL,
+    created_at timestamp with time zone NOT NULL DEFAULT now()
+);
+
+ALTER TABLE oauth_registration_attempts ADD CONSTRAINT oauth_registration_attempts_pkey PRIMARY KEY (id);
+CREATE INDEX oauth_registration_attempts_created_at_idx ON oauth_registration_attempts USING btree (created_at);
+CREATE INDEX oauth_registration_attempts_ip_created_at_idx ON oauth_registration_attempts USING btree (ip, created_at);
 
 CREATE TABLE openai_request_log (
     id integer NOT NULL DEFAULT nextval('openai_request_log_id_seq'::regclass),
