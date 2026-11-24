@@ -24,6 +24,8 @@ function offpostStartSession(): void {
         return;
     }
     if (!headers_sent()) {
+        // Never adopt a session id the browser sends that the server did not create (fixation).
+        ini_set('session.use_strict_mode', '1');
         // $environment is set by username-password.php, which index.php requires before routing.
         session_set_cookie_params(offpostSessionCookieParams($GLOBALS['environment'] ?? null));
     }

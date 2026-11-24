@@ -28,9 +28,13 @@ class SessionBootstrapTest extends TestCase {
         $unknown = offpostSessionCookieParams(null);
 
         // :: Assert
-        $this->assertFalse($development['secure'], 'Plain http dev server needs a non-secure cookie');
+        $this->assertEquals([
+            'lifetime' => 0,
+            'path' => '/',
+            'httponly' => true,
+            'samesite' => 'Lax',
+            'secure' => false,
+        ], $development, 'Plain http dev server needs a non-secure cookie');
         $this->assertFalse($unknown['secure'], 'Unknown environment must not set Secure');
-        $this->assertTrue($development['httponly']);
-        $this->assertEquals('Lax', $development['samesite']);
     }
 }
