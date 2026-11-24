@@ -343,7 +343,11 @@ class ThreadDatabaseOperations {
         );
     }
 
-    public function updateThread(Thread $thread, $userId) {
+    /**
+     * @param array $archiveHistoryDetails Details for the archived/unarchived history entry, e.g.
+     *   ['via' => 'mcp']. Empty keeps the entry's details NULL, as for the web UI.
+     */
+    public function updateThread(Thread $thread, $userId, array $archiveHistoryDetails = []) {
         // Get current thread state to detect changes
         $currentThread = Thread::loadFromDatabase($thread->id);
 
@@ -410,7 +414,8 @@ class ThreadDatabaseOperations {
 
             // Check for status changes
             if ($currentThread->archived !== $thread->archived) {
-                $this->history->logAction($thread->id, $thread->archived ? 'archived' : 'unarchived', $userId);
+                $this->history->logAction($thread->id, $thread->archived ? 'archived' : 'unarchived', $userId,
+                    $archiveHistoryDetails ?: null);
             }
             if ($currentThread->public !== $thread->public) {
                 $this->history->logAction($thread->id, $thread->public ? 'made_public' : 'made_private', $userId);

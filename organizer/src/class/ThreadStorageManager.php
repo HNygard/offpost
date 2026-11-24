@@ -33,8 +33,8 @@ class ThreadStorageManager {
         return $this->dbOps->createThread($entityId, $thread, $userId, $historyDetails);
     }
 
-    public function updateThread(Thread $thread, $userId = 'system') {
-        return $this->dbOps->updateThread($thread, $userId);
+    public function updateThread(Thread $thread, $userId = 'system', array $archiveHistoryDetails = []) {
+        return $this->dbOps->updateThread($thread, $userId, $archiveHistoryDetails);
     }
 
     public function updateEmailClassification($threadId, $emailId, $statusType, $statusText, $ignore, $answer, $autoClassification) {

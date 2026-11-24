@@ -51,6 +51,7 @@ UUID that is missing or inaccessible gives exactly `Not found, or no access`.
 | `get_attachment_link` | read rule. By default returns `{name, filename, mimeType, size, download_url, expires_in: 300}` and loads no content (no size cap). With `inline: true` it also returns the content (image content or embedded resource); attachments over 5 MB are then refused (use `get_attachment_extraction`). Attachments whose content was never stored give an error in both modes. Replaces `get_attachment_raw` |
 | `get_attachment_extraction` | read rule |
 | `send_reply` | owner or granted only (`thread_authorizations` row); a public thread without a row is refused. Recipient must be one of the thread's valid reply recipients. Queued `READY_FOR_SENDING`. Subject and body are stored trimmed |
+| `archive_thread` | owner or granted only (`thread_authorizations` row), like `send_reply`; a public thread without a row is refused. `archived` (default true) archives, false unarchives. Same path as the web UI's archive action (`updateThread`), which logs `archived`/`unarchived` to thread history, here with `via: mcp`. Already in that state: `changed: false`, no history entry. Archiving only hides the thread from default lists; nothing is sent and incoming emails are still received |
 
 Delivery problems: `ThreadScheduledEmailSender` records a failed send as status `READY_FOR_SENDING`
 (it is retried) with the failure text in `thread_email_sendings.error_message`; a later successful
@@ -171,7 +172,7 @@ Manual OAuth check with Claude Code (after rebuilding the dev stack, or `docker-
 claude mcp add --transport http offpost-dev http://localhost:25081/mcp
 ```
 
-Then run `/mcp` in Claude Code and authenticate; a browser login follows and the seven tools are
+Then run `/mcp` in Claude Code and authenticate; a browser login follows and the eight tools are
 listed. Call `list_my_threads` to see the dev user's threads.
 
 ## Configuration

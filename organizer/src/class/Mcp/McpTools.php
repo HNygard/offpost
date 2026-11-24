@@ -173,6 +173,22 @@ class McpTools implements McpToolProvider {
                     'additionalProperties' => false,
                 ],
             ],
+            [
+                'name' => 'archive_thread',
+                'description' => 'Archive (or with archived=false, unarchive) a thread you own or have been given access to. '
+                    . 'Archiving only hides the thread from default lists (list_my_threads without include_archived); '
+                    . 'nothing is sent and incoming emails are still received. Returns changed=false when the '
+                    . 'thread already had that state.',
+                'inputSchema' => [
+                    'type' => 'object',
+                    'properties' => [
+                        'thread_id' => ['type' => 'string', 'description' => 'Thread id (UUID) from list_my_threads.'],
+                        'archived' => ['type' => 'boolean', 'description' => 'true (default) archives, false unarchives.'],
+                    ],
+                    'required' => ['thread_id'],
+                    'additionalProperties' => false,
+                ],
+            ],
         ];
     }
 
@@ -192,6 +208,8 @@ class McpTools implements McpToolProvider {
                 return $this->textResult($this->startThread($args, $userId));
             case 'send_reply':
                 return $this->textResult($this->sendReply($args, $userId));
+            case 'archive_thread':
+                return $this->textResult($this->archiveThread($args, $userId));
             default:
                 throw new McpToolException("Unknown tool: $name");
         }
@@ -507,6 +525,28 @@ class McpTools implements McpToolProvider {
             'recipient' => $sending->email_to,
             'status' => $sending->status,
         ];
+    }
+
+    private function archiveThread(array $args, string $userId): array {
+        $threadId = $this->requireUuid($args['thread_id'] ?? null, 'thread_id');
+        $archived = $args['archived'] ?? true;
+        if (!is_bool($archived)) {
+            throw new McpToolException('archived must be a boolean');
+        }
+
+        $thread = $this->hasWriteAccess($threadId, $userId) ? Thread::loadFromDatabaseOrNone($threadId) : null;
+        if ($thread === null) {
+            throw new McpNotFoundException();
+        }
+
+        $changed = $thread->archived !== $archived;
+        if ($changed) {
+            $thread->archived = $archived;
+            // Same path as the web UI's archive action; it logs archived/unarchived to thread history.
+            ThreadStorageManager::getInstance()->updateThread($thread, $userId, ['via' => 'mcp']);
+        }
+
+        return ['thread_id' => $threadId, 'archived' => $archived, 'changed' => $changed];
     }
 
     /**

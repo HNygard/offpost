@@ -169,6 +169,7 @@ class McpApiTest extends TestCase {
             'get_attachment_extraction',
             'start_thread',
             'send_reply',
+            'archive_thread',
         ], $names, 'tools: ' . json_encode($names, JSON_PRETTY_PRINT));
     }
 

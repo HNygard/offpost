@@ -17,7 +17,7 @@ class MockDatabaseOperations extends ThreadDatabaseOperations {
         $this->threads[$thread->id] = $thread;
     }
     
-    public function updateThread(Thread $thread, $userId) {
+    public function updateThread(Thread $thread, $userId, array $archiveHistoryDetails = []) {
         $this->updatedThreads[] = [
             'thread' => clone $thread,
             'userId' => $userId
