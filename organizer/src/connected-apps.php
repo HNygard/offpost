@@ -50,7 +50,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 $_SESSION['oauth_csrf'] ??= bin2hex(random_bytes(32));
 $csrf = $_SESSION['oauth_csrf'];
 $tokens = $tokenService->listForUser($userId);
-$formatTime = fn(string $t): string => date('Y-m-d H:i', strtotime($t));
+$formatTime = fn(?string $t): string => $t === null ? 'never' : date('Y-m-d H:i', strtotime($t));
 $e = fn(?string $s): string => htmlspecialchars($s ?? '', ENT_QUOTES, 'UTF-8');
 header('Content-Type: text/html; charset=UTF-8');
 ?>

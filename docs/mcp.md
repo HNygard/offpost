@@ -55,7 +55,7 @@ token's resource to equal `$mcp_resource` and returns the Offpost user id (`null
     exists. `token_type_hint` is ignored.
   - `OAuthTokenService::cleanup()` deletes idle tokens, unused codes expired over 1 day, used codes
     older than 30 days, old registration attempts, clients that never got a token (24 h) and
-    token-less clients without a code used in 30 days. Run daily (03:00-03:09) by
+    token-less clients without a code used in 30 days. Run daily (03:00-03:09 UTC) by
     `cron-scheduler/curl-cron.sh` via `/scheduled-oauth-cleanup`, which prints the counts. Used codes are the record
     that a client once had a token, so a client survives 30 days after its last redemption.
   - `GET /connected-apps` (`connected-apps.php`, web session required; link in the page header):

@@ -11,9 +11,28 @@ require_once __DIR__ . '/common/OAuthTestFlow.php';
 class ConnectedAppsPageTest extends TestCase {
     const OTHER_USER = 'other-user';
 
+    const OTHER_TOKEN_HASH = 'aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa';
+
+    /** @var int[] ids of dev-user-id tokens that existed before the test (real connections: never touched) */
+    private array $preexistingTokenIds = [];
+
     protected function setUp(): void {
         OAuthE2E::clearRegistrationRateLimit();
-        Database::execute('DELETE FROM oauth_access_tokens WHERE user_id IN (?, ?)', ['dev-user-id', self::OTHER_USER]);
+        $this->preexistingTokenIds = array_map('intval', array_column(
+            Database::query('SELECT id FROM oauth_access_tokens WHERE user_id = ?', ['dev-user-id']),
+            'id'
+        ));
+        Database::execute('DELETE FROM oauth_access_tokens WHERE token_hash = ?', [self::OTHER_TOKEN_HASH]);
+    }
+
+    protected function tearDown(): void {
+        // Only what the test created: tokens not in the setUp snapshot, and the fixed other-user row.
+        foreach (Database::query('SELECT id FROM oauth_access_tokens WHERE user_id = ?', ['dev-user-id']) as $row) {
+            if (!in_array((int) $row['id'], $this->preexistingTokenIds, true)) {
+                Database::execute('DELETE FROM oauth_access_tokens WHERE id = ?', [$row['id']]);
+            }
+        }
+        Database::execute('DELETE FROM oauth_access_tokens WHERE token_hash = ?', [self::OTHER_TOKEN_HASH]);
     }
 
     private function get(string $cookie): array {
@@ -41,7 +60,7 @@ class ConnectedAppsPageTest extends TestCase {
         ]);
     }
 
-    public function testEmptyStateAndSecurityHeaders(): void {
+    public function testSecurityHeadersAndNoTestClientsListedInitially(): void {
         // :: Setup
         $cookie = OAuthTestFlow::loginCookie();
 
@@ -50,7 +69,8 @@ class ConnectedAppsPageTest extends TestCase {
 
         // :: Assert
         $this->assertEquals(200, $page['status'], $page['body']);
-        $this->assertStringContainsString('<p>No connected apps.</p>', $page['body']);
+        // The empty-state text is not asserted: that needs an empty list, which would mean deleting real connections.
+        $this->assertStringNotContainsString('e2e ', $page['body']);
         $this->assertStringContainsString('x-frame-options: deny', $page['headers']);
         $this->assertStringContainsString("content-security-policy: frame-ancestors 'none'", $page['headers']);
         $this->assertStringContainsString('cache-control: no-store', $page['headers']);
@@ -112,7 +132,7 @@ class ConnectedAppsPageTest extends TestCase {
         // :: Setup
         // ?test-authenticate only knows the dev user, so the other user's token is inserted directly.
         $connection = OAuthTestFlow::connect('dev-user-id', false, 'e2e other user client');
-        $otherHash = str_repeat('a', 64);
+        $otherHash = self::OTHER_TOKEN_HASH;
         Database::execute(
             'INSERT INTO oauth_access_tokens (token_hash, client_id, user_id, resource) VALUES (?, ?, ?, ?)',
             [$otherHash, $connection['client_id'], self::OTHER_USER, 'http://localhost:25081/mcp']

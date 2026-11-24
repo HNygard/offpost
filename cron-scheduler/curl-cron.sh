@@ -79,7 +79,7 @@ curl "http://organizer/scheduled-np-thread-archiving" -s 2>&1
 echo ""
 
 exit_if_paused
-echo "$(date) Scheduled OAuth CLEANUP (daily, 03:00-03:09; idempotent)"
+echo "$(date) Scheduled OAuth CLEANUP (daily, 03:00-03:09 UTC; idempotent)"
 if [ "$(date +%H)" = "03" ] && [ "$(date +%M)" -lt 10 ]; then
     curl "http://organizer/scheduled-oauth-cleanup" -s 2>&1
 else
