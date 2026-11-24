@@ -26,6 +26,16 @@ OAuth bearer JWT (RS256), verified against the authorization server's JWKS. Issu
     attempt with a JSON object body counts; 429 `too_many_requests`). Client IP:
     `OAuthHttp::clientIp` (`CF-Connecting-IP` only when it is a valid IP and the peer is private or
     loopback, IPv4-mapped IPv6 peers unmapped first).
+  - `GET|POST /oauth/authorize` (`api/oauth/authorize.php`, logic in `OAuthAuthorizationService`,
+    template `consent-page.php`): PKCE S256 only, `resource` must equal `$mcp_resource` (or be
+    absent), `scope` only `mcp`. An unknown client or unregistered redirect URI gives a 400 page,
+    never a redirect; other errors redirect to the client with `error`, `state` and `iss`. Valid
+    requests then require an Offpost web login (any existing session) and show the consent page;
+    the request is kept in `$_SESSION['oauth_pending']` (10 min, single use) with a per-session
+    CSRF token. Approve creates a 60 s single-use code (only its hash stored) and redirects with
+    `code`, `state`, `iss`; deny redirects with `error=access_denied`. The page is sent with
+    `X-Frame-Options: DENY`, CSP `frame-ancestors 'none'`, `Referrer-Policy: no-referrer` and
+    `Cache-Control: no-store`.
   - `OAuthClientRegistry::authenticate` checks the client with its registered method
     (`none`, `client_secret_post`, `client_secret_basic`); any mismatch is `invalid_client` (401).
 - Clock leeway: `exp`, `nbf` and `iat` are checked with 60 s leeway (`JWT::$leeway` is set only

@@ -3,6 +3,7 @@
 use PHPUnit\Framework\TestCase;
 
 require_once __DIR__ . '/../../tests/bootstrap.php';
+require_once __DIR__ . '/../../class/OAuth/OAuthCrypto.php';
 
 class OAuthServerTest extends TestCase {
     const BASE = 'http://localhost:25081';
@@ -25,6 +26,67 @@ class OAuthServerTest extends TestCase {
         $rawHeaders = substr($response, 0, $headerSize);
         $body = substr($response, $headerSize);
         return ['status' => $status, 'headers' => strtolower($rawHeaders), 'body' => $body, 'json' => json_decode($body, true)];
+    }
+
+    private const REDIRECT = 'https://claude.ai/api/mcp/auth_callback';
+    private const CHALLENGE = 'E9Melhoa2OwvFrEMTJguCHaoeK1t8URWbuGJSstw-cM';
+
+    /** PHPSESSID cookie of a logged-in dev user, obtained like E2EPageTestCase does. */
+    private function loginCookie(): string {
+        $ch = curl_init(self::BASE . '?test-authenticate');
+        curl_setopt_array($ch, [
+            CURLOPT_RETURNTRANSFER => true,
+            CURLOPT_HEADER => true,
+            CURLOPT_FOLLOWLOCATION => true,
+            CURLOPT_COOKIEJAR => tempnam(sys_get_temp_dir(), 'cookie'),
+        ]);
+        $response = curl_exec($ch);
+        $rawHeaders = substr($response, 0, curl_getinfo($ch, CURLINFO_HEADER_SIZE));
+        curl_close($ch);
+        $this->assertEquals(1, preg_match('/^Set-Cookie: (PHPSESSID=[^;]+)/mi', $rawHeaders, $m), $rawHeaders);
+        return $m[1];
+    }
+
+    private function registerClient(string $name): string {
+        $response = $this->register(['client_name' => $name, 'redirect_uris' => [self::REDIRECT]]);
+        $this->assertEquals(201, $response['status'], $response['body']);
+        return $response['json']['client_id'];
+    }
+
+    private function authorizeQuery(string $clientId, array $override = []): string {
+        return '/oauth/authorize?' . http_build_query(array_merge([
+            'response_type' => 'code',
+            'client_id' => $clientId,
+            'redirect_uri' => self::REDIRECT,
+            'state' => 'st-1',
+            'code_challenge' => self::CHALLENGE,
+            'code_challenge_method' => 'S256',
+        ], $override));
+    }
+
+    /** GET the consent page and return [response, pending_id, csrf]. */
+    private function openConsentPage(string $cookie, string $clientId): array {
+        $page = $this->request('GET', $this->authorizeQuery($clientId), null, ['Cookie: ' . $cookie]);
+        $this->assertEquals(200, $page['status'], $page['body']);
+        $this->assertEquals(1, preg_match('/name="pending_id" value="([0-9a-f]+)"/', $page['body'], $p), $page['body']);
+        $this->assertEquals(1, preg_match('/name="csrf" value="([0-9a-f]+)"/', $page['body'], $c), $page['body']);
+        return [$page, $p[1], $c[1]];
+    }
+
+    private function postDecision(string $cookie, array $fields): array {
+        return $this->request('POST', '/oauth/authorize', http_build_query($fields), [
+            'Cookie: ' . $cookie,
+            'Content-Type: application/x-www-form-urlencoded',
+        ]);
+    }
+
+    private function codeCount(string $clientId): int {
+        return (int) Database::queryValue('SELECT count(*) FROM oauth_authorization_codes WHERE client_id = ?', [$clientId]);
+    }
+
+    private function location(array $response): string {
+        $this->assertEquals(1, preg_match('/^location: (.*)$/mi', $response['headers'], $m), $response['headers']);
+        return trim($m[1]);
     }
 
     private function register(array $metadata): array {
@@ -102,5 +164,112 @@ class OAuthServerTest extends TestCase {
         $this->assertEquals(405, $get['status'], $get['body']);
         $this->assertStringContainsString('allow: post', $get['headers']);
         $this->assertEquals('invalid_request', $get['json']['error']);
+    }
+
+    public function testConsentPageShowsEscapedClientNameAndSecurityHeaders() {
+        // :: Setup
+        $cookie = $this->loginCookie();
+        $clientId = $this->registerClient('<script>alert("x")</script>');
+
+        // :: Act
+        [$page] = $this->openConsentPage($cookie, $clientId);
+
+        // :: Assert
+        $this->assertStringContainsString('&lt;script&gt;alert(&quot;x&quot;)&lt;/script&gt; wants to access your Offpost account', $page['body']);
+        $this->assertStringNotContainsString('<script>alert', $page['body']);
+        $this->assertStringContainsString('redirects to: claude.ai', strtolower($page['body']));
+        $this->assertStringContainsString('x-frame-options: deny', $page['headers']);
+        $this->assertStringContainsString("content-security-policy: frame-ancestors 'none'", $page['headers']);
+        $this->assertStringContainsString('referrer-policy: no-referrer', $page['headers']);
+        $this->assertStringContainsString('cache-control: no-store', $page['headers']);
+    }
+
+    public function testDenyRedirectsWithAccessDeniedStateAndIss() {
+        // :: Setup
+        $cookie = $this->loginCookie();
+        $clientId = $this->registerClient('Deny client');
+        [, $pendingId, $csrf] = $this->openConsentPage($cookie, $clientId);
+
+        // :: Act
+        $response = $this->postDecision($cookie, ['pending_id' => $pendingId, 'csrf' => $csrf, 'decision' => 'deny']);
+
+        // :: Assert
+        $this->assertEquals(302, $response['status'], $response['body']);
+        $this->assertEquals(self::REDIRECT . '?error=access_denied&state=st-1&iss=http%3A%2F%2Flocalhost%3A25081', $this->location($response));
+        $this->assertEquals(0, $this->codeCount($clientId));
+    }
+
+    public function testApproveRedirectsWithCodeStateAndIss() {
+        // :: Setup
+        $cookie = $this->loginCookie();
+        $clientId = $this->registerClient('Approve client');
+        [, $pendingId, $csrf] = $this->openConsentPage($cookie, $clientId);
+
+        // :: Act
+        $response = $this->postDecision($cookie, ['pending_id' => $pendingId, 'csrf' => $csrf, 'decision' => 'approve']);
+
+        // :: Assert
+        $this->assertEquals(302, $response['status'], $response['body']);
+        $location = $this->location($response);
+        $this->assertEquals(1, preg_match('#^' . preg_quote(self::REDIRECT, '#') . '\?code=([A-Za-z0-9_-]{43})&state=st-1&iss=http%3A%2F%2Flocalhost%3A25081$#', $location, $m), $location);
+        $this->assertEquals(1, Database::queryValue(
+            'SELECT count(*) FROM oauth_authorization_codes WHERE client_id = ? AND code_hash = ?',
+            [$clientId, OAuthCrypto::hash($m[1])]
+        ));
+    }
+
+    public function testWrongCsrfGives400AndNoCode() {
+        // :: Setup
+        $cookie = $this->loginCookie();
+        $clientId = $this->registerClient('Csrf client');
+        [, $pendingId] = $this->openConsentPage($cookie, $clientId);
+
+        // :: Act
+        $response = $this->postDecision($cookie, ['pending_id' => $pendingId, 'csrf' => 'wrong', 'decision' => 'approve']);
+
+        // :: Assert
+        $this->assertEquals(400, $response['status'], $response['body']);
+        $this->assertStringNotContainsString('location:', $response['headers']);
+        $this->assertEquals(0, $this->codeCount($clientId));
+    }
+
+    public function testReusedPendingIdGives400AndOnlyOneCode() {
+        // :: Setup
+        $cookie = $this->loginCookie();
+        $clientId = $this->registerClient('Replay client');
+        [, $pendingId, $csrf] = $this->openConsentPage($cookie, $clientId);
+        $fields = ['pending_id' => $pendingId, 'csrf' => $csrf, 'decision' => 'approve'];
+        $first = $this->postDecision($cookie, $fields);
+
+        // :: Act
+        $second = $this->postDecision($cookie, $fields);
+
+        // :: Assert
+        $this->assertEquals(302, $first['status'], $first['body']);
+        $this->assertEquals(400, $second['status'], $second['body']);
+        $this->assertStringNotContainsString('location:', $second['headers']);
+        $this->assertEquals(1, $this->codeCount($clientId));
+    }
+
+    public function testUnknownClientGives400PageWithoutLocation() {
+        // :: Act
+        $response = $this->request('GET', $this->authorizeQuery('no-such-client'));
+
+        // :: Assert
+        $this->assertEquals(400, $response['status'], $response['body']);
+        $this->assertStringNotContainsString('location:', $response['headers']);
+        $this->assertStringContainsString('content-type: text/html', $response['headers']);
+    }
+
+    public function testInvalidRequestWithValidClientRedirectsWithErrorBeforeLogin() {
+        // :: Setup
+        $clientId = $this->registerClient('Invalid request client');
+
+        // :: Act
+        $response = $this->request('GET', $this->authorizeQuery($clientId, ['response_type' => 'token']));
+
+        // :: Assert
+        $this->assertEquals(302, $response['status'], $response['body']);
+        $this->assertStringStartsWith(self::REDIRECT . '?error=unsupported_response_type&', $this->location($response));
     }
 }
