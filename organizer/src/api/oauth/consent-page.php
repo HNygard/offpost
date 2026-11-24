@@ -11,6 +11,7 @@ $pageTitle = 'Authorize access - Offpost';
 <body>
     <div class="container">
         <h1><?= $e($clientName) ?> wants to access your Offpost account</h1>
+        <p>Only approve if you started connecting this app yourself.</p>
         <p>It will be able to read your threads, start new requests and send emails in your name.</p>
         <p>Redirects to: <?= $e($redirectHost) ?></p>
         <p>Connected as: <?= $e($userDisplay) ?></p>

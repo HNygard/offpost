@@ -126,6 +126,7 @@ class OAuthServerTest extends TestCase {
         // :: Assert
         $this->assertStringContainsString('&lt;script&gt;alert(&quot;x&quot;)&lt;/script&gt; wants to access your Offpost account', $page['body']);
         $this->assertStringNotContainsString('<script>alert', $page['body']);
+        $this->assertStringContainsString('<p>Only approve if you started connecting this app yourself.</p>', $page['body']);
         $this->assertStringContainsString('redirects to: claude.ai', strtolower($page['body']));
         $this->assertStringContainsString('x-frame-options: deny', $page['headers']);
         $this->assertStringContainsString("content-security-policy: frame-ancestors 'none'", $page['headers']);
