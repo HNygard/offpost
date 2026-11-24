@@ -197,3 +197,14 @@ listed. Call `list_my_threads` to see the dev user's threads.
 `api/mcp/mcp.php`, `api/mcp/oauth_protected_resource.php`, `api/mcp/attachment_download.php`,
 `class/Mcp/` (`McpHttp`, `McpServer`, `McpTools`,
 `McpAttachmentLink`, `McpLinkSecret`). Routes in `webroot/index.php`.
+
+### Web login hardening
+
+The consent page trusts the Offpost web session, so the web login (Auth0) is hardened:
+
+- `auth.php` stores the login `state` in `$_SESSION['oauth_login_state']`; `callback.php` answers 400
+  `Invalid login state` (no token exchange) unless it matches (`hash_equals`). The state is single use.
+- `handleCallback` calls `session_regenerate_id(true)` after setting the user (session fixation).
+- Sessions are started through `offpostStartSession()` (`session-bootstrap.php`): cookie `HttpOnly`,
+  `SameSite=Lax`, path `/`, `Secure` when `$environment === 'production'` (the origin is plain http
+  behind the Cloudflare Tunnel, so `$_SERVER['HTTPS']` cannot be used).

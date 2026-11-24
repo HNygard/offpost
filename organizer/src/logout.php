@@ -1,5 +1,6 @@
 <?php
-session_start();
+require_once __DIR__ . '/session-bootstrap.php';
+offpostStartSession();
 session_destroy();
 
 require __DIR__ . '/username-password.php';

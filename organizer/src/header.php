@@ -1,7 +1,6 @@
 <?php
-if (!isset($_SESSION)) {
-    session_start();
-}
+require_once __DIR__ . '/session-bootstrap.php';
+offpostStartSession();
 require_once __DIR__ . '/class/GitVersion.php';
 $gitSha = GitVersion::getSha();
 ?>

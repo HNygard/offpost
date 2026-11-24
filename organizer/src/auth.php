@@ -1,7 +1,6 @@
 <?php
-if (session_status() === PHP_SESSION_NONE) {
-    session_start();
-}
+require_once __DIR__ . '/session-bootstrap.php';
+offpostStartSession();
 
 function isAuthenticated() {
     return isset($_SESSION['user']);
@@ -15,12 +14,15 @@ function requireAuth() {
         require __DIR__ . '/username-password.php';
 
         // Redirect to auth service using frontend URL
+        $state = bin2hex(random_bytes(16));
+        $_SESSION['oauth_login_state'] = $state;
+
         header('Location: ' . $oidc_auth_url . '?' . http_build_query([
             'client_id' => $oidc_client_id,
             'response_type' => 'code',
             'scope' => 'openid email profile',
             'redirect_uri' => $oidc_callback_url,
-            'state' => bin2hex(random_bytes(16))
+            'state' => $state
         ]));
         exit;
     }
@@ -63,6 +65,8 @@ function handleCallback($code) {
 
     $user = json_decode($userinfo, true);
     $_SESSION['user'] = $user;
+    // New session id after login (session fixation); the data is kept.
+    session_regenerate_id(true);
 
     // Redirect back to original page
     $redirect = $_SESSION['redirect_after_login'] ?? '/';

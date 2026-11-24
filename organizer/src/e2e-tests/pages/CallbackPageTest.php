@@ -20,4 +20,15 @@ class CallbackPageTest extends E2EPageTestCase {
         $this->assertStringContainsString('No authorization code provided', $response->body);
     }
 
+    public function testCallbackWithMismatchingState() {
+        // :: Setup
+        // No login was started in this session, so no state is stored.
+
+        // :: Act
+        $response = $this->renderPage('/callback?code=some-code&state=not-the-stored-state', null, 'GET', '400 Bad Request');
+
+        // :: Assert
+        $this->assertEquals('Invalid login state', trim($response->body), 'Callback must be rejected before any token exchange');
+    }
+
 }
