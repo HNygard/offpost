@@ -24,6 +24,7 @@ require_once __DIR__ . '/../Extraction/ThreadEmailExtractionService.php';
 class McpTools implements McpToolProvider {
     private const DEFAULT_LIMIT = 50;
     private const MAX_LIMIT = 200;
+    private const MAX_ARCHIVE_IDS = 100;
     public const MAX_RAW_ATTACHMENT_BYTES = 5242880;
     /** Test-only: replaces MAX_RAW_ATTACHMENT_BYTES when set. */
     public static ?int $maxRawBytesOverride = null;
@@ -186,17 +187,25 @@ class McpTools implements McpToolProvider {
             ],
             [
                 'name' => 'archive_thread',
-                'description' => 'Archive (or with archived=false, unarchive) a thread you own or have been given access to. '
-                    . 'Archiving only hides the thread from default lists (list_my_threads without include_archived); '
-                    . 'nothing is sent and incoming emails are still received. Returns changed=false when the '
-                    . 'thread already had that state.',
+                'description' => 'Archive (or with archived=false, unarchive) threads you own or have been given access to. '
+                    . 'Give thread_id for one thread, or thread_ids for up to ' . self::MAX_ARCHIVE_IDS . ' at once '
+                    . '(results per thread; a failing id does not stop the others). '
+                    . 'Archiving only hides a thread from default lists (list_my_threads without include_archived); '
+                    . 'nothing is sent and incoming emails are still received. changed=false means the thread '
+                    . 'already had that state.',
                 'inputSchema' => [
                     'type' => 'object',
                     'properties' => [
-                        'thread_id' => ['type' => 'string', 'description' => 'Thread id (UUID) from list_my_threads.'],
+                        'thread_id' => ['type' => 'string', 'description' => 'One thread id (UUID) from list_my_threads.'],
+                        'thread_ids' => [
+                            'type' => 'array',
+                            'items' => ['type' => 'string'],
+                            'minItems' => 1,
+                            'maxItems' => self::MAX_ARCHIVE_IDS,
+                            'description' => 'Up to ' . self::MAX_ARCHIVE_IDS . ' thread ids (UUIDs); use instead of thread_id.',
+                        ],
                         'archived' => ['type' => 'boolean', 'description' => 'true (default) archives, false unarchives.'],
                     ],
-                    'required' => ['thread_id'],
                     'additionalProperties' => false,
                 ],
             ],
@@ -580,25 +589,76 @@ class McpTools implements McpToolProvider {
     }
 
     private function archiveThread(array $args, string $userId): array {
-        $threadId = $this->requireUuid($args['thread_id'] ?? null, 'thread_id');
         $archived = $args['archived'] ?? true;
         if (!is_bool($archived)) {
             throw new McpToolException('archived must be a boolean');
         }
+        $hasOne = array_key_exists('thread_id', $args);
+        $hasMany = array_key_exists('thread_ids', $args);
+        if ($hasOne && $hasMany) {
+            throw new McpToolException('Give either thread_id or thread_ids, not both');
+        }
+        if (!$hasOne && !$hasMany) {
+            throw new McpToolException('Give thread_id or thread_ids');
+        }
 
+        if ($hasOne) {
+            $threadId = $this->requireUuid($args['thread_id'], 'thread_id');
+            $changed = $this->setThreadArchived($threadId, $archived, $userId);
+            return ['thread_id' => $threadId, 'archived' => $archived, 'changed' => $changed];
+        }
+
+        $ids = $args['thread_ids'];
+        if (!is_array($ids) || !array_is_list($ids) || count($ids) < 1 || count($ids) > self::MAX_ARCHIVE_IDS) {
+            throw new McpToolException('thread_ids must be a list of 1 to ' . self::MAX_ARCHIVE_IDS . ' thread ids');
+        }
+
+        // Each id stands alone: a bad or inaccessible id is reported in its result, the rest go on.
+        $results = [];
+        $seen = [];
+        $counts = ['changed' => 0, 'unchanged' => 0, 'error' => 0];
+        foreach ($ids as $rawId) {
+            $key = is_string($rawId) ? $rawId : json_encode($rawId);
+            if (isset($seen[$key])) {
+                continue;
+            }
+            $seen[$key] = true;
+            try {
+                $threadId = $this->requireUuid($rawId, 'thread_id');
+                $changed = $this->setThreadArchived($threadId, $archived, $userId);
+                $results[] = ['thread_id' => $threadId, 'changed' => $changed];
+                $counts[$changed ? 'changed' : 'unchanged']++;
+            } catch (McpToolException $e) {
+                $results[] = ['thread_id' => $rawId, 'error' => $e->getMessage()];
+                $counts['error']++;
+            }
+        }
+
+        return [
+            'archived' => $archived,
+            'changed_count' => $counts['changed'],
+            'unchanged_count' => $counts['unchanged'],
+            'error_count' => $counts['error'],
+            'results' => $results,
+        ];
+    }
+
+    /**
+     * Sets one thread's archived flag. Owner or granted only (McpNotFoundException otherwise).
+     * Returns whether anything changed; an unchanged thread gets no history entry.
+     */
+    private function setThreadArchived(string $threadId, bool $archived, string $userId): bool {
         $thread = $this->hasWriteAccess($threadId, $userId) ? Thread::loadFromDatabaseOrNone($threadId) : null;
         if ($thread === null) {
             throw new McpNotFoundException();
         }
-
-        $changed = $thread->archived !== $archived;
-        if ($changed) {
-            $thread->archived = $archived;
-            // Same path as the web UI's archive action; it logs archived/unarchived to thread history.
-            ThreadStorageManager::getInstance()->updateThread($thread, $userId, ['via' => 'mcp']);
+        if ($thread->archived === $archived) {
+            return false;
         }
-
-        return ['thread_id' => $threadId, 'archived' => $archived, 'changed' => $changed];
+        $thread->archived = $archived;
+        // Same path as the web UI's archive action; it logs archived/unarchived to thread history.
+        ThreadStorageManager::getInstance()->updateThread($thread, $userId, ['via' => 'mcp']);
+        return true;
     }
 
     /**

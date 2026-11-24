@@ -151,6 +151,96 @@ class McpToolsArchiveTest extends TestCase {
         $this->assertEquals('Invalid thread_id (expected UUID)', $error->getMessage());
     }
 
+    public function testThreadIdsArchivesEachWithPerIdResults(): void {
+        // :: Setup
+        $first = $this->createThread(self::USER_A);
+        $already = $this->createThread(self::USER_A);
+        Database::execute("UPDATE threads SET archived = true WHERE id = ?", [$already->id]);
+        $foreign = $this->createThread(self::USER_C);
+        $missing = '00000000-0000-4000-8000-000000000000';
+
+        // :: Act
+        $data = $this->callData(
+            ['thread_ids' => [$first->id, $already->id, $foreign->id, 'abc', $missing, $first->id]],
+            self::USER_A
+        );
+
+        // :: Assert
+        $this->assertEquals([
+            'archived' => true,
+            'changed_count' => 1,
+            'unchanged_count' => 1,
+            'error_count' => 3,
+            'results' => [
+                ['thread_id' => $first->id, 'changed' => true],
+                ['thread_id' => $already->id, 'changed' => false],
+                ['thread_id' => $foreign->id, 'error' => 'Not found, or no access'],
+                ['thread_id' => 'abc', 'error' => 'Invalid thread_id (expected UUID)'],
+                ['thread_id' => $missing, 'error' => 'Not found, or no access'],
+            ],
+        ], $data, 'duplicates are processed once; one bad id does not stop the others');
+        $this->assertTrue($this->isArchived($first->id));
+        $this->assertFalse($this->isArchived($foreign->id));
+        $rows = $this->historyRows($first->id, 'archived');
+        $this->assertCount(1, $rows, json_encode($rows, JSON_PRETTY_PRINT));
+        $this->assertEquals(['via' => 'mcp'], json_decode($rows[0]['details'], true));
+    }
+
+    public function testThreadIdsWithArchivedFalseUnarchives(): void {
+        // :: Setup
+        $thread = $this->createThread(self::USER_A);
+        Database::execute("UPDATE threads SET archived = true WHERE id = ?", [$thread->id]);
+
+        // :: Act
+        $data = $this->callData(['thread_ids' => [$thread->id], 'archived' => false], self::USER_A);
+
+        // :: Assert
+        $this->assertEquals([['thread_id' => $thread->id, 'changed' => true]], $data['results']);
+        $this->assertFalse($this->isArchived($thread->id));
+    }
+
+    public function testThreadIdAndThreadIdsTogetherIsError(): void {
+        // :: Setup
+        $thread = $this->createThread(self::USER_A);
+
+        // :: Act
+        $error = $this->callExpectingError(['thread_id' => $thread->id, 'thread_ids' => [$thread->id]], self::USER_A);
+
+        // :: Assert
+        $this->assertEquals('Give either thread_id or thread_ids, not both', $error->getMessage());
+        $this->assertFalse($this->isArchived($thread->id));
+    }
+
+    public function testEmptyThreadIdsIsError(): void {
+        // :: Act
+        $error = $this->callExpectingError(['thread_ids' => []], self::USER_A);
+
+        // :: Assert
+        $this->assertEquals('thread_ids must be a list of 1 to 100 thread ids', $error->getMessage());
+    }
+
+    public function testMoreThan100ThreadIdsIsError(): void {
+        // :: Setup
+        $ids = [];
+        for ($i = 0; $i < 101; $i++) {
+            $ids[] = sprintf('00000000-0000-4000-8000-%012d', $i);
+        }
+
+        // :: Act
+        $error = $this->callExpectingError(['thread_ids' => $ids], self::USER_A);
+
+        // :: Assert
+        $this->assertEquals('thread_ids must be a list of 1 to 100 thread ids', $error->getMessage());
+    }
+
+    public function testMissingThreadIdAndThreadIdsIsError(): void {
+        // :: Act
+        $error = $this->callExpectingError([], self::USER_A);
+
+        // :: Assert
+        $this->assertEquals('Give thread_id or thread_ids', $error->getMessage());
+    }
+
     public function testNonBooleanArchivedIsError(): void {
         // :: Setup
         $thread = $this->createThread(self::USER_A);
