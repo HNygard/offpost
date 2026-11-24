@@ -55,6 +55,11 @@ failure is a 500, not a 401. The endpoint starts no PHP session and does not use
 - Rate limits: 30 attempts per client IP (an IPv6 address counts as its /64 prefix) and 200 in total per hour, answered 429
   `too_many_requests`. Every attempt with a JSON object body counts; bodies that are not a JSON
   object (arrays, scalars, invalid JSON) are rejected earlier and not counted.
+- `token_endpoint_auth_method`, when omitted, defaults to `client_secret_post` (claude.ai asks for it).
+  This differs from RFC 7591, whose default is `client_secret_basic`; the response always echoes the
+  method actually used, so clients that rely on the RFC default can see the difference.
+- The redirect allowlist is "exact host, any path" (owner decision 2026-11-25): any path on an
+  allowlisted host is accepted for a registered URI, matching is then exact string comparison.
 - To allow another https host (for example another MCP client's hosted callback), add it to
   `$mcp_redirect_host_allowlist` in `organizer/src/mcp-config.php` and deploy. Exact host only,
   there are no wildcards. Already registered clients are not re-validated.
@@ -113,7 +118,9 @@ user's connections (client name escaped, created, last used) with a Disconnect b
 deletes only the session user's own token and redirects back (303) with a flash message. Same
 anti-framing/no-store headers as the consent page.
 
-Errors from the OAuth endpoints use RFC 6749 section 5.2: `{"error","error_description"}`.
+Errors from the token, register and revoke endpoints use RFC 6749 section 5.2:
+`{"error","error_description"}`. `/oauth/authorize` answers with an HTML error page (unknown client or
+unregistered redirect URI, never redirected) or a redirect to the client with the error.
 
 ### Cleanup job
 

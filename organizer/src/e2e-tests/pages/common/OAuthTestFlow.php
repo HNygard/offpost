@@ -19,7 +19,9 @@ class OAuthTestFlow {
 
     /**
      * Deletes what this process registered: the clients and, for them, the tokens and codes
-     * (no cascade in the schema). Call from tearDown(); other connections are left alone.
+     * (the schema has ON DELETE CASCADE from clients to codes and tokens and SET NULL from tokens
+     * to codes; deleting explicitly keeps this independent of that). Call from tearDown(); other
+     * connections are left alone.
      */
     public static function cleanup(): void {
         foreach (self::$registeredClientIds as $clientId) {

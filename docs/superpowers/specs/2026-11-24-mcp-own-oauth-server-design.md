@@ -88,13 +88,13 @@ follow RFC 6749 section 5.2 / RFC 7591 section 3.2.2 (`{"error": "...", "error_d
 
 - Accepts `redirect_uris` (required, 1-10), `client_name` (optional, max 100 chars, stored as text,
   always HTML-escaped when shown), `token_endpoint_auth_method` (`none`, `client_secret_post`
-  (default, as claude.ai asks), `client_secret_basic`), `grant_types` (must include
+  (default when omitted, as claude.ai asks; differs from RFC 7591's `client_secret_basic` default, the response echoes the method used), `client_secret_basic`), `grant_types` (must include
   `authorization_code`; `refresh_token` tolerated and ignored, but not echoed back as supported),
   `response_types` (`code` only), `scope` (ignored apart from validation that it's `mcp` or absent).
   Unknown metadata is ignored.
 - Redirect URI rules (OAuth 2.1 / RFC 8252): absolute, no fragment, no userinfo. **Allowlist (owner
   decision 2026-11-24):** `https` only on hosts in `$mcp_redirect_host_allowlist`
-  (`mcp-config.php`, initially `claude.ai` and `claude.com`, exact host match, any path), or `http`
+  (`mcp-config.php`, initially `claude.ai` and `claude.com`, exact host match, any path; the owner confirmed "any path" on 2026-11-25), or `http`
   on loopback hosts `localhost`, `127.0.0.1`, `[::1]` (any port; Claude Code). Anything else:
   `invalid_redirect_uri`. This closes the main attack on open registration (a fake "Claude" client
   redirecting to an attacker's site plus a phishing link to the real consent page). Matching at

@@ -31,6 +31,5 @@ data/threads/test-entity-development
 !data/entities.json
 !data/entities_test.json
 
-# Dev oidc-provider client registrations (auth/dev-adapter.js); a stale root-owned
-# directory can exist in dev checkouts
+# A stale root-owned auth/.oidc-store/ (old dev oidc-provider registrations) can exist in dev checkouts
 auth/.oidc-store/
