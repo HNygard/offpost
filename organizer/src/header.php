@@ -29,6 +29,7 @@ $gitSha = GitVersion::getSha();
             <?= htmlspecialchars($_SESSION['user']['name'] ?? $_SESSION['user']['email'] ?? 'Unknown User') ?>
         </span>
         <br>
+        <a href="/connected-apps">Connected apps</a> |
         <a href="/logout">Logout</a>
         <?php if ($gitSha !== null): ?>
             <br>

@@ -16,13 +16,24 @@ class OAuthTestFlow {
 
     /** Registers a public loopback client, runs login + consent and the token exchange; returns the access token. */
     public static function accessTokenFor(string $user = 'dev-user-id'): string {
+        return self::connect($user)['access_token'];
+    }
+
+    /**
+     * Like accessTokenFor, but with a choice of client type and name. A confidential client
+     * (client_secret_post) also gets its credentials returned, e.g. to call /oauth/revoke.
+     *
+     * @return array{access_token: string, client_id: string, client_secret: ?string}
+     */
+    public static function connect(string $user = 'dev-user-id', bool $confidential = false, string $clientName = 'e2e loopback client'): array {
         $register = self::request('POST', '/oauth/register', json_encode([
-            'client_name' => 'e2e loopback client',
+            'client_name' => $clientName,
             'redirect_uris' => [self::LOOPBACK_REDIRECT],
-            'token_endpoint_auth_method' => 'none',
+            'token_endpoint_auth_method' => $confidential ? 'client_secret_post' : 'none',
         ]), ['Content-Type: application/json']);
         self::expectStatus(201, $register);
         $clientId = $register['json']['client_id'];
+        $clientSecret = $confidential ? $register['json']['client_secret'] : null;
 
         $cookie = self::loginCookie($user);
         [, $pendingId, $csrf] = self::openConsentPage($cookie, $clientId, self::LOOPBACK_REDIRECT);
@@ -38,9 +49,9 @@ class OAuthTestFlow {
             'redirect_uri' => self::LOOPBACK_REDIRECT,
             'client_id' => $clientId,
             'code_verifier' => self::VERIFIER,
-        ]), ['Content-Type: application/x-www-form-urlencoded']);
+        ] + ($confidential ? ['client_secret' => $clientSecret] : [])), ['Content-Type: application/x-www-form-urlencoded']);
         self::expectStatus(200, $token);
-        return $token['json']['access_token'];
+        return ['access_token' => $token['json']['access_token'], 'client_id' => $clientId, 'client_secret' => $clientSecret];
     }
 
     /** Returns status, lowercased headers, raw_headers, body and decoded json. */

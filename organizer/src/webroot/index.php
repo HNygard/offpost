@@ -19,6 +19,7 @@ try {
         '/scheduled-thread-follow-up' => '/../system-pages/scheduled-thread-follow-up.php',
         '/scheduled-email-classification' => '/../system-pages/scheduled-email-classification.php',
         '/scheduled-np-thread-archiving' => '/../system-pages/scheduled-np-thread-archiving.php',
+        '/scheduled-oauth-cleanup' => '/../system-pages/scheduled-oauth-cleanup.php',
     ];
 
     // Define admin-only pages that require authentication
@@ -78,6 +79,8 @@ try {
             '/oauth/authorize' => '/../api/oauth/authorize.php',
             '/oauth/token' => '/../api/oauth/token.php',
             '/oauth/revoke' => '/../api/oauth/revoke.php',
+            '/connected-apps' => '/../connected-apps.php',
+            '/connected-apps/revoke' => '/../connected-apps.php',
             '/api/admin/export/threads' => '/../api/admin/export_threads_list.php',
             '/api/admin/export/thread' => '/../api/admin/export_thread_get.php',
             '/api/admin/analysis/request' => '/../api/admin/analysis_request.php',

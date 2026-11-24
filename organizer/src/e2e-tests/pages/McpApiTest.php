@@ -128,12 +128,8 @@ class McpApiTest extends TestCase {
 
     public function testRevokedTokenIs401InvalidToken(): void {
         // :: Setup
-        $client = OAuthTestFlow::request('POST', '/oauth/register', json_encode([
-            'client_name' => 'e2e revoke client',
-            'redirect_uris' => [OAuthTestFlow::LOOPBACK_REDIRECT],
-            'token_endpoint_auth_method' => 'client_secret_post',
-        ]), ['Content-Type: application/json'])['json'];
-        $token = $this->tokenForClient($client['client_id'], $client['client_secret']);
+        $client = OAuthTestFlow::connect('dev-user-id', true, 'e2e revoke client');
+        $token = $client['access_token'];
         $before = $this->rpc($token, ['jsonrpc' => '2.0', 'id' => 1, 'method' => 'ping']);
 
         // :: Act
@@ -152,24 +148,6 @@ class McpApiTest extends TestCase {
             'Bearer resource_metadata="http://localhost:25081/.well-known/oauth-protected-resource", scope="mcp", error="invalid_token"',
             $this->headerValue($after['headers'], 'WWW-Authenticate')
         );
-    }
-
-    /** Full login + consent + token exchange for an already registered confidential client. */
-    private function tokenForClient(string $clientId, string $clientSecret): string {
-        $cookie = OAuthTestFlow::loginCookie();
-        [, $pendingId, $csrf] = OAuthTestFlow::openConsentPage($cookie, $clientId, OAuthTestFlow::LOOPBACK_REDIRECT);
-        $decision = OAuthTestFlow::postDecision($cookie, ['pending_id' => $pendingId, 'csrf' => $csrf, 'decision' => 'approve']);
-        $this->assertEquals(1, preg_match('/^location: .*[?&]code=([A-Za-z0-9_-]{43})/mi', $decision['raw_headers'], $m), $decision['raw_headers']);
-        $token = OAuthTestFlow::request('POST', '/oauth/token', http_build_query([
-            'grant_type' => 'authorization_code',
-            'code' => $m[1],
-            'redirect_uri' => OAuthTestFlow::LOOPBACK_REDIRECT,
-            'client_id' => $clientId,
-            'client_secret' => $clientSecret,
-            'code_verifier' => OAuthTestFlow::VERIFIER,
-        ]), ['Content-Type: application/x-www-form-urlencoded']);
-        $this->assertEquals(200, $token['status'], $token['body']);
-        return $token['json']['access_token'];
     }
 
     public function testGetIs405(): void {

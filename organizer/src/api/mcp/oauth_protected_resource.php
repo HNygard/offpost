@@ -16,7 +16,7 @@ try {
     header('Content-Type: application/json');
     echo $body;
 } catch (Throwable $e) {
-    error_log('MCP metadata endpoint error: ' . $e);
+    error_log('MCP metadata endpoint error: ' . get_class($e) . ': ' . $e->getMessage() . ' at ' . $e->getFile() . ':' . $e->getLine());
     http_response_code(500);
     header('Content-Type: application/json');
     echo json_encode(['error' => 'Internal error']);

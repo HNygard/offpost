@@ -56,7 +56,7 @@ try {
         echo json_encode($response, JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE | JSON_INVALID_UTF8_SUBSTITUTE);
     }
 } catch (Throwable $e) {
-    error_log('MCP endpoint error: ' . $e);
+    error_log('MCP endpoint error: ' . get_class($e) . ': ' . $e->getMessage() . ' at ' . $e->getFile() . ':' . $e->getLine());
     if (ob_get_level() > 0) {
         ob_clean();
     }

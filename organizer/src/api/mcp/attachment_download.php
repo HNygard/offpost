@@ -69,7 +69,7 @@ try {
     header('X-Content-Type-Options: nosniff');
     echo $attachment->content;
 } catch (Throwable $e) {
-    error_log('MCP attachment download error: ' . $e);
+    error_log('MCP attachment download error: ' . get_class($e) . ': ' . $e->getMessage() . ' at ' . $e->getFile() . ':' . $e->getLine());
     if (ob_get_level() > 0) {
         ob_clean();
     }
