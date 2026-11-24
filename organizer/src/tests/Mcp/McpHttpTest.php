@@ -4,7 +4,6 @@ use PHPUnit\Framework\TestCase;
 
 require_once __DIR__ . '/../bootstrap.php';
 require_once __DIR__ . '/../../vendor/autoload.php';
-require_once __DIR__ . '/../fixtures/mcp/McpTestKeys.php';
 require_once __DIR__ . '/../../class/Mcp/McpHttp.php';
 
 class McpHttpTest extends TestCase {
@@ -125,15 +124,5 @@ class McpHttpTest extends TestCase {
             'Bearer resource_metadata="https://offpost.test/.well-known/oauth-protected-resource", error="invalid_token"',
             $value
         );
-    }
-
-    public function testGeneratedJwksFileMatchesTestKeys() {
-        // :: Setup
-        // :: Act
-        $fromKeys = McpTestKeys::jwks();
-        $fromFile = json_decode(file_get_contents(McpTestKeys::jwksPath()), true);
-
-        // :: Assert
-        $this->assertEquals($fromKeys, $fromFile, 'the generated test-jwks.json must be the public half of McpTestKeys');
     }
 }

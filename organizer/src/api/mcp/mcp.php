@@ -12,8 +12,8 @@ try {
     require_once __DIR__ . '/../../username-password.php';
     require_once __DIR__ . '/../../mcp-config.php';
     require_once __DIR__ . '/../../class/Mcp/McpHttp.php';
-    require_once __DIR__ . '/../../class/Mcp/McpTokenVerifier.php';
-    require_once __DIR__ . '/../../class/Mcp/McpJwksLoader.php';
+    require_once __DIR__ . '/../../class/OAuth/OAuthTokenService.php';
+    require_once __DIR__ . '/../../class/Mcp/McpAttachmentLink.php';
     require_once __DIR__ . '/../../class/Mcp/McpServer.php';
     require_once __DIR__ . '/../../class/Mcp/McpTools.php';
 
@@ -34,11 +34,9 @@ try {
         exit;
     }
 
-    // A JWKS load failure is a server problem (500), not a bad token (401).
-    $jwks = McpJwksLoader::load($mcp_jwks_sources);
-    try {
-        $userId = (new McpTokenVerifier($mcp_issuer, $mcp_resource, $jwks))->verify($token);
-    } catch (McpAuthException $e) {
+    // Only tokens minted by Offpost's own token endpoint; a database failure is a 500, not a 401.
+    $userId = (new OAuthTokenService($mcp_resource))->userIdForAccessToken($token);
+    if ($userId === null) {
         header('WWW-Authenticate: ' . McpHttp::wwwAuthenticate($metadataUrl, true, $mcp_scopes));
         mcpJsonError(401, 'Invalid token');
         exit;

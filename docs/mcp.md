@@ -5,16 +5,17 @@ Design: `docs/superpowers/specs/2026-11-21-mcp-server-design.md`.
 
 ## Authentication
 
-OAuth bearer JWT (RS256), verified against the authorization server's JWKS. Issuer must equal
-`$mcp_issuer` and audience must equal `$mcp_resource`; the token `sub` is the Offpost user id.
+OAuth bearer token minted by Offpost's own token endpoint (`opmcp_...`, opaque). `/mcp` accepts
+no other tokens: `OAuthTokenService::userIdForAccessToken` looks up the SHA-256 hash, requires the
+token's resource to equal `$mcp_resource` and returns the Offpost user id (`null` gives 401
+`invalid_token`). A database failure is a 500, not a 401.
 
 - `GET /.well-known/oauth-protected-resource` and the path-suffixed
   `GET /.well-known/oauth-protected-resource/mcp` (RFC 9728) serve the same metadata.
-- Offpost is becoming its own OAuth authorization server (design:
-  `docs/superpowers/specs/2026-11-24-mcp-own-oauth-server-design.md`). `$mcp_issuer` and
-  `$mcp_authorization_server` are now Offpost itself (dev `http://localhost:25081`, production
-  `https://offpost.no`); until the token endpoint and token verification are switched over, the JWT
-  verification above still uses the old JWKS sources.
+- Offpost is its own OAuth authorization server (design:
+  `docs/superpowers/specs/2026-11-24-mcp-own-oauth-server-design.md`). `$mcp_issuer` is Offpost
+  itself (dev `http://localhost:25081`, production `https://offpost.no`) and is the only entry in the
+  protected resource metadata's `authorization_servers`.
   - `GET /.well-known/oauth-authorization-server` (RFC 8414): `api/oauth/metadata.php`.
   - `POST /oauth/register` (RFC 7591, JSON, 201 + `Cache-Control: no-store`): `api/oauth/register.php`,
     logic in `OAuthClientRegistry`. Redirect URIs: `https` on `$mcp_redirect_host_allowlist`
@@ -56,12 +57,6 @@ OAuth bearer JWT (RS256), verified against the authorization server's JWKS. Issu
     older than 30 days, old registration attempts, clients that never got a token (24 h) and
     token-less clients without a code used in 30 days (not yet scheduled). Used codes are the record
     that a client once had a token, so a client survives 30 days after its last redemption.
-- Clock leeway: `exp`, `nbf` and `iat` are checked with 60 s leeway (`JWT::$leeway` is set only
-  around the decode and restored afterwards).
-- Machine-to-machine tokens are rejected (401): claim `gty` = `client-credentials`, or a `sub`
-  ending in `@clients`. They do not represent an Offpost user.
-- JWKS sources: a source that cannot be loaded is logged and skipped; only when no source gives
-  any keys is the request a 500.
 - No token: 401 with `WWW-Authenticate: Bearer resource_metadata="<metadata url>"`, plus
   `scope="<scopes>"` when `$mcp_scopes` is non-empty.
 - Bad token: 401, same header plus `error="invalid_token"`.
@@ -69,7 +64,7 @@ OAuth bearer JWT (RS256), verified against the authorization server's JWKS. Issu
   `WWW-Authenticate` (MCP clients pick the scope to request from these). Both environments: `['mcp']`.
   The token's scope is not checked.
 - Non-POST: 405 with `Allow: POST`. Notifications: 202, empty body.
-- Unexpected errors (including JWKS fetch failure and configuration errors such as an unknown
+- Unexpected errors (including database failures and configuration errors such as an unknown
   environment; config is loaded inside the try, for the metadata endpoint too): 500
   `{"error":"Internal error"}`, the real error is logged.
 
@@ -153,31 +148,6 @@ with `curl -o file.pdf "<download_url>"` so the file stays out of its context.
   cover access loss by removing the user's access after the link was issued; expiry is covered by
   unit tests with a fixed clock.
 
-## Auth0 tenant setup (production, one-time)
-
-Done for auth.offpost.no on 2026-11-23 (API "Offpost MCP"). Dashboard names as of then:
-
-1. Applications -> APIs -> Create API: identifier exactly `https://offpost.no/mcp` (cannot be
-   changed later), JWT profile Auth0, signing algorithm RS256.
-2. In that API's Settings:
-   - Application Access Policy: User-delegated Access **All apps allowed** (claude.ai registers a
-     new app per connection, so per-app authorization would block it); Client Access **No apps
-     allowed** (Offpost rejects machine-to-machine tokens anyway).
-   - Default Permissions for third-party applications: User-delegated Access **All**. Dynamically
-     registered clients are third-party apps and need permissions even when the policy above allows
-     all apps; with "Unauthorized" they register but never get a token.
-   - Maximum Access Token Lifetime short, e.g. 3600 s. Offpost cannot revoke issued JWTs, so the
-     lifetime is the window in which a leaked or withdrawn token stays usable.
-   - Allow Offline Access **on**, so clients get refresh tokens instead of a new login every hour.
-   - Token Sender-Constraining: None / Never (Offpost does not support DPoP).
-3. Tenant Settings (gear, bottom of the left sidebar) -> Advanced:
-   - **Dynamic Client Registration (DCR)** on. Discovery then shows
-     `registration_endpoint: https://auth.offpost.no/oidc/register`.
-   - **Resource Parameter Compatibility Profile** on, so the `resource` parameter MCP clients send
-     selects the API (otherwise the token gets the wrong audience and Offpost answers 401).
-4. Authentication -> the login connection(s) -> **Promote Connection to Domain Level**, so the
-   login page of dynamically registered clients offers them.
-
 ## Deploying
 
 One-time, before the first deploy of attachment links, on the production host:
@@ -189,8 +159,6 @@ A missing, short or unusable secret is logged and disables attachment links only
 endpoint answers a plain-text 500; the rest of the MCP endpoints (including OAuth discovery) work.
 
 After pulling this branch, run `docker-compose -f <compose file> down && docker-compose -f <compose file> up --build -d`.
-The image installs `firebase/php-jwt`, and the anonymous vendor volume would otherwise keep the old
-vendor directory.
 
 ## Adding the connector in claude.ai
 
@@ -199,35 +167,12 @@ the authorization server from the metadata, registers itself and opens the norma
 
 ## Development setup
 
-`auth/server.js` (Node `oidc-provider`) has issuer `http://localhost:25083/oidc`, dynamic
-registration, and resource indicators issuing RS256 JWT access tokens for `http://localhost:25081/mcp`
-(these must match `organizer/src/mcp-config.php`). The MCP resource's scope is `mcp` (matching
-`$mcp_scopes`); it must be a resource scope, not an OIDC one such as `openid`: with `openid` there,
-a client that requests only the resource gets nothing granted and the provider redirects back with
-`error=access_denied`. The provider's `scopes` list includes `mcp` (plus the defaults `openid`,
-`offline_access`, and `profile` from claims): MCP clients put the advertised scope in their dynamic
-registration, which is otherwise rejected with `invalid_client_metadata` ("scope must only contain
-Authorization Server supported scope values"; Claude Code shows "This service doesn't accept
-sign-ins from Claude Code"). Dynamic client registrations are persisted by `auth/dev-adapter.js` to the
-gitignored `auth/.oidc-store/clients.json` (ignored by nodemon), so MCP clients that cache their
-`client_id` don't get `invalid_client` after an auth restart; sessions and grants stay in memory,
-so you log in again. Consent grants the requested OIDC scopes too (e.g. `offline_access`, so the
-client gets a refresh token). Public clients must use PKCE; the confidential
-`organizer` client keeps PKCE optional. The `organizer` client is excluded from the MCP
-resource so that its userinfo-based web login keeps working (userinfo rejects tokens that have an
-audience). The web login uses the provider
-endpoints under `/oidc` directly, not discovery. The dev issuer has a path, so its discovery
-metadata is at `http://localhost:25083/oidc/.well-known/openid-configuration`.
+In development Offpost is its own authorization server at `http://localhost:25081`; the `auth`
+service (`auth/server.js`) is only used for the web login, not for `/mcp`. E2E tests get real tokens
+through `OAuthTestFlow::accessTokenFor()` (register a loopback `none` client, log in with the e2e
+session, approve, exchange the code); no key material is involved.
 
-E2E tests sign tokens with test-only RSA keys that `McpTestKeys` generates on first use into the
-gitignored `organizer/src/tests/fixtures/mcp/generated/` (`test-keys.json`, mode 0600, with both
-private PEMs; and the public `test-jwks.json`). No key material is committed. The public JWKS is
-trusted only when `$environment` is `development` (or under PHPUnit). The server reads the JWKS
-file on every request (file sources are not cached), and a missing file is skipped by
-`McpJwksLoader` while another source loads, so run any test that uses `McpTestKeys` before
-calling the dev server. Key generation is random on purpose; tests must not depend on key values.
-
-Manual OAuth check with Claude Code (after rebuilding the dev stack, or `docker-compose -p offpost -f docker-compose.dev.yaml restart auth` after changing `auth/server.js`):
+Manual OAuth check with Claude Code (after rebuilding the dev stack):
 
 ```
 claude mcp add --transport http offpost-dev http://localhost:25081/mcp
@@ -238,12 +183,11 @@ listed. Call `list_my_threads` to see the dev user's threads.
 
 ## Configuration
 
-`organizer/src/mcp-config.php` (non-secret) sets `$mcp_resource`, `$mcp_authorization_server`,
-`$mcp_issuer`, `$mcp_jwks_sources` and `$mcp_scopes` per `$environment`; an unknown environment throws.
-The generated test-only JWKS `organizer/src/tests/fixtures/mcp/generated/test-jwks.json` is trusted in development only.
+`organizer/src/mcp-config.php` (non-secret) sets `$mcp_resource`,
+`$mcp_issuer` and `$mcp_scopes`; an unknown environment throws.
 
 ## Code
 
 `api/mcp/mcp.php`, `api/mcp/oauth_protected_resource.php`, `api/mcp/attachment_download.php`,
-`class/Mcp/` (`McpHttp`, `McpTokenVerifier`, `McpJwksLoader`, `McpServer`, `McpTools`,
+`class/Mcp/` (`McpHttp`, `McpServer`, `McpTools`,
 `McpAttachmentLink`, `McpLinkSecret`). Routes in `webroot/index.php`.

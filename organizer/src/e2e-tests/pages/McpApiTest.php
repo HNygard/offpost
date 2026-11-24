@@ -4,23 +4,27 @@ use PHPUnit\Framework\TestCase;
 
 require_once __DIR__ . '/../../tests/bootstrap.php';
 require_once __DIR__ . '/../../vendor/autoload.php';
-require_once __DIR__ . '/../../tests/fixtures/mcp/McpTestKeys.php';
 require_once __DIR__ . '/common/E2ETestSetup.php';
+require_once __DIR__ . '/common/OAuthE2E.php';
+require_once __DIR__ . '/common/OAuthTestFlow.php';
 
 class McpApiTest extends TestCase {
     const BASE = 'http://localhost:25081';
-    const ISSUER = 'http://localhost:25083/oidc';
     const AUDIENCE = 'http://localhost:25081/mcp';
-    const DEV_USER_ID = 'dev-user-id';
 
+    private ?string $token = null;
+
+    protected function setUp(): void {
+        OAuthE2E::clearRegistrationRateLimit();
+        $this->token = null;
+    }
+
+    /** A real access token from Offpost's token endpoint for dev-user-id, minted once per test. */
     private function validToken(): string {
-        return McpTestKeys::token([
-            'iss' => self::ISSUER,
-            'aud' => self::AUDIENCE,
-            'sub' => self::DEV_USER_ID,
-            'iat' => 1700000000,
-            'exp' => 4102444800,
-        ]);
+        if ($this->token === null) {
+            $this->token = OAuthTestFlow::accessTokenFor('dev-user-id');
+        }
+        return $this->token;
     }
 
     /** Sends a request and returns status, raw headers and body. */
@@ -74,7 +78,7 @@ class McpApiTest extends TestCase {
         $this->assertEquals(200, $resp['status'], $resp['body']);
         $this->assertEquals([
             'resource' => 'http://localhost:25081/mcp',
-            'authorization_servers' => ['http://localhost:25083/oidc'],
+            'authorization_servers' => ['http://localhost:25081'],
             'bearer_methods_supported' => ['header'],
             'scopes_supported' => ['mcp'],
         ], json_decode($resp['body'], true));
@@ -88,7 +92,7 @@ class McpApiTest extends TestCase {
         $this->assertEquals(200, $resp['status'], $resp['body']);
         $this->assertEquals([
             'resource' => 'http://localhost:25081/mcp',
-            'authorization_servers' => ['http://localhost:25083/oidc'],
+            'authorization_servers' => ['http://localhost:25081'],
             'bearer_methods_supported' => ['header'],
             'scopes_supported' => ['mcp'],
         ], json_decode($resp['body'], true));
@@ -108,12 +112,7 @@ class McpApiTest extends TestCase {
 
     public function testBadTokenIs401InvalidToken(): void {
         // :: Setup
-        $badToken = McpTestKeys::token([
-            'iss' => self::ISSUER,
-            'aud' => self::AUDIENCE,
-            'sub' => self::DEV_USER_ID,
-            'exp' => 4102444800,
-        ], McpTestKeys::otherPrivateKey());
+        $badToken = 'opmcp_' . str_repeat('x', 43);
 
         // :: Act
         $resp = $this->rpc($badToken, ['jsonrpc' => '2.0', 'id' => 1, 'method' => 'ping']);
@@ -125,6 +124,52 @@ class McpApiTest extends TestCase {
             $this->headerValue($resp['headers'], 'WWW-Authenticate')
         );
         $this->assertEquals(['error' => 'Invalid token'], json_decode($resp['body'], true));
+    }
+
+    public function testRevokedTokenIs401InvalidToken(): void {
+        // :: Setup
+        $client = OAuthTestFlow::request('POST', '/oauth/register', json_encode([
+            'client_name' => 'e2e revoke client',
+            'redirect_uris' => [OAuthTestFlow::LOOPBACK_REDIRECT],
+            'token_endpoint_auth_method' => 'client_secret_post',
+        ]), ['Content-Type: application/json'])['json'];
+        $token = $this->tokenForClient($client['client_id'], $client['client_secret']);
+        $before = $this->rpc($token, ['jsonrpc' => '2.0', 'id' => 1, 'method' => 'ping']);
+
+        // :: Act
+        $revoke = OAuthTestFlow::request('POST', '/oauth/revoke', http_build_query([
+            'token' => $token,
+            'client_id' => $client['client_id'],
+            'client_secret' => $client['client_secret'],
+        ]), ['Content-Type: application/x-www-form-urlencoded']);
+        $after = $this->rpc($token, ['jsonrpc' => '2.0', 'id' => 2, 'method' => 'ping']);
+
+        // :: Assert
+        $this->assertEquals(200, $before['status'], $before['body']);
+        $this->assertEquals(200, $revoke['status'], $revoke['body']);
+        $this->assertEquals(401, $after['status'], $after['body']);
+        $this->assertEquals(
+            'Bearer resource_metadata="http://localhost:25081/.well-known/oauth-protected-resource", scope="mcp", error="invalid_token"',
+            $this->headerValue($after['headers'], 'WWW-Authenticate')
+        );
+    }
+
+    /** Full login + consent + token exchange for an already registered confidential client. */
+    private function tokenForClient(string $clientId, string $clientSecret): string {
+        $cookie = OAuthTestFlow::loginCookie();
+        [, $pendingId, $csrf] = OAuthTestFlow::openConsentPage($cookie, $clientId, OAuthTestFlow::LOOPBACK_REDIRECT);
+        $decision = OAuthTestFlow::postDecision($cookie, ['pending_id' => $pendingId, 'csrf' => $csrf, 'decision' => 'approve']);
+        $this->assertEquals(1, preg_match('/^location: .*[?&]code=([A-Za-z0-9_-]{43})/mi', $decision['raw_headers'], $m), $decision['raw_headers']);
+        $token = OAuthTestFlow::request('POST', '/oauth/token', http_build_query([
+            'grant_type' => 'authorization_code',
+            'code' => $m[1],
+            'redirect_uri' => OAuthTestFlow::LOOPBACK_REDIRECT,
+            'client_id' => $clientId,
+            'client_secret' => $clientSecret,
+            'code_verifier' => OAuthTestFlow::VERIFIER,
+        ]), ['Content-Type: application/x-www-form-urlencoded']);
+        $this->assertEquals(200, $token['status'], $token['body']);
+        return $token['json']['access_token'];
     }
 
     public function testGetIs405(): void {

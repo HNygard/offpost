@@ -5,85 +5,24 @@ use PHPUnit\Framework\TestCase;
 require_once __DIR__ . '/../../tests/bootstrap.php';
 require_once __DIR__ . '/../../class/OAuth/OAuthCrypto.php';
 require_once __DIR__ . '/common/OAuthE2E.php';
+require_once __DIR__ . '/common/OAuthTestFlow.php';
 
 class OAuthServerTest extends TestCase {
-    const BASE = 'http://localhost:25081';
+    private const REDIRECT = OAuthTestFlow::REDIRECT;
+    private const VERIFIER = OAuthTestFlow::VERIFIER;
+
+    private function request(string $method, string $path, ?string $body = null, array $headers = []): array {
+        return OAuthTestFlow::request($method, $path, $body, $headers);
+    }
 
     protected function setUp(): void {
         OAuthE2E::clearRegistrationRateLimit();
-    }
-
-    private function request(string $method, string $path, ?string $body = null, array $headers = []): array {
-        $ch = curl_init(self::BASE . $path);
-        curl_setopt_array($ch, [
-            CURLOPT_CUSTOMREQUEST => $method,
-            CURLOPT_HTTPHEADER => $headers,
-            CURLOPT_RETURNTRANSFER => true,
-            CURLOPT_HEADER => true,
-        ]);
-        if ($body !== null) {
-            curl_setopt($ch, CURLOPT_POSTFIELDS, $body);
-        }
-        $response = curl_exec($ch);
-        $headerSize = curl_getinfo($ch, CURLINFO_HEADER_SIZE);
-        $status = curl_getinfo($ch, CURLINFO_RESPONSE_CODE);
-        curl_close($ch);
-        $rawHeaders = substr($response, 0, $headerSize);
-        $body = substr($response, $headerSize);
-        return ['status' => $status, 'headers' => strtolower($rawHeaders), 'raw_headers' => $rawHeaders, 'body' => $body, 'json' => json_decode($body, true)];
-    }
-
-    private const REDIRECT = 'https://claude.ai/api/mcp/auth_callback';
-    private const CHALLENGE = 'E9Melhoa2OwvFrEMTJguCHaoeK1t8URWbuGJSstw-cM';
-    private const VERIFIER = 'dBjftJeZ4CVP-mB92K27uhbUJU1p1r_wW1gFWFOEjXk';
-
-    /** PHPSESSID cookie of a logged-in dev user, obtained like E2EPageTestCase does. */
-    private function loginCookie(): string {
-        $ch = curl_init(self::BASE . '?test-authenticate');
-        curl_setopt_array($ch, [
-            CURLOPT_RETURNTRANSFER => true,
-            CURLOPT_HEADER => true,
-            CURLOPT_FOLLOWLOCATION => true,
-            CURLOPT_COOKIEJAR => tempnam(sys_get_temp_dir(), 'cookie'),
-        ]);
-        $response = curl_exec($ch);
-        $rawHeaders = substr($response, 0, curl_getinfo($ch, CURLINFO_HEADER_SIZE));
-        curl_close($ch);
-        $this->assertEquals(1, preg_match('/^Set-Cookie: (PHPSESSID=[^;]+)/mi', $rawHeaders, $m), $rawHeaders);
-        return $m[1];
     }
 
     private function registerClient(string $name): string {
         $response = $this->register(['client_name' => $name, 'redirect_uris' => [self::REDIRECT]]);
         $this->assertEquals(201, $response['status'], $response['body']);
         return $response['json']['client_id'];
-    }
-
-    private function authorizeQuery(string $clientId, array $override = []): string {
-        return '/oauth/authorize?' . http_build_query(array_merge([
-            'response_type' => 'code',
-            'client_id' => $clientId,
-            'redirect_uri' => self::REDIRECT,
-            'state' => 'st-1',
-            'code_challenge' => self::CHALLENGE,
-            'code_challenge_method' => 'S256',
-        ], $override));
-    }
-
-    /** GET the consent page and return [response, pending_id, csrf]. */
-    private function openConsentPage(string $cookie, string $clientId): array {
-        $page = $this->request('GET', $this->authorizeQuery($clientId), null, ['Cookie: ' . $cookie]);
-        $this->assertEquals(200, $page['status'], $page['body']);
-        $this->assertEquals(1, preg_match('/name="pending_id" value="([0-9a-f]+)"/', $page['body'], $p), $page['body']);
-        $this->assertEquals(1, preg_match('/name="csrf" value="([0-9a-f]+)"/', $page['body'], $c), $page['body']);
-        return [$page, $p[1], $c[1]];
-    }
-
-    private function postDecision(string $cookie, array $fields): array {
-        return $this->request('POST', '/oauth/authorize', http_build_query($fields), [
-            'Cookie: ' . $cookie,
-            'Content-Type: application/x-www-form-urlencoded',
-        ]);
     }
 
     private function codeCount(string $clientId): int {
@@ -174,11 +113,11 @@ class OAuthServerTest extends TestCase {
 
     public function testConsentPageShowsEscapedClientNameAndSecurityHeaders() {
         // :: Setup
-        $cookie = $this->loginCookie();
+        $cookie = OAuthTestFlow::loginCookie();
         $clientId = $this->registerClient('<script>alert("x")</script>');
 
         // :: Act
-        [$page] = $this->openConsentPage($cookie, $clientId);
+        [$page] = OAuthTestFlow::openConsentPage($cookie, $clientId);
 
         // :: Assert
         $this->assertStringContainsString('&lt;script&gt;alert(&quot;x&quot;)&lt;/script&gt; wants to access your Offpost account', $page['body']);
@@ -192,12 +131,12 @@ class OAuthServerTest extends TestCase {
 
     public function testDenyRedirectsWithAccessDeniedStateAndIss() {
         // :: Setup
-        $cookie = $this->loginCookie();
+        $cookie = OAuthTestFlow::loginCookie();
         $clientId = $this->registerClient('Deny client');
-        [, $pendingId, $csrf] = $this->openConsentPage($cookie, $clientId);
+        [, $pendingId, $csrf] = OAuthTestFlow::openConsentPage($cookie, $clientId);
 
         // :: Act
-        $response = $this->postDecision($cookie, ['pending_id' => $pendingId, 'csrf' => $csrf, 'decision' => 'deny']);
+        $response = OAuthTestFlow::postDecision($cookie, ['pending_id' => $pendingId, 'csrf' => $csrf, 'decision' => 'deny']);
 
         // :: Assert
         $this->assertEquals(302, $response['status'], $response['body']);
@@ -207,12 +146,12 @@ class OAuthServerTest extends TestCase {
 
     public function testApproveRedirectsWithCodeStateAndIss() {
         // :: Setup
-        $cookie = $this->loginCookie();
+        $cookie = OAuthTestFlow::loginCookie();
         $clientId = $this->registerClient('Approve client');
-        [, $pendingId, $csrf] = $this->openConsentPage($cookie, $clientId);
+        [, $pendingId, $csrf] = OAuthTestFlow::openConsentPage($cookie, $clientId);
 
         // :: Act
-        $response = $this->postDecision($cookie, ['pending_id' => $pendingId, 'csrf' => $csrf, 'decision' => 'approve']);
+        $response = OAuthTestFlow::postDecision($cookie, ['pending_id' => $pendingId, 'csrf' => $csrf, 'decision' => 'approve']);
 
         // :: Assert
         $this->assertEquals(302, $response['status'], $response['body']);
@@ -226,12 +165,12 @@ class OAuthServerTest extends TestCase {
 
     public function testWrongCsrfGives400AndNoCode() {
         // :: Setup
-        $cookie = $this->loginCookie();
+        $cookie = OAuthTestFlow::loginCookie();
         $clientId = $this->registerClient('Csrf client');
-        [, $pendingId] = $this->openConsentPage($cookie, $clientId);
+        [, $pendingId] = OAuthTestFlow::openConsentPage($cookie, $clientId);
 
         // :: Act
-        $response = $this->postDecision($cookie, ['pending_id' => $pendingId, 'csrf' => 'wrong', 'decision' => 'approve']);
+        $response = OAuthTestFlow::postDecision($cookie, ['pending_id' => $pendingId, 'csrf' => 'wrong', 'decision' => 'approve']);
 
         // :: Assert
         $this->assertEquals(400, $response['status'], $response['body']);
@@ -241,14 +180,14 @@ class OAuthServerTest extends TestCase {
 
     public function testReusedPendingIdGives400AndOnlyOneCode() {
         // :: Setup
-        $cookie = $this->loginCookie();
+        $cookie = OAuthTestFlow::loginCookie();
         $clientId = $this->registerClient('Replay client');
-        [, $pendingId, $csrf] = $this->openConsentPage($cookie, $clientId);
+        [, $pendingId, $csrf] = OAuthTestFlow::openConsentPage($cookie, $clientId);
         $fields = ['pending_id' => $pendingId, 'csrf' => $csrf, 'decision' => 'approve'];
-        $first = $this->postDecision($cookie, $fields);
+        $first = OAuthTestFlow::postDecision($cookie, $fields);
 
         // :: Act
-        $second = $this->postDecision($cookie, $fields);
+        $second = OAuthTestFlow::postDecision($cookie, $fields);
 
         // :: Assert
         $this->assertEquals(302, $first['status'], $first['body']);
@@ -259,14 +198,14 @@ class OAuthServerTest extends TestCase {
 
     public function testPendingIdFromAnotherSessionGives400AndNoCode() {
         // :: Setup
-        $cookieA = $this->loginCookie();
-        $cookieB = $this->loginCookie();
+        $cookieA = OAuthTestFlow::loginCookie();
+        $cookieB = OAuthTestFlow::loginCookie();
         $clientId = $this->registerClient('Cross session client');
-        [, $pendingIdA] = $this->openConsentPage($cookieA, $clientId);
-        [, , $csrfB] = $this->openConsentPage($cookieB, $clientId);
+        [, $pendingIdA] = OAuthTestFlow::openConsentPage($cookieA, $clientId);
+        [, , $csrfB] = OAuthTestFlow::openConsentPage($cookieB, $clientId);
 
         // :: Act
-        $response = $this->postDecision($cookieB, ['pending_id' => $pendingIdA, 'csrf' => $csrfB, 'decision' => 'approve']);
+        $response = OAuthTestFlow::postDecision($cookieB, ['pending_id' => $pendingIdA, 'csrf' => $csrfB, 'decision' => 'approve']);
 
         // :: Assert
         $this->assertEquals(400, $response['status'], $response['body']);
@@ -276,7 +215,7 @@ class OAuthServerTest extends TestCase {
 
     public function testUnknownClientGives400PageWithoutLocation() {
         // :: Act
-        $response = $this->request('GET', $this->authorizeQuery('no-such-client'));
+        $response = $this->request('GET', OAuthTestFlow::authorizeQuery('no-such-client'));
 
         // :: Assert
         $this->assertEquals(400, $response['status'], $response['body']);
@@ -289,7 +228,7 @@ class OAuthServerTest extends TestCase {
         $clientId = $this->registerClient('Invalid request client');
 
         // :: Act
-        $response = $this->request('GET', $this->authorizeQuery($clientId, ['response_type' => 'token']));
+        $response = $this->request('GET', OAuthTestFlow::authorizeQuery($clientId, ['response_type' => 'token']));
 
         // :: Assert
         $this->assertEquals(302, $response['status'], $response['body']);
@@ -309,9 +248,9 @@ class OAuthServerTest extends TestCase {
 
     /** Runs login + consent for the client and returns the authorization code. */
     private function approveAndGetCode(string $clientId): string {
-        $cookie = $this->loginCookie();
-        [, $pendingId, $csrf] = $this->openConsentPage($cookie, $clientId);
-        $response = $this->postDecision($cookie, ['pending_id' => $pendingId, 'csrf' => $csrf, 'decision' => 'approve']);
+        $cookie = OAuthTestFlow::loginCookie();
+        [, $pendingId, $csrf] = OAuthTestFlow::openConsentPage($cookie, $clientId);
+        $response = OAuthTestFlow::postDecision($cookie, ['pending_id' => $pendingId, 'csrf' => $csrf, 'decision' => 'approve']);
         $this->assertEquals(302, $response['status'], $response['body']);
         $this->assertEquals(1, preg_match('/[?&]code=([A-Za-z0-9_-]{43})/', $this->location($response), $m), $response['raw_headers']);
         return $m[1];

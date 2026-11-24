@@ -1,6 +1,8 @@
 <?php
 
-require_once __DIR__ . '/McpTokenVerifier.php';
+/** A bad, forged or expired attachment link. */
+class McpAuthException extends Exception {
+}
 
 /**
  * Short-lived signed download tokens for attachments:

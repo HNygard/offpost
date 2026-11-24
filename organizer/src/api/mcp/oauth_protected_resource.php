@@ -6,7 +6,7 @@ try {
 
     $metadata = [
         'resource' => $mcp_resource,
-        'authorization_servers' => [$mcp_authorization_server],
+        'authorization_servers' => [$mcp_issuer],
         'bearer_methods_supported' => ['header'],
     ];
     if (count($mcp_scopes) > 0) {
