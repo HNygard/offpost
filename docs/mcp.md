@@ -21,8 +21,11 @@ OAuth bearer JWT (RS256), verified against the authorization server's JWKS. Issu
 - Bad token: 401, same header plus `error="invalid_token"`.
 - Scopes: `$mcp_scopes` is advertised as `scopes_supported` in the metadata and as `scope` in
   `WWW-Authenticate` (MCP clients pick the scope to request from these). Development: `['mcp']`.
-  Production: `[]`, because Auth0 issues tokens for the API audience without a scope; to advertise
-  `mcp` there, first add `mcp` as a permission on the Auth0 API, then set it in `mcp-config.php`.
+  Production: `['offline_access']`. Auth0 issues tokens for the API audience without a resource
+  scope, but issues a refresh token only when the login asks for `offline_access`. With nothing
+  advertised, claude.ai requested no scope, got no refresh token, and was disconnected when the
+  1-hour access token expired. Needs "Allow Offline Access" on the Auth0 API. To also advertise
+  `mcp` there, first add `mcp` as a permission on the Auth0 API, then add it in `mcp-config.php`.
   The token's scope is not checked.
 - Non-POST: 405 with `Allow: POST`. Notifications: 202, empty body.
 - Unexpected errors (including JWKS fetch failure and configuration errors such as an unknown

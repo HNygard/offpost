@@ -21,9 +21,13 @@ if (defined('PHPUNIT_RUNNING') || $environment === 'development') {
     $mcp_authorization_server = 'https://auth.offpost.no/';
     $mcp_issuer = $mcp_authorization_server;
     $mcp_jwks_sources = ['https://auth.offpost.no/.well-known/jwks.json'];
-    // Auth0 issues tokens for the API audience without a scope, so none is advertised.
-    // To advertise one, first add it as a permission on the Auth0 API (docs/mcp.md).
-    $mcp_scopes = [];
+    // Auth0 issues tokens for the API audience without a resource scope, but it only issues a
+    // refresh token when the login asks for offline_access. Clients take the scope to request
+    // from what is advertised here; with nothing advertised, claude.ai asked for no scope, got no
+    // refresh token and was disconnected when the 1 h access token expired (2026-11-24).
+    // Requires "Allow Offline Access" on the Auth0 API. To also advertise a resource scope such
+    // as 'mcp', first add it as a permission on the Auth0 API (docs/mcp.md).
+    $mcp_scopes = ['offline_access'];
 } else {
     throw new Exception('Unknown environment for MCP config: ' . var_export($environment, true));
 }
