@@ -1,6 +1,6 @@
 -- ******************************************************************
 -- AUTOMATICALLY GENERATED FILE - DO NOT MODIFY
--- Generated on: 2026-11-24 21:02:31
+-- Generated on: 2026-11-24 22:01:41
 -- 
 -- This file contains the current database schema after all migrations.
 -- It is NOT meant to be executed as a migration script.
@@ -101,7 +101,8 @@ CREATE TABLE oauth_clients (
     redirect_uris jsonb NOT NULL,
     token_endpoint_auth_method character varying(32) NOT NULL,
     registration_ip character varying(64),
-    created_at timestamp with time zone NOT NULL DEFAULT now()
+    created_at timestamp with time zone NOT NULL DEFAULT now(),
+    last_active_at timestamp with time zone
 );
 
 ALTER TABLE oauth_clients ADD CONSTRAINT oauth_clients_pkey PRIMARY KEY (id);

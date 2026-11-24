@@ -94,11 +94,11 @@ name is HTML-escaped.
 burned by the first redemption attempt even when it fails (`invalid_grant` for expired, wrong
 client, `redirect_uri` or PKCE verifier; `invalid_target` for a `resource` mismatch, RFC 8707);
 presenting a used code again deletes the tokens issued from it. Response
-`{"access_token":"opmcp_...","token_type":"Bearer","expires_in":15552000,"scope":"mcp"}` with
+`{"access_token":"opmcp_...","token_type":"Bearer","scope":"mcp"}` (no `expires_in`: the token has no fixed
+expiry, owner decision 2026-11-25) with
 `Cache-Control: no-store` and `Pragma: no-cache`.
 
-Lifetime: a token is valid until it is revoked or has been idle for 180 days (`expires_in` is 180
-days, but each use extends it). `last_used_at` is refreshed at most once per hour so that busy
+Lifetime: a token is valid until it is revoked or has been idle for 180 days (each use extends it). `last_used_at` is refreshed at most once per hour so that busy
 clients do not write on every request. Tokens are opaque and only their SHA-256 hash is stored.
 There are no refresh tokens.
 
@@ -117,8 +117,10 @@ Errors from the OAuth endpoints use RFC 6749 section 5.2: `{"error","error_descr
 
 `OAuthTokenService::cleanup()` deletes idle tokens (180 days), unused codes expired over 1 day, used
 codes older than 30 days, old registration attempts, clients that never got a token (24 h) and
-token-less clients without a code used in 30 days. Used codes are the record that a client once had a
-token, so a client survives 30 days after its last redemption. It runs daily (03:00-03:09 UTC) from
+token-less clients whose last activity is over 365 days ago. `oauth_clients.last_active_at` (migration
+037) is set when a token is issued, used (hourly touch), revoked, or deleted by this job as idle, so a
+client survives a year after its last activity and claude.ai / Claude Code can reconnect with their
+cached `client_id` after a long-ago connection ended. Codes no longer affect clients. It runs daily (03:00-03:09 UTC) from
 `cron-scheduler/curl-cron.sh` via `/scheduled-oauth-cleanup`, which prints the counts. It is
 idempotent.
 

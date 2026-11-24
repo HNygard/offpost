@@ -73,7 +73,6 @@ class OAuthTokenService {
         return [
             'access_token' => $token,
             'token_type' => 'Bearer',
-            'expires_in' => self::IDLE_SECONDS,
             'scope' => 'mcp',
         ];
     }
@@ -113,6 +112,7 @@ class OAuthTokenService {
              VALUES (?, ?, ?, ?, ?, to_timestamp(?), to_timestamp(?))',
             [OAuthCrypto::hash($token), $code['client_id'], $code['user_id'], $code['resource'], $code['id'], $now, $now]
         );
+        $this->markClientActive($code['client_id'], $now);
         return $token;
     }
 
@@ -126,7 +126,7 @@ class OAuthTokenService {
         }
         $now = ($this->clock)();
         $row = Database::queryOneOrNone(
-            'SELECT id, user_id, last_used_at < to_timestamp(?) AS stale FROM oauth_access_tokens
+            'SELECT id, client_id, user_id, last_used_at < to_timestamp(?) AS stale FROM oauth_access_tokens
              WHERE token_hash = ? AND resource = ? AND last_used_at > to_timestamp(?)',
             [$now - self::TOUCH_INTERVAL_SECONDS, OAuthCrypto::hash($token), $this->resource, $now - self::IDLE_SECONDS]
         );
@@ -135,15 +135,32 @@ class OAuthTokenService {
         }
         if ($row['stale']) {
             Database::execute('UPDATE oauth_access_tokens SET last_used_at = to_timestamp(?) WHERE id = ?', [$now, $row['id']]);
+            $this->markClientActive($row['client_id'], $now);
         }
         return $row['user_id'];
     }
 
     /** Deletes the token when it belongs to $client; unknown or foreign tokens are ignored (RFC 7009). */
     public function revoke(array $client, string $token): void {
-        Database::execute(
-            'DELETE FROM oauth_access_tokens WHERE token_hash = ? AND client_id = ?',
-            [OAuthCrypto::hash($token), $client['client_id']]
+        $this->deleteTokens('token_hash = ? AND client_id = ?', [OAuthCrypto::hash($token), $client['client_id']], ($this->clock)());
+    }
+
+    private function markClientActive(string $clientId, int $now): void {
+        Database::execute('UPDATE oauth_clients SET last_active_at = to_timestamp(?) WHERE client_id = ?', [$now, $clientId]);
+    }
+
+    /**
+     * Deletes the tokens matching $where and marks their clients active at $now in the same
+     * statement: the client cleanup rules count from the last activity, and a revoked or
+     * idle-expired token is activity too. Returns the number of deleted tokens.
+     */
+    private function deleteTokens(string $where, array $params, int $now): int {
+        return (int) Database::queryValue(
+            "WITH deleted AS (DELETE FROM oauth_access_tokens WHERE $where RETURNING client_id),
+                  marked AS (UPDATE oauth_clients SET last_active_at = to_timestamp(?)
+                             WHERE client_id IN (SELECT client_id FROM deleted))
+             SELECT count(*) FROM deleted",
+            [...$params, $now]
         );
     }
 
@@ -159,15 +176,17 @@ class OAuthTokenService {
 
     /** Deletes the token when it belongs to $userId; true if one was deleted. */
     public function revokeForUser(string $userId, int $tokenId): bool {
-        return Database::execute('DELETE FROM oauth_access_tokens WHERE id = ? AND user_id = ?', [$tokenId, $userId]) > 0;
+        return $this->deleteTokens('id = ? AND user_id = ?', [$tokenId, $userId], ($this->clock)()) > 0;
     }
 
     /**
-     * Housekeeping. Used codes are kept for 30 days: they are the only record that a client
-     * once got a token (there is no revocation timestamp), so a client whose token was revoked
-     * survives for 30 days and can reconnect with its cached client_id.
-     * - unused_clients: no token, no used code, registered over 24 h ago.
-     * - stale_clients: no token, no code used within 30 days, registered over 30 days ago.
+     * Housekeeping. A client is kept for a year after its last activity (token issued, used,
+     * revoked or idle-expired; oauth_clients.last_active_at), so claude.ai / Claude Code can
+     * reconnect with the cached client_id long after a connection ended.
+     * - unused_clients: never active (no token ever issued), no token, registered over 24 h ago.
+     * - stale_clients: no token, last active over 365 days ago.
+     * Codes: unused ones expire after a day, used ones are purged after 30 days; they no longer
+     * affect clients.
      *
      * @return array{tokens: int, unused_clients: int, stale_clients: int, codes: int, registration_attempts: int}
      */
@@ -175,18 +194,17 @@ class OAuthTokenService {
         $now = ($this->clock)();
         $day = 86400;
         $noTokens = 'NOT EXISTS (SELECT 1 FROM oauth_access_tokens t WHERE t.client_id = oauth_clients.client_id)';
-        $usedCode = 'EXISTS (SELECT 1 FROM oauth_authorization_codes c WHERE c.client_id = oauth_clients.client_id AND c.used_at IS NOT NULL';
-        $usedCodeRecently = $usedCode . ' AND c.used_at > to_timestamp(?))';
-        $usedCode .= ')';
+        // Tokens first: it marks their clients active before the client rules run.
+        $tokens = $this->deleteTokens('last_used_at <= to_timestamp(?)', [$now - self::IDLE_SECONDS], $now);
         return [
-            'tokens' => Database::execute('DELETE FROM oauth_access_tokens WHERE last_used_at <= to_timestamp(?)', [$now - self::IDLE_SECONDS]),
+            'tokens' => $tokens,
             'unused_clients' => Database::execute(
-                "DELETE FROM oauth_clients WHERE $noTokens AND created_at < to_timestamp(?) AND NOT $usedCode",
+                "DELETE FROM oauth_clients WHERE last_active_at IS NULL AND $noTokens AND created_at < to_timestamp(?)",
                 [$now - $day]
             ),
             'stale_clients' => Database::execute(
-                "DELETE FROM oauth_clients WHERE $noTokens AND created_at < to_timestamp(?) AND NOT $usedCodeRecently",
-                [$now - 30 * $day, $now - 30 * $day]
+                "DELETE FROM oauth_clients WHERE $noTokens AND last_active_at < to_timestamp(?)",
+                [$now - 365 * $day]
             ),
             'codes' => Database::execute(
                 'DELETE FROM oauth_authorization_codes WHERE (used_at IS NULL AND expires_at < to_timestamp(?)) OR used_at < to_timestamp(?)',

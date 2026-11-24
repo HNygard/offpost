@@ -110,8 +110,10 @@ follow RFC 6749 section 5.2 / RFC 7591 section 3.2.2 (`{"error": "...", "error_d
   per hour as a backstop (429 `{"error":"too_many_requests"}` otherwise).
   Deploy note for `docs/mcp.md`: bind the published port to loopback (`127.0.0.1:25081:80`) so the
   container can't be reached around Cloudflare with a forged `CF-Connecting-IP`. Clients that never obtained a
-  token are deleted after 24 h; clients whose tokens are all gone are deleted after 30 days
-  (cleanup in an existing scheduled job or a new `/scheduled-oauth-cleanup` system page).
+  token are deleted after 24 h; clients whose tokens are all gone are deleted 365 days after their last activity
+  (`oauth_clients.last_active_at`, migration 037: set on token issue, use, revoke and idle-expiry;
+  revised 2026-11-25 after review, the original 30 days deleted a client the night a months-old
+  connection was revoked, breaking reconnects with the cached client_id) (cleanup in an existing scheduled job or a new `/scheduled-oauth-cleanup` system page).
 
 ### Authorization (GET /oauth/authorize)
 
@@ -153,7 +155,7 @@ follow RFC 6749 section 5.2 / RFC 7591 section 3.2.2 (`{"error": "...", "error_d
   every token issued from it (RFC 6749 section 4.1.2).
 - Marking the code used and inserting the token happen in one transaction (`UPDATE ... WHERE used_at
   IS NULL` so two concurrent redemptions can't both succeed).
-- Response: `{"access_token", "token_type": "Bearer", "expires_in": 15552000, "scope": "mcp"}` with
+- Response: `{"access_token", "token_type": "Bearer", "scope": "mcp"}` (`expires_in` omitted, owner decision 2026-11-25) with
   `Cache-Control: no-store`, `Pragma: no-cache`.
 
 ### Access tokens
@@ -224,9 +226,9 @@ Update `99999-database-schema-after-migrations.sql` as the project does.
   `E2EPageTestCase`); the new `state` check in `callback.php` must not affect that path (it doesn't go
   through the callback) - the builder verifies this and adjusts the test helper if needed.
 
-- No refresh tokens; `expires_in` reported as the 6-month idle window.
+- No refresh tokens; `expires_in` omitted from the token response (owner decision 2026-11-25): the token has no fixed expiry, only a 6-month idle window.
 - No remembered consent: every authorization shows the consent page.
-- Registration rate limit 30/IP/hour; unused-client cleanup after 24 h / 30 days.
+- Registration rate limit 30/IP/hour; unused-client cleanup after 24 h / 365 days after last activity.
 - Client secrets for `client_secret_post` / `client_secret_basic` clients (claude.ai registers as
   `client_secret_post`).
 - `last_used_at` written at most once per hour per token.

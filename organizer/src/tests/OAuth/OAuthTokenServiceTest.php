@@ -86,7 +86,7 @@ class OAuthTokenServiceTest extends TestCase {
 
         // :: Assert
         $token = $response['access_token'];
-        $this->assertEquals(['access_token' => $token, 'token_type' => 'Bearer', 'expires_in' => 15552000, 'scope' => 'mcp'], $response);
+        $this->assertEquals(['access_token' => $token, 'token_type' => 'Bearer', 'scope' => 'mcp'], $response);
         $this->assertMatchesRegularExpression('/^opmcp_[A-Za-z0-9_-]{43}$/', $token);
         $rows = Database::query('SELECT token_hash, user_id, client_id, resource FROM oauth_access_tokens');
         $this->assertEquals([[
@@ -418,7 +418,7 @@ class OAuthTokenServiceTest extends TestCase {
         $this->issueToken($clientB, 'user-2');
         $cleanupTime = self::NOW + 40 * self::DAY;
         // Claude: token used recently (kept). Idle: token idle for exactly 180 days (deleted);
-        // its code was used at NOW, 40 days ago, so it is also stale.
+        // the deletion marks the client active, so it is kept. Never used: unused for over 24 h (deleted).
         Database::execute('UPDATE oauth_access_tokens SET last_used_at = to_timestamp(?) WHERE user_id = ?', [$cleanupTime - self::DAY, 'user-1']);
         Database::execute('UPDATE oauth_access_tokens SET last_used_at = to_timestamp(?) WHERE user_id = ?', [$cleanupTime - 180 * self::DAY, 'user-2']);
         $this->now = $cleanupTime;
@@ -432,35 +432,98 @@ class OAuthTokenServiceTest extends TestCase {
         $this->assertEquals([
             'tokens' => 1,
             'unused_clients' => 1,
-            'stale_clients' => 1,
-            'codes' => 1,
+            'stale_clients' => 0,
+            'codes' => 2,
             'registration_attempts' => 3,
-        ], $counts, 'the old used code of Claude is deleted, the codes of Idle go with the client');
+        ], $counts, 'the old used codes of Claude and Idle are deleted; Idle keeps its client row');
         $clients = Database::query('SELECT client_name FROM oauth_clients ORDER BY client_name');
-        $this->assertEquals([['client_name' => 'Claude'], ['client_name' => 'Fresh']], $clients, json_encode($clients, JSON_PRETTY_PRINT));
+        $this->assertEquals([['client_name' => 'Claude'], ['client_name' => 'Fresh'], ['client_name' => 'Idle']], $clients, json_encode($clients, JSON_PRETTY_PRINT));
         $this->assertEquals(1, $this->tokenCount());
         $this->assertEquals(1, (int) Database::queryValue('SELECT count(*) FROM oauth_registration_attempts'), 'only the attempt of Fresh is younger than a day');
         $this->assertEquals(1, (int) Database::queryValue('SELECT count(*) FROM oauth_authorization_codes'), 'only the unexpired code');
     }
 
-    public function testCleanupKeepsClientWithRevokedTokenFor30Days() {
+    public function testCleanupKeepsRevokedClientUntil365DaysAfterLastActivity() {
         // :: Setup
-        $this->now = self::NOW + 9 * self::DAY;
         $token = $this->issueToken();
+        $this->now = self::NOW + 200 * self::DAY;
         $this->tokens()->revoke($this->client, $token);
+        $clientId = $this->client['client_id'];
+        $exists = fn(): bool => $this->registry->find($clientId) !== null;
 
         // :: Act
-        $this->now = self::NOW + 12 * self::DAY;
-        $day12 = $this->tokens()->cleanup();
-        $keptAtDay12 = $this->registry->find($this->client['client_id']) !== null;
-        $this->now = self::NOW + 40 * self::DAY;
-        $day40 = $this->tokens()->cleanup();
-        $keptAtDay40 = $this->registry->find($this->client['client_id']) !== null;
+        $this->now = self::NOW + 201 * self::DAY;
+        $day201 = $this->tokens()->cleanup();
+        $keptDay201 = $exists();
+        $this->now = self::NOW + 500 * self::DAY;
+        $day500 = $this->tokens()->cleanup();
+        $keptDay500 = $exists();
+        $this->now = self::NOW + 565 * self::DAY;
+        $keptDay565 = $this->tokens()->cleanup() && $exists();
+        $this->now = self::NOW + 565 * self::DAY + 1;
+        $day565 = $this->tokens()->cleanup();
+        $keptAfter = $exists();
 
         // :: Assert
-        $this->assertTrue($keptAtDay12, json_encode($day12));
-        $this->assertEquals(0, $day12['unused_clients'] + $day12['stale_clients']);
-        $this->assertFalse($keptAtDay40, json_encode($day40));
-        $this->assertEquals(1, $day40['stale_clients']);
+        $this->assertTrue($keptDay201, json_encode($day201));
+        $this->assertTrue($keptDay500, 'last activity (revoke) was 300 days ago: ' . json_encode($day500));
+        $this->assertTrue($keptDay565, 'exactly 365 days after revoke');
+        $this->assertFalse($keptAfter, json_encode($day565));
+        $this->assertEquals(1, $day565['stale_clients']);
+    }
+
+    public function testCleanupOfIdleTokenKeepsClientAndMarksItActive() {
+        // :: Setup
+        $this->issueToken();
+        $cleanupTime = self::NOW + 200 * self::DAY;
+        $this->now = $cleanupTime;
+
+        // :: Act
+        $counts = $this->tokens()->cleanup();
+
+        // :: Assert
+        $this->assertEquals(1, $counts['tokens'], json_encode($counts));
+        $this->assertEquals(0, $counts['stale_clients'] + $counts['unused_clients'], json_encode($counts));
+        $activeAt = (int) Database::queryValue('SELECT extract(epoch FROM last_active_at) FROM oauth_clients WHERE client_id = ?', [$this->client['client_id']]);
+        $this->assertEquals($cleanupTime, $activeAt);
+    }
+
+    public function testClientActivityIsRecordedOnIssueTouchAndRevokeForUser() {
+        // :: Setup
+        $activeAt = fn(): ?int => ($v = Database::queryValue('SELECT extract(epoch FROM last_active_at) FROM oauth_clients WHERE client_id = ?', [$this->client['client_id']])) === null ? null : (int) $v;
+        $before = $activeAt();
+
+        // :: Act
+        $token = $this->issueToken();
+        $afterIssue = $activeAt();
+        $this->now = self::NOW + 2 * self::DAY;
+        $this->tokens()->userIdForAccessToken($token);
+        $afterTouch = $activeAt();
+        $this->now = self::NOW + 3 * self::DAY;
+        $tokenId = (int) Database::queryValue('SELECT id FROM oauth_access_tokens');
+        $this->tokens()->revokeForUser('user-1', $tokenId);
+        $afterRevoke = $activeAt();
+
+        // :: Assert
+        $this->assertEquals(
+            [null, self::NOW, self::NOW + 2 * self::DAY, self::NOW + 3 * self::DAY],
+            [$before, $afterIssue, $afterTouch, $afterRevoke]
+        );
+    }
+
+    public function testCleanupDeletesNeverUsedClientAfter24Hours() {
+        // :: Setup
+        $this->now = self::NOW + self::DAY;
+        $atLimit = $this->tokens()->cleanup();
+        $keptAtLimit = $this->registry->find($this->client['client_id']) !== null;
+        $this->now = self::NOW + self::DAY + 1;
+
+        // :: Act
+        $counts = $this->tokens()->cleanup();
+
+        // :: Assert
+        $this->assertTrue($keptAtLimit, json_encode($atLimit));
+        $this->assertEquals(1, $counts['unused_clients'], json_encode($counts));
+        $this->assertNull($this->registry->find($this->client['client_id']));
     }
 }

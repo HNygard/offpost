@@ -285,9 +285,9 @@ class OAuthServerTest extends TestCase {
 
         // :: Assert
         $this->assertEquals(200, $token['status'], $token['body']);
-        $this->assertEquals(['access_token', 'token_type', 'expires_in', 'scope'], array_keys($token['json']));
+        $this->assertEquals(['access_token', 'token_type', 'scope'], array_keys($token['json']));
         $this->assertMatchesRegularExpression('/^opmcp_[A-Za-z0-9_-]{43}$/', $token['json']['access_token']);
-        $this->assertEquals(['Bearer', 15552000, 'mcp'], [$token['json']['token_type'], $token['json']['expires_in'], $token['json']['scope']]);
+        $this->assertEquals(['Bearer', 'mcp'], [$token['json']['token_type'], $token['json']['scope']]);
         $this->assertStringContainsString('cache-control: no-store', $token['headers']);
         $this->assertStringContainsString('pragma: no-cache', $token['headers']);
         $this->assertEquals(400, $reuse['status'], $reuse['body']);
