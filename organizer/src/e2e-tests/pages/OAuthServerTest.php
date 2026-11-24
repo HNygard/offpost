@@ -35,6 +35,7 @@ class OAuthServerTest extends TestCase {
 
     private const REDIRECT = 'https://claude.ai/api/mcp/auth_callback';
     private const CHALLENGE = 'E9Melhoa2OwvFrEMTJguCHaoeK1t8URWbuGJSstw-cM';
+    private const VERIFIER = 'dBjftJeZ4CVP-mB92K27uhbUJU1p1r_wW1gFWFOEjXk';
 
     /** PHPSESSID cookie of a logged-in dev user, obtained like E2EPageTestCase does. */
     private function loginCookie(): string {
@@ -293,5 +294,132 @@ class OAuthServerTest extends TestCase {
         // :: Assert
         $this->assertEquals(302, $response['status'], $response['body']);
         $this->assertStringStartsWith(self::REDIRECT . '?error=unsupported_response_type&', $this->location($response));
+    }
+
+    /** Registers a client and returns the registration response (including client_secret unless method is none). */
+    private function registerWithMethod(string $name, string $method): array {
+        $response = $this->register([
+            'client_name' => $name,
+            'redirect_uris' => [self::REDIRECT],
+            'token_endpoint_auth_method' => $method,
+        ]);
+        $this->assertEquals(201, $response['status'], $response['body']);
+        return $response['json'];
+    }
+
+    /** Runs login + consent for the client and returns the authorization code. */
+    private function approveAndGetCode(string $clientId): string {
+        $cookie = $this->loginCookie();
+        [, $pendingId, $csrf] = $this->openConsentPage($cookie, $clientId);
+        $response = $this->postDecision($cookie, ['pending_id' => $pendingId, 'csrf' => $csrf, 'decision' => 'approve']);
+        $this->assertEquals(302, $response['status'], $response['body']);
+        $this->assertEquals(1, preg_match('/[?&]code=([A-Za-z0-9_-]{43})/', $this->location($response), $m), $response['raw_headers']);
+        return $m[1];
+    }
+
+    private function postForm(string $path, array $fields, array $headers = []): array {
+        return $this->request('POST', $path, http_build_query($fields), array_merge(['Content-Type: application/x-www-form-urlencoded'], $headers));
+    }
+
+    private function tokenFields(string $code, array $override = []): array {
+        return array_merge([
+            'grant_type' => 'authorization_code',
+            'code' => $code,
+            'redirect_uri' => self::REDIRECT,
+            'code_verifier' => self::VERIFIER,
+        ], $override);
+    }
+
+    public function testCodeToTokenFlowAndRevoke() {
+        // :: Setup
+        $client = $this->registerWithMethod('Token client', 'client_secret_post');
+        $code = $this->approveAndGetCode($client['client_id']);
+        $auth = ['client_id' => $client['client_id'], 'client_secret' => $client['client_secret']];
+
+        // :: Act
+        $token = $this->postForm('/oauth/token', $this->tokenFields($code) + $auth);
+        $reuse = $this->postForm('/oauth/token', $this->tokenFields($code) + $auth);
+
+        // :: Assert
+        $this->assertEquals(200, $token['status'], $token['body']);
+        $this->assertEquals(['access_token', 'token_type', 'expires_in', 'scope'], array_keys($token['json']));
+        $this->assertMatchesRegularExpression('/^opmcp_[A-Za-z0-9_-]{43}$/', $token['json']['access_token']);
+        $this->assertEquals(['Bearer', 15552000, 'mcp'], [$token['json']['token_type'], $token['json']['expires_in'], $token['json']['scope']]);
+        $this->assertStringContainsString('cache-control: no-store', $token['headers']);
+        $this->assertStringContainsString('pragma: no-cache', $token['headers']);
+        $this->assertEquals(400, $reuse['status'], $reuse['body']);
+        $this->assertEquals('invalid_grant', $reuse['json']['error']);
+        $this->assertEquals(0, Database::queryValue('SELECT count(*) FROM oauth_access_tokens WHERE client_id = ?', [$client['client_id']]), 'reuse revoked the token');
+    }
+
+    public function testTokenEndpointWithBasicAuthAndRevoke() {
+        // :: Setup
+        $client = $this->registerWithMethod('Basic client', 'client_secret_basic');
+        $code = $this->approveAndGetCode($client['client_id']);
+        $basic = 'Authorization: Basic ' . base64_encode(urlencode($client['client_id']) . ':' . urlencode($client['client_secret']));
+
+        // :: Act
+        $token = $this->postForm('/oauth/token', $this->tokenFields($code), [$basic]);
+        $revoke = $this->postForm('/oauth/revoke', ['token' => $token['json']['access_token'] ?? '', 'token_type_hint' => 'access_token'], [$basic]);
+        $revokeAgain = $this->postForm('/oauth/revoke', ['token' => $token['json']['access_token'] ?? ''], [$basic]);
+
+        // :: Assert
+        $this->assertEquals(200, $token['status'], $token['body']);
+        $this->assertEquals(200, $revoke['status'], $revoke['body']);
+        $this->assertEquals('', $revoke['body']);
+        $this->assertEquals(200, $revokeAgain['status'], 'unknown tokens are not an error (RFC 7009)');
+        $this->assertEquals(0, Database::queryValue('SELECT count(*) FROM oauth_access_tokens WHERE client_id = ?', [$client['client_id']]));
+    }
+
+    public function testTokenWithoutClientAuthGives401InvalidClient() {
+        // :: Setup
+        $client = $this->registerWithMethod('Secret client', 'client_secret_post');
+        $code = $this->approveAndGetCode($client['client_id']);
+
+        // :: Act
+        $response = $this->postForm('/oauth/token', $this->tokenFields($code, ['client_id' => $client['client_id']]));
+
+        // :: Assert
+        $this->assertEquals(401, $response['status'], $response['body']);
+        $this->assertEquals('invalid_client', $response['json']['error']);
+        $this->assertStringContainsString('cache-control: no-store', $response['headers']);
+    }
+
+    public function testInvalidClientWithBasicAuthCarriesWwwAuthenticate() {
+        // :: Setup
+        $client = $this->registerWithMethod('Basic client 2', 'client_secret_basic');
+        $basic = 'Authorization: Basic ' . base64_encode($client['client_id'] . ':wrong');
+
+        // :: Act
+        $response = $this->postForm('/oauth/token', ['grant_type' => 'authorization_code'], [$basic]);
+
+        // :: Assert
+        $this->assertEquals(401, $response['status'], $response['body']);
+        $this->assertStringContainsString('www-authenticate: basic realm="offpost"', $response['headers']);
+    }
+
+    public function testUnsupportedGrantTypeAndGetMethod() {
+        // :: Setup
+        $client = $this->registerWithMethod('Grant client', 'client_secret_post');
+        $auth = ['client_id' => $client['client_id'], 'client_secret' => $client['client_secret']];
+
+        // :: Act
+        $password = $this->postForm('/oauth/token', ['grant_type' => 'password', 'username' => 'a', 'password' => 'b'] + $auth);
+        $get = $this->request('GET', '/oauth/token');
+
+        // :: Assert
+        $this->assertEquals(400, $password['status'], $password['body']);
+        $this->assertEquals('unsupported_grant_type', $password['json']['error']);
+        $this->assertEquals(405, $get['status'], $get['body']);
+        $this->assertStringContainsString('content-type: application/json', $get['headers']);
+    }
+
+    public function testRevokeWithoutClientAuthGives401() {
+        // :: Setup / Act
+        $response = $this->postForm('/oauth/revoke', ['token' => 'opmcp_x']);
+
+        // :: Assert
+        $this->assertEquals(401, $response['status'], $response['body']);
+        $this->assertEquals('invalid_client', $response['json']['error']);
     }
 }

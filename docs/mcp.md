@@ -37,7 +37,25 @@ OAuth bearer JWT (RS256), verified against the authorization server's JWKS. Issu
     `X-Frame-Options: DENY`, CSP `frame-ancestors 'none'`, `Referrer-Policy: no-referrer` and
     `Cache-Control: no-store`.
   - `OAuthClientRegistry::authenticate` checks the client with its registered method
-    (`none`, `client_secret_post`, `client_secret_basic`); any mismatch is `invalid_client` (401).
+    (`none`, `client_secret_post`, `client_secret_basic`); any mismatch is `invalid_client` (401),
+    with `WWW-Authenticate: Basic realm="offpost"` when the client used Basic. Basic credentials
+    are urldecoded, and a body `client_id` that differs from the Basic one is rejected.
+  - `POST /oauth/token` (`api/oauth/token.php`, logic in `OAuthTokenService`): only
+    `grant_type=authorization_code` (else `unsupported_grant_type`), form-encoded. The code is
+    burned by the first redemption attempt even when it fails (`invalid_grant` for expired, wrong
+    client, `redirect_uri` or PKCE verifier; `invalid_target` for a `resource` mismatch, RFC 8707); presenting a used code again deletes the
+    tokens issued from it. Response `{access_token: "opmcp_...", token_type: "Bearer",
+    expires_in: 15552000, scope: "mcp"}` with `Cache-Control: no-store`. Tokens are opaque, stored
+    as SHA-256 hashes, valid while the row exists and `last_used_at` is within 180 days
+    (`userIdForAccessToken` refreshes it at most hourly).
+  - `POST /oauth/revoke` (RFC 7009, `api/oauth/revoke.php`): client-authenticated; 200 with an empty
+    body also for unknown tokens and tokens of other clients (the latter is not deleted). This
+    deliberately deviates from RFC 7009 2.1 so that the response does not reveal whether a token
+    exists. `token_type_hint` is ignored.
+  - `OAuthTokenService::cleanup()` deletes idle tokens, unused codes expired over 1 day, used codes
+    older than 30 days, old registration attempts, clients that never got a token (24 h) and
+    token-less clients without a code used in 30 days (not yet scheduled). Used codes are the record
+    that a client once had a token, so a client survives 30 days after its last redemption.
 - Clock leeway: `exp`, `nbf` and `iat` are checked with 60 s leeway (`JWT::$leeway` is set only
   around the decode and restored afterwards).
 - Machine-to-machine tokens are rejected (401): claim `gty` = `client-credentials`, or a `sub`

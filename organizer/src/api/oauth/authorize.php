@@ -107,6 +107,6 @@ try {
     header('Content-Type: text/html; charset=UTF-8');
     require __DIR__ . '/consent-page.php';
 } catch (Throwable $e) {
-    error_log('OAuth authorize endpoint error: ' . $e);
+    error_log('OAuth authorize endpoint error: ' . get_class($e) . ': ' . $e->getMessage() . ' at ' . $e->getFile() . ':' . $e->getLine());
     oauthPlainErrorPage(500, 'Internal error');
 }

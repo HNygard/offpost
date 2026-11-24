@@ -16,8 +16,20 @@ class OAuthHttp {
         echo json_encode($body, JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE);
     }
 
-    /** RFC 6749 section 5.2 error response. Never cached. */
-    public static function error(OAuthError $e): void {
+    /** True when the request carries HTTP Basic client credentials. */
+    public static function usesBasicAuth(array $server): bool {
+        return isset($server['PHP_AUTH_USER'])
+            || (is_string($server['HTTP_AUTHORIZATION'] ?? null) && stripos($server['HTTP_AUTHORIZATION'], 'Basic ') === 0);
+    }
+
+    /**
+     * RFC 6749 section 5.2 error response. Never cached. Pass $server for the token and
+     * revocation endpoints: invalid_client then carries WWW-Authenticate when the client used Basic.
+     */
+    public static function error(OAuthError $e, ?array $server = null): void {
+        if ($server !== null && $e->error === 'invalid_client' && self::usesBasicAuth($server)) {
+            header('WWW-Authenticate: Basic realm="offpost"');
+        }
         self::json($e->httpStatus, [
             'error' => $e->error,
             'error_description' => $e->getMessage(),

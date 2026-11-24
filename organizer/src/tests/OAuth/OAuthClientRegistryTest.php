@@ -261,6 +261,7 @@ class OAuthClientRegistryTest extends TestCase {
         for ($i = 0; $i < 30; $i++) {
             try {
                 $registry->register(['redirect_uris' => ['https://evil.com/cb']], '198.51.100.1');
+                $this->fail('Expected the registration with a disallowed redirect URI to be rejected');
             } catch (OAuthError $e) {
                 $this->assertEquals('invalid_redirect_uri', $e->error);
             }
@@ -381,6 +382,41 @@ class OAuthClientRegistryTest extends TestCase {
 
         // :: Assert
         $this->assertEquals($basic['client_id'], $client['client_id']);
+    }
+
+    public function testAuthenticateDecodesPercentEncodedPhpAuthCredentials() {
+        // :: Setup
+        $registry = $this->registry();
+        $basic = $this->registerWithMethod('client_secret_basic');
+        // Every character percent-encoded, so only a decoding implementation can match.
+        $encode = fn(string $s): string => implode('', array_map(fn(string $c): string => '%' . bin2hex($c), str_split($s)));
+
+        // :: Act
+        $client = $registry->authenticate([], [
+            'PHP_AUTH_USER' => $encode($basic['client_id']),
+            'PHP_AUTH_PW' => $encode($basic['client_secret']),
+        ]);
+
+        // :: Assert
+        $this->assertEquals($basic['client_id'], $client['client_id']);
+    }
+
+    public function testAuthenticateBasicWithDifferentBodyClientIdFails() {
+        // :: Setup
+        $registry = $this->registry();
+        $basic = $this->registerWithMethod('client_secret_basic');
+        $other = $this->registerWithMethod('client_secret_basic');
+        $server = ['PHP_AUTH_USER' => $basic['client_id'], 'PHP_AUTH_PW' => $basic['client_secret']];
+
+        // :: Act
+        $sameId = $registry->authenticate(['client_id' => $basic['client_id']], $server);
+
+        // :: Assert
+        $this->assertEquals($basic['client_id'], $sameId['client_id'], 'a matching body client_id is harmless');
+        $this->assertInvalidClient(
+            fn() => $registry->authenticate(['client_id' => $other['client_id']], $server),
+            'body client_id differs from the Basic one'
+        );
     }
 
     public function testAuthenticateRejectsWrongSecretAndMethodMismatch() {

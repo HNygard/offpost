@@ -26,7 +26,7 @@ try {
         OAuthHttp::error($e);
     }
 } catch (Throwable $e) {
-    error_log('OAuth register endpoint error: ' . $e);
+    error_log('OAuth register endpoint error: ' . get_class($e) . ': ' . $e->getMessage() . ' at ' . $e->getFile() . ':' . $e->getLine());
     http_response_code(500);
     header('Content-Type: application/json');
     echo json_encode(['error' => 'server_error', 'error_description' => 'Internal error']);

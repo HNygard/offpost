@@ -137,6 +137,10 @@ class OAuthClientRegistry {
 
         switch ($client['token_endpoint_auth_method']) {
             case 'client_secret_basic':
+                // A body client_id that disagrees with the Basic one is ambiguous: reject.
+                if ($basic !== null && $bodyId !== null && $bodyId !== $basic[0]) {
+                    throw $this->invalidClient();
+                }
                 $presented = $basic === null || $bodySecret !== null ? null : $basic[1];
                 break;
             case 'client_secret_post':
@@ -162,7 +166,7 @@ class OAuthClientRegistry {
     /** @return array{0: string, 1: string}|null [client_id, client_secret] */
     private function basicCredentials(array $server): ?array {
         if (isset($server['PHP_AUTH_USER']) && is_string($server['PHP_AUTH_USER'])) {
-            return [$server['PHP_AUTH_USER'], (string) ($server['PHP_AUTH_PW'] ?? '')];
+            return [urldecode($server['PHP_AUTH_USER']), urldecode((string) ($server['PHP_AUTH_PW'] ?? ''))];
         }
         $header = $server['HTTP_AUTHORIZATION'] ?? null;
         if (!is_string($header) || stripos($header, 'Basic ') !== 0) {

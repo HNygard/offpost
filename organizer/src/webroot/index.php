@@ -76,6 +76,8 @@ try {
             '/.well-known/oauth-authorization-server' => '/../api/oauth/metadata.php',
             '/oauth/register' => '/../api/oauth/register.php',
             '/oauth/authorize' => '/../api/oauth/authorize.php',
+            '/oauth/token' => '/../api/oauth/token.php',
+            '/oauth/revoke' => '/../api/oauth/revoke.php',
             '/api/admin/export/threads' => '/../api/admin/export_threads_list.php',
             '/api/admin/export/thread' => '/../api/admin/export_thread_get.php',
             '/api/admin/analysis/request' => '/../api/admin/analysis_request.php',
