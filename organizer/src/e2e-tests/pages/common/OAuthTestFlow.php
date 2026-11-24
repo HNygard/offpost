@@ -112,10 +112,12 @@ class OAuthTestFlow {
         $response = curl_exec($ch);
         $rawHeaders = substr($response, 0, curl_getinfo($ch, CURLINFO_HEADER_SIZE));
         curl_close($ch);
-        if (preg_match('/^Set-Cookie: (PHPSESSID=[^;]+)/mi', $rawHeaders, $m) !== 1) {
+        // The callback regenerates the session id, so the LAST PHPSESSID is the logged-in
+        // session (the first one, from when the login started, was destroyed).
+        if (preg_match_all('/^Set-Cookie: (PHPSESSID=[^;]+)/mi', $rawHeaders, $m) < 1) {
             throw new RuntimeException('No session cookie: ' . $rawHeaders);
         }
-        return $m[1];
+        return $m[1][count($m[1]) - 1];
     }
 
     public static function authorizeQuery(string $clientId, array $override = [], string $redirect = self::REDIRECT): string {

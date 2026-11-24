@@ -46,13 +46,16 @@ class E2EPageTestCase extends TestCase {
 
         $response = $this->curl('http://localhost:25081?test-authenticate', 'GET');
 
-        if (count($response->cookies) != 1) {
+        // The login sets PHPSESSID twice: once when the login starts, and again after the
+        // callback, which regenerates the session id (session fixation protection). The last
+        // one is the logged-in session; the first was destroyed.
+        if (count($response->cookies) < 1) {
             echo "Full response :\n";
             var_dump($response);
             echo "--- End of full response\n";
             throw new Exception('No session cookie found');
         }
-        return $response->cookies[0];
+        return $response->cookies[count($response->cookies) - 1];
     }
 
     private function curl($url, $method = 'GET', $session_cookie = null, $headers = array(), $post_data = null) {
