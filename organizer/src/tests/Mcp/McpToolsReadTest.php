@@ -236,6 +236,99 @@ class McpToolsReadTest extends TestCase {
         $this->assertTrue($data['truncated']);
     }
 
+    /** Three threads with fixed, distinct last activity: returns [oldest, middle, newest]. */
+    private function createThreadsWithActivity(): array {
+        $old = $this->createThread('Gammel', self::USER_A);
+        $mid = $this->createThread('Midt', self::USER_A);
+        $new = $this->createThread('Ny', self::USER_A);
+        $this->insertEmail($old->id, 'IN', '2020-01-01 10:00:00+00', false);
+        $this->insertEmail($mid->id, 'IN', '2020-01-02 10:00:00+00', false);
+        $this->insertEmail($new->id, 'IN', '2020-01-03 10:00:00+00', false);
+        return [$old, $mid, $new];
+    }
+
+    public function testListMyThreadsReturnsTotalAndNextCursor(): void {
+        // :: Setup
+        $this->createThreadsWithActivity();
+
+        // :: Act
+        $data = $this->callData('list_my_threads', ['limit' => 2], self::USER_A);
+
+        // :: Assert
+        $this->assertEquals(3, $data['total'], json_encode($data, JSON_PRETTY_PRINT));
+        $this->assertCount(2, $data['threads'], json_encode($data, JSON_PRETTY_PRINT));
+        $this->assertIsString($data['next_cursor']);
+        $this->assertTrue($data['truncated']);
+    }
+
+    public function testListMyThreadsCursorPagesThroughAllNewestFirst(): void {
+        // :: Setup
+        [$old, $mid, $new] = $this->createThreadsWithActivity();
+
+        // :: Act
+        $page1 = $this->callData('list_my_threads', ['limit' => 2], self::USER_A);
+        $page2 = $this->callData('list_my_threads', ['limit' => 2, 'cursor' => $page1['next_cursor']], self::USER_A);
+
+        // :: Assert
+        $this->assertEquals([$new->id, $mid->id], array_column($page1['threads'], 'thread_id'));
+        $this->assertEquals([$old->id], array_column($page2['threads'], 'thread_id'));
+        $this->assertNull($page2['next_cursor'], 'last page has no next cursor');
+        $this->assertFalse($page2['truncated']);
+        $this->assertEquals(3, $page2['total'], 'total counts all matching threads, not the page');
+    }
+
+    public function testListMyThreadsCursorSkipsNothingWhenThreadsAreArchivedBetweenPages(): void {
+        // :: Setup
+        [$old, $mid, $new] = $this->createThreadsWithActivity();
+        $page1 = $this->callData('list_my_threads', ['limit' => 1], self::USER_A);
+        $this->callData('archive_thread', ['thread_id' => $page1['threads'][0]['thread_id']], self::USER_A);
+
+        // :: Act
+        $page2 = $this->callData('list_my_threads', ['limit' => 1, 'cursor' => $page1['next_cursor']], self::USER_A);
+
+        // :: Assert
+        $this->assertEquals([$new->id], array_column($page1['threads'], 'thread_id'));
+        $this->assertEquals([$mid->id], array_column($page2['threads'], 'thread_id'),
+            'archiving the first page must not shift the next one');
+        $this->assertEquals(2, $page2['total'], 'the archived thread no longer matches');
+    }
+
+    public function testListMyThreadsCursorHandlesEqualLastActivity(): void {
+        // :: Setup
+        $first = $this->createThread('Lik 1', self::USER_A);
+        $second = $this->createThread('Lik 2', self::USER_A);
+        $this->insertEmail($first->id, 'IN', '2020-01-01 10:00:00+00', false);
+        $this->insertEmail($second->id, 'IN', '2020-01-01 10:00:00+00', false);
+        $expected = [$first->id, $second->id];
+        sort($expected);
+
+        // :: Act
+        $page1 = $this->callData('list_my_threads', ['limit' => 1], self::USER_A);
+        $page2 = $this->callData('list_my_threads', ['limit' => 1, 'cursor' => $page1['next_cursor']], self::USER_A);
+
+        // :: Assert
+        $this->assertEquals(
+            $expected,
+            array_merge(array_column($page1['threads'], 'thread_id'), array_column($page2['threads'], 'thread_id')),
+            'ties on last activity are ordered by thread id and none is skipped'
+        );
+        $this->assertNull($page2['next_cursor']);
+    }
+
+    public function testListMyThreadsInvalidCursorIsError(): void {
+        // :: Act
+        $error = null;
+        try {
+            $this->tools->call('list_my_threads', ['cursor' => 'not-a-cursor'], self::USER_A);
+        } catch (McpToolException $e) {
+            $error = $e;
+        }
+
+        // :: Assert
+        $this->assertNotNull($error);
+        $this->assertEquals('Invalid cursor', $error->getMessage());
+    }
+
     public function testListMyThreadsCountsExcludeIgnoredAndSetLastActivity(): void {
         // :: Setup
         $thread = $this->createThread('Med epost', self::USER_A);

@@ -72,6 +72,9 @@ class McpTools implements McpToolProvider {
                 'name' => 'list_my_threads',
                 'description' => 'List the threads (requests and their replies) you own or have been given access to, newest activity first. '
                     . 'Use this to find thread ids for get_thread and the other thread tools. '
+                    . 'total is the number of threads matching the filters. To page, pass next_cursor from the previous '
+                    . 'response as cursor; next_cursor is null on the last page. Paging continues after the last thread '
+                    . 'returned, so archiving threads between pages does not skip any. '
                     . 'has_delivery_problem is true when an outgoing email of the thread failed to send (see delivery_problems in get_thread).',
                 'inputSchema' => [
                     'type' => 'object',
@@ -79,6 +82,7 @@ class McpTools implements McpToolProvider {
                         'search' => ['type' => 'string', 'description' => 'Part of the thread title or entity name.'],
                         'include_archived' => ['type' => 'boolean', 'description' => 'Also list archived threads (default false).'],
                         'limit' => $limit,
+                        'cursor' => ['type' => 'string', 'description' => 'next_cursor from the previous page; omit for the first page.'],
                     ],
                     'additionalProperties' => false,
                 ],
@@ -307,6 +311,8 @@ class McpTools implements McpToolProvider {
         $search = $this->optionalString($args, 'search');
         $includeArchived = $this->optionalBool($args, 'include_archived', false);
         $limit = $this->limitArg($args);
+        $cursorRaw = $this->optionalString($args, 'cursor');
+        $after = ($cursorRaw !== null && $cursorRaw !== '') ? $this->decodeThreadCursor($cursorRaw) : null;
 
         // Ignored emails are left out of the counts and last activity, as in NpApiService listings.
         $rows = Database::query(
@@ -338,9 +344,25 @@ class McpTools implements McpToolProvider {
             }
             $row['archived'] = $archived;
             $row['entity_name'] = $entityName;
+            $row['sort_key'] = $this->threadSortKey($row['last_activity']);
             $matching[] = $row;
         }
+        // Order: last activity newest first, then thread id. Sorted here (not only in SQL) so the
+        // order is exactly the one the cursor compares against.
+        usort($matching, fn($a, $b) => strcmp($b['sort_key'], $a['sort_key']) ?: strcmp($a['id'], $b['id']));
+        $total = count($matching);
+
+        // Keyset paging: continue strictly after the cursor's (sort_key, id), so threads that stop
+        // matching between pages (e.g. archived) don't shift the remaining ones.
+        if ($after !== null) {
+            $matching = array_values(array_filter($matching, fn($row) =>
+                $row['sort_key'] < $after['k'] || ($row['sort_key'] === $after['k'] && strcmp($row['id'], $after['i']) > 0)
+            ));
+        }
         $page = array_slice($matching, 0, $limit);
+        $hasMore = count($matching) > $limit;
+        $last = end($page);
+        $nextCursor = ($hasMore && $last !== false) ? $this->encodeThreadCursor($last['sort_key'], $last['id']) : null;
 
         $stateTypes = NpApiService::threadStateTypesByThreadId(array_column($page, 'id'));
         $withProblems = $this->threadIdsWithDeliveryProblems(array_column($page, 'id'));
@@ -361,7 +383,28 @@ class McpTools implements McpToolProvider {
                 'has_delivery_problem' => isset($withProblems[$row['id']]),
             ];
         }
-        return ['threads' => $threads, 'truncated' => count($matching) > $limit];
+        return ['threads' => $threads, 'total' => $total, 'next_cursor' => $nextCursor, 'truncated' => $hasMore];
+    }
+
+    /** Fixed-width UTC timestamp with microseconds, so plain string comparison orders it. */
+    private function threadSortKey(string $lastActivity): string {
+        return (new DateTime($lastActivity))->setTimezone(new DateTimeZone('UTC'))->format('Y-m-d H:i:s.u');
+    }
+
+    private function encodeThreadCursor(string $sortKey, string $threadId): string {
+        return rtrim(strtr(base64_encode(json_encode(['k' => $sortKey, 'i' => $threadId])), '+/', '-_'), '=');
+    }
+
+    /** @return array{k: string, i: string} */
+    private function decodeThreadCursor(string $cursor): array {
+        $json = base64_decode(strtr($cursor, '-_', '+/'), true);
+        $data = $json === false ? null : json_decode($json, true);
+        if (!is_array($data)
+            || !is_string($data['k'] ?? null) || !preg_match('/^\d{4}-\d{2}-\d{2} \d{2}:\d{2}:\d{2}\.\d{6}$/', $data['k'])
+            || !is_string($data['i'] ?? null) || !preg_match(self::UUID_REGEX, $data['i'])) {
+            throw new McpToolException('Invalid cursor');
+        }
+        return ['k' => $data['k'], 'i' => $data['i']];
     }
 
     private function getThread(array $args, string $userId): array {
