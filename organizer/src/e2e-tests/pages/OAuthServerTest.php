@@ -15,6 +15,10 @@ class OAuthServerTest extends TestCase {
         return OAuthTestFlow::request($method, $path, $body, $headers);
     }
 
+    protected function tearDown(): void {
+        OAuthTestFlow::cleanup();
+    }
+
     protected function setUp(): void {
         OAuthE2E::clearRegistrationRateLimit();
     }

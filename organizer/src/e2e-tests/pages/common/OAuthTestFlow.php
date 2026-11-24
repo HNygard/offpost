@@ -14,6 +14,22 @@ class OAuthTestFlow {
     const CHALLENGE = 'E9Melhoa2OwvFrEMTJguCHaoeK1t8URWbuGJSstw-cM';
     const VERIFIER = 'dBjftJeZ4CVP-mB92K27uhbUJU1p1r_wW1gFWFOEjXk';
 
+    /** @var string[] client_ids registered through request(), removed by cleanup() */
+    private static array $registeredClientIds = [];
+
+    /**
+     * Deletes what this process registered: the clients and, for them, the tokens and codes
+     * (no cascade in the schema). Call from tearDown(); other connections are left alone.
+     */
+    public static function cleanup(): void {
+        foreach (self::$registeredClientIds as $clientId) {
+            Database::execute('DELETE FROM oauth_access_tokens WHERE client_id = ?', [$clientId]);
+            Database::execute('DELETE FROM oauth_authorization_codes WHERE client_id = ?', [$clientId]);
+            Database::execute('DELETE FROM oauth_clients WHERE client_id = ?', [$clientId]);
+        }
+        self::$registeredClientIds = [];
+    }
+
     /** Registers a public loopback client, runs login + consent and the token exchange; returns the access token. */
     public static function accessTokenFor(string $user = 'dev-user-id'): string {
         return self::connect($user)['access_token'];
@@ -72,7 +88,11 @@ class OAuthTestFlow {
         curl_close($ch);
         $rawHeaders = substr($response, 0, $headerSize);
         $body = substr($response, $headerSize);
-        return ['status' => $status, 'headers' => strtolower($rawHeaders), 'raw_headers' => $rawHeaders, 'body' => $body, 'json' => json_decode($body, true)];
+        $json = json_decode($body, true);
+        if ($path === '/oauth/register' && $status === 201 && isset($json['client_id'])) {
+            self::$registeredClientIds[] = $json['client_id'];
+        }
+        return ['status' => $status, 'headers' => strtolower($rawHeaders), 'raw_headers' => $rawHeaders, 'body' => $body, 'json' => $json];
     }
 
     /** PHPSESSID cookie of a logged-in dev user, obtained like E2EPageTestCase does. */

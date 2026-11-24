@@ -14,6 +14,10 @@ class McpApiTest extends TestCase {
 
     private ?string $token = null;
 
+    protected function tearDown(): void {
+        OAuthTestFlow::cleanup();
+    }
+
     protected function setUp(): void {
         OAuthE2E::clearRegistrationRateLimit();
         $this->token = null;

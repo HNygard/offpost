@@ -33,6 +33,7 @@ class ConnectedAppsPageTest extends TestCase {
             }
         }
         Database::execute('DELETE FROM oauth_access_tokens WHERE token_hash = ?', [self::OTHER_TOKEN_HASH]);
+        OAuthTestFlow::cleanup();
     }
 
     private function get(string $cookie): array {
@@ -60,17 +61,21 @@ class ConnectedAppsPageTest extends TestCase {
         ]);
     }
 
-    public function testSecurityHeadersAndNoTestClientsListedInitially(): void {
+    public function testListsOnlyAfterConnectingAndSendsSecurityHeaders(): void {
         // :: Setup
         $cookie = OAuthTestFlow::loginCookie();
+        $name = 'e2e connected-apps listing test';
 
         // :: Act
+        $before = $this->get($cookie);
+        OAuthTestFlow::connect('dev-user-id', false, $name);
         $page = $this->get($cookie);
 
         // :: Assert
         $this->assertEquals(200, $page['status'], $page['body']);
         // The empty-state text is not asserted: that needs an empty list, which would mean deleting real connections.
-        $this->assertStringNotContainsString('e2e ', $page['body']);
+        $this->assertStringNotContainsString("<td>$name</td>", $before['body']);
+        $this->assertStringContainsString("<td>$name</td>", $page['body']);
         $this->assertStringContainsString('x-frame-options: deny', $page['headers']);
         $this->assertStringContainsString("content-security-policy: frame-ancestors 'none'", $page['headers']);
         $this->assertStringContainsString('cache-control: no-store', $page['headers']);
