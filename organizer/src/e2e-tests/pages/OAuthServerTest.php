@@ -4,9 +4,14 @@ use PHPUnit\Framework\TestCase;
 
 require_once __DIR__ . '/../../tests/bootstrap.php';
 require_once __DIR__ . '/../../class/OAuth/OAuthCrypto.php';
+require_once __DIR__ . '/common/OAuthE2E.php';
 
 class OAuthServerTest extends TestCase {
     const BASE = 'http://localhost:25081';
+
+    protected function setUp(): void {
+        OAuthE2E::clearRegistrationRateLimit();
+    }
 
     private function request(string $method, string $path, ?string $body = null, array $headers = []): array {
         $ch = curl_init(self::BASE . $path);
@@ -25,7 +30,7 @@ class OAuthServerTest extends TestCase {
         curl_close($ch);
         $rawHeaders = substr($response, 0, $headerSize);
         $body = substr($response, $headerSize);
-        return ['status' => $status, 'headers' => strtolower($rawHeaders), 'body' => $body, 'json' => json_decode($body, true)];
+        return ['status' => $status, 'headers' => strtolower($rawHeaders), 'raw_headers' => $rawHeaders, 'body' => $body, 'json' => json_decode($body, true)];
     }
 
     private const REDIRECT = 'https://claude.ai/api/mcp/auth_callback';
@@ -85,7 +90,7 @@ class OAuthServerTest extends TestCase {
     }
 
     private function location(array $response): string {
-        $this->assertEquals(1, preg_match('/^location: (.*)$/mi', $response['headers'], $m), $response['headers']);
+        $this->assertEquals(1, preg_match('/^location: (.*)$/mi', $response['raw_headers'], $m), $response['raw_headers']);
         return trim($m[1]);
     }
 
@@ -249,6 +254,23 @@ class OAuthServerTest extends TestCase {
         $this->assertEquals(400, $second['status'], $second['body']);
         $this->assertStringNotContainsString('location:', $second['headers']);
         $this->assertEquals(1, $this->codeCount($clientId));
+    }
+
+    public function testPendingIdFromAnotherSessionGives400AndNoCode() {
+        // :: Setup
+        $cookieA = $this->loginCookie();
+        $cookieB = $this->loginCookie();
+        $clientId = $this->registerClient('Cross session client');
+        [, $pendingIdA] = $this->openConsentPage($cookieA, $clientId);
+        [, , $csrfB] = $this->openConsentPage($cookieB, $clientId);
+
+        // :: Act
+        $response = $this->postDecision($cookieB, ['pending_id' => $pendingIdA, 'csrf' => $csrfB, 'decision' => 'approve']);
+
+        // :: Assert
+        $this->assertEquals(400, $response['status'], $response['body']);
+        $this->assertStringNotContainsString('location:', $response['headers']);
+        $this->assertEquals(0, $this->codeCount($clientId));
     }
 
     public function testUnknownClientGives400PageWithoutLocation() {
