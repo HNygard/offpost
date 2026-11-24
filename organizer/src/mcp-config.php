@@ -4,8 +4,9 @@
 
 if (defined('PHPUNIT_RUNNING') || $environment === 'development') {
     $mcp_resource = 'http://localhost:25081/mcp';
-    $mcp_authorization_server = 'http://localhost:25083/oidc';
-    $mcp_issuer = $mcp_authorization_server;
+    // Offpost is its own OAuth authorization server (docs/superpowers/specs/2026-11-24-mcp-own-oauth-server-design.md).
+    $mcp_issuer = 'http://localhost:25081';
+    $mcp_authorization_server = $mcp_issuer;
     // Scopes advertised to MCP clients (metadata scopes_supported + WWW-Authenticate scope).
     // MCP clients send no scope without them, and the dev oidc-provider then grants nothing
     // and answers access_denied. auth/server.js gives the MCP resource the 'mcp' scope.
@@ -18,19 +19,16 @@ if (defined('PHPUNIT_RUNNING') || $environment === 'development') {
     ];
 } elseif ($environment === 'production') {
     $mcp_resource = 'https://offpost.no/mcp';
-    $mcp_authorization_server = 'https://auth.offpost.no/';
-    $mcp_issuer = $mcp_authorization_server;
+    $mcp_issuer = 'https://offpost.no';
+    $mcp_authorization_server = $mcp_issuer;
     $mcp_jwks_sources = ['https://auth.offpost.no/.well-known/jwks.json'];
-    // Auth0 issues tokens for the API audience without a resource scope, but it only issues a
-    // refresh token when the login asks for offline_access. Clients take the scope to request
-    // from what is advertised here; with nothing advertised, claude.ai asked for no scope, got no
-    // refresh token and was disconnected when the 1 h access token expired (2026-11-24).
-    // Requires "Allow Offline Access" on the Auth0 API. To also advertise a resource scope such
-    // as 'mcp', first add it as a permission on the Auth0 API (docs/mcp.md).
-    $mcp_scopes = ['offline_access'];
+    $mcp_scopes = ['mcp'];
 } else {
     throw new Exception('Unknown environment for MCP config: ' . var_export($environment, true));
 }
+
+// Hosts (exact match) that dynamically registered OAuth clients may use as https redirect URIs.
+$mcp_redirect_host_allowlist = ['claude.ai', 'claude.com'];
 
 // HMAC secret for attachment download links. Production reads /run/secrets/mcp_link_secret;
 // development/PHPUnit generates one into the temp dir when the file is missing.

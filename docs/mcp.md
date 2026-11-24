@@ -10,6 +10,24 @@ OAuth bearer JWT (RS256), verified against the authorization server's JWKS. Issu
 
 - `GET /.well-known/oauth-protected-resource` and the path-suffixed
   `GET /.well-known/oauth-protected-resource/mcp` (RFC 9728) serve the same metadata.
+- Offpost is becoming its own OAuth authorization server (design:
+  `docs/superpowers/specs/2026-11-24-mcp-own-oauth-server-design.md`). `$mcp_issuer` and
+  `$mcp_authorization_server` are now Offpost itself (dev `http://localhost:25081`, production
+  `https://offpost.no`); until the token endpoint and token verification are switched over, the JWT
+  verification above still uses the old JWKS sources.
+  - `GET /.well-known/oauth-authorization-server` (RFC 8414): `api/oauth/metadata.php`.
+  - `POST /oauth/register` (RFC 7591, JSON, 201 + `Cache-Control: no-store`): `api/oauth/register.php`,
+    logic in `OAuthClientRegistry`. Redirect URIs: `https` on `$mcp_redirect_host_allowlist`
+    (`claude.ai`, `claude.com`; host lowercased, exact match, no port, any path) or `http` on
+    `localhost`, `127.0.0.1`, `[::1]`; no fragment, userinfo, whitespace, control chars or
+    backslash. At most 10 URIs, `client_name` at most 100 chars, `scope` only `mcp`,
+    `response_types` only `code`, `grant_types` must include `authorization_code` (`refresh_token`
+    tolerated, not echoed). Limits: 30 attempts per client IP and 200 in total per hour (every
+    attempt with a JSON object body counts; 429 `too_many_requests`). Client IP:
+    `OAuthHttp::clientIp` (`CF-Connecting-IP` only when it is a valid IP and the peer is private or
+    loopback, IPv4-mapped IPv6 peers unmapped first).
+  - `OAuthClientRegistry::authenticate` checks the client with its registered method
+    (`none`, `client_secret_post`, `client_secret_basic`); any mismatch is `invalid_client` (401).
 - Clock leeway: `exp`, `nbf` and `iat` are checked with 60 s leeway (`JWT::$leeway` is set only
   around the decode and restored afterwards).
 - Machine-to-machine tokens are rejected (401): claim `gty` = `client-credentials`, or a `sub`
@@ -20,12 +38,7 @@ OAuth bearer JWT (RS256), verified against the authorization server's JWKS. Issu
   `scope="<scopes>"` when `$mcp_scopes` is non-empty.
 - Bad token: 401, same header plus `error="invalid_token"`.
 - Scopes: `$mcp_scopes` is advertised as `scopes_supported` in the metadata and as `scope` in
-  `WWW-Authenticate` (MCP clients pick the scope to request from these). Development: `['mcp']`.
-  Production: `['offline_access']`. Auth0 issues tokens for the API audience without a resource
-  scope, but issues a refresh token only when the login asks for `offline_access`. With nothing
-  advertised, claude.ai requested no scope, got no refresh token, and was disconnected when the
-  1-hour access token expired. Needs "Allow Offline Access" on the Auth0 API. To also advertise
-  `mcp` there, first add `mcp` as a permission on the Auth0 API, then add it in `mcp-config.php`.
+  `WWW-Authenticate` (MCP clients pick the scope to request from these). Both environments: `['mcp']`.
   The token's scope is not checked.
 - Non-POST: 405 with `Allow: POST`. Notifications: 202, empty body.
 - Unexpected errors (including JWKS fetch failure and configuration errors such as an unknown
