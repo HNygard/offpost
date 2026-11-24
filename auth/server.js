@@ -112,6 +112,12 @@ const configuration = {
   features: {
     devInteractions: { enabled: false },
   },
+  // PKCE is only required for public clients (token_endpoint_auth_method 'none'). The confidential
+  // 'organizer' client authenticates with its secret and doesn't send a code_challenge, so PKCE is
+  // explicitly optional for it.
+  pkce: {
+    required: (ctx, client) => client.clientAuthMethod === 'none',
+  },
   claims: {
     openid: ['sub'],
     profile: ['name']
