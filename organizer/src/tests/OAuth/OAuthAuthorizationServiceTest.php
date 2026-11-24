@@ -91,6 +91,18 @@ class OAuthAuthorizationServiceTest extends TestCase {
         $this->assertNotInstanceOf(OAuthRedirectError::class, $error);
     }
 
+    public function testMalformedClientIdIsNotRedirectable() {
+        // :: Act
+        $invalidUtf8 = $this->validateExpectingError($this->validQuery(['client_id' => "abc\xff"]));
+        $tooLong = $this->validateExpectingError($this->validQuery(['client_id' => str_repeat('a', 65)]));
+
+        // :: Assert
+        $this->assertEquals(['invalid_request', 'Unknown client_id'], [$invalidUtf8->error, $invalidUtf8->getMessage()]);
+        $this->assertEquals(['invalid_request', 'Unknown client_id'], [$tooLong->error, $tooLong->getMessage()]);
+        $this->assertNotInstanceOf(OAuthRedirectError::class, $invalidUtf8);
+        $this->assertNotInstanceOf(OAuthRedirectError::class, $tooLong);
+    }
+
     public function testUnregisteredRedirectUriIsNotRedirectable() {
         // :: Act
         $error = $this->validateExpectingError($this->validQuery(['redirect_uri' => 'https://claude.ai/other']));

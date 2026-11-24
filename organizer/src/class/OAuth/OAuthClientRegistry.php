@@ -16,6 +16,7 @@ class OAuthClientRegistry {
     private const MAX_REDIRECT_URIS = 10;
     private const MAX_REDIRECT_URI_LENGTH = 2000;
     private const MAX_CLIENT_NAME_LENGTH = 100;
+    private const MAX_CLIENT_ID_LENGTH = 64;
     private const AUTH_METHODS = ['none', 'client_secret_post', 'client_secret_basic'];
     private const LOOPBACK_HOSTS = ['localhost', '127.0.0.1', '[::1]'];
 
@@ -37,11 +38,12 @@ class OAuthClientRegistry {
      */
     public function register(array $metadata, string $clientIp): array {
         $now = ($this->clock)();
-        $this->enforceRateLimit($clientIp, $now);
+        $bucket = $this->rateLimitKey($clientIp);
+        $this->enforceRateLimit($bucket, $now);
         // Every attempt counts, rejected ones too: they cost the same to receive.
         Database::execute(
             'INSERT INTO oauth_registration_attempts (ip, created_at) VALUES (?, to_timestamp(?))',
-            [$clientIp, $now]
+            [$bucket, $now]
         );
 
         $redirectUris = $this->validatedRedirectUris($metadata);
@@ -85,6 +87,10 @@ class OAuthClientRegistry {
 
     /** The client row with redirect_uris decoded, or null. */
     public function find(string $clientId): ?array {
+        // Malformed ids can't exist (and would make PDO fail on the encoding): skip the lookup.
+        if (!mb_check_encoding($clientId, 'UTF-8') || mb_strlen($clientId) > self::MAX_CLIENT_ID_LENGTH) {
+            return null;
+        }
         $row = Database::queryOneOrNone('SELECT * FROM oauth_clients WHERE client_id = ?', [$clientId]);
         if ($row === null) {
             return null;
@@ -179,6 +185,18 @@ class OAuthClientRegistry {
         }
         [$id, $secret] = explode(':', $decoded, 2);
         return [urldecode($id), urldecode($secret)];
+    }
+
+    /**
+     * Rate limit bucket of a client IP: an IPv6 address counts as its /64 prefix (one subscriber
+     * typically holds a whole /64, so per-address limits would be trivial to dodge), e.g.
+     * "2001:db8:1:2::/64". IPv4 (and anything unparsable) is used as is.
+     */
+    private function rateLimitKey(string $clientIp): string {
+        if (filter_var($clientIp, FILTER_VALIDATE_IP, FILTER_FLAG_IPV6) === false) {
+            return $clientIp;
+        }
+        return inet_ntop(substr(inet_pton($clientIp), 0, 8) . str_repeat("\0", 8)) . '/64';
     }
 
     private function enforceRateLimit(string $clientIp, int $now): void {

@@ -442,4 +442,45 @@ class OAuthClientRegistryTest extends TestCase {
         $this->assertInvalidClient(fn() => $registry->authenticate([], ['HTTP_AUTHORIZATION' => 'Basic ' . base64_encode('nocolon')]), 'header without colon');
         $this->assertInvalidClient(fn() => $registry->authenticate(['client_id' => ['x'], 'client_secret' => 'y'], []), 'array client_id');
     }
+
+    public function testRegisterRateLimitSharesIpv6Prefix64() {
+        // :: Setup
+        $registry = $this->registry();
+        $metadata = ['redirect_uris' => ['https://claude.ai/cb']];
+        for ($i = 0; $i < 30; $i++) {
+            $registry->register($metadata, sprintf('2001:db8:1:2::%x', $i + 1));
+        }
+
+        // :: Act
+        $limited = $this->registerExpectingError($metadata, '2001:db8:1:2:ffff:ffff:ffff:ffff');
+        $otherPrefix = $registry->register($metadata, '2001:db8:1:3::1');
+
+        // :: Assert
+        $this->assertEquals('too_many_requests', $limited->error, 'another address in the same /64 shares the limit');
+        $this->assertArrayHasKey('client_id', $otherPrefix, 'a different /64 is not limited');
+        $buckets = Database::query('SELECT DISTINCT ip FROM oauth_registration_attempts ORDER BY ip');
+        $this->assertEquals([['ip' => '2001:db8:1:2::/64'], ['ip' => '2001:db8:1:3::/64']], $buckets, json_encode($buckets, JSON_PRETTY_PRINT));
+    }
+
+    public function testFindRejectsMalformedClientIdsWithoutQuerying() {
+        // :: Setup
+        $registry = $this->registry();
+
+        // :: Act
+        $invalidUtf8 = $registry->find("abc\xff");
+        $tooLong = $registry->find(str_repeat('a', 65));
+
+        // :: Assert
+        $this->assertEquals([null, null], [$invalidUtf8, $tooLong]);
+    }
+
+    public function testAuthenticateRejectsMalformedClientIds() {
+        // :: Setup
+        $registry = $this->registry();
+
+        // :: Act / Assert
+        $this->assertInvalidClient(fn() => $registry->authenticate(['client_id' => "abc\xff", 'client_secret' => 'y'], []), 'invalid UTF-8 in body');
+        $this->assertInvalidClient(fn() => $registry->authenticate(['client_id' => str_repeat('a', 65), 'client_secret' => 'y'], []), 'client_id over 64 characters');
+        $this->assertInvalidClient(fn() => $registry->authenticate([], ['HTTP_AUTHORIZATION' => 'Basic ' . base64_encode("ab\xff:y")]), 'invalid UTF-8 in Basic');
+    }
 }

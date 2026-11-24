@@ -52,7 +52,7 @@ failure is a 500, not a 401. The endpoint starts no PHP session and does not use
   `invalid_redirect_uri`. At most 10 URIs.
 - `client_name` at most 100 characters, `scope` only `mcp`, `response_types` only `code`,
   `grant_types` must include `authorization_code` (`refresh_token` is tolerated, not echoed).
-- Rate limits: 30 attempts per client IP and 200 in total per hour, answered 429
+- Rate limits: 30 attempts per client IP (an IPv6 address counts as its /64 prefix) and 200 in total per hour, answered 429
   `too_many_requests`. Every attempt with a JSON object body counts; bodies that are not a JSON
   object (arrays, scalars, invalid JSON) are rejected earlier and not counted.
 - To allow another https host (for example another MCP client's hosted callback), add it to
@@ -62,6 +62,8 @@ failure is a 500, not a 401. The endpoint starts no PHP session and does not use
   `client_secret_post`, `client_secret_basic`); any mismatch is `invalid_client` (401), with
   `WWW-Authenticate: Basic realm="offpost"` when the client used Basic. Basic credentials are
   urldecoded, and a body `client_id` that differs from the Basic one is rejected.
+  A `client_id` that is not valid UTF-8 or is longer than 64 characters is never looked up: `invalid_client`
+  at the token and revoke endpoints, the non-redirecting "unknown client" page at `/oauth/authorize`.
 
 #### Client IP behind Cloudflare
 
