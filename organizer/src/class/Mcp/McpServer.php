@@ -11,6 +11,16 @@ class McpServer {
 
     public const SUPPORTED_PROTOCOL_VERSIONS = ['2025-11-25', '2025-06-18', '2025-03-26'];
 
+    /** Sent as InitializeResult.instructions; MCP clients show it to the model. */
+    public const INSTRUCTIONS = 'Offpost sends freedom of information requests to public bodies by email. '
+        . 'Each thread has its own sender identity: a generated name and email address '
+        . '(thread.my_name and thread.my_email in get_thread), not the user\'s real name. '
+        . 'start_thread always creates a new identity. A new thread is not connected to any earlier thread, '
+        . 'neither in Offpost nor for the public body, even when it is on the same subject. '
+        . 'To follow up a request, reply in its thread with send_reply. '
+        . 'start_thread and send_reply both add the signature (the thread identity\'s name) automatically, '
+        . 'so never sign an email body yourself and never use a name from another thread.';
+
     private McpToolProvider $tools;
 
     public function __construct(McpToolProvider $tools) {
@@ -71,6 +81,7 @@ class McpServer {
             'protocolVersion' => $version,
             'capabilities' => ['tools' => new stdClass()],
             'serverInfo' => ['name' => 'offpost', 'version' => '1.0.0'],
+            'instructions' => self::INSTRUCTIONS,
         ];
     }
 

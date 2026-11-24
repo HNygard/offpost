@@ -49,7 +49,7 @@ class ThreadReplyServiceTest extends TestCase {
         $this->assertEquals(ThreadEmailSending::STATUS_READY_FOR_SENDING, $row['status']);
         $this->assertEquals(self::ENTITY_EMAIL, $row['email_to']);
         $this->assertEquals($thread->my_email, $row['email_from']);
-        $this->assertEquals('Svar', $row['email_content']);
+        $this->assertEquals("Svar\n\n--\n" . $thread->my_name, $row['email_content']);
         $this->assertEquals(
             ['email_sending_ids' => [$sending->id], 'recipient' => self::ENTITY_EMAIL, 'subject' => 'Re: T'],
             $this->historyDetails($thread->id, 'thread_reply_created_and_queued_sending')

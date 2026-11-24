@@ -645,6 +645,7 @@ function print_extraction ($extraction) {
                     </div>
                     <textarea id="reply_body" name="reply_body" rows="10" required 
                               placeholder="Write your reply here..."></textarea>
+                    <small class="form-help">The signature "-- <?= htmlescape($thread->my_name) ?>" is added automatically.</small>
                 </div>
                 
                 <div class="form-group">

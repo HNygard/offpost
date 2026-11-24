@@ -145,7 +145,7 @@ class ThreadReplyPageTest extends E2EPageTestCase {
         
         $this->assertNotNull($draftEmail, 'Should find the draft email');
         $this->assertEquals(ThreadEmailSending::STATUS_STAGING, $draftEmail->status, 'Draft should be in STAGING status');
-        $this->assertEquals($replyBody, $draftEmail->email_content, 'Should preserve reply body content');
+        $this->assertEquals($replyBody . "\n\n--\n" . $testData['thread']->my_name, $draftEmail->email_content, 'Reply body with the thread signature appended');
         $this->assertEquals($threadId, $draftEmail->thread_id, 'Should be associated with correct thread');
     }
 
@@ -203,7 +203,7 @@ class ThreadReplyPageTest extends E2EPageTestCase {
         
         $this->assertNotNull($readyEmail, 'Should find the ready email');
         $this->assertEquals(ThreadEmailSending::STATUS_READY_FOR_SENDING, $readyEmail->status, 'Reply should be in READY_FOR_SENDING status');
-        $this->assertEquals($replyBody, $readyEmail->email_content, 'Should preserve reply body content');
+        $this->assertEquals($replyBody . "\n\n--\n" . $testData['thread']->my_name, $readyEmail->email_content, 'Reply body with the thread signature appended');
         $this->assertEquals($threadId, $readyEmail->thread_id, 'Should be associated with correct thread');
     }
 

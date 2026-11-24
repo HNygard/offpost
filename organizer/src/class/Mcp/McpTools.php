@@ -136,9 +136,14 @@ class McpTools implements McpToolProvider {
             ],
             [
                 'name' => 'start_thread',
-                'description' => 'Start a new thread: this sends a real request email to the public body (entity), in the user\'s name, '
-                    . 'within minutes. It cannot be recalled. One thread is created per call. entity_id comes from list_entities; '
-                    . 'entities without an email address or that no longer exist are refused.',
+                'description' => 'Start a new thread: this sends a real request email to the public body (entity) within minutes. '
+                    . 'It cannot be recalled. One thread is created per call. entity_id comes from list_entities; '
+                    . 'entities without an email address or that no longer exist are refused. '
+                    . 'The thread gets a new generated sender identity (returned as my_name and my_email), not the user\'s real name, '
+                    . 'and the signature is added automatically: do not sign the body. '
+                    . 'A new thread is a separate request, not connected to any earlier thread, neither in Offpost nor for the entity. '
+                    . 'To follow up an existing request, use send_reply in that thread instead. '
+                    . 'If you still start a new thread on a related subject, write it as a standalone request and never use the name of another thread\'s identity.',
                 'inputSchema' => [
                     'type' => 'object',
                     'properties' => [
@@ -162,8 +167,10 @@ class McpTools implements McpToolProvider {
             ],
             [
                 'name' => 'send_reply',
-                'description' => 'Reply in a thread you own or have been given access to. The email is queued and sent within minutes, '
-                    . 'in the user\'s name, and cannot be recalled. recipient must be one of the reply_recipients returned by get_thread '
+                'description' => 'Reply in a thread you own or have been given access to. The email is queued and sent within minutes '
+                    . 'from the thread\'s own sender identity (thread.my_name and thread.my_email in get_thread), and cannot be recalled. '
+                    . 'The signature (that identity\'s name) is added automatically: do not sign the body. '
+                    . 'recipient must be one of the reply_recipients returned by get_thread '
                     . '(the entity email and addresses seen in the thread); get_thread reports can_reply for this.',
                 'inputSchema' => [
                     'type' => 'object',
@@ -540,6 +547,8 @@ class McpTools implements McpToolProvider {
             'thread_id' => $thread->id,
             'thread_url' => NpApiService::threadUrl($thread->id),
             'sending_status' => ThreadEmailSending::STATUS_READY_FOR_SENDING,
+            'my_name' => $thread->my_name,
+            'my_email' => $thread->my_email,
         ];
     }
 

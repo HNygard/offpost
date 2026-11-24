@@ -70,9 +70,8 @@ class SuggestedReplyGenerator {
             $suggestedReply .= $remainingCaseInfo . "\n\n";
         }
         
-        $suggestedReply .= "--\n" . $thread->my_name;
-        
-        return $suggestedReply;
+        // No signature: ThreadReplyService adds it when the reply is queued.
+        return rtrim($suggestedReply);
     }
     
     /**
