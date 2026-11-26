@@ -368,6 +368,130 @@ class McpToolsReadTest extends TestCase {
         $this->assertArrayHasKey('body_plain', $email);
         $this->assertArrayHasKey('extractions', $email);
         $this->assertArrayHasKey('attachments', $email);
+        $this->assertEquals(1, $data['email_total']);
+        $this->assertNull($data['next_cursor'], 'one email fits on the first page');
+        $this->assertFalse($data['truncated']);
+    }
+
+    /** Inserts $count IN emails one hour apart from 2024-01-01 00:00 UTC; returns their datetimes in order. */
+    private function insertEmails(string $threadId, int $count, int $startHour = 0): array {
+        $received = [];
+        for ($i = $startHour; $i < $startHour + $count; $i++) {
+            $time = sprintf('2024-01-%02d %02d:00:00+00', 1 + intdiv($i, 24), $i % 24);
+            $this->insertEmail($threadId, 'IN', $time, false);
+            $received[] = (new DateTime($time))->format('c');
+        }
+        return $received;
+    }
+
+    private function receivedTimes(array $emails): array {
+        return array_map(fn($email) => (new DateTime($email['datetime_received']))->format('c'), $emails);
+    }
+
+    public function testGetThreadDefaultPageIsTwentyOldestEmails(): void {
+        // :: Setup
+        $thread = $this->createThread('Lang tråd', self::USER_A);
+        $received = $this->insertEmails($thread->id, 25);
+
+        // :: Act
+        $data = $this->callData('get_thread', ['thread_id' => $thread->id], self::USER_A);
+
+        // :: Assert
+        $this->assertEquals(array_slice($received, 0, 20), $this->receivedTimes($data['emails']));
+        $this->assertEquals(25, $data['email_total']);
+        $this->assertTrue($data['truncated']);
+        $this->assertIsString($data['next_cursor']);
+        $this->assertEquals('Lang tråd', $data['thread']['title'], 'thread data is on every page');
+    }
+
+    public function testGetThreadCursorPagesThroughAllEmailsOldestFirst(): void {
+        // :: Setup
+        $thread = $this->createThread('Lang tråd', self::USER_A);
+        $received = $this->insertEmails($thread->id, 7);
+
+        // :: Act
+        $pages = [];
+        $cursor = null;
+        do {
+            $args = ['thread_id' => $thread->id, 'limit' => 3] + ($cursor === null ? [] : ['cursor' => $cursor]);
+            $data = $this->callData('get_thread', $args, self::USER_A);
+            $pages[] = $this->receivedTimes($data['emails']);
+            $cursor = $data['next_cursor'];
+        } while ($cursor !== null && count($pages) < 10);
+
+        // :: Assert
+        $this->assertEquals([array_slice($received, 0, 3), array_slice($received, 3, 3), array_slice($received, 6, 1)], $pages);
+        $this->assertFalse($data['truncated'], 'last page');
+        $this->assertEquals(7, $data['email_total']);
+    }
+
+    public function testGetThreadCursorIncludesEmailArrivingBetweenPages(): void {
+        // :: Setup
+        $thread = $this->createThread('Lang tråd', self::USER_A);
+        $received = $this->insertEmails($thread->id, 4);
+        $first = $this->callData('get_thread', ['thread_id' => $thread->id, 'limit' => 2], self::USER_A);
+        $received = array_merge($received, $this->insertEmails($thread->id, 1, 4));
+
+        // :: Act
+        $second = $this->callData('get_thread',
+            ['thread_id' => $thread->id, 'limit' => 5, 'cursor' => $first['next_cursor']], self::USER_A);
+
+        // :: Assert
+        $this->assertEquals(array_slice($received, 2), $this->receivedTimes($second['emails']));
+        $this->assertEquals(5, $second['email_total']);
+        $this->assertNull($second['next_cursor']);
+    }
+
+    public function testGetThreadLimitIsCappedAtFifty(): void {
+        // :: Setup
+        $thread = $this->createThread('Lang tråd', self::USER_A);
+        $this->insertEmails($thread->id, 51);
+
+        // :: Act
+        $data = $this->callData('get_thread', ['thread_id' => $thread->id, 'limit' => 200], self::USER_A);
+
+        // :: Assert
+        $this->assertCount(50, $data['emails'], json_encode($this->receivedTimes($data['emails']), JSON_PRETTY_PRINT));
+        $this->assertTrue($data['truncated']);
+    }
+
+    public function testGetThreadInvalidCursorIsError(): void {
+        // :: Setup
+        $thread = $this->createThread('Lang tråd', self::USER_A);
+        $this->insertEmails($thread->id, 2);
+
+        // :: Act
+        $error = null;
+        try {
+            $this->tools->call('get_thread', ['thread_id' => $thread->id, 'cursor' => 'not-a-cursor'], self::USER_A);
+        } catch (McpToolException $e) {
+            $error = $e;
+        }
+
+        // :: Assert
+        $this->assertNotNull($error);
+        $this->assertEquals('Invalid cursor', $error->getMessage());
+    }
+
+    public function testGetThreadCursorFromAnotherThreadIsError(): void {
+        // :: Setup
+        $other = $this->createThread('Annen tråd', self::USER_A);
+        $this->insertEmails($other->id, 2);
+        $cursor = $this->callData('get_thread', ['thread_id' => $other->id, 'limit' => 1], self::USER_A)['next_cursor'];
+        $thread = $this->createThread('Lang tråd', self::USER_A);
+        $this->insertEmails($thread->id, 2);
+
+        // :: Act
+        $error = null;
+        try {
+            $this->tools->call('get_thread', ['thread_id' => $thread->id, 'cursor' => $cursor], self::USER_A);
+        } catch (McpToolException $e) {
+            $error = $e;
+        }
+
+        // :: Assert
+        $this->assertNotNull($error, 'a cursor naming an email of another thread is rejected');
+        $this->assertEquals('Invalid cursor', $error->getMessage());
     }
 
     private function setSending(string $threadId, string $status, ?string $error): void {

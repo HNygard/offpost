@@ -25,6 +25,9 @@ class McpTools implements McpToolProvider {
     private const DEFAULT_LIMIT = 50;
     private const MAX_LIMIT = 200;
     private const MAX_ARCHIVE_IDS = 100;
+    /** get_thread pages its emails: a long thread in one response can bloat the client's context. */
+    private const EMAIL_PAGE_DEFAULT = 20;
+    private const EMAIL_PAGE_MAX = 50;
     public const MAX_RAW_ATTACHMENT_BYTES = 5242880;
     /** Test-only: replaces MAX_RAW_ATTACHMENT_BYTES when set. */
     public static ?int $maxRawBytesOverride = null;
@@ -91,11 +94,18 @@ class McpTools implements McpToolProvider {
             [
                 'name' => 'get_thread',
                 'description' => 'Get one thread with its entity, emails (plain text body, classification, attachments with extraction summaries) '
-                    . 'and queued or sent outgoing emails, plus delivery_problems (outgoing emails that failed to send and are still not sent; an empty list means none), plus can_reply and, when true, the reply_recipients for send_reply. Thread ids come from list_my_threads. Public threads of other users are readable too.',
+                    . 'and queued or sent outgoing emails, plus delivery_problems (outgoing emails that failed to send and are still not sent; an empty list means none), plus can_reply and, when true, the reply_recipients for send_reply. Thread ids come from list_my_threads. Public threads of other users are readable too. '
+                    . 'Emails are paged, oldest first: email_total is the number of emails in the thread. To page, pass next_cursor from the previous '
+                    . 'response as cursor; next_cursor is null on the last page. Every page has the thread, entity, sendings, delivery_problems and reply fields.',
                 'inputSchema' => [
                     'type' => 'object',
                     'properties' => [
                         'thread_id' => ['type' => 'string', 'description' => 'Thread id (UUID) from list_my_threads.'],
+                        'limit' => [
+                            'type' => 'integer', 'minimum' => 1, 'maximum' => self::EMAIL_PAGE_MAX,
+                            'description' => 'Maximum number of emails (default ' . self::EMAIL_PAGE_DEFAULT . ', max ' . self::EMAIL_PAGE_MAX . ').',
+                        ],
+                        'cursor' => ['type' => 'string', 'description' => 'next_cursor from the previous page; omit for the first page.'],
                     ],
                     'required' => ['thread_id'],
                     'additionalProperties' => false,
@@ -268,14 +278,14 @@ class McpTools implements McpToolProvider {
         return $args[$key];
     }
 
-    private function limitArg(array $args): int {
+    private function limitArg(array $args, int $default = self::DEFAULT_LIMIT, int $max = self::MAX_LIMIT): int {
         if (!isset($args['limit'])) {
-            return self::DEFAULT_LIMIT;
+            return $default;
         }
         if (!is_int($args['limit'])) {
             throw new McpToolException("Argument 'limit' must be an integer");
         }
-        return max(1, min(self::MAX_LIMIT, $args['limit']));
+        return max(1, min($max, $args['limit']));
     }
 
     private function requireUuid(mixed $v, string $field): string {
@@ -423,16 +433,49 @@ class McpTools implements McpToolProvider {
         return ['k' => $data['k'], 'i' => $data['i']];
     }
 
+    private function encodeEmailCursor(string $emailId): string {
+        return rtrim(strtr(base64_encode(json_encode(['e' => $emailId])), '+/', '-_'), '=');
+    }
+
+    /** @return string the id of the last email of the previous page */
+    private function decodeEmailCursor(string $cursor): string {
+        $json = base64_decode(strtr($cursor, '-_', '+/'), true);
+        $data = $json === false ? null : json_decode($json, true);
+        if (!is_array($data) || !is_string($data['e'] ?? null) || !preg_match(self::UUID_REGEX, $data['e'])) {
+            throw new McpToolException('Invalid cursor');
+        }
+        return $data['e'];
+    }
+
     private function getThread(array $args, string $userId): array {
         $thread = $this->loadAccessibleThread($args, $userId);
         $threadId = $thread->id;
+        $limit = $this->limitArg($args, self::EMAIL_PAGE_DEFAULT, self::EMAIL_PAGE_MAX);
+        $cursorRaw = $this->optionalString($args, 'cursor');
+        $afterEmailId = ($cursorRaw !== null && $cursorRaw !== '') ? $this->decodeEmailCursor($cursorRaw) : null;
         $export = ThreadExportService::exportThread($threadId, false);
         if ($export === null) {
             throw new McpNotFoundException();
         }
 
+        // The export orders emails by (datetime_received, id). The page continues after the cursor's
+        // email, so emails arriving between pages (newer) come on a later page and none are skipped.
+        $allEmails = $export['emails'];
+        $start = 0;
+        if ($afterEmailId !== null) {
+            $position = array_search($afterEmailId, array_column($allEmails, 'id'), true);
+            if ($position === false) {
+                throw new McpToolException('Invalid cursor');
+            }
+            $start = $position + 1;
+        }
+        $pageEmails = array_slice($allEmails, $start, $limit);
+        $hasMore = count($allEmails) > $start + $limit;
+        $last = end($pageEmails);
+        $nextCursor = ($hasMore && $last !== false) ? $this->encodeEmailCursor($last['id']) : null;
+
         $emails = [];
-        foreach ($export['emails'] as $email) {
+        foreach ($pageEmails as $email) {
             unset($email['body_html'], $email['imap_headers'], $email['history']);
             $email['extractions'] = $this->reduceExtractions($email['extractions']);
             foreach ($email['attachments'] as &$attachment) {
@@ -455,6 +498,9 @@ class McpTools implements McpToolProvider {
             'thread' => $export['thread'],
             'entity' => $export['entity'],
             'emails' => $emails,
+            'email_total' => count($allEmails),
+            'next_cursor' => $nextCursor,
+            'truncated' => $hasMore,
             'sendings' => $sendings,
             'delivery_problems' => $this->deliveryProblems($sendings),
             'can_reply' => $canReply,
