@@ -279,51 +279,6 @@ class ThreadsTest extends TestCase {
         $this->assertEquals(Thread::SENDING_STATUS_SENT, $finalThread->sending_status);
     }
 
-    public function testCreateThreadWithSendNowOption() {
-        // Skip this test if we're running in a database environment
-        $this->markTestSkipped('This test requires file-based entity storage which is not available in the test environment');
-        
-        // Arrange
-        $entityId = '000000000-test-entity-development'; // Use a valid entity ID
-
-        // Create thread with send_now = true
-        $threadWithSendNow = new Thread();
-        $threadWithSendNow->title = 'Thread with Send Now';
-        $threadWithSendNow->my_name = 'Test User';
-        $threadWithSendNow->my_email = "test" . uniqid('', true) . "@example.com";
-        $threadWithSendNow->labels = [];
-        $threadWithSendNow->initial_request = 'This is a request to be sent immediately';
-        $threadWithSendNow->sending_status = Thread::SENDING_STATUS_READY_FOR_SENDING; // Simulating send_now=true
-        $threadWithSendNow->archived = false;
-        $threadWithSendNow->emails = [];
-        
-        // Create thread with send_now = false
-        $threadWithoutSendNow = new Thread();
-        $threadWithoutSendNow->title = 'Thread without Send Now';
-        $threadWithoutSendNow->my_name = 'Test User';
-        $threadWithoutSendNow->my_email = "test" . uniqid('', true) . "@example.com";
-        $threadWithoutSendNow->labels = [];
-        $threadWithoutSendNow->initial_request = 'This is a request to be staged';
-        $threadWithoutSendNow->sending_status = Thread::SENDING_STATUS_STAGING; // Simulating send_now=false
-        $threadWithoutSendNow->archived = false;
-        $threadWithoutSendNow->emails = [];
-        
-        // Act
-        $dbOps = new ThreadDatabaseOperations();
-        $resultWithSendNow = $dbOps->createThread($entityId, $threadWithSendNow, 'test-user');
-        $resultWithoutSendNow = $dbOps->createThread($entityId, $threadWithoutSendNow, 'test-user');
-        
-        // Assert
-        $loadedThreadWithSendNow = Thread::loadFromDatabase($resultWithSendNow->id);
-        $loadedThreadWithoutSendNow = Thread::loadFromDatabase($resultWithoutSendNow->id);
-        
-        $this->assertEquals(Thread::SENDING_STATUS_READY_FOR_SENDING, $loadedThreadWithSendNow->sending_status);
-        $this->assertEquals(Thread::SENDING_STATUS_STAGING, $loadedThreadWithoutSendNow->sending_status);
-        
-        $this->assertEquals('This is a request to be sent immediately', $loadedThreadWithSendNow->initial_request);
-        $this->assertEquals('This is a request to be staged', $loadedThreadWithoutSendNow->initial_request);
-    }
-
     public function testSendThreadEmailFailure() {
         // Arrange
         $thread = new Thread();
