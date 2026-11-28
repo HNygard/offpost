@@ -100,24 +100,32 @@ function dumpDatabaseSchema(PDO $pdo): bool {
                     ' ADD CONSTRAINT ' || tc.constraint_name || 
                     ' FOREIGN KEY (' || 
                     string_agg(kcu.column_name, ', ') || 
-                    ') REFERENCES ' || ccu.table_name || 
-                    ' (' || string_agg(ccu.column_name, ', ') || ');' as fk_statement
-                FROM 
+                    ') REFERENCES ' || ccu.table_name ||
+                    ' (' || string_agg(ccu.column_name, ', ') || ')' ||
+                    -- Keep ON DELETE / ON UPDATE rules; without them the dump hides cascades.
+                    CASE WHEN rc.delete_rule <> 'NO ACTION' THEN ' ON DELETE ' || rc.delete_rule ELSE '' END ||
+                    CASE WHEN rc.update_rule <> 'NO ACTION' THEN ' ON UPDATE ' || rc.update_rule ELSE '' END ||
+                    ';' as fk_statement
+                FROM
                     information_schema.table_constraints tc
-                JOIN 
+                JOIN
                     information_schema.key_column_usage kcu
                     ON tc.constraint_name = kcu.constraint_name
                     AND tc.table_schema = kcu.table_schema
-                JOIN 
+                JOIN
                     information_schema.constraint_column_usage ccu
                     ON ccu.constraint_name = tc.constraint_name
                     AND ccu.table_schema = tc.table_schema
-                WHERE 
+                JOIN
+                    information_schema.referential_constraints rc
+                    ON rc.constraint_name = tc.constraint_name
+                    AND rc.constraint_schema = tc.table_schema
+                WHERE
                     tc.table_schema = 'public'
                     AND tc.table_name = '$table'
                     AND tc.constraint_type = 'FOREIGN KEY'
-                GROUP BY 
-                    tc.table_name, tc.constraint_name, ccu.table_name
+                GROUP BY
+                    tc.table_name, tc.constraint_name, ccu.table_name, rc.delete_rule, rc.update_rule
             ")->fetchAll(PDO::FETCH_COLUMN);
             
             foreach ($foreignKeys as $fk) {
@@ -141,14 +149,16 @@ function dumpDatabaseSchema(PDO $pdo): bool {
             
             $indexStatements = [];
             foreach ($indexes as $idx) {
+                // Keep UNIQUE; without it the dump hides unique constraints.
+                $create = str_starts_with($idx['indexdef'], 'CREATE UNIQUE INDEX') ? 'CREATE UNIQUE INDEX ' : 'CREATE INDEX ';
                 // Extract the index method (btree, gin, etc.) and columns from indexdef
                 if (preg_match('/USING\s+(\w+)\s+\((.+)\)/', $idx['indexdef'], $matches)) {
                     $method = $matches[1];
                     $columns = $matches[2];
-                    $indexStatements[] = "CREATE INDEX " . $idx['indexname'] . " ON " . $idx['tablename'] . " USING " . $method . " (" . $columns . ");";
+                    $indexStatements[] = $create . $idx['indexname'] . " ON " . $idx['tablename'] . " USING " . $method . " (" . $columns . ");";
                 } else {
                     // Fallback if regex doesn't match
-                    $indexStatements[] = "CREATE INDEX " . $idx['indexname'] . " ON " . $idx['tablename'] . ";";
+                    $indexStatements[] = $create . $idx['indexname'] . " ON " . $idx['tablename'] . ";";
                 }
             }
             

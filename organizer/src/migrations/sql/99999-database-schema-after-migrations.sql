@@ -1,6 +1,6 @@
 -- ******************************************************************
 -- AUTOMATICALLY GENERATED FILE - DO NOT MODIFY
--- Generated on: 2026-11-24 22:01:41
+-- Generated on: 2026-11-28 10:55:39
 -- 
 -- This file contains the current database schema after all migrations.
 -- It is NOT meant to be executed as a migration script.
@@ -25,9 +25,9 @@ CREATE TABLE attachment_migration_state (
 
 ALTER TABLE attachment_migration_state ADD CONSTRAINT attachment_migration_state_pkey PRIMARY KEY (id);
 ALTER TABLE attachment_migration_state ADD CONSTRAINT attachment_migration_state_email_id_fkey FOREIGN KEY (email_id) REFERENCES thread_emails (id);
-CREATE INDEX attachment_migration_state_email_id_key ON attachment_migration_state USING btree (email_id);
 CREATE INDEX idx_migration_email ON attachment_migration_state USING btree (email_id);
 CREATE INDEX idx_migration_status ON attachment_migration_state USING btree (status);
+CREATE UNIQUE INDEX attachment_migration_state_email_id_key ON attachment_migration_state USING btree (email_id);
 
 CREATE TABLE imap_folder_log (
     id integer NOT NULL DEFAULT nextval('imap_folder_log_id_seq'::regclass),
@@ -55,9 +55,9 @@ CREATE TABLE imap_folder_status (
 ALTER TABLE imap_folder_status ADD CONSTRAINT imap_folder_status_pkey PRIMARY KEY (id);
 ALTER TABLE imap_folder_status ADD CONSTRAINT imap_folder_status_thread_id_fkey FOREIGN KEY (thread_id) REFERENCES threads (id);
 CREATE INDEX imap_folder_status_folder_name_idx ON imap_folder_status USING btree (folder_name);
-CREATE INDEX imap_folder_status_folder_thread_unique ON imap_folder_status USING btree (folder_name, thread_id);
 CREATE INDEX imap_folder_status_requested_update_time_idx ON imap_folder_status USING btree (requested_update_time);
 CREATE INDEX imap_folder_status_thread_id_idx ON imap_folder_status USING btree (thread_id);
+CREATE UNIQUE INDEX imap_folder_status_folder_thread_unique ON imap_folder_status USING btree (folder_name, thread_id);
 
 CREATE TABLE oauth_access_tokens (
     id bigint NOT NULL DEFAULT nextval('oauth_access_tokens_id_seq'::regclass),
@@ -71,10 +71,10 @@ CREATE TABLE oauth_access_tokens (
 );
 
 ALTER TABLE oauth_access_tokens ADD CONSTRAINT oauth_access_tokens_pkey PRIMARY KEY (id);
-ALTER TABLE oauth_access_tokens ADD CONSTRAINT oauth_access_tokens_client_id_fkey FOREIGN KEY (client_id) REFERENCES oauth_clients (client_id);
-ALTER TABLE oauth_access_tokens ADD CONSTRAINT oauth_access_tokens_code_id_fkey FOREIGN KEY (code_id) REFERENCES oauth_authorization_codes (id);
-CREATE INDEX oauth_access_tokens_token_hash_key ON oauth_access_tokens USING btree (token_hash);
+ALTER TABLE oauth_access_tokens ADD CONSTRAINT oauth_access_tokens_client_id_fkey FOREIGN KEY (client_id) REFERENCES oauth_clients (client_id) ON DELETE CASCADE;
+ALTER TABLE oauth_access_tokens ADD CONSTRAINT oauth_access_tokens_code_id_fkey FOREIGN KEY (code_id) REFERENCES oauth_authorization_codes (id) ON DELETE SET NULL;
 CREATE INDEX oauth_access_tokens_user_id_idx ON oauth_access_tokens USING btree (user_id);
+CREATE UNIQUE INDEX oauth_access_tokens_token_hash_key ON oauth_access_tokens USING btree (token_hash);
 
 CREATE TABLE oauth_authorization_codes (
     id bigint NOT NULL DEFAULT nextval('oauth_authorization_codes_id_seq'::regclass),
@@ -90,8 +90,8 @@ CREATE TABLE oauth_authorization_codes (
 );
 
 ALTER TABLE oauth_authorization_codes ADD CONSTRAINT oauth_authorization_codes_pkey PRIMARY KEY (id);
-ALTER TABLE oauth_authorization_codes ADD CONSTRAINT oauth_authorization_codes_client_id_fkey FOREIGN KEY (client_id) REFERENCES oauth_clients (client_id);
-CREATE INDEX oauth_authorization_codes_code_hash_key ON oauth_authorization_codes USING btree (code_hash);
+ALTER TABLE oauth_authorization_codes ADD CONSTRAINT oauth_authorization_codes_client_id_fkey FOREIGN KEY (client_id) REFERENCES oauth_clients (client_id) ON DELETE CASCADE;
+CREATE UNIQUE INDEX oauth_authorization_codes_code_hash_key ON oauth_authorization_codes USING btree (code_hash);
 
 CREATE TABLE oauth_clients (
     id integer NOT NULL DEFAULT nextval('oauth_clients_id_seq'::regclass),
@@ -106,7 +106,7 @@ CREATE TABLE oauth_clients (
 );
 
 ALTER TABLE oauth_clients ADD CONSTRAINT oauth_clients_pkey PRIMARY KEY (id);
-CREATE INDEX oauth_clients_client_id_key ON oauth_clients USING btree (client_id);
+CREATE UNIQUE INDEX oauth_clients_client_id_key ON oauth_clients USING btree (client_id);
 
 CREATE TABLE oauth_registration_attempts (
     id bigint NOT NULL DEFAULT nextval('oauth_registration_attempts_id_seq'::regclass),
@@ -134,7 +134,7 @@ CREATE TABLE openai_request_log (
 );
 
 ALTER TABLE openai_request_log ADD CONSTRAINT openai_request_log_pkey PRIMARY KEY (id);
-ALTER TABLE openai_request_log ADD CONSTRAINT openai_request_log_extraction_id_fkey FOREIGN KEY (extraction_id) REFERENCES thread_email_extractions (extraction_id);
+ALTER TABLE openai_request_log ADD CONSTRAINT openai_request_log_extraction_id_fkey FOREIGN KEY (extraction_id) REFERENCES thread_email_extractions (extraction_id) ON DELETE SET NULL;
 CREATE INDEX openai_request_log_endpoint_idx ON openai_request_log USING btree (endpoint);
 CREATE INDEX openai_request_log_extraction_id_idx ON openai_request_log USING btree (extraction_id);
 CREATE INDEX openai_request_log_source_idx ON openai_request_log USING btree (source);
@@ -191,7 +191,7 @@ ALTER TABLE thread_analysis_events ADD CONSTRAINT thread_analysis_events_email_i
 ALTER TABLE thread_analysis_events ADD CONSTRAINT thread_analysis_events_run_id_fkey FOREIGN KEY (run_id) REFERENCES thread_analysis_runs (id);
 CREATE INDEX thread_analysis_events_email_id_idx ON thread_analysis_events USING btree (email_id);
 CREATE INDEX thread_analysis_events_run_id_idx ON thread_analysis_events USING btree (run_id);
-CREATE INDEX thread_analysis_events_run_id_position_key ON thread_analysis_events USING btree (run_id, "position");
+CREATE UNIQUE INDEX thread_analysis_events_run_id_position_key ON thread_analysis_events USING btree (run_id, "position");
 
 CREATE TABLE thread_analysis_runs (
     id bigint NOT NULL DEFAULT nextval('thread_analysis_runs_id_seq'::regclass),
@@ -238,11 +238,11 @@ CREATE TABLE thread_authorizations (
 );
 
 ALTER TABLE thread_authorizations ADD CONSTRAINT thread_authorizations_pkey PRIMARY KEY (id);
-ALTER TABLE thread_authorizations ADD CONSTRAINT thread_authorizations_thread_id_fkey FOREIGN KEY (thread_id) REFERENCES threads (id);
+ALTER TABLE thread_authorizations ADD CONSTRAINT thread_authorizations_thread_id_fkey FOREIGN KEY (thread_id) REFERENCES threads (id) ON DELETE CASCADE;
 CREATE INDEX thread_authorizations_thread_id_idx ON thread_authorizations USING btree (thread_id);
-CREATE INDEX thread_authorizations_thread_user_idx ON thread_authorizations USING btree (thread_id, user_id);
-CREATE INDEX thread_authorizations_thread_user_unique ON thread_authorizations USING btree (thread_id, user_id);
 CREATE INDEX thread_authorizations_user_id_idx ON thread_authorizations USING btree (user_id);
+CREATE UNIQUE INDEX thread_authorizations_thread_user_idx ON thread_authorizations USING btree (thread_id, user_id);
+CREATE UNIQUE INDEX thread_authorizations_thread_user_unique ON thread_authorizations USING btree (thread_id, user_id);
 
 CREATE TABLE thread_email_attachments (
     email_id uuid NOT NULL,
@@ -263,8 +263,8 @@ ALTER TABLE thread_email_attachments ADD CONSTRAINT thread_email_attachments_ema
 CREATE INDEX thread_email_attachments_email_id_id_idx ON thread_email_attachments USING btree (email_id, id);
 CREATE INDEX thread_email_attachments_email_id_idx ON thread_email_attachments USING btree (email_id);
 CREATE INDEX thread_email_attachments_filetype_idx ON thread_email_attachments USING btree (filetype);
-CREATE INDEX thread_email_attachments_id_uuid_key ON thread_email_attachments USING btree (id);
 CREATE INDEX thread_email_attachments_status_type_idx ON thread_email_attachments USING btree (status_type);
+CREATE UNIQUE INDEX thread_email_attachments_id_uuid_key ON thread_email_attachments USING btree (id);
 
 CREATE TABLE thread_email_extractions (
     extraction_id integer NOT NULL DEFAULT nextval('thread_email_extractions_id_seq'::regclass),
@@ -313,7 +313,7 @@ ALTER TABLE thread_email_mapping ADD CONSTRAINT thread_email_mapping_pkey PRIMAR
 ALTER TABLE thread_email_mapping ADD CONSTRAINT thread_email_mapping_thread_id_fkey FOREIGN KEY (thread_id) REFERENCES threads (id);
 CREATE INDEX thread_email_mapping_email_identifier_idx ON thread_email_mapping USING btree (email_identifier);
 CREATE INDEX thread_email_mapping_thread_id_idx ON thread_email_mapping USING btree (thread_id);
-CREATE INDEX thread_email_mapping_unique_idx ON thread_email_mapping USING btree (email_identifier);
+CREATE UNIQUE INDEX thread_email_mapping_unique_idx ON thread_email_mapping USING btree (email_identifier);
 
 CREATE TABLE thread_email_processing_errors (
     id integer NOT NULL DEFAULT nextval('thread_email_processing_errors_id_seq'::regclass),
@@ -332,7 +332,7 @@ CREATE TABLE thread_email_processing_errors (
 );
 
 ALTER TABLE thread_email_processing_errors ADD CONSTRAINT thread_email_processing_errors_pkey PRIMARY KEY (id);
-CREATE INDEX thread_email_processing_errors_unique_idx ON thread_email_processing_errors USING btree (email_identifier) WHERE (resolved = false);
+CREATE UNIQUE INDEX thread_email_processing_errors_unique_idx ON thread_email_processing_errors USING btree (email_identifier) WHERE (resolved = false);
 
 CREATE TABLE thread_email_sendings (
     id integer NOT NULL DEFAULT nextval('thread_email_sendings_id_seq'::regclass),
@@ -379,7 +379,7 @@ CREATE TABLE thread_emails (
 );
 
 ALTER TABLE thread_emails ADD CONSTRAINT thread_emails_pkey PRIMARY KEY (id);
-ALTER TABLE thread_emails ADD CONSTRAINT thread_emails_thread_id_fkey FOREIGN KEY (thread_id) REFERENCES threads (id);
+ALTER TABLE thread_emails ADD CONSTRAINT thread_emails_thread_id_fkey FOREIGN KEY (thread_id) REFERENCES threads (id) ON DELETE CASCADE;
 CREATE INDEX thread_emails_auto_classification_idx ON thread_emails USING btree (auto_classification);
 CREATE INDEX thread_emails_email_type_idx ON thread_emails USING btree (email_type);
 CREATE INDEX thread_emails_id_old_idx ON thread_emails USING btree (id_old);
@@ -430,12 +430,12 @@ CREATE INDEX threads_entity_created_idx ON threads USING btree (entity_id, creat
 CREATE INDEX threads_entity_id_idx ON threads USING btree (entity_id);
 CREATE INDEX threads_id_old_idx ON threads USING btree (id_old);
 CREATE INDEX threads_labels_idx ON threads USING gin (labels);
-CREATE INDEX threads_my_email_idx ON threads USING btree (my_email);
 CREATE INDEX threads_request_follow_up_plan_idx ON threads USING btree (request_follow_up_plan);
 CREATE INDEX threads_request_law_basis_idx ON threads USING btree (request_law_basis);
 CREATE INDEX threads_sending_status_idx ON threads USING btree (sending_status);
 CREATE INDEX threads_sent_idx ON threads USING btree (sent);
 CREATE INDEX threads_updated_at_idx ON threads USING btree (updated_at);
+CREATE UNIQUE INDEX threads_my_email_idx ON threads USING btree (my_email);
 
 CREATE OR REPLACE FUNCTION update_updated_at_column() RETURNS trigger AS $$ 
 BEGIN
