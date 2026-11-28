@@ -77,9 +77,11 @@ only when it is a valid IP **and** the peer (`REMOTE_ADDR`) is private or loopba
 peers are unmapped first); otherwise it uses `REMOTE_ADDR`. Production runs behind a Cloudflare
 Tunnel, so the peer is the tunnel connector on a private address. If the origin port can be reached
 directly from a private network, anyone there can forge `CF-Connecting-IP` and sidestep the per-IP
-limit. **Deploy advice:** publish the organizer port on loopback only, `127.0.0.1:25081:80` instead of
-the current `25081:80` in `docker-compose.prod.yaml`, so that only the tunnel reaches the origin. The
-200 per hour total limit still bounds the damage if the header is forged.
+limit. That's why `docker-compose.prod.yaml` publishes the organizer port on loopback only
+(`127.0.0.1:25081:80`): only the tunnel connector on the host (`cloudflared`, ingress
+`http://127.0.0.1:25081`) reaches the origin. If `cloudflared` is ever moved into a container, it must
+reach the organizer over a docker network instead. The 200 per hour total limit still bounds the
+damage if the header is forged.
 
 ### Authorization and consent
 
@@ -236,8 +238,8 @@ endpoint answers a plain-text 500; the rest of the MCP endpoints (including OAut
 Moving MCP login from Auth0 to Offpost's own server:
 
 1. Deploy: `docker-compose -f <compose file> down && docker-compose -f <compose file> up --build -d`.
-   Migration 036 (OAuth tables) runs on container start. Consider binding the organizer port to
-   loopback (`127.0.0.1:25081:80`, see Client IP behind Cloudflare).
+   Migrations 036 and 037 (OAuth tables) run on container start. The organizer port is published on
+   loopback only (`127.0.0.1:25081:80`, see Client IP behind Cloudflare).
 2. Reconnect the claude.ai connector once (Settings -> Connectors -> Offpost -> disconnect and
    connect): tokens minted by Auth0 are no longer accepted, so the old connection gives 401 until
    then.

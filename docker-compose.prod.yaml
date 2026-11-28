@@ -78,7 +78,7 @@ services:
     networks:
       - app-network
     ports:
-      - "25081:80"
+      - "127.0.0.1:25081:80"
     depends_on:
       - postgres
     links:
