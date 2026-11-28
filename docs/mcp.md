@@ -1,14 +1,12 @@
 # MCP server
 
 Offpost exposes a Model Context Protocol server (streamable HTTP, POST only) at `/mcp`.
-Design: `docs/superpowers/specs/2026-11-21-mcp-server-design.md`.
 
 ## Authentication
 
-Offpost is its own OAuth 2.1 authorization server for MCP clients (design:
-`docs/superpowers/specs/2026-11-24-mcp-own-oauth-server-design.md`). The web login (`/` and
-`/callback`) still goes through Auth0 in production and the dev `auth` service in development; MCP
-tokens have nothing to do with either. `$mcp_issuer` is Offpost itself (dev `http://localhost:25081`,
+Offpost is its own OAuth 2.1 authorization server for MCP clients. The web login (`/` and
+`/callback`) goes through Auth0 in production and the dev `auth` service in development; MCP tokens
+have nothing to do with either. `$mcp_issuer` is Offpost itself (dev `http://localhost:25081`,
 production `https://offpost.no`, no trailing slash) and `$mcp_resource` is `<issuer>/mcp`.
 
 `/mcp` accepts only Offpost's own opaque access tokens (`opmcp_...`):
@@ -21,7 +19,7 @@ failure is a 500, not a 401. The endpoint starts no PHP session and does not use
 - Bad token: 401, same header plus `error="invalid_token"`.
 - Scopes: `$mcp_scopes` (`['mcp']` in both environments) is advertised as `scopes_supported` in the
   metadata and as `scope` in `WWW-Authenticate` (MCP clients pick the scope to request from these).
-  The token's scope is not checked. `offline_access` is not advertised: there are no refresh tokens.
+  The token's scope is not checked. There are no refresh tokens.
 - Non-POST: 405 with `Allow: POST`. Notifications: 202, empty body.
 - Unexpected errors (including database failures and configuration errors such as an unknown
   environment; config is loaded inside the try, for the metadata endpoint too): 500
@@ -46,7 +44,8 @@ failure is a 500, not a 401. The endpoint starts no PHP session and does not use
 `POST /oauth/register` is open (MCP clients register themselves) and therefore restricted:
 
 - Redirect URIs: `https` on a host in `$mcp_redirect_host_allowlist` (`claude.ai`, `claude.com`;
-  host lowercased, exact match, no port, any path) or `http` on `localhost`, `127.0.0.1`, `[::1]`
+  host lowercased, exact host match, no port, any path; at authorize time the registered URI is
+  matched by exact string comparison) or `http` on `localhost`, `127.0.0.1`, `[::1]`
   (any port; the port is ignored when matching, which is what native clients such as Claude Code
   need). No fragment, userinfo, whitespace, control characters or backslash; anything else is
   `invalid_redirect_uri`. At most 10 URIs.
@@ -54,12 +53,10 @@ failure is a 500, not a 401. The endpoint starts no PHP session and does not use
   `grant_types` must include `authorization_code` (`refresh_token` is tolerated, not echoed).
 - Rate limits: 30 attempts per client IP (an IPv6 address counts as its /64 prefix) and 200 in total per hour, answered 429
   `too_many_requests`. Every attempt with a JSON object body counts; bodies that are not a JSON
-  object (arrays, scalars, invalid JSON) are rejected earlier and not counted.
+  object (arrays, scalars, invalid JSON) are rejected before they are counted.
 - `token_endpoint_auth_method`, when omitted, defaults to `client_secret_post` (claude.ai asks for it).
   This differs from RFC 7591, whose default is `client_secret_basic`; the response always echoes the
   method actually used, so clients that rely on the RFC default can see the difference.
-- The redirect allowlist is "exact host, any path" (owner decision 2026-11-25): any path on an
-  allowlisted host is accepted for a registered URI, matching is then exact string comparison.
 - To allow another https host (for example another MCP client's hosted callback), add it to
   `$mcp_redirect_host_allowlist` in `organizer/src/mcp-config.php` and deploy. Exact host only,
   there are no wildcards. Already registered clients are not re-validated.
@@ -104,7 +101,7 @@ burned by the first redemption attempt even when it fails (`invalid_grant` for e
 client, `redirect_uri` or PKCE verifier; `invalid_target` for a `resource` mismatch, RFC 8707);
 presenting a used code again deletes the tokens issued from it. Response
 `{"access_token":"opmcp_...","token_type":"Bearer","scope":"mcp"}` (no `expires_in`: the token has no fixed
-expiry, owner decision 2026-11-25) with
+expiry) with
 `Cache-Control: no-store` and `Pragma: no-cache`.
 
 Lifetime: a token is valid until it is revoked or has been idle for 180 days (each use extends it). `last_used_at` is refreshed at most once per hour so that busy
@@ -131,7 +128,7 @@ codes older than 30 days, old registration attempts, clients that never got a to
 token-less clients whose last activity is over 365 days ago. `oauth_clients.last_active_at` (migration
 037) is set when a token is issued, used (hourly touch), revoked, or deleted by this job as idle, so a
 client survives a year after its last activity and claude.ai / Claude Code can reconnect with their
-cached `client_id` after a long-ago connection ended. Codes no longer affect clients. It runs daily (03:00-03:09 UTC) from
+cached `client_id` after a long-ago connection ended. It runs daily (03:00-03:09 UTC) from
 `cron-scheduler/curl-cron.sh` via `/scheduled-oauth-cleanup`, which prints the counts. It is
 idempotent.
 
@@ -160,8 +157,8 @@ UUID that is missing or inaccessible gives exactly `Not found, or no access`.
 | `list_entities` | any authenticated user (public bodies). Search is a case-insensitive substring of name or `org_num`. Entities without an email address and entities that no longer exist (`entity_existed_to_and_including` in the past) are left out |
 | `start_thread` | any authenticated user; creates a thread owned by the token `sub`, queued `READY_FOR_SENDING`, no daily cap. Refuses entities without email (`Entity has no email address: <id>`) and defunct ones (`Entity no longer exists: <id>`). Returns `thread_id`, `thread_url`, `sending_status` and the new thread's generated identity `my_name`, `my_email` (see Sender identity and signatures) |
 | `list_my_threads` | only threads with a `thread_authorizations` row for the user (owner or granted); public threads merely viewable are not listed. Each thread has `has_delivery_problem` (computed for the listed threads in one query). Ordered by last activity newest first, then thread id. Returns `total` (threads matching the filters) and `next_cursor` (null on the last page; pass it back as `cursor`). Paging is keyset-based: the next page continues strictly after the last thread returned, so threads archived between pages (e.g. a bulk archive run) do not shift or skip the rest. An unparseable cursor gives `Invalid cursor`. `truncated` is true when more pages exist |
-| `get_thread` | read rule: owner, granted **or public** (`Thread::canUserAccess`); no raw EML, no `body_html`. Returns `delivery_problems` (see below), `can_reply` (true only with a `thread_authorizations` row, the same check as `send_reply`); `reply_recipients` is empty unless `can_reply`. Emails are paged, oldest first (export order `datetime_received, id`): `limit` (default 20, max 50) and `cursor`; returns `email_total`, `next_cursor` (null on the last page) and `truncated`. The cursor names the last email returned and the next page continues after it, so emails arriving between pages come on a later page. A cursor that is unparseable or names an email not in this thread gives `Invalid cursor`. Thread, entity, sendings, `delivery_problems` and the reply fields are on every page. Paging exists because one long thread (78 emails, ~300 KB) in a single response bloated the client's context |
-| `get_attachment_link` | read rule. By default returns `{name, filename, mimeType, size, download_url, expires_in: 300}` and loads no content (no size cap). With `inline: true` it also returns the content (image content or embedded resource); attachments over 5 MB are then refused (use `get_attachment_extraction`). Attachments whose content was never stored give an error in both modes. Replaces `get_attachment_raw` |
+| `get_thread` | read rule: owner, granted **or public** (`Thread::canUserAccess`); no raw EML, no `body_html`. Returns `delivery_problems` (see below), `can_reply` (true only with a `thread_authorizations` row, the same check as `send_reply`); `reply_recipients` is empty unless `can_reply`. Emails are paged, oldest first (export order `datetime_received, id`): `limit` (default 20, max 50) and `cursor`; returns `email_total`, `next_cursor` (null on the last page) and `truncated`. The cursor names the last email returned and the next page continues after it, so emails arriving between pages come on a later page. A cursor that is unparseable or names an email not in this thread gives `Invalid cursor`. Thread, entity, sendings, `delivery_problems` and the reply fields are on every page. Paging keeps long threads from flooding the client's context |
+| `get_attachment_link` | read rule. By default returns `{name, filename, mimeType, size, download_url, expires_in: 300}` and loads no content (no size cap). With `inline: true` it also returns the content (image content or embedded resource); attachments over 5 MB are then refused (use `get_attachment_extraction`). Attachments whose content was never stored give an error in both modes |
 | `get_attachment_extraction` | read rule |
 | `send_reply` | owner or granted only (`thread_authorizations` row); a public thread without a row is refused. Recipient must be one of the thread's valid reply recipients. Queued `READY_FOR_SENDING`. Subject and body are stored trimmed; the thread signature is appended to the body |
 | `archive_thread` | owner or granted only (`thread_authorizations` row), like `send_reply`; a public thread without a row is refused. `archived` (default true) archives, false unarchives. Same path as the web UI's archive action (`updateThread`), which logs `archived`/`unarchived` to thread history, here with `via: mcp`. Already in that state: `changed: false`, no history entry. Archiving only hides the thread from default lists; nothing is sent and incoming emails are still received. Batch: `thread_ids` (1-100, instead of `thread_id`; both together is an error) returns `results` with one entry per distinct id (`{thread_id, changed}` or `{thread_id, error}`, where error is `Invalid thread_id (expected UUID)` or `Not found, or no access`), plus `changed_count`, `unchanged_count` and `error_count`; a failing id does not stop the others |
@@ -183,8 +180,7 @@ Offpost signs every outgoing email, so the agent must not:
 
 The same rules are in the `start_thread` and `send_reply` tool descriptions and in the server
 `instructions` returned by `initialize` (`McpServer::INSTRUCTIONS`), which MCP clients pass to the
-model. This was added after an agent started a follow-up as a new thread and signed it with the
-previous thread's name, so the entity got an email signed with two different names.
+model, so a public body never gets emails about one request signed with two different names.
 
 Delivery problems: `ThreadScheduledEmailSender` records a failed send as status `READY_FOR_SENDING`
 (it is retried) with the failure text in `thread_email_sendings.error_message`; a later successful
@@ -197,8 +193,8 @@ History entries written through MCP (`created`, `thread_reply_created_and_queued
 token `sub` as user and carry `"via": "mcp"` in the details.
 
 `file.php` follows the same public-thread read rule as the MCP read tools (it uses
-`ThreadAuthorizationManager::canUserAccessThread()`, which admits public threads). It now answers
-403 for unauthorized file requests instead of a 500 error page.
+`ThreadAuthorizationManager::canUserAccessThread()`, which admits public threads) and answers 403
+for unauthorized file requests.
 
 ## Attachment download links
 
@@ -235,16 +231,9 @@ A missing, short or unusable secret is logged and disables attachment links only
 `get_attachment_link` answers the tool error `Attachment links are not configured` and the download
 endpoint answers a plain-text 500; the rest of the MCP endpoints (including OAuth) work.
 
-Moving MCP login from Auth0 to Offpost's own server:
-
-1. Deploy: `docker-compose -f <compose file> down && docker-compose -f <compose file> up --build -d`.
-   Migrations 036 and 037 (OAuth tables) run on container start. The organizer port is published on
-   loopback only (`127.0.0.1:25081:80`, see Client IP behind Cloudflare).
-2. Reconnect the claude.ai connector once (Settings -> Connectors -> Offpost -> disconnect and
-   connect): tokens minted by Auth0 are no longer accepted, so the old connection gives 401 until
-   then.
-3. Afterwards, in the Auth0 tenant, turn off Dynamic Client Registration and delete the "Offpost MCP"
-   API. The web login application stays.
+Database migrations (the OAuth tables included) run on container start. The organizer port is
+published on loopback only (`127.0.0.1:25081:80`, see Client IP behind Cloudflare), so recreate the
+container (`up -d`, not just a restart) when that binding changes.
 
 ## Adding the connector in claude.ai
 
@@ -259,7 +248,7 @@ service (`auth/server.js`, an oidc-provider) is only the stand-in for Auth0 for 
 knows nothing about MCP. E2E tests get real tokens through `OAuthTestFlow::accessTokenFor()`
 (register a loopback `none` client, log in with the e2e session, approve, exchange the code).
 
-Manual OAuth check with Claude Code (after rebuilding the dev stack):
+Manual OAuth check with Claude Code:
 
 ```
 claude mcp add --transport http offpost-dev http://localhost:25081/mcp
